@@ -93,9 +93,9 @@ class MetricValue(Base):
     id = Column(Integer, primary_key = True)
     value = Column(Float)
     scan_id = Column(Integer, ForeignKey('scans.id'))
-    scan = relationship('Scan', backpopulates = "metricvalues")
+    scan = relationship('Scan', back_populates = "metricvalues")
     metrictype_id = Column(Integer, ForeignKey('metrics.id'))
-    metrictype = relationship('Metric', backpopulates = "metricvalues")
+    metrictype = relationship('Metric', back_populates = "metricvalues")
 
     def __repr__(self):
         return('<Scan {}: Metric {}: Value {}>'.format(self.scan.name,
