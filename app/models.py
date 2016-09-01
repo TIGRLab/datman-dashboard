@@ -16,6 +16,7 @@ class Study(Base):
     nickname = Column(String(12), index = True, unique = True)
     name = Column(String(64))
     sites = relationship('Site', secondary = study_site_table, back_populates = 'studies')
+    sessions = relationship('Session')
 
     def __repr__(self):
         return ('<Study {}>'.format(self.nickname))
@@ -25,10 +26,27 @@ class Site(Base):
 
     id = Column(Integer, primary_key = True)
     name = Column(String(64), index = True, unique = True)
-    sites = relationship('Study', secondary = study_site_table, back_populates = 'sites')
+    studies = relationship('Study', secondary = study_site_table, back_populates = 'sites')
+    sessions = relationship('Session')
 
     def __repr__(self):
         return ('<Site {}>'.format(self.name))
+
+class Session(Base):
+    __tablename__ = 'sessions'
+
+    id = Column(Integer, primary_key = True)
+    name = Column(String(64), unique=True)
+    study_id = Column(Integer, ForeignKey('studies.id'))
+    study = relationship('Study', back_populates='sessions')
+    site_id = Column(Integer, ForeignKey('sites.id'))
+    site = relationship('Site', back_populates='sites')
+    scans = relationship('Scan')
+
+    def __repr__(self):
+        return('<Session {} from Study {} at Site {}'.format(self.name,
+                                                             self.study.nickname,
+                                                             self.site.name))
 
 class ScanType(Base):
     __tablename__ = 'scantypes'
@@ -36,7 +54,7 @@ class ScanType(Base):
     id = Column(Integer, primary_key = True)
     name = Column(String(64), index = True, unique = True)
     metrics = relationship('Metric')
-    scans = relationship("Scan", back_populates = 'scantypes')
+    scans = relationship("Scan", back_populates = 'scantype')
 
     def __repr__(self):
         return('<ScanType {}>'.format(self.name))
@@ -48,6 +66,7 @@ class Metric(Base):
     name = Column(String(12), index = True, unique = True)
     scantype_id = Column(Integer, ForeignKey('scantypes.id'))
     scantype = relationship('ScanType', back_populates = 'metrics')
+    metricvalues = relationship('MetricValue')
 
     def __repr__(self):
         return('<Metric {}>'.format(self.name))
@@ -81,8 +100,12 @@ class Scan(Base):
 
     id = Column(Integer, primary_key = True)
     name = Column(String(128), index = True, unique = True)
+    session_id = Column(Integer, ForeignKey('sessions.id'))
+    session = relationship('Session', back_populates='scans')
+
     scantype_id = Column(Integer, ForeignKey('scantypes.id'))
     scantype = relationship('ScanType', back_populates= "scans")
+    metricvalues = relationship('MetricValue')
 
     def __repr__(self):
         return('<Scan {}>'.format(self.name))
