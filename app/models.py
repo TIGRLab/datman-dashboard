@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Table
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, Table
 from sqlalchemy.orm import relationship, validates
 from app.database import Base
 import phonenumbers
@@ -18,7 +18,7 @@ class Study(Base):
     sites = relationship('Site', secondary = study_site_table, back_populates = 'studies')
 
     def __repr__(self):
-        return '<Study {}>'.format(self.nickname)
+        return ('<Study {}>'.format(self.nickname))
 
 class Site(Base):
     __tablename__ = 'sites'
@@ -28,7 +28,7 @@ class Site(Base):
     sites = relationship('Study', secondary = study_site_table, back_populates = 'sites')
 
     def __repr__(self):
-        return '<Site {}>'.format(self.name)
+        return ('<Site {}>'.format(self.name))
 
 class ScanType(Base):
     __tablename__ = 'scantypes'
@@ -39,7 +39,7 @@ class ScanType(Base):
     scans = relationship("Scan", back_populates = 'scantypes')
 
     def __repr__(self):
-        return '<ScanType {}>'.format(self.name)
+        return('<ScanType {}>'.format(self.name))
 
 class Metric(Base):
     __tablename__ = 'metrics'
@@ -50,7 +50,7 @@ class Metric(Base):
     scantype = relationship('ScanType', back_populates = 'metrics')
 
     def __repr__(self):
-        return '<Metric {}>'.format(self.name)
+        return('<Metric {}>'.format(self.name))
 
 class Person(Base):
     __tablename__ = 'people'
@@ -63,7 +63,7 @@ class Person(Base):
     phone2 = Column(String(20))
 
     def __repr__(self):
-        return '<Contact {}>'.format(self.name)
+        return('<Contact {}>'.format(self.name))
 
     @validates('email')
     def validate_email(self, key, value):
@@ -85,4 +85,19 @@ class Scan(Base):
     scantype = relationship('ScanType', back_populates= "scans")
 
     def __repr__(self):
-        return '<Scan {}>'.format(self.name)
+        return('<Scan {}>'.format(self.name))
+
+class MetricValue(Base):
+    __tablename__ = 'scanmetrics'
+
+    id = Column(Integer, primary_key = True)
+    value = Column(Float)
+    scan_id = Column(Integer, ForeignKey('scans.id'))
+    scan = relationship('Scan', backpopulates = "metricvalues")
+    metrictype_id = Column(Integer, ForeignKey('metrics.id'))
+    metrictype = relationship('Metric', backpopulates = "metricvalues")
+
+    def __repr__(self):
+        return('<Scan {}: Metric {}: Value {}>'.format(self.scan.name,
+                                                     self.metrictype.name,
+                                                     self.value))
