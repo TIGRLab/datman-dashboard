@@ -10,6 +10,7 @@ argparse==1.2.1
 click==6.6
 decorator==4.0.10
 itsdangerous==0.24
+numpy==1.11.1
 pbr==1.10.0
 phonenumbers==7.5.2
 python-editor==1.0.1
