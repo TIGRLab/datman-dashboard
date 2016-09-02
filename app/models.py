@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, Table
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Table, UniqueConstraint
 from sqlalchemy.orm import relationship, validates
 from app.database import Base
 import phonenumbers
@@ -9,12 +9,18 @@ study_site_table = Table('study_site',
                          Column('study_id', Integer, ForeignKey('studies.id')),
                          Column('site_id', Integer, ForeignKey('sites.id')))
 
+study_scantype_table = Table('study_scantypes',
+                             Base.metadata,
+                             Column('study_id', Integer, ForeignKey('studies.id')),
+                             Column('scantype_id', Integer, ForeignKey('scantypes.id')))
+
 class Study(Base):
     __tablename__ = 'studies'
 
     id = Column(Integer, primary_key = True)
     nickname = Column(String(12), index = True, unique = True)
     name = Column(String(64))
+    scantypes = relationship('ScanType', secondary = study_scantype_table, back_populates = 'studies')
     sites = relationship('Site', secondary = study_site_table, back_populates = 'studies')
     sessions = relationship('Session')
 
@@ -37,10 +43,11 @@ class Session(Base):
 
     id = Column(Integer, primary_key = True)
     name = Column(String(64), unique=True)
+    date = Column(DateTime)
     study_id = Column(Integer, ForeignKey('studies.id'))
     study = relationship('Study', back_populates='sessions')
     site_id = Column(Integer, ForeignKey('sites.id'))
-    site = relationship('Site', back_populates='sites')
+    site = relationship('Site', back_populates='sessions')
     scans = relationship('Scan')
 
     def __repr__(self):
@@ -53,23 +60,27 @@ class ScanType(Base):
 
     id = Column(Integer, primary_key = True)
     name = Column(String(64), index = True, unique = True)
-    metrics = relationship('Metric')
+    metrictypes = relationship('MetricType', back_populates="scantype")
     scans = relationship("Scan", back_populates = 'scantype')
+    studies = relationship("Study", secondary = study_scantype_table, back_populates = "scantypes")
+
 
     def __repr__(self):
         return('<ScanType {}>'.format(self.name))
 
-class Metric(Base):
-    __tablename__ = 'metrics'
+class MetricType(Base):
+    __tablename__ = 'metrictypes'
 
     id = Column(Integer, primary_key = True)
-    name = Column(String(12), index = True, unique = True)
+    name = Column(String(12))
     scantype_id = Column(Integer, ForeignKey('scantypes.id'))
-    scantype = relationship('ScanType', back_populates = 'metrics')
+    scantype = relationship('ScanType', back_populates = 'metrictypes')
     metricvalues = relationship('MetricValue')
 
+    UniqueConstraint('name','scantype_id')
+
     def __repr__(self):
-        return('<Metric {}>'.format(self.name))
+        return('<MetricType {}>'.format(self.name))
 
 class Person(Base):
     __tablename__ = 'people'
@@ -117,8 +128,8 @@ class MetricValue(Base):
     value = Column(Float)
     scan_id = Column(Integer, ForeignKey('scans.id'))
     scan = relationship('Scan', back_populates = "metricvalues")
-    metrictype_id = Column(Integer, ForeignKey('metrics.id'))
-    metrictype = relationship('Metric', back_populates = "metricvalues")
+    metrictype_id = Column(Integer, ForeignKey('metrictypes.id'))
+    metrictype = relationship('MetricType', back_populates = "metricvalues")
 
     def __repr__(self):
         return('<Scan {}: Metric {}: Value {}>'.format(self.scan.name,
