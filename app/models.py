@@ -125,11 +125,48 @@ class MetricValue(Base):
     __tablename__ = 'scanmetrics'
 
     id = Column(Integer, primary_key = True)
-    value = Column(Float)
+    _value = Column('value', String)
     scan_id = Column(Integer, ForeignKey('scans.id'))
     scan = relationship('Scan', back_populates = "metricvalues")
     metrictype_id = Column(Integer, ForeignKey('metrictypes.id'))
     metrictype = relationship('MetricType', back_populates = "metricvalues")
+
+    @property
+    def value(self):
+        """Returns the value field from the database.
+        The value is stored as a string.
+        If the value contains '::' character this will convert it to a list,
+        otherwise it will attempt to cast to Float.
+        Failing that the value is returned as a string.
+        """
+        if self._value is None:
+            return(None)
+        value = self._value.split('::')
+        try:
+            value = [float(value) for v in value]
+        except ValueError:
+            return(''.join(value))
+        if len(value) == 1:
+            return(value[0])
+        else:
+            return(value)
+
+    @value.setter
+    def value(self, value, delimiter=None):
+        """Stores the value in the database as a string.
+        If the delimiter is specified any characters matching delimiter are
+        replaced with '::' for storage.
+
+        Keyword arguments:
+        [delimiter] -- optional character string that is replaced by '::' for
+            database storage.
+        """
+        if delimiter is not None:
+            try:
+                value = value.replace(delimiter, '::')
+            except AttributeError:
+                pass
+        self._value = str(value)
 
     def __repr__(self):
         return('<Scan {}: Metric {}: Value {}>'.format(self.scan.name,
