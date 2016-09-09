@@ -1,0 +1,22 @@
+/*
+inline styles for local site
+*/
+@link-color:       @brand-primary;
+@link-hover-color: darken(@link-color, 15%);
+
+a {
+  color: @link-color;
+  text-decoration: none;
+
+  &:hover {
+    color: @link-hover-color;
+    text-decoration: underline;
+  }
+}
+
+.nomargin{
+    margin-top:0px;
+    margin-bottom:0px;
+    margin-right:0px;
+    margin-left:0px;
+}

@@ -1,0 +1,19 @@
+<!-- extend base layout -->
+{% extends "base.html" %}
+
+{% block content %}
+  {% include 'flash.html' %}
+  <div class="page-header">
+    <h1>Kimel Lab QC Monitor</h1>
+  </div>
+  <div class="jumbotron">
+    <h2>Studies:</h2>
+    <table class = "table-striped">
+      {% for study in studies %}
+        <tr>
+          <td><a href="{{ url_for('study', study_id=study.id) }}"> {{ study.name }}</a></td>
+        </tr>
+      {% endfor %}
+    </table>
+  </div>
+{% endblock %}
