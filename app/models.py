@@ -1,8 +1,8 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Table, UniqueConstraint
 from sqlalchemy.orm import relationship, validates
 from app.database import Base
-import phonenumbers
-import validate_email
+#import phonenumbers
+#import validate_email
 
 study_site_table = Table('study_site',
                          Base.metadata,
@@ -51,7 +51,7 @@ class Session(Base):
     scans = relationship('Scan')
 
     def __repr__(self):
-        return('<Session {} from Study {} at Site {}'.format(self.name,
+        return('<Session {} from Study {} at Site {}>'.format(self.name,
                                                              self.study.nickname,
                                                              self.site.name))
 
@@ -82,6 +82,7 @@ class MetricType(Base):
     def __repr__(self):
         return('<MetricType {}>'.format(self.name))
 
+"""
 class Person(Base):
     __tablename__ = 'people'
 
@@ -105,6 +106,7 @@ class Person(Base):
         p = phonenumbers.parse(value, 'CA')
         if not phonenumbers.is_valid_number(p):
             raise AssertionError
+"""
 
 class Scan(Base):
     __tablename__ = 'scans'
@@ -143,7 +145,7 @@ class MetricValue(Base):
             return(None)
         value = self._value.split('::')
         try:
-            value = [float(value) for v in value]
+            value = [float(v) for v in value]
         except ValueError:
             return(''.join(value))
         if len(value) == 1:

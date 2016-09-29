@@ -49,7 +49,7 @@ def create_random_session(study_str, session_id):
             metricvalue.metrictype = metrictype
             metricvalue.value = newval
             scan.metricvalues.append(metricvalue)
-    db_session.add(s)
+    db_session.add(session)
 
 
 if __name__ == '__main__':
