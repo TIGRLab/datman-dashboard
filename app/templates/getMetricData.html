@@ -7,13 +7,25 @@
     </div>
     <form class="form-horizontal" action="" method="post" name="edit">
       {{ form.csrf_token }}
-      <div>
-        <label class="control-label" for="study_id">Studies:</label>
         <div class="form-group">
+          <label class="control-label" for="study_id">Sites:</label>
+          {{ form.site_id(maxlength=64, class=span4) }}
+          <label class="control-label" for="study_id">Studies:</label>
           {{ form.study_id(maxlength=64, class=span4) }}
-          {% for error in form.errors.study_id %}
-            <span class="help-inline">[{{error}}]</span><br/>
-          {% endfor %}
+          <label class="control-label" for="study_id">Scan types:</label>
+          {{ form.scantype_id(maxlength=64, class=span4) }}
+          <label class="control-label" for="study_id">Metrics:</label>
+          {{ form.metrictype_id(maxlength=64, class=span4) }}
         </div>
-      </div>
+        <div class="form-group">
+          <div class="controls">
+            <input class="btn btn-primary" type="submit" value="update">
+          </div>
+        </div>
     </form>
+    <div class='data'>
+      {% if form.data %}
+        {{data}}
+      {% endif %}
+    </div>
+{% endblock %}
