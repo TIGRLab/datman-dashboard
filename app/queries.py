@@ -31,7 +31,7 @@ def query_metric_values_byid(**kwargs):
     good_keys = arg_keys & set(filters.keys())
 
     if bad_keys:
-        logger.warning('Ignoring invalid filter keys provided:{}'.format(diffs))
+        logger.warning('Ignoring invalid filter keys provided:{}'.format(bad_keys))
 
     query_str = """db_session.query(MetricValue) \
                         .join(Site.studies) \
@@ -80,7 +80,7 @@ def query_metric_values_byname(**kwargs):
     good_keys = arg_keys & set(filters.keys())
 
     if bad_keys:
-        logger.warning('Ignoring invalid filter keys provided:{}'.format(diffs))
+        logger.warning('Ignoring invalid filter keys provided:{}'.format(bad_keys))
 
     query_str = """db_session.query(MetricValue) \
                         .join(Site.studies) \
