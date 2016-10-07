@@ -1,137 +1,118 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Table, UniqueConstraint
-from sqlalchemy.orm import relationship, validates
-from app.database import Base
-#import phonenumbers
-#import validate_email
+from app import db
 
-study_site_table = Table('study_site',
-                         Base.metadata,
-                         Column('study_id', Integer, ForeignKey('studies.id')),
-                         Column('site_id', Integer, ForeignKey('sites.id')))
+study_site_table = db.Table('study_site',
+                         db.Column('study_id', db.Integer, db.ForeignKey('studies.id')),
+                         db.Column('site_id', db.Integer, db.ForeignKey('sites.id')))
 
-study_scantype_table = Table('study_scantypes',
-                             Base.metadata,
-                             Column('study_id', Integer, ForeignKey('studies.id')),
-                             Column('scantype_id', Integer, ForeignKey('scantypes.id')))
+study_scantype_table = db.Table('study_scantypes',
+                             db.Column('study_id', db.Integer, db.ForeignKey('studies.id')),
+                             db.Column('scantype_id', db.Integer, db.ForeignKey('scantypes.id')))
 
-class Study(Base):
+class Study(db.Model):
     __tablename__ = 'studies'
 
-    id = Column(Integer, primary_key = True)
-    nickname = Column(String(12), index = True, unique = True)
-    name = Column(String(64))
-    scantypes = relationship('ScanType', secondary = study_scantype_table, back_populates = 'studies')
-    sites = relationship('Site', secondary = study_site_table, back_populates = 'studies')
-    sessions = relationship('Session')
+    id = db.Column(db.Integer, primary_key = True)
+    nickname = db.Column(db.String(12), index = True, unique = True)
+    name = db.Column(db.String(64))
+    scantypes = db.relationship('ScanType', secondary = study_scantype_table, back_populates = 'studies')
+    sites = db.relationship('Site', secondary = study_site_table, back_populates = 'studies')
+    sessions = db.relationship('Session')
 
     def __repr__(self):
         return ('<Study {}>'.format(self.nickname))
 
-class Site(Base):
+class Site(db.Model):
     __tablename__ = 'sites'
 
-    id = Column(Integer, primary_key = True)
-    name = Column(String(64), index = True, unique = True)
-    studies = relationship('Study', secondary = study_site_table, back_populates = 'sites')
-    sessions = relationship('Session')
+    id = db.Column(db.Integer, primary_key = True)
+    name = db.Column(db.String(64), index = True, unique = True)
+    studies = db.relationship('Study', secondary = study_site_table, back_populates = 'sites')
+    sessions = db.relationship('Session')
 
     def __repr__(self):
         return ('<Site {}>'.format(self.name))
 
-class Session(Base):
+class Session(db.Model):
     __tablename__ = 'sessions'
 
-    id = Column(Integer, primary_key = True)
-    name = Column(String(64), unique=True)
-    date = Column(DateTime)
-    study_id = Column(Integer, ForeignKey('studies.id'))
-    study = relationship('Study', back_populates='sessions')
-    site_id = Column(Integer, ForeignKey('sites.id'))
-    site = relationship('Site', back_populates='sessions')
-    scans = relationship('Scan')
+    id = db.Column(db.Integer, primary_key = True)
+    name = db.Column(db.String(64), unique=True)
+    date = db.Column(db.DateTime)
+    study_id = db.Column(db.Integer, db.ForeignKey('studies.id'))
+    study = db.relationship('Study', back_populates='sessions')
+    site_id = db.Column(db.Integer, db.ForeignKey('sites.id'))
+    site = db.relationship('Site', back_populates='sessions')
+    scans = db.relationship('Scan')
 
     def __repr__(self):
         return('<Session {} from Study {} at Site {}>'.format(self.name,
                                                              self.study.nickname,
                                                              self.site.name))
 
-class ScanType(Base):
+class ScanType(db.Model):
     __tablename__ = 'scantypes'
 
-    id = Column(Integer, primary_key = True)
-    name = Column(String(64), index = True, unique = True)
-    metrictypes = relationship('MetricType', back_populates="scantype")
-    scans = relationship("Scan", back_populates = 'scantype')
-    studies = relationship("Study", secondary = study_scantype_table, back_populates = "scantypes")
+    id = db.Column(db.Integer, primary_key = True)
+    name = db.Column(db.String(64), index = True, unique = True)
+    metrictypes = db.relationship('MetricType', back_populates="scantype")
+    scans = db.relationship("Scan", back_populates = 'scantype')
+    studies = db.relationship("Study", secondary = study_scantype_table, back_populates = "scantypes")
 
 
     def __repr__(self):
         return('<ScanType {}>'.format(self.name))
 
-class MetricType(Base):
+class MetricType(db.Model):
     __tablename__ = 'metrictypes'
 
-    id = Column(Integer, primary_key = True)
-    name = Column(String(12))
-    scantype_id = Column(Integer, ForeignKey('scantypes.id'))
-    scantype = relationship('ScanType', back_populates = 'metrictypes')
-    metricvalues = relationship('MetricValue')
+    id = db.Column(db.Integer, primary_key = True)
+    name = db.Column(db.String(12))
+    scantype_id = db.Column(db.Integer, db.ForeignKey('scantypes.id'))
+    scantype = db.relationship('ScanType', back_populates = 'metrictypes')
+    metricvalues = db.relationship('MetricValue')
 
-    UniqueConstraint('name','scantype_id')
+    db.UniqueConstraint('name','scantype_id')
 
     def __repr__(self):
         return('<MetricType {}>'.format(self.name))
 
-"""
-class Person(Base):
+class Person(db.Model):
     __tablename__ = 'people'
 
-    id = Column(Integer, primary_key = True)
-    name = Column(String(64))
-    role = Column(String(64))
-    email = Column(String(255))
-    phone1 = Column(String(20))
-    phone2 = Column(String(20))
+    id = db.Column(db.Integer, primary_key = True)
+    name = db.Column(db.String(64))
+    role = db.Column(db.String(64))
+    email = db.Column(db.String(255))
+    phone1 = db.Column(db.String(20))
+    phone2 = db.Column(db.String(20))
 
     def __repr__(self):
         return('<Contact {}>'.format(self.name))
 
-    @validates('email')
-    def validate_email(self, key, value):
-        if not validate_email.validate_email(value):
-            raise AssertionError
-
-    @validates('phone1','phone2')
-    def validate_phone(self, key, value):
-        p = phonenumbers.parse(value, 'CA')
-        if not phonenumbers.is_valid_number(p):
-            raise AssertionError
-"""
-
-class Scan(Base):
+class Scan(db.Model):
     __tablename__ = 'scans'
 
-    id = Column(Integer, primary_key = True)
-    name = Column(String(128), index = True, unique = True)
-    session_id = Column(Integer, ForeignKey('sessions.id'))
-    session = relationship('Session', back_populates='scans')
+    id = db.Column(db.Integer, primary_key = True)
+    name = db.Column(db.String(128), index = True, unique = True)
+    session_id = db.Column(db.Integer, db.ForeignKey('sessions.id'))
+    session = db.relationship('Session', back_populates='scans')
 
-    scantype_id = Column(Integer, ForeignKey('scantypes.id'))
-    scantype = relationship('ScanType', back_populates= "scans")
-    metricvalues = relationship('MetricValue')
+    scantype_id = db.Column(db.Integer, db.ForeignKey('scantypes.id'))
+    scantype = db.relationship('ScanType', back_populates= "scans")
+    metricvalues = db.relationship('MetricValue')
 
     def __repr__(self):
         return('<Scan {}>'.format(self.name))
 
-class MetricValue(Base):
+class MetricValue(db.Model):
     __tablename__ = 'scanmetrics'
 
-    id = Column(Integer, primary_key = True)
-    _value = Column('value', String)
-    scan_id = Column(Integer, ForeignKey('scans.id'))
-    scan = relationship('Scan', back_populates = "metricvalues")
-    metrictype_id = Column(Integer, ForeignKey('metrictypes.id'))
-    metrictype = relationship('MetricType', back_populates = "metricvalues")
+    id = db.Column(db.Integer, primary_key = True)
+    _value = db.Column('value', db.String)
+    scan_id = db.Column(db.Integer, db.ForeignKey('scans.id'))
+    scan = db.relationship('Scan', back_populates = "metricvalues")
+    metrictype_id = db.Column(db.Integer, db.ForeignKey('metrictypes.id'))
+    metrictype = db.relationship('MetricType', back_populates = "metricvalues")
 
     @property
     def value(self):

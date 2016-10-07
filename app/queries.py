@@ -1,4 +1,4 @@
-from .database import db_session
+from app import db
 from .models import Study, Site, Session, Scan, MetricType, MetricValue, ScanType
 import logging
 
@@ -33,7 +33,7 @@ def query_metric_values_byid(**kwargs):
     if bad_keys:
         logger.warning('Ignoring invalid filter keys provided:{}'.format(bad_keys))
 
-    query_str = """db_session.query(MetricValue) \
+    query_str = """db.query(MetricValue) \
                         .join(Site.studies) \
                         .join(Session) \
                         .join(Scan) \
@@ -82,7 +82,7 @@ def query_metric_values_byname(**kwargs):
     if bad_keys:
         logger.warning('Ignoring invalid filter keys provided:{}'.format(bad_keys))
 
-    query_str = """db_session.query(MetricValue) \
+    query_str = """db.query(MetricValue) \
                         .join(Site.studies) \
                         .join(Session) \
                         .join(Scan) \
