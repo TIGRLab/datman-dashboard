@@ -1,13 +1,10 @@
 from flask import Flask
-import flask_sqlalchemy
+from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 app.config.from_object('config')
 
-from app.database import db_session
-
-@app.teardown_appcontext
-def shutdown_session(exception=None):
-    db_session.remove()
+#from app.database import db_session
+db = SQLAlchemy(app)
 
 from app import views, models

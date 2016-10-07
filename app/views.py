@@ -1,6 +1,5 @@
 from flask import render_template, flash, url_for, redirect, request, jsonify
 from app import app
-from app.database import db_session
 from .queries import query_metric_values_byid
 from .models import Study, Site
 from .forms import SelectMetricsForm
