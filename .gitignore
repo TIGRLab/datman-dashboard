@@ -1,4 +1,3 @@
 *.pyc
 venv/
 *.sqlite
-db_repository/

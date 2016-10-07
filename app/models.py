@@ -17,7 +17,10 @@ class Study(db.Model):
     scantypes = db.relationship('ScanType', secondary = study_scantype_table, back_populates = 'studies')
     sites = db.relationship('Site', secondary = study_site_table, back_populates = 'studies')
     sessions = db.relationship('Session')
-
+    description = db.Column(db.String(1024))
+    fullname = db.Column(db.String(1024))
+    primary_contact_id = db.Column(db.Integer, db.ForeignKey('people.id'))
+    primary_contact = db.relationship('Person', back_populates='studies')
     def __repr__(self):
         return ('<Study {}>'.format(self.nickname))
 
