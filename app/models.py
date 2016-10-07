@@ -14,6 +14,11 @@ study_scantype_table = db.Table('study_scantypes',
                                 db.Column('scantype_id', db.Integer,
                                           db.ForeignKey('scantypes.id')))
 
+study_people_table = db.Table('study_people',
+                              db.Column('study_id', db.Integer,
+                                        db.ForeignKey('studies.id')),
+                              db.Column('person_id', db.Integer,
+                                        db.ForeignKey('people.id')))
 
 class Study(db.Model):
     __tablename__ = 'studies'
@@ -29,7 +34,9 @@ class Study(db.Model):
     description = db.Column(db.String(1024))
     fullname = db.Column(db.String(1024))
     primary_contact_id = db.Column(db.Integer, db.ForeignKey('people.id'))
-    primary_contact = db.relationship('Person', back_populates='studies')
+    primary_contact = db.relationship('Person')
+    #people = db.relationship('Person', secondary=study_people_table,
+    #                         back_populates='studies')
 
     def __repr__(self):
         return ('<Study {}>'.format(self.nickname))
