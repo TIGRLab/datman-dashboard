@@ -5,6 +5,7 @@ import logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+
 def query_metric_values_byid(**kwargs):
     """Queries the database for metrics matching the specifications.
         Arguments are lists of strings containing identifying names
@@ -16,14 +17,14 @@ def query_metric_values_byid(**kwargs):
 
     """
     # convert the argument keys to lowercase
-    kwargs =  {k.lower(): v for k, v in kwargs.items()}
+    kwargs = {k.lower(): v for k, v in kwargs.items()}
 
-    filters = {'studies'        : 'Study.id',
-               'sites'          : 'Site.id',
-               'sessions'       : 'Session.id',
-               'scans'          : 'Scan.id',
-               'scantypes'      : 'ScanType.id',
-               'metrictypes'    : 'MetricType.id'}
+    filters = {'studies': 'Study.id',
+               'sites': 'Site.id',
+               'sessions': 'Session.id',
+               'scans': 'Scan.id',
+               'scantypes': 'ScanType.id',
+               'metrictypes': 'MetricType.id'}
 
     arg_keys = set(kwargs.keys())
 
@@ -33,7 +34,7 @@ def query_metric_values_byid(**kwargs):
     if bad_keys:
         logger.warning('Ignoring invalid filter keys provided:{}'.format(bad_keys))
 
-    query_str = """db.query(MetricValue) \
+    query_str = """db.session.query(MetricValue) \
                         .join(Site.studies) \
                         .join(Session) \
                         .join(Scan) \
@@ -65,7 +66,7 @@ def query_metric_values_byname(**kwargs):
 
     """
     # convert the argument keys to lowercase
-    kwargs =  {k.lower(): v for k, v in kwargs.items()}
+    kwargs = {k.lower(): v for k, v in kwargs.items()}
 
     filters = {'studies'        : 'Study.name',
                'sites'          : 'Site.name',
@@ -82,13 +83,13 @@ def query_metric_values_byname(**kwargs):
     if bad_keys:
         logger.warning('Ignoring invalid filter keys provided:{}'.format(bad_keys))
 
-    query_str = """db.query(MetricValue) \
-                        .join(Site.studies) \
-                        .join(Session) \
-                        .join(Scan) \
-                        .join(ScanType) \
-                        .join(MetricValue) \
-                        .join(MetricType)"""
+    query_str = """db.session.query(MetricValue) \
+                                .join(Site.studies) \
+                                .join(Session) \
+                                .join(Scan) \
+                                .join(ScanType) \
+                                .join(MetricValue) \
+                                .join(MetricType)"""
 
     for key in good_keys:
         query_str = query_str + '.filter({}.in_({}))'.format(filters[key],kwargs[key])
