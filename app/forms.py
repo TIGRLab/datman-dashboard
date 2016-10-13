@@ -1,13 +1,13 @@
 from datetime import timedelta
 from flask import session
-from flask_wtf import FlaskForm
+from flask_wtf import Form
 from wtforms import SelectField, SelectMultipleField, HiddenField
 from wtforms.validators import DataRequired
 
 from wtforms.csrf.session import SessionCSRF
 
 
-class SelectMetricsForm(FlaskForm):
+class SelectMetricsForm(Form):
     study_vals = []
     site_vals = []
     session_vals = []
@@ -24,4 +24,4 @@ class SelectMetricsForm(FlaskForm):
     query_complete = HiddenField(default=False)
 
     def __init__(self,  *args, **kwargs):
-        FlaskForm.__init__(self, *args, **kwargs)
+        Form.__init__(self, *args, **kwargs)
