@@ -35,24 +35,21 @@ def query_metric_values_byid(**kwargs):
         logger.warning('Ignoring invalid filter keys provided:{}'
                        .format(bad_keys))
 
-    query_str = """db.session.query(MetricValue) \
-                        .join(Site.studies) \
-                        .join(Session) \
-                        .join(Scan) \
-                        .join(ScanType) \
-                        .join(MetricValue) \
-                        .join(MetricType)"""
+    q = db.session.query(MetricValue)
+    q = q.join(MetricType, MetricValue.metrictype)
+    q = q.join(Scan, MetricValue.scan)
+    q = q.join(ScanType, Scan.scantype)
+    q = q.join(Session, Scan.session)
+    q = q.join(Site, Session.site)
+    q = q.join(Study, Session.study)
 
     for key in good_keys:
         if kwargs[key]:
-            query_str = query_str + '.filter({}.in_({}))' \
-                .format(filters[key], kwargs[key])
+            q = q.filter(eval(filters[key]).in_(kwargs[key]))
 
-    query_str = query_str + '.all()'
+    logger.debug('Query string: {}'.format(str(q)))
 
-    logger.debug('Query string: {}'.format(query_str))
-
-    result = eval(query_str)
+    result = q.all()
 
     return(result)
 
@@ -86,23 +83,20 @@ def query_metric_values_byname(**kwargs):
         logger.warning('Ignoring invalid filter keys provided:{}'
                        .format(bad_keys))
 
-    query_str = """db.session.query(MetricValue) \
-                                .join(Site.studies) \
-                                .join(Session) \
-                                .join(Scan) \
-                                .join(ScanType) \
-                                .join(MetricValue) \
-                                .join(MetricType)"""
+    q = db.session.query(MetricValue)
+    q = q.join(MetricType, MetricValue.metrictype)
+    q = q.join(Scan, MetricValue.scan)
+    q = q.join(ScanType, Scan.scantype)
+    q = q.join(Session, Scan.session)
+    q = q.join(Site, Session.site)
+    q = q.join(Study, Session.study)
 
     for key in good_keys:
-        query_str = query_str + '.filter({}.in_({}))' \
-            .format(filters[key], kwargs[key])
+        q = q.filter(eval(filters[key]).in_(kwargs[key]))
 
-    query_str = query_str + '.all()'
+    logger.debug('Query string: {}'.format(str(q)))
 
-    logger.debug('Query string: {}'.format(query_str))
-
-    result = eval(query_str)
+    result = q.all()
 
     return(result)
 

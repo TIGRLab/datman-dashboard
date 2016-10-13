@@ -124,20 +124,21 @@ def metricDataAsJson(format='plain'):
     data = query_metric_values_byid(**fields)
     objects = []
     for m in data:
-        objects.append({'value': m.value,
-                        'metrictype':    m.metrictype.name,
-                        'metrictype_id': m.metrictype_id,
-                        'scan_id':       m.scan_id,
-                        'scan_name':     m.scan.name,
-                        'scantype':     m.scan.scantype.name,
-                        'scantype_id':  m.scan.scantype_id,
-                        'session_id':    m.scan.session_id,
-                        'session_name':  m.scan.session.name,
-                        'session_date':  m.scan.session.date,
-                        'site_id':       m.scan.session.site_id,
-                        'site_name':     m.scan.session.site.name,
-                        'study_id':      m.scan.session.study_id,
-                        'study_name':    m.scan.session.study.name})
+        metricValue = m
+        objects.append({'value':            metricValue.value,
+                        'metrictype':       metricValue.metrictype.name,
+                        'metrictype_id':    metricValue.metrictype_id,
+                        'scan_id':          metricValue.scan_id,
+                        'scan_name':        metricValue.scan.name,
+                        'scantype':         metricValue.scan.scantype.name,
+                        'scantype_id':      metricValue.scan.scantype_id,
+                        'session_id':       metricValue.scan.session_id,
+                        'session_name':     metricValue.scan.session.name,
+                        'session_date':     metricValue.scan.session.date,
+                        'site_id':          metricValue.scan.session.site_id,
+                        'site_name':        metricValue.scan.session.site.name,
+                        'study_id':         metricValue.scan.session.study_id,
+                        'study_name':       metricValue.scan.session.study.name})
     if format == 'http':
         return(jsonify(objects))
     else:
