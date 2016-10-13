@@ -2,11 +2,12 @@ import pandas as pd
 import os
 import sys
 
-db_path = "/projects/twright/dashboard"
-if db_path not in sys.path:
-	sys.path.append("/projects/twright/dashboard")
+#db_path = "/projects/twright/dashboard"
+#if db_path not in sys.path:
+#	sys.path.append("/projects/twright/dashboard")
+print sys.path
 
-from app.database import db_session
+from app import db
 from app.models import Study, Site, Session, Scan, ScanType, MetricType, MetricValue
 
 root_dir = "/archive/data/"
@@ -53,7 +54,7 @@ def insert(df, df_path):
 			session.site = site
 
 	if not session.site:
-		print "Site (" + site_name + ") not associated with study "+proj_name+" in database; skipping."
+		print "Site (" + site_name + ") not associated with study " + proj_name + " in database; skipping."
 		return
 
 	scan_name = session_name + "_" + tag
@@ -75,7 +76,7 @@ def insert(df, df_path):
 			scan.scantype = scantype
 
 	if not scan.scantype:
-		print "Scantype (" + tag + ") not associated with study "+proj_name+" in database; skipping."
+		print "Scantype (" + tag + ") not associated with study " + proj_name + " in database; skipping."
 		return
 
 	if df.endswith("_stats.csv"):
@@ -85,12 +86,13 @@ def insert(df, df_path):
 			zipped_data = zip(data[0],data[1])
 			for datapoint in zipped_data:
 				metricvalue = MetricValue()
-				if MetricType.query.filter(MetricType.name == datapoint[0]).count():
-					metrictype = MetricType.query.filter(MetricType.name == datapoint[0]).first()
-					#print "Using existing record."
+				if MetricType.query.filter(MetricType.name == datapoint[0]).count() and MetricType.query.filter(MetricType.scantype_id == scan.scantype_id).count():
+					metrictype = MetricType.query.filter(MetricType.name == datapoint[0]).filter(MetricType.scantype_id == scan.scantype_id).first()
+					print "Using existing record."
 				else:
 					metrictype = MetricType()
 					metrictype.name = datapoint[0]
+					metrictype.scantype_id = scan.scantype_id
 				metricvalue.metrictype = metrictype
 				metricvalue.value = datapoint[1]
 				scan.metricvalues.append(metricvalue)
@@ -102,12 +104,13 @@ def insert(df, df_path):
 		try:
 			data = read_qc(df_path, False)
 			metricvalue = MetricValue()
-			if MetricType.query.filter(MetricType.name == "ScanLength").count():
-				metrictype = MetricType.query.filter(MetricType.name == "ScanLength").first()
+			if MetricType.query.filter(MetricType.name == "ScanLength").count() and MetricType.query.filter(MetricType.scantype_id == scan.scantype_id).count():
+				metrictype = MetricType.query.filter(MetricType.name == "ScanLength").filter(MetricType.scantype_id == scan.scantype_id).first()
 					#print "Using existing record."
 			else:
 				metrictype = MetricType()
 				metrictype.name = "ScanLength"
+				metrictype.scantype_id = scan.scantype_id
 			metricvalue.metrictype = metrictype
 			metricvalue.value = data[0][1]
 			scan.metricvalues.append(metricvalue)
@@ -121,12 +124,13 @@ def insert(df, df_path):
 			data = read_qc(df_path, True)
 			for datapoint in data:
 				metricvalue = MetricValue()
-				if MetricType.query.filter(MetricType.name == datapoint[0]).count():
-					metrictype = MetricType.query.filter(MetricType.name == datapoint[0]).first()
+				if MetricType.query.filter(MetricType.name == datapoint[0]).count() and MetricType.query.filter(MetricType.scantype_id == scan.scantype_id).count():
+					metrictype = MetricType.query.filter(MetricType.name == datapoint[0]).filter(MetricType.scantype_id == scan.scantype_id).first()
 					#print "Using existing record."
 				else:
 					metrictype = MetricType()
 					metrictype.name = datapoint[0]
+					metrictype.scantype_id = scan.scantype_id
 				metricvalue.metrictype = metrictype
 				metricvalue.value = datapoint[1]
 				scan.metricvalues.append(metricvalue)
@@ -134,7 +138,7 @@ def insert(df, df_path):
 			#print "Metric file (" + df + ") is missing data or not formatted correctly; skipping."
 			print df + " missing data"
 
-	db_session.commit()
+	db.session.commit()
 
 def traverse_projects():
 	#Ignore these files in "data" folder
@@ -158,7 +162,7 @@ def traverse_projects():
 				datafiles = filter(lambda file: file.endswith(".csv"), os.listdir(subj_dir))
 				for df in datafiles:
 					df_path = subj_dir + "/" + df
-					#print df
+					print df
 					insert(df, df_path)
 
 traverse_projects()
