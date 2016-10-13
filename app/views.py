@@ -1,6 +1,6 @@
 from flask import render_template, flash, url_for, redirect, request, jsonify
 from app import app
-from .queries import query_metric_values_byid
+from .queries import query_metric_values_byid, query_metric_types
 from .models import Study, Site
 from .forms import SelectMetricsForm
 import json
@@ -35,24 +35,55 @@ def study(study_id=None):
 @app.route('/metricData', methods=['GET','POST'])
 def metricData():
     form = SelectMetricsForm()
-    if any([form.site_id.data,
-            form.study_id.data,
-            form.session_id.data,
-            form.scan_id.data,
+    data = None
+    # Need to add a query_complete flag to the form
+
+    if form.query_complete.data == 'True':
+        data = metricDataAsJson()
+
+    if any([form.study_id.data,
+            form.site_id.data,
             form.scantype_id.data,
             form.metrictype_id.data]):
-        #data = query_metric_values_byid(sites = form.site_id.data,
-        #                                studies = form.study_id.data,
-        #                                sessions = form.session_id.data,
-        #                                scans = form.scan_id.data,
-        #                                scantypes = form.scantype_id.data,
-        #                                metrictypes = form.metrictype_id.data)
-        # assert app.debug==False
-
-        data = metricDataAsJson(format='plain')
+        form_vals = query_metric_types(studies=form.study_id.data,
+                                       sites=form.site_id.data,
+                                       scantypes=form.scantype_id.data,
+                                       metrictypes=form.metrictype_id.data)
     else:
-        data=None
+        form_vals = query_metric_types()
+
+    study_vals = []
+    site_vals = []
+    scantype_vals = []
+    metrictype_vals = []
+
+    for res in form_vals:
+        study_vals.append((res[0].id, res[0].name))
+        site_vals.append((res[1].id, res[1].name))
+        scantype_vals.append((res[2].id, res[2].name))
+        metrictype_vals.append((res[3].id, res[3].name))
+        # study_vals.append((res.id, res.name))
+        # for site in res.sites:
+        #     site_vals.append((site.id, site.name))
+        # for scantype in res.scantypes:
+        #     scantype_vals.append((scantype.id, scantype.name))
+        #     for metrictype in scantype.metrictypes:
+        #         metrictype_vals.append((metrictype.id, metrictype.name))
+
+    #sort the values alphabetically
+    study_vals = sorted(set(study_vals), key=lambda v: v[1])
+    site_vals = sorted(set(site_vals), key=lambda v: v[1])
+    scantype_vals = sorted(set(scantype_vals), key=lambda v: v[1])
+    metrictype_vals = sorted(set(metrictype_vals), key=lambda v: v[1])
+
+    form.study_id.choices = study_vals
+    form.site_id.choices = site_vals
+    form.scantype_id.choices = scantype_vals
+    form.metrictype_id.choices = metrictype_vals
+
+    #return render_template('getMetricData.html', form=form, data=data)
     return render_template('getMetricData.html', form=form, data=data)
+
 
 def _checkRequest(request, key):
     # Checks a post request, returns none if key doesn't exist
@@ -61,8 +92,9 @@ def _checkRequest(request, key):
     except KeyError:
         return(None)
 
-@app.route('/metricDataAsJson', methods=['Get','Post'])
-def metricDataAsJson(format='http'):
+
+@app.route('/metricDataAsJson', methods=['Get', 'Post'])
+def metricDataAsJson(format='plain'):
     fields = {'studies': 'study_id',
               'sites': 'site_id',
               'sessions': 'session_id',
@@ -92,7 +124,7 @@ def metricDataAsJson(format='http'):
     data = query_metric_values_byid(**fields)
     objects = []
     for m in data:
-        objects.append({'value':m.value,
+        objects.append({'value': m.value,
                         'metrictype':    m.metrictype.name,
                         'metrictype_id': m.metrictype_id,
                         'scan_id':       m.scan_id,
@@ -109,4 +141,4 @@ def metricDataAsJson(format='http'):
     if format == 'http':
         return(jsonify(objects))
     else:
-        return(json.dumps(objects, indent=4, separators=(',',': ')))
+        return(json.dumps(objects, indent=4, separators=(',', ': ')))
