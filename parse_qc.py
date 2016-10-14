@@ -2,11 +2,6 @@ import pandas as pd
 import os
 import sys
 
-#db_path = "/projects/twright/dashboard"
-#if db_path not in sys.path:
-#	sys.path.append("/projects/twright/dashboard")
-print sys.path
-
 from app import db
 from app.models import Study, Site, Session, Scan, ScanType, MetricType, MetricValue
 
@@ -15,41 +10,40 @@ root_dir = "/archive/data/"
 def read_qc(path_to_file, space_delimited):
 	return pd.read_csv(path_to_file, delim_whitespace=space_delimited, header=None).as_matrix()
 
+#Insert data associated with this file into the database
 def insert(df, df_path):
-
+	#Ignore unexpected files
 	recognized_files = ("_stats.csv", "_scanlengths.csv", "_qascript_fmri.csv", "_qascript_dti.csv")
 	if not df.endswith(recognized_files):
-		#print "Unrecognized .csv file in subject folder; skipping."
 		return
 
+	#Get project, site, and subject from filename
 	sep_df = df.split("_")
 	if sep_df[2] == "PHA":
 		proj_name, site_name, subj_name, tag = sep_df[0], sep_df[1], sep_df[2] + "_" + sep_df[3], sep_df[4]
 	else:
 		proj_name, site_name, subj_name, tag = sep_df[0], sep_df[1], sep_df[2], sep_df[5]
 
+	#Get study object if it exists, or make one
 	if Study.query.filter(Study.nickname == proj_name).count():
 		study = Study.query.filter(Study.nickname == proj_name).first()
-		#print "Using existing record."
 	else:
 		print "Study (" + proj_name + ") does not exist in database; skipping."
 		return
-
+	
+	#Get session object if it exists, or make one
 	session_name = proj_name + "_" + site_name + "_" + subj_name
-
 	if Session.query.filter(Session.name == session_name).count():
 		session = Session.query.filter(Session.name == session_name).first()
-		#print "Using existing record."
 	else:
 		session = Session()
 		session.name = session_name
-		#db_session.add(session)
 	study.sessions.append(session)
 
+	#Ensure site is a possible site, and fetch the object
 	possible_sites = study.sites
 	
 	for site in possible_sites:
-		#print site.name
 		if site.name == site_name:
 			session.site = site
 
@@ -57,21 +51,20 @@ def insert(df, df_path):
 		print "Site (" + site_name + ") not associated with study " + proj_name + " in database; skipping."
 		return
 
+	#Get session object if it exists, or make one
 	scan_name = session_name + "_" + tag
-
 	if Scan.query.filter(Scan.name == scan_name).count():
 		scan = Scan.query.filter(Scan.name == scan_name).first()
 		#print "Using existing record."
 	else:
 		scan = Scan()
 		scan.name = scan_name
-		#db_session.add(scan)
 	session.scans.append(scan)
 	
+	#Ensure scantype is a possible scantype, and fetch the object
 	possible_scantypes = study.scantypes
 
 	for scantype in possible_scantypes:
-		#print scantype.name
 		if scantype.name == tag:
 			scan.scantype = scantype
 
@@ -79,8 +72,8 @@ def insert(df, df_path):
 		print "Scantype (" + tag + ") not associated with study " + proj_name + " in database; skipping."
 		return
 
+	#Parsing differs depending on format of csv file
 	if df.endswith("_stats.csv"):
-		#print "stats.csv file"
 		try: 
 			data = read_qc(df_path, False)
 			zipped_data = zip(data[0],data[1])
@@ -101,7 +94,6 @@ def insert(df, df_path):
 			print df + " missing data"
 		
 	elif df.endswith("_scanlengths.csv"):
-		#print "scanlengths.csv file"
 		try:
 			data = read_qc(df_path, False)
 			metricvalue = MetricValue()
@@ -121,7 +113,6 @@ def insert(df, df_path):
 			print df + " missing data"
 
 	elif df.endswith("_qascript_fmri.csv") or df.endswith("_qascript_dti.csv"):
-		#print "qascript_*.csv file"
 		try:
 			data = read_qc(df_path, True)
 			for datapoint in data:
@@ -141,8 +132,10 @@ def insert(df, df_path):
 			#print "Metric file (" + df + ") is missing data or not formatted correctly; skipping."
 			print df + " missing data"
 
+	#Add the new row to the database
 	db.session.commit()
 
+#Find all relevant QC metric files in the filesystem
 def traverse_projects():
 	#Ignore these files in "data" folder
 	#exclusions = ["assets", "code", "UNITTEST", "README.md", "WEBSITE", "logs", "data-env", ".jobscript", ".RData"]
