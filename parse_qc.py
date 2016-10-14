@@ -95,6 +95,7 @@ def insert(df, df_path):
 					metrictype.scantype_id = scan.scantype_id
 				metricvalue.metrictype = metrictype
 				metricvalue.value = datapoint[1]
+				metricvalue.metrictype_id = metrictype.id
 				scan.metricvalues.append(metricvalue)
 		except (IndexError, ValueError):
 			print df + " missing data"
@@ -113,6 +114,7 @@ def insert(df, df_path):
 				metrictype.scantype_id = scan.scantype_id
 			metricvalue.metrictype = metrictype
 			metricvalue.value = data[0][1]
+			metricvalue.metrictype_id = metrictype.id
 			scan.metricvalues.append(metricvalue)
 		except (IndexError, ValueError):
 			#print "Metric file (" + df + ") is missing data or not formatted correctly; skipping."
@@ -133,6 +135,7 @@ def insert(df, df_path):
 					metrictype.scantype_id = scan.scantype_id
 				metricvalue.metrictype = metrictype
 				metricvalue.value = datapoint[1]
+				metricvalue.metrictype_id = metrictype.id
 				scan.metricvalues.append(metricvalue)
 		except (IndexError, ValueError):
 			#print "Metric file (" + df + ") is missing data or not formatted correctly; skipping."

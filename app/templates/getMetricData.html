@@ -39,7 +39,34 @@
           </div>
         </div>
     </form>
-    <div class='data'>
+    <div id='data'>
           {{data}}
     </div>
+    <div id='chart'></div>
+    <script>
+    var dataFromSelection = document.getElementById('data');
+    var dataList = JSON.parse(dataFromSelection.innerHTML);
+    var chartList = [];
+
+    dataList.forEach(function(entry){
+      chartList.push(entry.value);
+    });
+
+    chartList.unshift(dataList[0].metrictype);
+
+    var chart = c3.generate({
+        bindto: '#chart',
+        data: {
+            columns: [
+              chartList
+            ]
+        }//,
+        //axis: {
+        //  x: {
+        //    type: 'category',
+        //    categories: ["Subject1","Subject2","Subject3","Subject4","Subject5","Subject6"]
+        //  }
+        //}
+    });</script>
+
 {% endblock %}
