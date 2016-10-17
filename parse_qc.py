@@ -2,7 +2,7 @@ import pandas as pd
 import os
 
 from app import db
-from app.models import Study, Session, Scan, ScanType, MetricType,\
+from app.models import Study, Session, Scan, MetricType,\
  MetricValue
 
 root_dir = "/archive/data/"

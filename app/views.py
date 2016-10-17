@@ -5,22 +5,26 @@ from .models import Study, Site
 from .forms import SelectMetricsForm
 import json
 
+
 @app.route('/')
 @app.route('/index')
 @app.route('/studies')
 def index():
-    #studies = db_session.query(Study).order_by(Study.nickname).all()
+    # studies = db_session.query(Study).order_by(Study.nickname).all()
     studies = Study.query.order_by(Study.nickname)
     return render_template('index.html',
-                           studies = studies)
+                           studies=studies)
+
 
 @app.route('/sites')
 def sites():
     pass
 
+
 @app.route('/scantypes')
 def scantypes():
     pass
+
 
 @app.route('/study')
 @app.route('/study/<int:study_id>', methods=['GET'])
@@ -28,11 +32,12 @@ def study(study_id=None):
     if id is not None:
         study = Study.query.get(study_id)
         return render_template('study_details.html',
-                                study = study)
+                               study=study)
     else:
         return redirect('/index')
 
-@app.route('/metricData', methods=['GET','POST'])
+
+@app.route('/metricData', methods=['GET', 'POST'])
 def metricData():
     form = SelectMetricsForm()
     data = None
@@ -70,7 +75,7 @@ def metricData():
         #     for metrictype in scantype.metrictypes:
         #         metrictype_vals.append((metrictype.id, metrictype.name))
 
-    #sort the values alphabetically
+    # sort the values alphabetically
     study_vals = sorted(set(study_vals), key=lambda v: v[1])
     site_vals = sorted(set(site_vals), key=lambda v: v[1])
     scantype_vals = sorted(set(scantype_vals), key=lambda v: v[1])
@@ -81,7 +86,7 @@ def metricData():
     form.scantype_id.choices = scantype_vals
     form.metrictype_id.choices = metrictype_vals
 
-    #return render_template('getMetricData.html', form=form, data=data)
+    # return render_template('getMetricData.html', form=form, data=data)
     return render_template('getMetricData.html', form=form, data=data)
 
 
