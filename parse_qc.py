@@ -1,9 +1,9 @@
 import pandas as pd
 import os
-import sys
-import datman as dm
+
 from app import db
-from app.models import Study, Session, Scan, MetricType, MetricValue
+from app.models import Study, Session, Scan, MetricType,\
+ MetricValue
 
 root_dir = "/archive/data/"
 
@@ -31,12 +31,11 @@ def insert(df, df_path):
         proj_name, site_name, subj_name, tag = sep_df[0], sep_df[1], \
          sep_df[2], sep_df[5]
 
-	study_name = dm.config.map_xnat_archive_to_project(proj_name)
     # Get study object if it exists, or make one
-    if Study.query.filter(Study.nickname == study_name).count():
-        study = Study.query.filter(Study.nickname == study_name).first()
+    if Study.query.filter(Study.nickname == proj_name).count():
+        study = Study.query.filter(Study.nickname == proj_name).first()
     else:
-        print "Study (" + study_name + ") does not exist in database; skipping."
+        print "Study (" + proj_name + ") does not exist in database; skipping."
         return
 
     # Get session object if it exists, or make one
