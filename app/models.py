@@ -20,6 +20,7 @@ study_people_table = db.Table('study_people',
                               db.Column('person_id', db.Integer,
                                         db.ForeignKey('people.id')))
 
+
 class Study(db.Model):
     __tablename__ = 'studies'
 
@@ -68,9 +69,10 @@ class Session(db.Model):
     scans = db.relationship('Scan')
 
     def __repr__(self):
-        return('<Session {} from Study {} at Site {}>'.format(self.name,
-                                                              self.study.nickname,
-                                                              self.site.name))
+        return('<Session {} from Study {} at Site {}>'
+               .format(self.name,
+                       self.study.nickname,
+                       self.site.name))
 
 
 class ScanType(db.Model):
