@@ -6,6 +6,7 @@ from wtforms.validators import DataRequired
 
 from wtforms.csrf.session import SessionCSRF
 
+<<<<<<< HEAD
 
 class SelectMetricsForm(FlaskForm):
     study_vals = []
@@ -15,6 +16,17 @@ class SelectMetricsForm(FlaskForm):
     scantype_vals = []
     metrictype_vals = []
 
+=======
+
+class SelectMetricsForm(Form):
+    study_vals = []
+    site_vals = []
+    session_vals = []
+    scan_vals = []
+    scantype_vals = []
+    metrictype_vals = []
+
+>>>>>>> 364ddc6ce608b5d27fc7b1384e54d542b1618329
     study_id = SelectMultipleField('Study', coerce=int)
     site_id = SelectMultipleField('Site', coerce=int)
     session_id = SelectMultipleField('Session', coerce=int)
@@ -24,4 +36,4 @@ class SelectMetricsForm(FlaskForm):
     query_complete = HiddenField(default=False)
 
     def __init__(self,  *args, **kwargs):
-        FlaskForm.__init__(self, *args, **kwargs)
+        Form.__init__(self, *args, **kwargs)

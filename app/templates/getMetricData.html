@@ -49,7 +49,36 @@
       </form>
     </div>
 
-    <div class='data'>
+    <div id='data' hidden>
           {{data}}
     </div>
+    <div id='chart'></div>
+    <script>
+    var dataFromSelection = document.getElementById('data');
+    var dataList = JSON.parse(dataFromSelection.innerHTML);
+    var valueList = [];
+    var subjectList = [];
+
+    dataList.forEach(function(entry){
+      valueList.push(entry.value);
+      subjectList.push(entry.session_name)
+    });
+
+    valueList.unshift(dataList[0].metrictype);
+
+    var chart = c3.generate({
+        bindto: '#chart',
+        data: {
+            columns: [
+              valueList
+            ]
+        },
+        axis: {
+          x: {
+            type: 'category',
+            categories: subjectList
+          }
+        }
+    });</script>
+
 {% endblock %}

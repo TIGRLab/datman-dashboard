@@ -39,8 +39,6 @@ To populate the database with real data:
 
 2. `python parse_qc.py`
 
-
-
 # Starting the server
 
 `python run.py`

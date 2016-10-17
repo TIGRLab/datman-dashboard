@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 #!venv/bin/python
 """Add extra study information into the database."""
 
