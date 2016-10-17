@@ -35,7 +35,7 @@
         </div>
         <div class="form-group">
           <div class="controls">
-            <input class="btn btn-primary" type="submit" value="update">
+            <input class="btn btn-primary" type="submit" value="Update">
           </div>
         </div>
     </form>
@@ -46,29 +46,53 @@
     <script>
     var dataFromSelection = document.getElementById('data');
     var dataList = JSON.parse(dataFromSelection.innerHTML);
+    var siteSet = new Set();
     var valueList = [];
     var subjectList = [];
+    var overallValueList = [];
+    var overallSubjectList = [];
 
     dataList.forEach(function(entry){
-      valueList.push(entry.value);
-      subjectList.push(entry.session_name)
+      siteSet.add(entry.site_name);
     });
 
-    valueList.unshift(dataList[0].metrictype);
+    siteSet.forEach(function(site){
+      valueList = [];
+      subjectList = [];
+      dataList.forEach(function(entry){
+        if (entry.site_name == site) {
+          valueList.push(entry.value);
+          subjectList.push(entry.session_name)
+        }
+      } );
+    valueList.unshift(site);
+    overallValueList.push(valueList);
+    overallSubjectList.push(subjectList);
+  });
+
+
 
     var chart = c3.generate({
         bindto: '#chart',
         data: {
-            columns: [
-              valueList
-            ]
+            columns:
+              overallValueList
+
         },
         axis: {
           x: {
             type: 'category',
-            categories: subjectList
+            show: false,
+            categories: overallSubjectList[0] //This is wrong when more than one site is displayed;
+                                              //TODO
           }
-        }
+        },
+        tooltip: {
+        grouped: false
+    },
+    zoom: {
+        enabled: true
+    }
     });</script>
 
 {% endblock %}
