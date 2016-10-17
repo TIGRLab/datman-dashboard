@@ -1,7 +1,7 @@
 import pandas as pd
 import os
 import sys
-
+import datman as dm
 #db_path = "/projects/twright/dashboard"
 #if db_path not in sys.path:
 #	sys.path.append("/projects/twright/dashboard")
@@ -28,11 +28,13 @@ def insert(df, df_path):
 	else:
 		proj_name, site_name, subj_name, tag = sep_df[0], sep_df[1], sep_df[2], sep_df[5]
 
-	if Study.query.filter(Study.nickname == proj_name).count():
-		study = Study.query.filter(Study.nickname == proj_name).first()
+	study_name = dm.config.map_xnat_archive_to_project(proj_name)
+
+	if Study.query.filter(Study.nickname == study_name).count():
+		study = Study.query.filter(Study.nickname == study_name).first()
 		#print "Using existing record."
 	else:
-		print "Study (" + proj_name + ") does not exist in database; skipping."
+		print "Study (" + study_name + ") does not exist in database; skipping."
 		return
 
 	session_name = proj_name + "_" + site_name + "_" + subj_name
@@ -47,7 +49,7 @@ def insert(df, df_path):
 	study.sessions.append(session)
 
 	possible_sites = study.sites
-	
+
 	for site in possible_sites:
 		#print site.name
 		if site.name == site_name:
@@ -67,7 +69,7 @@ def insert(df, df_path):
 		scan.name = scan_name
 		#db_session.add(scan)
 	session.scans.append(scan)
-	
+
 	possible_scantypes = study.scantypes
 
 	for scantype in possible_scantypes:
@@ -81,7 +83,7 @@ def insert(df, df_path):
 
 	if df.endswith("_stats.csv"):
 		#print "stats.csv file"
-		try: 
+		try:
 			data = read_qc(df_path, False)
 			zipped_data = zip(data[0],data[1])
 			for datapoint in zipped_data:
@@ -98,7 +100,7 @@ def insert(df, df_path):
 				scan.metricvalues.append(metricvalue)
 		except (IndexError, ValueError):
 			print df + " missing data"
-		
+
 	elif df.endswith("_scanlengths.csv"):
 		#print "scanlengths.csv file"
 		try:
@@ -166,4 +168,3 @@ def traverse_projects():
 					insert(df, df_path)
 
 traverse_projects()
-
