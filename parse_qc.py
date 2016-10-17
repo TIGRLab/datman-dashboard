@@ -1,11 +1,13 @@
 import pandas as pd
 import os
-
+import sys
+import datman as dm
 from app import db
-from app.models import Study, Session, Scan, MetricType,\
- MetricValue
+from app.models import Study, Session, Scan, MetricType, MetricValue
 
 root_dir = "/archive/data/"
+config = dm.config.config(filename='/scratch/twright/code/config/tigrlab_config.yaml',
+                          system='local')
 
 
 def read_qc(path_to_file, space_delimited):
@@ -16,9 +18,10 @@ def read_qc(path_to_file, space_delimited):
 
 # Insert data associated with this file into the database
 def insert(df, df_path):
+    global config
     # Ignore unexpected files
     recognized_files = ("_stats.csv", "_scanlengths.csv", "_qascript_fmri.csv",
-                        "_qascript_dti.csv")
+                            "_qascript_dti.csv")
     if not df.endswith(recognized_files):
         return
 
@@ -26,16 +29,17 @@ def insert(df, df_path):
     sep_df = df.split("_")
     if sep_df[2] == "PHA":
         proj_name, site_name, subj_name, tag = sep_df[0], sep_df[1], \
-         sep_df[2] + "_" + sep_df[3], sep_df[4]
+            sep_df[2] + "_" + sep_df[3], sep_df[4]
     else:
         proj_name, site_name, subj_name, tag = sep_df[0], sep_df[1], \
-         sep_df[2], sep_df[5]
+            sep_df[2], sep_df[5]
 
+    study_name = config.map_xnat_archive_to_project(proj_name)
     # Get study object if it exists, or make one
-    if Study.query.filter(Study.nickname == proj_name).count():
-        study = Study.query.filter(Study.nickname == proj_name).first()
+    if Study.query.filter(Study.nickname == study_name).count():
+        study = Study.query.filter(Study.nickname == study_name).first()
     else:
-        print "Study (" + proj_name + ") does not exist in database; skipping."
+        print "Study (" + study_name + ") does not exist in database; skipping."
         return
 
     # Get session object if it exists, or make one
@@ -95,9 +99,9 @@ def insert(df, df_path):
                     metrictype = MetricType()
                     metrictype.name = datapoint[0]
                     metrictype.scantype_id = scan.scantype_id
+                    db.session.add(metrictype)
                 metricvalue.metrictype = metrictype
                 metricvalue.value = datapoint[1]
-                metricvalue.metrictype_id = metrictype.id
                 scan.metricvalues.append(metricvalue)
         except (IndexError, ValueError):
             print df + " missing data"
@@ -113,9 +117,9 @@ def insert(df, df_path):
                 metrictype = MetricType()
                 metrictype.name = "ScanLength"
                 metrictype.scantype_id = scan.scantype_id
+                db.session.add(metrictype)
             metricvalue.metrictype = metrictype
             metricvalue.value = data[0][1]
-            metricvalue.metrictype_id = metrictype.id
             scan.metricvalues.append(metricvalue)
         except (IndexError, ValueError):
             # print "Metric file (" + df + ") is missing data or not formatted
@@ -134,9 +138,9 @@ def insert(df, df_path):
                     metrictype = MetricType()
                     metrictype.name = datapoint[0]
                     metrictype.scantype_id = scan.scantype_id
+                    db.session.add(metrictype)
                 metricvalue.metrictype = metrictype
                 metricvalue.value = datapoint[1]
-                metricvalue.metrictype_id = metrictype.id
                 scan.metricvalues.append(metricvalue)
         except (IndexError, ValueError):
             # print "Metric file (" + df + ") is missing data or not formatted
