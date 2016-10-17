@@ -20,3 +20,66 @@ a {
     margin-right:0px;
     margin-left:0px;
 }
+
+
+.bd-pageheader {
+  padding: 2rem 15px;
+  margin-bottom: 1.5rem;
+  color: #cdbfe3;
+  text-align: center;
+  background-color: #563d7c;
+}
+
+.bd-pageheader .container {
+  position: relative;
+}
+
+.bd-pageheader h1 {
+  font-size: 3rem;
+  font-weight: normal;
+  color: #fff;
+}
+
+.bd-pageheader p {
+  margin-bottom: 0;
+  font-size: 1.25rem;
+  font-weight: 300;
+}
+
+@media (min-width: 544px) {
+  .bd-pageheader {
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+    margin-bottom: 3rem;
+    text-align: left;
+  }
+  .bd-pageheader .carbonad {
+    margin: 2rem 0 0 !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .bd-pageheader h1 {
+    font-size: 4rem;
+  }
+  .bd-pageheader p {
+    font-size: 1.5rem;
+  }
+}
+
+@media (min-width: 992px) {
+  .bd-pageheader h1,
+  .bd-pageheader p {
+    margin-right: 380px;
+  }
+  .bd-pageheader .carbonad {
+    position: absolute;
+    top: 0;
+    right: .75rem;
+    margin: 0 !important;
+  }
+}
+
+.control-label{
+  font-weight: bold;fg
+}
