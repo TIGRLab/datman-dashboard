@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARN)
 
 def main():
-    arguments = docopts(__doc__)
+    arguments = docopt(__doc__)
     project = arguments['<project>']
     subject = arguments['<subject>']
     quiet = arguments['--quiet']
@@ -44,3 +44,41 @@ def main():
         logger.setLevel(logging.INFO)
     if debug:
         logger.setLevel(logging.DEBUG)
+
+    config = dm.config.config(filename='/scratch/twright/code/config/tigrlab_config.yaml',
+                              system='local')
+
+    if project:
+        try:
+            config.set_study_config(project)
+            qc_dir = config.get_if_exists('study', ['paths', 'qc'])
+            if not qc_dir:
+                logger.error('Failed to identify qc folder')
+                raise KeyError
+        except KeyError:
+            logger.error('Invalid project:{}'.format(project))
+            raise
+        if subject:
+            subject_dir = os.path.join(qc_dir, subject)
+            parse_subject_qc(subject_dir)
+        else:
+            parse_project_qc(qc_dir)
+    else:
+        for project in config.site_config['ProjectSettings'].keys():
+            logger.info('Processing project:{}'.format(project))
+            config.set_study_config(project)
+            qc_dir = config.get_if_exists('study', ['paths', 'qc'])
+            if not qc_dir:
+                logger.warning('Failed to identify qc folder for project:{}'
+                               .format(project))
+                continue
+            parse_project_qc(qc_dir)
+
+
+def parse_project_qc(qc_dir):
+    if not os.path.isdir(qc_dir):
+        logger.error('Invalid QC dir:{}'.format(qc_dir))
+        return
+    subject_dirs = [os.path.join(qc_dir, subject_dir)
+                    for subject_dir in os.listdir(qc_dir)
+                    if os.path.isdir(os.path.join(qc_dir, subject_dir))]
