@@ -75,7 +75,7 @@ def metricData():
         #     for metrictype in scantype.metrictypes:
         #         metrictype_vals.append((metrictype.id, metrictype.name))
 
-    # sort the values alphabetically
+    #sort the values alphabetically
     study_vals = sorted(set(study_vals), key=lambda v: v[1])
     site_vals = sorted(set(site_vals), key=lambda v: v[1])
     scantype_vals = sorted(set(scantype_vals), key=lambda v: v[1])
@@ -86,7 +86,6 @@ def metricData():
     form.scantype_id.choices = scantype_vals
     form.metrictype_id.choices = metrictype_vals
 
-    # return render_template('getMetricData.html', form=form, data=data)
     return render_template('getMetricData.html', form=form, data=data)
 
 

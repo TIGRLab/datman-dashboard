@@ -16,29 +16,40 @@
         })
       });
     </script>
-    <div class="page-header">
+    <div class="bd-pageheader jumbotron">
         <h1>Sites</h1>
     </div>
-    <form class="form-horizontal" action="" method="post" name="select_metrics">
-      {{ form.csrf_token }}
-      {{ form.query_complete}}
-        <div class="form-group">
-          <label class="control-label" for="site_id">Sites:</label>
-          {{ form.site_id(maxlength=64, class=span4) }}
-          <label class="control-label" for="study_id">Studies:</label>
-          {{ form.study_id(maxlength=64, class=span4) }}
-          <label class="control-label" for="scantype_id">Scan types:</label>
-          {{ form.scantype_id(maxlength=64, class=span4) }}
-          <label class="control-label" for="metrictype_id">Metrics:</label>
-          {{ form.metrictype_id(maxlength=64, class=span4) }}
+    <div class="container">
 
-        </div>
-        <div class="form-group">
-          <div class="controls">
-            <input class="btn btn-primary" type="submit" value="Update">
+
+      <form class="form-inline" action="" method="post" name="select_metrics">
+        {{ form.csrf_token }}
+        {{ form.query_complete}}
+          <div class="form-group">
+            <div class="control-label text-primary" for="site_id">Sites</div>
+            {{ form.site_id(maxlength=64, class=span4) }}
           </div>
-        </div>
-    </form>
+          <div class="form-group">
+            <div class="control-label text-primary" for="study_id">Studies</div>
+            {{ form.study_id(maxlength=64, class=span4) }}
+          </div>
+          <div class="form-group">
+            <div class="control-label text-primary" for="scantype_id">Scan types</div>
+            {{ form.scantype_id(maxlength=64, class=span4) }}
+          </div>
+          <div class="form-group">
+            <div class="control-label text-primary" for="metrictype_id">Metrics</div>
+            {{ form.metrictype_id(maxlength=64, class=span4) }}
+          </div>
+
+            <div class="controls row">
+              <input class="btn btn-primary" type="submit" value="update">
+            </div>
+          </div>
+
+      </form>
+    </div>
+
     <div id='data' hidden>
           {{data}}
     </div>

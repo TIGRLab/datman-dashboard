@@ -36,8 +36,6 @@ class Study(db.Model):
     fullname = db.Column(db.String(1024))
     primary_contact_id = db.Column(db.Integer, db.ForeignKey('people.id'))
     primary_contact = db.relationship('Person')
-    # people = db.relationship('Person', secondary=study_people_table,
-    #                         back_populates='studies')
 
     def __repr__(self):
         return ('<Study {}>'.format(self.nickname))
@@ -69,9 +67,10 @@ class Session(db.Model):
     scans = db.relationship('Scan')
 
     def __repr__(self):
-        return('<Session {} from Study {} at Site {}>'.format(self.name,
-                                                              self.study.nickname,
-                                                              self.site.name))
+        return('<Session {} from Study {} at Site {}>'
+               .format(self.name,
+                       self.study.nickname,
+                       self.site.name))
 
 
 class ScanType(db.Model):

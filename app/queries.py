@@ -103,7 +103,7 @@ def query_metric_values_byname(**kwargs):
 
 def query_metric_types(**kwargs):
     """Query the database for metric types fitting the specifictions"""
-    # convert the argument keys to lowercase
+        # convert the argument keys to lowercase
     kwargs = {k.lower(): v for k, v in kwargs.items()}
 
     filters = {'studies': 'Study.id',

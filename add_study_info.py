@@ -1,33 +1,106 @@
+<<<<<<< HEAD
+#!venv/bin/python
 """Add extra study information into the database."""
 
 from app import db
-from app.models import Study, Person, get_if_exists
+from app.models import Study, Person, Site, ScanType
+import datman as dm
+import logging
 
-new_info = {study}
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 
-andt = get_if_exists(Study(nickname='ANDT'))
+def main():
+    cfg = dm.config.config(filename='/scratch/twright/code/config/tigrlab_config.yaml',
+                           system='local')
+    for key in cfg.site_config['ProjectSettings']:
+        logger.info('Getting settings for study:{}'.format(key))
+        cfg.set_study_config(key)
+        # get the study from the db if it exists, create if not
+        if Study.query.filter(Study.nickname == key).count():
+            logger.debug('Getting study:{} from database'.format(key))
+            study = Study.query.filter(Study.nickname == key).first()
+        else:
+            logger.debug('Creating study:{}'.format(key))
+            study = Study()
+            study.nickname = key
+            db.session.add(study)
 
-andt.description = 'Comparison of Underweight vs. Weight-Recovered Subjects ' \
-                   'and Healthy Controls'
-andt.fullname = 'A Pilot Study of Diffusion Tensor Imaging in Anorexia ' \
-                'Nervosa: Comparison of Underweight vs. Weight-Recovered ' \
-                'Subjects and Healthy Controls'
+        # populate db fields from the yaml files
+        fullname = cfg.get_if_exists('study', ['FullName'])
+        description = cfg.get_if_exists('study', ['Description'])
+        if fullname:
+            study.name = fullname
+        if description:
+            study.description = description
 
-andt_contact = get_if_exists(Person(email="amy.miles@camh.ca"))
-andt_contact.name = "Amy Miles"
+        contact_name = cfg.get_if_exists('study', ['PrimaryContact'])
+        #Get the primary contact information
+        if not contact_name:
+            logger.warning('Contact not set for study:{}.format(key)')
+        else:
+            if Person.query.filter(Person.name == contact_name).count():
+                logger.debug('Getting person:{} from database'
+                             .format(contact_name))
+                contact = Person.query.filter(Person.name == contact_name).first()
+            else:
+                logger.debug('Creating person:{}'.format(contact_name))
+                contact = Person()
+                contact.name = contact_name
+                db.session.add(contact)
 
-andt.primary_contact = andt.contact
-##############
-asdd = get_if_exists(Study(nickname='ASDD'))
+            study.primary_contact = contact
 
-asdd.fullname = 'Autism Spectrum Disorder Study'
+        sites = cfg.get_if_exists('study', ['Sites'])
+        if not sites:
+            logger.error('Sites not found for study:{}'.format(key))
+            continue
 
-asdd_contact = get_if_exists(Person(email="stephanie.ameis@camh.ca"))
-asdd_contact.name = "Stephanie Ameis"
+        all_scan_types = []
+        for site_name in sites.keys():
+            # build a list of potential scantypes for each study while we
+            # loop through the study sites
+            scan_types = cfg.get_if_exists('study',
+                                           ['Sites', site_name, 'ExportInfo'])
+            if not scan_types:
+                logger.warning('ScanTypes not found for Study:{} at site:{}'
+                               .format(key, site_name))
+                continue
+            all_scan_types = all_scan_types + scan_types.keys()
 
-asdd.primary_contact = asdd_contact
-###############
-cogbdo = get_if_exists(Study(nickname='COGBDO'))
+            # get site from db or create and append to study
+            if Site.query.filter(Site.name == site_name).count():
+                logger.debug('Getting site:{} from database'.format(site_name))
+                site = Site.query.filter(Site.name == site_name).first()
+            else:
+                logger.debug('Creating site:{}')
+                site = Site()
+                site.name = site_name
+                db.session.add(site)
 
-cogbdo.description =
+            study.sites.append(site)
+
+        #now process the scan types
+        all_scan_types = set(all_scan_types)
+        for scan_type_name in all_scan_types:
+            if ScanType.query.filter(ScanType.name == scan_type_name).count():
+                logger.debug('Getting scantype:{} from database'
+                             .format(scan_type_name))
+                scan_type = ScanType \
+                    .query \
+                    .filter(ScanType.name == scan_type_name).first()
+            else:
+                logger.debug('Creating scantype:{}'.format(scan_type_name))
+                scan_type = ScanType()
+                scan_type.name = scan_type_name
+                db.session.add(scan_type)
+
+            study.scantypes.append(scan_type)
+
+        db.session.commit()
+
+
+if __name__ == '__main__':
+    logger.setLevel(logging.DEBUG)
+    main()
