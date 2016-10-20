@@ -130,7 +130,24 @@ def insert_from_singleval(metrictype_name, df_path):
         logger.error("{} is missing data".format(df_path))
 
 def insert_from_contrasts(df_path):
-    pass  # TODO
+    try:
+        data = read_qcfile(df_path, True)
+        contrasts = ((data[1][0]./data[0][0],"c1"), (data[2][0]./data[0][0], "c2"),
+                     (data[3][0]./data[0][0], "c3"), (data[4][0]./data[0][0], "c4"))
+        for contrast in contrasts:
+            metricvalue = MetricValue()
+            if MetricType.query.filter(MetricType.name == contrast[1]).count() and MetricType.query.filter(MetricType.scantype_id == scan.scantype_id).count():
+                metrictype = MetricType.query.filter(MetricType.name == contrast[1]).filter(MetricType.scantype_id == scan.scantype_id).first()
+            else:
+                metrictype = MetricType()
+                metrictype.name = metrictype_name
+                metrictype.scantype_id = scan.scantype_id
+                db.session.add(metrictype)
+            metricvalue.metrictype = metrictype
+            metricvalue.value = contrast[0]
+            scan.metricvalues.append(metricvalue)
+    except (IndexError, ValueError):
+        logger.error("{} is missing data".format(df_path))
 
 # Insert data associated with this file into the database
 def parse_datafile(df, df_path):
