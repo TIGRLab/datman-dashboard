@@ -32,7 +32,6 @@ logger.setLevel(logging.WARN)
 root_dir = "/archive/data/"
 config = dm.config.config(filename="/archive/code/datman/assets/tigrlab_config.yaml")
 
-
 def main():
     arguments = docopt(__doc__)
     arg_project = arguments['<project>']
@@ -88,7 +87,7 @@ def read_qcfile(path_to_file, space_delimited):
                        header=None).as_matrix()
 
 
-def insert_from_rowfile(is_qascript, df_path):
+def insert_from_rowfile(is_qascript, df_path, scan):
     try:
         if is_qascript:
             data = read_qcfile(df_path, True)
@@ -112,7 +111,7 @@ def insert_from_rowfile(is_qascript, df_path):
         logger.error("{} is missing data".format(df_path))
 
 
-def insert_from_singleval(metrictype_name, df_path):
+def insert_from_singleval(metrictype_name, has_header, df_path, scan):
     try:
         data = read_qcfile(df_path, False)
         metricvalue = MetricValue()
@@ -124,16 +123,19 @@ def insert_from_singleval(metrictype_name, df_path):
             metrictype.scantype_id = scan.scantype_id
             db.session.add(metrictype)
         metricvalue.metrictype = metrictype
-        metricvalue.value = data[0][1]
+        if has_header:
+            metricvalue.value = data[0][1]
+        else:
+            metricvalue.value = data[0][0]
         scan.metricvalues.append(metricvalue)
     except (IndexError, ValueError):
         logger.error("{} is missing data".format(df_path))
 
-def insert_from_contrasts(df_path):
+def insert_from_contrasts(df_path, scan):
     try:
         data = read_qcfile(df_path, True)
-        contrasts = ((data[1][0]./data[0][0],"c1"), (data[2][0]./data[0][0], "c2"),
-                     (data[3][0]./data[0][0], "c3"), (data[4][0]./data[0][0], "c4"))
+        contrasts = ((data[1][0]/data[0][0],"c1"), (data[2][0]/data[0][0], "c2"),
+                     (data[3][0]/data[0][0], "c3"), (data[4][0]/data[0][0], "c4"))
         for contrast in contrasts:
             metricvalue = MetricValue()
             if MetricType.query.filter(MetricType.name == contrast[1]).count() and MetricType.query.filter(MetricType.scantype_id == scan.scantype_id).count():
@@ -217,16 +219,15 @@ def parse_datafile(df, df_path):
 
     # Parsing differs depending on format of csv file
     if df.endswith("_stats.csv"):
-        insert_from_rowfile(is_qascript=False, df_path)
+        insert_from_rowfile(False, df_path, scan)
     elif df.endswith("_scanlengths.csv"):
-        insert_from_singleval("ScanLength", df_path)
+        insert_from_singleval("ScanLength", True, df_path, scan)
     elif df.endswith("_spikecount.csv"):
-        insert_from_singleval("Spikecount", df_path)
+        insert_from_singleval("Spikecount", False, df_path, scan)
     elif df.endswith("_adni-contrasts.csv"):
-        insert_from_contrasts(df_path)
-    elif df.endswith("_qascript_fmri.csv") or df.endswith("_qascript_dti.csv")
-     or df.endswith("_qascripts_bold.csv") or df.endswith("_qascripts_dti.csv"):
-        insert_from_rowfile(is_qascript=True, df_path)
+        insert_from_contrasts(df_path, scan)
+    elif df.endswith("_qascript_fmri.csv") or df.endswith("_qascript_dti.csv") or df.endswith("_qascripts_bold.csv") or df.endswith("_qascripts_dti.csv"):
+        insert_from_rowfile(True, df_path, scan)
 
     # Add the new row to the database
     db.session.commit()
