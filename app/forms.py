@@ -22,6 +22,7 @@ class SelectMetricsForm(FlaskForm):
     scantype_id = SelectMultipleField('Scan type', coerce=int)
     metrictype_id = SelectMultipleField('Metric type', coerce=int)
     query_complete = HiddenField(default=False)
+    is_phantom = HiddenField(default=False)
 
     def __init__(self,  *args, **kwargs):
         FlaskForm.__init__(self, *args, **kwargs)

@@ -34,6 +34,16 @@ a {
   position: relative;
 }
 
+.camh {
+  background-color: #6E298D
+}
+
+.centered img {
+  display: block;
+  margin: auto;
+  width: 40%;
+}
+
 .bd-pageheader h1 {
   font-size: 3rem;
   font-weight: normal;

@@ -1,7 +1,7 @@
 """Location for utility functions"""
 import logging
 from subprocess import Popen, STDOUT, PIPE
-from datman import config
+import datman as dm
 
 logger = logging.getLogger(__name__)
 
@@ -13,8 +13,8 @@ class TimeoutError(Exception):
 def _check_study(study):
     """Check if study is a valid study"""
     study = str(study)
-    study = config.config()
-    if study in config.site_config['Projects'].keys():
+    cfg = dm.config.config()
+    if study in cfg.site_config['Projects'].keys():
         return True
     return False
 
@@ -28,14 +28,13 @@ def get_todo(study=None, timeout=30):
         if not _check_study(study):
             logger.error('Invalid study:{}'.format(study))
             return
-
-        out = Popen(['timeout', timeout, "--study", study],
+        out = Popen(['timeout', str(timeout), "dm-qc-todo.py", "--study", str(study)],
                     stderr=STDOUT, stdout=PIPE)
     else:
-        out = Popen(['timeout', timeout],
+        out = Popen(['timeout', str(timeout), "dm-qc-todo.py"],
                     stderr=STDOUT, stdout=PIPE)
 
-    result = out.communicate()
+    result = out.communicate()[0]
     if out.returncode == 124:
         logger.warning('dm-qc-todo timed out on study:{} with timeout:{}'
                        .format(study, timeout))
@@ -45,9 +44,12 @@ def get_todo(study=None, timeout=30):
                      .format(study.result[0], result[0]))
         raise RuntimeError
 
-    results = result.split('\n')
     output = {}
-    for result in results:
-        result = result.split(':')
-        output[result[0]] = result[1]
+    if result:
+        results = result.split('\n')
+        for result in results:
+            if len(result) > 0:  # last result is empty string
+                result = result.split(':')
+                output[result[0]] = result[1]
+
     return output

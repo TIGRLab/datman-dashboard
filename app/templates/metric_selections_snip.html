@@ -1,0 +1,49 @@
+<div class="row">
+  <h3><span class="label label-default">Select sites:</span>
+  <div class="btn-group" role="group" aria-label="site">
+    {% for site in study.sites %}
+      <button type="button" class="btn btn-default">{{ site.name }}</button>
+    {% endfor %}
+  </div></h2>
+</div>
+
+<div class="row">
+  <div class="btn-group" role="group" aria-label="scan type">
+    <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+      Scan Type: <span class="caret"></span>
+    </button>
+    <ul class="dropdown-menu">
+      <li><a href="#">FMRI</a></li>
+      <li><a href="#">DTI</a></li>
+    </ul>
+  </div>
+  <div class="btn-group" role="group" aria-label="scan tags">
+    {% for scantype in study.scantypes %}
+      {% if scantype.name.startswith('DTI') %}
+        <button type="button" class="btn btn-default scantype_dti">{{ scantype.name }}</button>
+      {% elif scantype.name in ['IMI', 'RST', 'EMP', 'OBS', 'SPRL', 'VN-SPRL'] %}
+        <button type="button" class="btn btn-default scantype_fmri">{{ scantype.name }}</button>
+      {% endif %}
+    {% endfor %}
+  </div>
+  <div class="btn-group" role="group" aria-label="metric types">
+    <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+      Metric Type: <span class="caret"></span>
+    </button>
+    <ul class="dropdown-menu">
+    {% for scantype in study.scantypes %}
+      {% for metrictype in scantype.metrictypes %}
+        {% if scantype.name.startswith('DTI') %}
+          {% if metrictype.name in ['tsnr_bX', 'meanRELrms', '#ndirs'] %}
+            <li class="scantype_dti">{{ metrictype.name }}</li>
+          {% endif %}
+        {% elif scantype.name in ['IMI', 'RST', 'EMP', 'OBS', 'SPRL', 'VN-SPRL'] %}
+          {% if metrictype.name in  ['mean_fd', 'mean_sfnr', 'ScanLength'] %}
+            <li class="scantype_fmri">{{ metrictype.name }}</li>
+          {% endif %}
+        {% endif %}
+      {% endfor %}
+    {% endfor %}
+    </ul>
+  </div>
+</div>

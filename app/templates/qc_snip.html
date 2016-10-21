@@ -1,0 +1,25 @@
+<h2>QC ToDo</h2>
+  <div class="well well-lg camh" id="waiting">
+    <img align="centered" src='/static/images/ajax-loader.gif' alt="loading">
+  </div>
+  <div class="container" id="qc_entries">
+  </div>
+
+<script type=text/javascript>
+  function add_qc_entry(file, status){
+    var html = "<span class='row'>";
+    html = html + "<a href='" + file +"'>" + file +"</a>";
+    html = html + "</span>"
+    return html
+  }
+
+  $.getJSON( "{{ url_for("todo", study_id=study.id)}}",
+    function( data ) {
+      alert('got data?')
+      $.each(data, function (key, val){
+        alert(key);
+        $('#qc_entries').append(add_qc_entry(key, val));
+      });
+      $('#waiting').hide();
+    })
+</script>

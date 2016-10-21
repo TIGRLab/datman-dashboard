@@ -12,7 +12,7 @@
       <li class="active"><a data-toggle="tab" href="#overview">Overview</a></li>
       <li><a data-toggle="tab" href="#qc">Session QC</a></li>
       <li><a data-toggle="tab" href="#phantoms">Phantoms</a></li>
-      <li><a data-toggle="tab" href="#subjects">Subjects</a></li>
+      <li><a data-toggle="tab" href="#humans">Subjects</a></li>
     </ul>
 
     <div class="tab-content">
@@ -22,6 +22,9 @@
       <div id="qc" class="tab-pane fade in">
         {% include 'qc_snip.html' %}
       </div><!--/qc-content-->
+      <div id="humans" class="tab-pane fade in">
+        {% include 'metric_selections_snip.html' %}
+      </div><!--/humans-content-->
     </div><!--/tab content-->
   </div><!--/container-->
 {% endblock %}

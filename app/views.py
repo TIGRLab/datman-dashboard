@@ -1,7 +1,7 @@
 from flask import render_template, flash, url_for, redirect, request, jsonify, abort
-from app import app
+from app import app, db
 from .queries import query_metric_values_byid, query_metric_types
-from .models import Study, Site, Session
+from .models import Study, Site, Session, ScanType
 from .forms import SelectMetricsForm, StudyOverviewForm
 from . import utils
 import json
@@ -49,9 +49,88 @@ def study(study_id=None):
         return redirect('/index')
 
     form = StudyOverviewForm()
+    metric_selector_human_DTI = SelectMetricsForm()
+    metric_selector_human_FMRI = SelectMetricsForm()
+    metric_selector_adni = SelectMetricsForm()
+    metric_selector_fburn_RST = SelectMetricsForm()
+    metric_selector_fburn_DTI = SelectMetricsForm()
 
     # load the study from db
     study = Study.query.get(study_id)
+
+    # populate the metric selector forms
+    site_vals = []
+    for site in study.sites:
+        site_vals.append((site.id, site.name))
+    dti_scantypes = [scantype.name
+                           for scantype
+                           in ScanType.query
+                           .filter(ScanType.name.like("DTI%")).all()]
+    fmri_scantypes = ['IMI', 'RST', 'EMP', 'OBS', 'SPRL', 'VN-SPRL']
+
+    valid_metrics_human = {"DTI": {'scantypes': dti_scantypes,
+                                   'metrictypes': ['AVE FA', 'tsnr_bX', 'meanRELrms', '#ndirs']},
+                           "FMRI": {'scantypes': fmri_scantypes,
+                                    'metrictypes': ['mean_fd', 'mean_sfnr', 'ScanLength']}}
+    valid_metrics_phantom = {'ADNI': {'T1': {'scantypes': 'T1',
+                                             'metrictypes': ['c1', 'c2', 'c3', 'c4']}},
+                             'FBURN': {'RST': {'scantypes': 'RST',
+                                               'metrictypes': ['sfnr']},
+                                       'DTI': {'scantypes': dti_scantypes,
+                                               'metrictypes': ['AVENyqrati', 'STDNyqrati',
+                                                               'AVE Ave.radpixsh', 'AVE Ave.colpixsh', 'aveSNR_dwi', 'stdSNR_dwi']}}}
+    metric_selector_human_DTI.study_id.choices = (study.id, study.nickname)
+    metric_selector_human_FMRI.study_id.choices = (study.id, study.nickname)
+    metric_selector_adni.study_id.choices = (study.id, study.nickname)
+    metric_selector_fburn_RST.study_id.choices = (study.id, study.nickname)
+    metric_selector_fburn_DTI.study_id.choices = (study.id, study.nickname)
+
+    metric_selector_human_DTI.study_id.choices = site_vals
+    metric_selector_human_FMRI.study_id.choices = site_vals
+    metric_selector_adni.study_id.choices = site_vals
+    metric_selector_fburn_RST.study_id.choices = site_vals
+    metric_selector_fburn_DTI.study_id.choices = site_vals
+
+    valid_scantypes_human_DTI = [(scantype.id, scantype.name)
+                                    for scantype
+                                    in study.scantypes
+                                    if scantype.name
+                                    in valid_metrics_human['DTI']['scantypes']]
+
+    metric_selector_human_DTI.scantype_id.choices = valid_scantypes_human_DTI
+
+    valid_scantypes_human_FMRI = [(scantype.id, scantype.name)
+                                    for scantype
+                                    in study.scantypes
+                                    if scantype.name
+                                    in valid_metrics_human['FMRI']['scantypes']]
+
+    metric_selector_human_FMRI.scantype_id.choices = valid_scantypes_human_DTI
+
+    valid_scantypes_adni = [(scantype.id, scantype.name)
+                            for scantype
+                            in study.scantypes
+                            if scantype.name
+                            in valid_metrics_phantom['ADNI']['T1']['scantypes']]
+
+    metric_selector_adni.scantype_id.choices = valid_scantypes_adni
+
+    valid_scantypes_fburn_RST = [(scantype.id, scantype.name)
+                                 for scantype
+                                 in study.scantypes
+                                 if scantype.name
+                                 in valid_metrics_phantom['FBURN']['RST']['scantypes']]
+
+    metric_selector_fburn_RST.scantype_id.choices = valid_scantypes_fburn_RST
+
+    valid_scantypes_fburn_DTI = [(scantype.id, scantype.name)
+                                  for scantype
+                                  in study.scantypes
+                                  if scantype.name
+                                  in valid_metrics_phantom['FBURN']['DTI']['scantypes']]
+
+    metric_selector_fburn_DTI.scantype_id.choices = valid_scantypes_fburn_DTI
+
 
     # load the study config
     cfg = dm.config.config()
@@ -224,13 +303,14 @@ def todo(study_id=None):
     else:
         study_name = None
 
-    try:
-        todo_list = utils.get_todo(study_name)
-    except utils.TimeoutError:
-        # should do something nicer here
-        abort(500)
-    except:
-        abort(500)
+    todo_list = utils.get_todo(study_name)
+    #try:
+    #    todo_list = utils.get_todo(study_name)
+    #except utils.TimeoutError:
+    #    # should do something nicer here
+    #    abort(500)
+    #except:
+    #    abort(500)
 
     return jsonify(todo_list)
 
@@ -241,5 +321,5 @@ def not_found_error(error):
 
 @app.errorhandler(500)
 def internal_error(error):
-    app.db.session.rollback()
+    db.session.rollback()
     return render_template('500.html'), 500
