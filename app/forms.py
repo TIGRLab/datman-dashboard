@@ -1,7 +1,7 @@
 from datetime import timedelta
 from flask import session
 from flask_wtf import FlaskForm
-from wtforms import SelectField, SelectMultipleField, HiddenField
+from wtforms import SelectField, SelectMultipleField, HiddenField, TextAreaField
 from wtforms.validators import DataRequired
 
 from wtforms.csrf.session import SessionCSRF
@@ -25,3 +25,8 @@ class SelectMetricsForm(FlaskForm):
 
     def __init__(self,  *args, **kwargs):
         FlaskForm.__init__(self, *args, **kwargs)
+
+
+class StudyOverviewForm(FlaskForm):
+    readme_txt = TextAreaField(u'README', id='readme_editor')
+    study_id = HiddenField()

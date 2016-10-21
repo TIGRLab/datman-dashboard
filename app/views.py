@@ -1,19 +1,35 @@
-from flask import render_template, flash, url_for, redirect, request, jsonify
+from flask import render_template, flash, url_for, redirect, request, jsonify, abort
 from app import app
 from .queries import query_metric_values_byid, query_metric_types
-from .models import Study, Site
-from .forms import SelectMetricsForm
+from .models import Study, Site, Session
+from .forms import SelectMetricsForm, StudyOverviewForm
+from . import utils
 import json
+import os
+import codecs
+import datetime
+import datman as dm
+import shutil
+import logging
+from xml.sax.saxutils import escape
+
+logger = logging.getLogger(__name__)
 
 
 @app.route('/')
 @app.route('/index')
-@app.route('/studies')
 def index():
     # studies = db_session.query(Study).order_by(Study.nickname).all()
-    studies = Study.query.order_by(Study.nickname)
+    studies = Study.query.order_by(Study.nickname).all()
+    session_count = Session.query.count()
+    study_count = Study.query.count()
+    site_count = Site.query.count()
+
     return render_template('index.html',
-                           studies=studies)
+                           studies=studies,
+                           session_count=session_count,
+                           study_count=study_count,
+                           site_count=site_count)
 
 
 @app.route('/sites')
@@ -27,14 +43,64 @@ def scantypes():
 
 
 @app.route('/study')
-@app.route('/study/<int:study_id>', methods=['GET'])
+@app.route('/study/<int:study_id>', methods=['GET', 'POST'])
 def study(study_id=None):
-    if id is not None:
-        study = Study.query.get(study_id)
-        return render_template('study_details.html',
-                               study=study)
-    else:
+    if study_id is None:
         return redirect('/index')
+
+    form = StudyOverviewForm()
+
+    # load the study from db
+    study = Study.query.get(study_id)
+
+    # load the study config
+    cfg = dm.config.config()
+    try:
+        cfg.set_study(study.nickname)
+    except KeyError:
+        abort(500)
+
+    readme_path = os.path.join(cfg.get_study_base(), 'README.md')
+
+    with codecs.open(readme_path, encoding='utf-8', mode='r') as myfile:
+        data = myfile.read()
+
+    if form.validate_on_submit():
+        # form has been submitted check for changes
+        # simple MD seems to replace \n with \r\n
+        form.readme_txt.data = form.readme_txt.data.replace('\r', '')
+
+        # also strip blank lines at the start and end as these are
+        # automatically stripped when the form is submitted
+        if not form.readme_txt.data.strip() == data.strip():
+            # form has been updated so make a backup anf write back to file
+            timestamp = datetime.datetime.now().strftime('%Y%m%d%H%m')
+            base, ext = os.path.splitext(readme_path)
+            backup_file = base + '_' + timestamp + ext
+            try:
+                shutil.copyfile(readme_path, backup_file)
+            except (IOError, os.error, shutil.Error), why:
+                logger.error('Failed to backup readme for study {} with excuse {}'
+                             .format(study.nickname, why))
+                abort(500)
+
+            with codecs.open(readme_path, encoding='utf-8', mode='w') as myfile:
+                myfile.write(form.readme_txt.data)
+            data = form.readme_txt.data
+
+    form.readme_txt.data = data
+    form.study_id.data = study_id
+
+    return render_template('study.html',
+                           studies=Study.query.order_by(Study.nickname),
+                           study=study,
+                           form=form)
+
+
+@app.route('/person')
+@app.route('/person/<int:person_id>', methods=['GET'])
+def person(person_id=None):
+    return redirect('/index')
 
 
 @app.route('/metricData', methods=['GET', 'POST'])
@@ -147,3 +213,33 @@ def metricDataAsJson(format='plain'):
         return(jsonify(objects))
     else:
         return(json.dumps(objects, indent=4, separators=(',', ': ')))
+
+
+@app.route('/todo')
+@app.route('/todo/<int:study_id>', methods=['GET'])
+def todo(study_id=None):
+    if study_id:
+        study = Study.query.get(study_id)
+        study_name = study.nickname
+    else:
+        study_name = None
+
+    try:
+        todo_list = utils.get_todo(study_name)
+    except utils.TimeoutError:
+        # should do something nicer here
+        abort(500)
+    except:
+        abort(500)
+
+    return jsonify(todo_list)
+
+@app.errorhandler(404)
+def not_found_error(error):
+    return render_template('404.html'), 404
+
+
+@app.errorhandler(500)
+def internal_error(error):
+    app.db.session.rollback()
+    return render_template('500.html'), 500

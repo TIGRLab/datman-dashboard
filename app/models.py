@@ -65,6 +65,7 @@ class Session(db.Model):
     site_id = db.Column(db.Integer, db.ForeignKey('sites.id'))
     site = db.relationship('Site', back_populates='sessions')
     scans = db.relationship('Scan')
+    is_phantom = db.Column(db.Boolean)
 
     def __repr__(self):
         return('<Session {} from Study {} at Site {}>'

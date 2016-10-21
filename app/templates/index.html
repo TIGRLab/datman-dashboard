@@ -3,8 +3,10 @@
 
 {% block content %}
   {% include 'flash.html' %}
-  <div class="page-header">
+  <div class="bd-pageheader jumbotron">
     <h1>Kimel Lab QC Monitor</h1>
+      <p class="lead"> Monitoring {{ session_count }} sessions for {{ study_count }} studies.</p>
+    </h1>
   </div>
   <div class="jumbotron">
     <h2>Studies:</h2>
