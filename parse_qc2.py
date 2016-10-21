@@ -59,8 +59,7 @@ def main():
             logger.error('Invalid project:{}'.format(project))
             raise
         if subject:
-            subject_dir = os.path.join(qc_dir, subject)
-            parse_subject_qc(subject_dir)
+            parse_subject_qc(qc_dir, subject)
         else:
             parse_project_qc(qc_dir)
     else:
@@ -79,6 +78,15 @@ def parse_project_qc(qc_dir):
     if not os.path.isdir(qc_dir):
         logger.error('Invalid QC dir:{}'.format(qc_dir))
         return
-    subject_dirs = [os.path.join(qc_dir, subject_dir)
-                    for subject_dir in os.listdir(qc_dir)
-                    if os.path.isdir(os.path.join(qc_dir, subject_dir))]
+    for subject_dir in os.listdirs(qc_dir):
+        parse_subject_qc(qc_dir, subject_dir)
+
+
+def parse_subject_qc(qc_dir, subject):
+    subject_path = os.path.join(qc_dir, subject)
+    if not dm.scanid.is_scanid(subject):
+        logger.warning('subject {} isnt valid').format(subject)
+        return
+    if not os.path.isdir(subject_path):
+        logger.error('Invalid subject path:{}'.format(subject_path))
+        return
