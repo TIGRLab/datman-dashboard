@@ -97,8 +97,9 @@ def insert_from_rowfile(is_qascript, df_path, scan):
             data = zip(data[0], data[1])
         for datapoint in data:
             metricvalue = MetricValue()
-            if MetricType.query.filter(MetricType.name == datapoint[0]).count() and MetricType.query.filter(MetricType.scantype_id == scan.scantype_id).count():
-                metrictype = MetricType.query.filter(MetricType.name == datapoint[0]).filter(MetricType.scantype_id == scan.scantype_id).first()
+            st_id = int(scan.scantype.id)
+            if MetricType.query.filter(MetricType.name == datapoint[0]).filter(MetricType.scantype_id == st_id).count():
+                metrictype = MetricType.query.filter(MetricType.name == datapoint[0]).filter(MetricType.scantype_id == st_id).first()
             else:
                 metrictype = MetricType()
                 metrictype.name = datapoint[0]
@@ -115,8 +116,9 @@ def insert_from_singleval(metrictype_name, has_header, df_path, scan):
     try:
         data = read_qcfile(df_path, False)
         metricvalue = MetricValue()
-        if MetricType.query.filter(MetricType.name == metrictype_name).count() and MetricType.query.filter(MetricType.scantype_id == scan.scantype_id).count():
-            metrictype = MetricType.query.filter(MetricType.name == metrictype_name).filter(MetricType.scantype_id == scan.scantype_id).first()
+        st_id = int(scan.scantype.id)
+        if MetricType.query.filter(MetricType.name == metrictype_name).filter(MetricType.scantype_id == st_id).count():
+            metrictype = MetricType.query.filter(MetricType.name == metrictype_name).filter(MetricType.scantype_id == st_id).first()
         else:
             metrictype = MetricType()
             metrictype.name = metrictype_name
@@ -138,8 +140,9 @@ def insert_from_contrasts(df_path, scan):
                      (data[3][0]/data[0][0], "c3"), (data[4][0]/data[0][0], "c4"))
         for contrast in contrasts:
             metricvalue = MetricValue()
-            if MetricType.query.filter(MetricType.name == contrast[1]).count() and MetricType.query.filter(MetricType.scantype_id == scan.scantype_id).count():
-                metrictype = MetricType.query.filter(MetricType.name == contrast[1]).filter(MetricType.scantype_id == scan.scantype_id).first()
+            st_id = int(scan.scantype.id)
+            if MetricType.query.filter(MetricType.name == contrast[1]).filter(MetricType.scantype_id == st_id).count():
+                metrictype = MetricType.query.filter(MetricType.name == contrast[1]).filter(MetricType.scantype_id == st_id).first()
             else:
                 metrictype = MetricType()
                 metrictype.name = metrictype_name
@@ -163,15 +166,18 @@ def parse_datafile(df, df_path):
         return
 
     # Get project, site, and subject from filename
-    sep_df = df.split("_")
-    is_phantom = False
-    if sep_df[2] == "PHA":
-        proj_name, site_name, subj_name, tag = sep_df[0], sep_df[1], \
-            sep_df[2] + "_" + sep_df[3], sep_df[4]
-        is_phantom = True
-    else:
-        proj_name, site_name, subj_name, tag = sep_df[0], sep_df[1], \
-            sep_df[2], sep_df[5]
+    try:
+        sep_df = df.split("_")
+        is_phantom = False
+        if sep_df[2] == "PHA":
+            proj_name, site_name, subj_name, tag = sep_df[0], sep_df[1], \
+                sep_df[2] + "_" + sep_df[3], sep_df[4]
+            is_phantom = True
+        else:
+            proj_name, site_name, subj_name, timepoint, repeat, tag = sep_df[0], sep_df[1], \
+                sep_df[2], sep_df[3], sep_df[4], sep_df[5]
+    except IndexError:
+        logger.error("{} is not named properly".format(df))
 
     study_name = config.map_xnat_archive_to_project(proj_name)
     # Get study object if it exists, or make one
@@ -182,7 +188,7 @@ def parse_datafile(df, df_path):
         return
 
     # Get session object if it exists, or make one
-    session_name = proj_name + "_" + site_name + "_" + subj_name
+    session_name = study_name + "_" + site_name + "_" + subj_name + "_" + timepoint
     if Session.query.filter(Session.name == session_name).count():
         session = Session.query.filter(Session.name == session_name).first()
     else:
@@ -206,6 +212,7 @@ def parse_datafile(df, df_path):
     else:
         scan = Scan()
         scan.name = scan_name
+        db.session.add(scan)
     session.scans.append(scan)
 
     # Ensure scantype is a possible scantype, and fetch the object
@@ -229,6 +236,7 @@ def parse_datafile(df, df_path):
     elif df.endswith("_qascript_fmri.csv") or df.endswith("_qascript_dti.csv") or df.endswith("_qascripts_bold.csv") or df.endswith("_qascripts_dti.csv"):
         insert_from_rowfile(True, df_path, scan)
 
+    print "done"
     # Add the new row to the database
     db.session.commit()
 
