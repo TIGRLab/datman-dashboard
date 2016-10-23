@@ -1,6 +1,7 @@
-function initPlot(){
-var dataFromSelection = document.getElementById('data');
-var dataList = JSON.parse(dataFromSelection.innerHTML);
+function initPlot(element, data){
+//var dataFromSelection = document.getElementById('data');
+//var dataList = JSON.parse(dataFromSelection.innerHTML);
+var dataList = data
 var siteSet = new Set();
 var valueList = [];
 var subjectList = [];
@@ -27,7 +28,7 @@ siteSet.forEach(function(site){
 
 
 var chart = c3.generate({
-    bindto: '#chart',
+    bindto: element,
     data: {
         columns:
           overallValueList
