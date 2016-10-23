@@ -38,6 +38,14 @@ a {
   background-color: #6E298D
 }
 
+.scantype_dti{
+  display: none;
+}
+
+.scantype_fmri{
+  display: none;
+}
+
 .centered img {
   display: block;
   margin: auto;

@@ -15,11 +15,17 @@
 
   $.getJSON( "{{ url_for("todo", study_id=study.id)}}",
     function( data ) {
-      alert('got data?')
-      $.each(data, function (key, val){
-        alert(key);
-        $('#qc_entries').append(add_qc_entry(key, val));
-      });
+      if (data.hasOwnProperty('error')){
+        if (data['error'] == 'timeout'){
+          $('#qc_entries').append('<span class="label label-warning"><stong>Error:</strong>Getting the QC list took too long. Try again later</span>')
+        }else{
+          $('#qc_entries').append('<span class="label label-danger"><stong>Error:</strong>An error occured getting the QC list. The admins have been notified</span>')
+        }
+      }else{
+        $.each(data, function (key, val){
+          $('#qc_entries').append(add_qc_entry(key, val));
+        });
+      }
       $('#waiting').hide();
     })
 </script>

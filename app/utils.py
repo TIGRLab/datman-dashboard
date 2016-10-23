@@ -41,7 +41,7 @@ def get_todo(study=None, timeout=30):
         raise TimeoutError
     if out.returncode != 0:
         logger.error('dm-qc-todo failed on study:{} with error:{}'
-                     .format(study.result[0], result[0]))
+                     .format(study, result[0]))
         raise RuntimeError
 
     output = {}

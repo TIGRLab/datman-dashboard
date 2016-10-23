@@ -1,49 +1,151 @@
+<div style="display:none" id='study_name'>{{ study.nickname }}</div>
+<div style="display:none" id='phantoms'>0</div>
 <div class="row">
-  <h3><span class="label label-default">Select sites:</span>
-  <div class="btn-group" role="group" aria-label="site">
-    {% for site in study.sites %}
-      <button type="button" class="btn btn-default">{{ site.name }}</button>
-    {% endfor %}
-  </div></h2>
+  <div class="input-group" role="group" aria-label="site">
+    <span class="input-group-addon">
+      <h3 class="text-left">
+      <strong>Select sites:</strong>
+      {% for site in study.sites %}
+        <label>{{ site.name }} <input type="checkbox" aria-label="{{site.name}}" value="{{site.name}}" name="site"/></label>
+      {% endfor %}
+    </h3>
+    </span>
+  </div>
 </div>
 
 <div class="row">
-  <div class="btn-group" role="group" aria-label="scan type">
+  <div class="btn-group col-md-3" role="group" aria-label="scan type" id="scanclassselector">
     <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-      Scan Type: <span class="caret"></span>
+      <span data-bind="label" id="scantypeselector">Scan Type: </span><span class="caret"></span>
     </button>
-    <ul class="dropdown-menu">
-      <li><a href="#">FMRI</a></li>
-      <li><a href="#">DTI</a></li>
+    <ul class="dropdown-menu" role="menu">
+      <li><a href="#">FMRI </a></li>
+      <li><a href="#">DTI </a></li>
     </ul>
   </div>
-  <div class="btn-group" role="group" aria-label="scan tags">
-    {% for scantype in study.scantypes %}
-      {% if scantype.name.startswith('DTI') %}
-        <button type="button" class="btn btn-default scantype_dti">{{ scantype.name }}</button>
-      {% elif scantype.name in ['IMI', 'RST', 'EMP', 'OBS', 'SPRL', 'VN-SPRL'] %}
-        <button type="button" class="btn btn-default scantype_fmri">{{ scantype.name }}</button>
-      {% endif %}
-    {% endfor %}
+
+  <div class="col-md-6">
+    <div class="input-group col-md-4" role="group" aria-label="scan tags" id="scantypeselector">
+        <span class="text-left">
+        {% for scantype in study.scantypes %}
+          {% if scantype.name.startswith('DTI') %}
+            <label style="display:none" class="scantype_dti"> {{ scantype.name }}<input type="radio" aria-label="{{scantype.name}}" value="{{scantype.name}}" name="scantype"/></label>
+          {% elif scantype.name in ['IMI', 'RST', 'EMP', 'OBS', 'SPRL', 'VN-SPRL'] %}
+            <label style="display:none" class="scantype_fmri"> {{ scantype.name }}<input type="radio" aria-label="{{scantype.name}}" value="{{scantype.name}}" name="scantype"/></label>
+          {% endif %}
+        {% endfor %}
+      </span>
+    </div>
   </div>
-  <div class="btn-group" role="group" aria-label="metric types">
+
+  <div class="btn-group col-md-3" role="group" aria-label="metric types" id="metrictypeselector">
     <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-      Metric Type: <span class="caret"></span>
+      <span data-bind="label">Metric Type: </span><span class="caret"></span>
     </button>
-    <ul class="dropdown-menu">
-    {% for scantype in study.scantypes %}
-      {% for metrictype in scantype.metrictypes %}
-        {% if scantype.name.startswith('DTI') %}
-          {% if metrictype.name in ['tsnr_bX', 'meanRELrms', '#ndirs'] %}
-            <li class="scantype_dti">{{ metrictype.name }}</li>
-          {% endif %}
-        {% elif scantype.name in ['IMI', 'RST', 'EMP', 'OBS', 'SPRL', 'VN-SPRL'] %}
-          {% if metrictype.name in  ['mean_fd', 'mean_sfnr', 'ScanLength'] %}
-            <li class="scantype_fmri">{{ metrictype.name }}</li>
-          {% endif %}
+    <ul class="dropdown-menu drawplot" role='menu'>
+    {% for metrictype in metricnames %}
+      {% if metrictype[0] == 'DTI' %}
+        {% if metrictype[1] in ['tsnr_bX', 'meanRELrms', '#ndirs'] %}
+          <li style="display:none" class="scantype_dti">{{ metrictype[1] }} </li>
         {% endif %}
-      {% endfor %}
+      {% elif metrictype[0] == 'FMRI' %}
+        {% if metrictype[1] in  ['mean_fd', 'mean_sfnr', 'ScanLength'] %}
+          <li style="display:none" class="scantype_fmri">{{ metrictype[1] }} </li>
+        {% endif %}
+      {% endif %}
     {% endfor %}
     </ul>
   </div>
 </div>
+<div class="row" id="loading_chart" style="display:none">
+  <img align="centered" src='/static/images/ajax-loader.gif' alt="loading">
+</div>
+<div class="row">
+  <div id="chart">
+  </div>
+</div>
+
+<script type="text/javascript" >
+function getQueryParams(){
+  // queries the selected elements on the page to get the query parameters
+  // returns false if not all parameters are selected
+  var study = ''
+  var siteSet = []
+  var scanType = ''
+  var metricType = ''
+  var phantom = ''
+  study = $("#study_name").text()
+  phantom = $("#phantoms").text()
+
+  $.each($("input[name='site']:checked"), function(){
+    siteSet.push($(this).val());
+  });
+  scanType = $("input[name='scantype']:checked").val();
+  metricType = $("#metrictypeselector").find('[data-bind="label"]').text();
+  if (metricType.trim() == "Metric type:"){
+    metricType = false;
+  }
+
+  if(study && phantom && siteSet.length > 0 && scanType && metricType){
+    return { study:study,
+             sites:siteSet,
+             scanType:scanType,
+             metricType:metricType,
+             isphantom:phantom,
+             byname:'1'
+           };
+  } else {
+    return false;
+  }
+}
+
+function updatePlot(){
+  var params = getQueryParams()
+  var base_url = "{{ url_for("metricDataAsJson") }}"
+  if(params){
+    $('#loading_chart').show()
+
+    $.getJSON( base_url, params,
+      function ( data ) {
+        $('#loading_chart').hide()
+        initPlot(document.getElementById('chart'), data['data'])
+      });
+  }
+}
+// event to modify displayed text on dropdown-menu buttons
+$( ".dropdown-menu li").bind('click' , function( event ){
+  var $target = $( event.currentTarget );
+  var $group = $target.closest( '.btn-group' ) //the containing button group
+  var newlabel = $target.text().trim()
+  $group
+    .find( '[data-bind="label"]').text( newlabel + ' ')
+      .end()
+    .children ('.dropdown-toggle' ).dropdown( 'toggle' );
+  //sub event to update displayed values
+  if($group.attr("id") == 'scanclassselector'){
+    if (newlabel == 'FMRI'){
+      //make all elements with class scantype_fmri visible
+      //hide all elements with class scantype_dti
+      $(".scantype_dti").hide();
+      $(".scantype_fmri").show();
+      $(".scantype_t1").hide();
+    }else if (newlabel == 'DTI') {
+      $(".scantype_dti").show();
+      $(".scantype_fmri").hide();
+      $(".scantype_t1").hide();
+    }else if (newlabel == 'T1'){
+      $(".scantype_dti").hide();
+      $(".scantype_fmri").hide();
+      $(".scantype_t1").show();
+    }
+    //reset the metrictype selector
+    $("#metrictypeselector")
+      .find( '[data-bind="label"]').text( 'Metric type:')
+        .end()
+  }
+});
+// bind the create plot function to the sites, scantypes and metrictypes
+$("input[name='site']").bind('click', updatePlot);
+$("#metrictypeselector li").bind('click', updatePlot);
+$("input[name='scantype']").bind('click', updatePlot);
+</script>

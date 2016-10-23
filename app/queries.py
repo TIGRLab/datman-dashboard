@@ -67,12 +67,13 @@ def query_metric_values_byname(**kwargs):
     # convert the argument keys to lowercase
     kwargs = {k.lower(): v for k, v in kwargs.items()}
 
-    filters = {'studies': 'Study.name',
+    filters = {'studies': 'Study.nickname',
                'sites': 'Site.name',
                'sessions': 'Session.name',
                'scans': 'Scan.name',
                'scantypes': 'ScanType.name',
-               'metrictypes': 'MetricType.name'}
+               'metrictypes': 'MetricType.name',
+               'isphantom': 'Session.is_phantom'}
 
     arg_keys = set(kwargs.keys())
 
@@ -95,6 +96,7 @@ def query_metric_values_byname(**kwargs):
         q = q.filter(eval(filters[key]).in_(kwargs[key]))
 
     logger.debug('Query string: {}'.format(str(q)))
+    q = q.limit(1000)
 
     result = q.all()
 

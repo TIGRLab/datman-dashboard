@@ -1,6 +1,6 @@
 from flask import render_template, flash, url_for, redirect, request, jsonify, abort
 from app import app, db
-from .queries import query_metric_values_byid, query_metric_types
+from .queries import query_metric_values_byid, query_metric_types, query_metric_values_byname
 from .models import Study, Site, Session, ScanType
 from .forms import SelectMetricsForm, StudyOverviewForm
 from . import utils
@@ -48,89 +48,8 @@ def study(study_id=None):
     if study_id is None:
         return redirect('/index')
 
-    form = StudyOverviewForm()
-    metric_selector_human_DTI = SelectMetricsForm()
-    metric_selector_human_FMRI = SelectMetricsForm()
-    metric_selector_adni = SelectMetricsForm()
-    metric_selector_fburn_RST = SelectMetricsForm()
-    metric_selector_fburn_DTI = SelectMetricsForm()
-
-    # load the study from db
     study = Study.query.get(study_id)
-
-    # populate the metric selector forms
-    site_vals = []
-    for site in study.sites:
-        site_vals.append((site.id, site.name))
-    dti_scantypes = [scantype.name
-                           for scantype
-                           in ScanType.query
-                           .filter(ScanType.name.like("DTI%")).all()]
-    fmri_scantypes = ['IMI', 'RST', 'EMP', 'OBS', 'SPRL', 'VN-SPRL']
-
-    valid_metrics_human = {"DTI": {'scantypes': dti_scantypes,
-                                   'metrictypes': ['AVE FA', 'tsnr_bX', 'meanRELrms', '#ndirs']},
-                           "FMRI": {'scantypes': fmri_scantypes,
-                                    'metrictypes': ['mean_fd', 'mean_sfnr', 'ScanLength']}}
-    valid_metrics_phantom = {'ADNI': {'T1': {'scantypes': 'T1',
-                                             'metrictypes': ['c1', 'c2', 'c3', 'c4']}},
-                             'FBURN': {'RST': {'scantypes': 'RST',
-                                               'metrictypes': ['sfnr']},
-                                       'DTI': {'scantypes': dti_scantypes,
-                                               'metrictypes': ['AVENyqrati', 'STDNyqrati',
-                                                               'AVE Ave.radpixsh', 'AVE Ave.colpixsh', 'aveSNR_dwi', 'stdSNR_dwi']}}}
-    metric_selector_human_DTI.study_id.choices = (study.id, study.nickname)
-    metric_selector_human_FMRI.study_id.choices = (study.id, study.nickname)
-    metric_selector_adni.study_id.choices = (study.id, study.nickname)
-    metric_selector_fburn_RST.study_id.choices = (study.id, study.nickname)
-    metric_selector_fburn_DTI.study_id.choices = (study.id, study.nickname)
-
-    metric_selector_human_DTI.study_id.choices = site_vals
-    metric_selector_human_FMRI.study_id.choices = site_vals
-    metric_selector_adni.study_id.choices = site_vals
-    metric_selector_fburn_RST.study_id.choices = site_vals
-    metric_selector_fburn_DTI.study_id.choices = site_vals
-
-    valid_scantypes_human_DTI = [(scantype.id, scantype.name)
-                                    for scantype
-                                    in study.scantypes
-                                    if scantype.name
-                                    in valid_metrics_human['DTI']['scantypes']]
-
-    metric_selector_human_DTI.scantype_id.choices = valid_scantypes_human_DTI
-
-    valid_scantypes_human_FMRI = [(scantype.id, scantype.name)
-                                    for scantype
-                                    in study.scantypes
-                                    if scantype.name
-                                    in valid_metrics_human['FMRI']['scantypes']]
-
-    metric_selector_human_FMRI.scantype_id.choices = valid_scantypes_human_DTI
-
-    valid_scantypes_adni = [(scantype.id, scantype.name)
-                            for scantype
-                            in study.scantypes
-                            if scantype.name
-                            in valid_metrics_phantom['ADNI']['T1']['scantypes']]
-
-    metric_selector_adni.scantype_id.choices = valid_scantypes_adni
-
-    valid_scantypes_fburn_RST = [(scantype.id, scantype.name)
-                                 for scantype
-                                 in study.scantypes
-                                 if scantype.name
-                                 in valid_metrics_phantom['FBURN']['RST']['scantypes']]
-
-    metric_selector_fburn_RST.scantype_id.choices = valid_scantypes_fburn_RST
-
-    valid_scantypes_fburn_DTI = [(scantype.id, scantype.name)
-                                  for scantype
-                                  in study.scantypes
-                                  if scantype.name
-                                  in valid_metrics_phantom['FBURN']['DTI']['scantypes']]
-
-    metric_selector_fburn_DTI.scantype_id.choices = valid_scantypes_fburn_DTI
-
+    form = StudyOverviewForm()
 
     # load the study config
     cfg = dm.config.config()
@@ -172,6 +91,7 @@ def study(study_id=None):
 
     return render_template('study.html',
                            studies=Study.query.order_by(Study.nickname),
+                           metricnames = study.get_valid_metric_names(),
                            study=study,
                            form=form)
 
@@ -243,7 +163,7 @@ def _checkRequest(request, key):
 
 
 @app.route('/metricDataAsJson', methods=['Get', 'Post'])
-def metricDataAsJson(format='plain'):
+def metricDataAsJson(format='http'):
     fields = {'studies': 'study_id',
               'sites': 'site_id',
               'sessions': 'session_id',
@@ -251,26 +171,40 @@ def metricDataAsJson(format='plain'):
               'scantypes': 'scantype_id',
               'metrictypes': 'metrictype_id'}
 
+    byname = False # switcher to allow getting values byname instead of id
+
+    try:
+        if request.method == 'POST':
+            byname = request.form['byname']
+        else:
+            byname = request.args.get('byname')
+    except KeyError:
+        pass
+
+
     for k, v in fields.iteritems():
         if request.method == 'POST':
             fields[k] = _checkRequest(request, v)
-
         else:
             if request.args.get(v):
                 fields[k] = request.args.get(v).split(',')
             else:
-                fields[k] = request.args.get(v)
+                fields[k] = None
 
     # remove None values from the dict
     fields = dict((k, v) for k, v in fields.iteritems() if v)
-    # convert from strings to integers
-    for k, vals in fields.iteritems():
-        try:
-            fields[k] = int(vals)
-        except TypeError:
-            fields[k] = [int(v) for v in vals]
+    if byname:
+        data = query_metric_values_byname(**fields)
+    else:
+        # convert from strings to integers
+        for k, vals in fields.iteritems():
+            try:
+                fields[k] = int(vals)
+            except TypeError:
+                fields[k] = [int(v) for v in vals]
 
-    data = query_metric_values_byid(**fields)
+        data = query_metric_values_byid(**fields)
+
     objects = []
     for m in data:
         metricValue = m
@@ -283,13 +217,14 @@ def metricDataAsJson(format='plain'):
                         'scantype_id':      metricValue.scan.scantype_id,
                         'session_id':       metricValue.scan.session_id,
                         'session_name':     metricValue.scan.session.name,
-                        'session_date':     metricValue.scan.session.date,
+                        #'session_date':     metricValue.scan.session.date,
                         'site_id':          metricValue.scan.session.site_id,
                         'site_name':        metricValue.scan.session.site.name,
                         'study_id':         metricValue.scan.session.study_id,
                         'study_name':       metricValue.scan.session.study.name})
+
     if format == 'http':
-        return(jsonify(objects))
+        return(jsonify({'data':objects}))
     else:
         return(json.dumps(objects, indent=4, separators=(',', ': ')))
 
@@ -303,14 +238,14 @@ def todo(study_id=None):
     else:
         study_name = None
 
-    todo_list = utils.get_todo(study_name)
-    #try:
-    #    todo_list = utils.get_todo(study_name)
-    #except utils.TimeoutError:
-    #    # should do something nicer here
-    #    abort(500)
-    #except:
-    #    abort(500)
+    # todo_list = utils.get_todo(study_name)
+    try:
+        todo_list = utils.get_todo(study_name)
+    except utils.TimeoutError:
+        # should do something nicer here
+        todo_list = {'error': 'timeout'}
+    except:
+        todo_list = {'error': 'runtime'}
 
     return jsonify(todo_list)
 

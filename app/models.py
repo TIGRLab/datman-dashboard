@@ -40,6 +40,20 @@ class Study(db.Model):
     def __repr__(self):
         return ('<Study {}>'.format(self.nickname))
 
+    def get_valid_metric_names(self):
+        """return a list of metric names with duplicates removed"""
+        valid_fmri_scantypes = ['IMI', 'RST', 'EMP', 'OBS', 'SPRL', 'VN-SPRL']
+        names = []
+        for scantype in self.scantypes:
+            for metrictype in scantype.metrictypes:
+                if scantype.name.startswith('DTI'):
+                    names.append(('DTI', metrictype.name))
+                elif scantype.name in valid_fmri_scantypes:
+                    names.append(('FMRI', metrictype.name))
+
+        names = sorted(set(names))
+        return(names)
+
 
 class Site(db.Model):
     __tablename__ = 'sites'
