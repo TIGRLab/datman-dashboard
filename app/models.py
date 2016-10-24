@@ -50,6 +50,8 @@ class Study(db.Model):
                     names.append(('DTI', metrictype.name))
                 elif scantype.name in valid_fmri_scantypes:
                     names.append(('FMRI', metrictype.name))
+                elif scantype.name == 'T1':
+                    names.append(('T1', metrictype.name))
 
         names = sorted(set(names))
         return(names)

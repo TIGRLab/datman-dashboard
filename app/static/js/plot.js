@@ -1,4 +1,5 @@
 function initPlot(element, data){
+
 //var dataFromSelection = document.getElementById('data');
 //var dataList = JSON.parse(dataFromSelection.innerHTML);
 var dataList = data
