@@ -14,7 +14,7 @@ import logging
 from xml.sax.saxutils import escape
 
 logger = logging.getLogger(__name__)
-
+logger.info('Loading views')
 
 @app.route('/')
 @app.route('/index')
@@ -60,8 +60,11 @@ def study(study_id=None):
 
     readme_path = os.path.join(cfg.get_study_base(), 'README.md')
 
-    with codecs.open(readme_path, encoding='utf-8', mode='r') as myfile:
-        data = myfile.read()
+    try:
+        with codecs.open(readme_path, encoding='utf-8', mode='r') as myfile:
+            data = myfile.read()
+    except IOError:
+        data = ''
 
     if form.validate_on_submit():
         # form has been submitted check for changes
@@ -91,7 +94,7 @@ def study(study_id=None):
 
     return render_template('study.html',
                            studies=Study.query.order_by(Study.nickname),
-                           metricnames = study.get_valid_metric_names(),
+                           metricnames=study.get_valid_metric_names(),
                            study=study,
                            form=form)
 
@@ -186,13 +189,14 @@ def metricDataAsJson(format='http'):
         if request.method == 'POST':
             fields[k] = _checkRequest(request, v)
         else:
-            if request.args.get(v):
-                fields[k] = request.args.get(v).split(',')
+            if request.args.get(k):
+                fields[k] = [x.strip() for x in request.args.get(k).split(',')]
             else:
                 fields[k] = None
 
     # remove None values from the dict
     fields = dict((k, v) for k, v in fields.iteritems() if v)
+
     if byname:
         data = query_metric_values_byname(**fields)
     else:
@@ -224,7 +228,7 @@ def metricDataAsJson(format='http'):
                         'study_name':       metricValue.scan.session.study.name})
 
     if format == 'http':
-        return(jsonify({'data':objects}))
+        return(jsonify({'data': objects}))
     else:
         return(json.dumps(objects, indent=4, separators=(',', ': ')))
 
