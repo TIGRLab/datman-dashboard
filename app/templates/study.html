@@ -22,9 +22,13 @@
       <div id="qc" class="tab-pane fade in">
         {% include 'qc_snip.html' %}
       </div><!--/qc-content-->
-      <div id="humans" class="tab-pane fade in">
-        {% include 'metric_selections_snip.html' %}
+      <div id="phantoms" class="tab-pane fade in metrics">
+        {% include 'metric_selections_phantom_snip.html' %}
+      </div><!--/humans-content-->
+      <div id="humans" class="tab-pane fade in metrics">
+        {% include 'metric_selections_human_snip.html' %}
       </div><!--/humans-content-->
     </div><!--/tab content-->
   </div><!--/container-->
+  <script async src="/static/js/metric-selector.js"></script>
 {% endblock %}

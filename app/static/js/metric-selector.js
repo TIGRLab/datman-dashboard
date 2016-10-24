@@ -19,10 +19,10 @@ function getQueryParams(element){
   }
 
   if(study && phantom && siteSet.length > 0 && scanType && metricType){
-    return { study:study,
-             sites:siteSet,
-             scanType:scanType,
-             metricType:metricType,
+    return { studies:study,
+             sites:siteSet.join(','),
+             scantypes:scanType,
+             metrictypes:metricType,
              isphantom:phantom,
              byname:'1'
            };

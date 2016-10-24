@@ -5,7 +5,7 @@ import datman as dm
 
 logger = logging.getLogger(__name__)
 
-
+logger.info('loading utils')
 class TimeoutError(Exception):
     pass
 
@@ -41,7 +41,7 @@ def get_todo(study=None, timeout=30):
         raise TimeoutError
     if out.returncode != 0:
         logger.error('dm-qc-todo failed on study:{} with error:{}'
-                     .format(study, result[0]))
+                     .format(study, result))
         raise RuntimeError
 
     output = {}

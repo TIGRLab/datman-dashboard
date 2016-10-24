@@ -4,7 +4,7 @@ from .models import Study, Site, Session, Scan, MetricType, \
 import logging
 
 logger = logging.getLogger(__name__)
-
+logger.info('Loading queries')
 
 def query_metric_values_byid(**kwargs):
     """Queries the database for metrics matching the specifications.
@@ -96,8 +96,7 @@ def query_metric_values_byname(**kwargs):
         q = q.filter(eval(filters[key]).in_(kwargs[key]))
 
     logger.debug('Query string: {}'.format(str(q)))
-    q = q.limit(1000)
-
+    
     result = q.all()
 
     return(result)
