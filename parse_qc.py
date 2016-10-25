@@ -31,6 +31,9 @@ logger.setLevel(logging.WARN)
 
 root_dir = "/archive/data/"
 config = dm.config.config(filename="/archive/code/datman/assets/tigrlab_config.yaml")
+num_in_project = 0
+num_success = 0
+
 
 def main():
     arguments = docopt(__doc__)
@@ -51,7 +54,7 @@ def main():
     # Find all relevant QC metric files in the filesystem
     # exclusions = ["STOPPD", "DBDC", "RTMSWM", "PASD", "COGBDY", "VIPR", \
     # "DTI3T", "DTI15T", "PACTMD", "COGBDO", "SPINS", "code", "README.md"]
-    exclusions = ["code", "README.md"]
+    exclusions = ["code", "README.md"]#, "SPINS", "DTI3T", "STOPPD", "PACTMD"]
     if arg_project:  # Use specified project, otherwise all projects in 'data'
         projects = [arg_project]
     else:
@@ -59,6 +62,11 @@ def main():
         projects = filter(lambda dir: dir not in exclusions, projects)
 
     for project in projects:
+        global num_in_project
+        global num_success
+        num_in_project = 0
+        num_success = 0
+        logger.info("Processing project {}".format(project))
         qc_dir = root_dir + project + "/qc/"
         if os.path.isdir(qc_dir):
             # Ignore these files in a project's "qc" folder
@@ -69,17 +77,22 @@ def main():
             else:
                 subjects = os.listdir(qc_dir)
                 subjects = filter(lambda dir: dir not in exclusions, subjects)
-
+                logger.info("Subjects in this project: {}".format(str(subjects)))
             for subject in subjects:
                 subj_dir = qc_dir + subject
                 # Use all .csv files in a subject folder
                 datafiles = filter(lambda file: file.endswith(".csv"),
                                    os.listdir(subj_dir))
+                datafiles = filter(lambda file: file.endswith(("_stats.csv", "_scanlengths.csv", "_qascript_fmri.csv",
+                                    "_qascript_dti.csv", "_qascripts_bold.csv",
+                                    "_qascripts_dti.csv", "_spikecount.csv",
+                                    "_adni-contrasts.csv")), datafiles)
+                num_in_project += len(datafiles)
                 for df in datafiles:
                     df_path = subj_dir + "/" + df
-                    logger.info("Processing file {}".format(df))
+                    #logger.info("Processing file {}".format(df))
                     parse_datafile(df, df_path)
-
+        logger.info("{}/{} files processed successfully".format(num_success, num_in_project))
 
 def read_qcfile(path_to_file, space_delimited):
     return pd.read_csv(path_to_file,
@@ -158,13 +171,13 @@ def insert_from_contrasts(df_path, scan):
 def parse_datafile(df, df_path):
     global config
     # Ignore unexpected files
-    recognized_files = ("_stats.csv", "_scanlengths.csv", "_qascript_fmri.csv",
+    """recognized_files = ("_stats.csv", "_scanlengths.csv", "_qascript_fmri.csv",
                         "_qascript_dti.csv", "_qascripts_bold.csv",
                         "_qascripts_dti.csv", "_spikecount.csv",
                         "_adni-contrasts.csv")
     if not df.endswith(recognized_files):
         return
-
+    """
     # Get project, site, and subject from filename
     try:
         sep_df = df.split("_")
@@ -188,7 +201,10 @@ def parse_datafile(df, df_path):
         return
 
     # Get session object if it exists, or make one
-    session_name = study_name + "_" + site_name + "_" + subj_name + "_" + timepoint
+    if is_phantom:
+        session_name = study_name + "_" + site_name + "_" + subj_name
+    else:
+        session_name = study_name + "_" + site_name + "_" + subj_name + "_" + timepoint
     if Session.query.filter(Session.name == session_name).count():
         session = Session.query.filter(Session.name == session_name).first()
     else:
@@ -236,10 +252,12 @@ def parse_datafile(df, df_path):
     elif df.endswith("_qascript_fmri.csv") or df.endswith("_qascript_dti.csv") or df.endswith("_qascripts_bold.csv") or df.endswith("_qascripts_dti.csv"):
         insert_from_rowfile(True, df_path, scan)
 
-    print "done"
     # Add the new row to the database
     db.session.commit()
-
+    global num_success
+    num_success += 1
+    print '.',
+    sys.stdout.flush()
 
 if __name__ == '__main__':
     main()
