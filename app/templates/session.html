@@ -1,0 +1,14 @@
+<!-- Overview for a single study -->
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="bd-pageheader jumbotron">
+    <h1>{{ session.name }}</h1>
+    {% if session.is_phantom %}
+      <p class="lead">Phantom</p>
+    {% else %}
+      <p class="lead">Phantom</p>
+    {% endif %}
+    </h1>
+  </div>
+{% endblock %}
