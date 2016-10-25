@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 #!venv/bin/python
 """Add extra study information into the database."""
 
@@ -12,11 +11,10 @@ logger = logging.getLogger(__name__)
 
 
 def main():
-    cfg = dm.config.config(filename='/scratch/twright/code/config/tigrlab_config.yaml',
-                           system='local')
-    for key in cfg.site_config['ProjectSettings']:
+    cfg = dm.config.config()
+    for key in cfg.site_config['Projects'].keys():
         logger.info('Getting settings for study:{}'.format(key))
-        cfg.set_study_config(key)
+        cfg.set_study(key)
         # get the study from the db if it exists, create if not
         if Study.query.filter(Study.nickname == key).count():
             logger.debug('Getting study:{} from database'.format(key))
