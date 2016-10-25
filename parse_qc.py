@@ -1,3 +1,4 @@
+#!venv/bin/python
 """Parse QC files for a project or subject
 
 Usage:
@@ -15,6 +16,7 @@ Options:
   -v --verbose  More reporting
   -d --debug    Lots of reporting
   --dry-run     Perform a dryrun, dont enter anything into database
+
 """
 
 import pandas as pd
@@ -30,7 +32,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARN)
 
 root_dir = "/archive/data/"
-config = dm.config.config(filename="/archive/code/datman/assets/tigrlab_config.yaml")
+config = dm.config.config()
 
 def main():
     arguments = docopt(__doc__)
@@ -145,8 +147,8 @@ def insert_from_contrasts(df_path, scan):
                 metrictype = MetricType.query.filter(MetricType.name == contrast[1]).filter(MetricType.scantype_id == st_id).first()
             else:
                 metrictype = MetricType()
-                metrictype.name = metrictype_name
-                metrictype.scantype_id = scan.scantype_id
+                metrictype.name = contrast[1]
+                metrictype.scantype = scan.scantype
                 db.session.add(metrictype)
             metricvalue.metrictype = metrictype
             metricvalue.value = contrast[0]
@@ -164,22 +166,24 @@ def parse_datafile(df, df_path):
                         "_adni-contrasts.csv")
     if not df.endswith(recognized_files):
         return
-
     # Get project, site, and subject from filename
     try:
-        sep_df = df.split("_")
-        is_phantom = False
-        if sep_df[2] == "PHA":
-            proj_name, site_name, subj_name, tag = sep_df[0], sep_df[1], \
-                sep_df[2] + "_" + sep_df[3], sep_df[4]
-            is_phantom = True
-        else:
-            proj_name, site_name, subj_name, timepoint, repeat, tag = sep_df[0], sep_df[1], \
-                sep_df[2], sep_df[3], sep_df[4], sep_df[5]
-    except IndexError:
+        is_phantom = dm.scanid.is_phantom(df)
+        ident, tag, session_number, description = dm.scanid.parse_filename(df)
+        # sep_df = df.split("_")
+        # is_phantom = False
+        # if sep_df[2] == "PHA":
+        #     proj_name, site_name, subj_name, tag = sep_df[0], sep_df[1], \
+        #         sep_df[2] + "_" + sep_df[3], sep_df[4]
+        #     is_phantom = True
+        # else:
+        #     proj_name, site_name, subj_name, timepoint, repeat, tag = sep_df[0], sep_df[1], \
+        #         sep_df[2], sep_df[3], sep_df[4], sep_df[5]
+    except dm.scanid.ParseException:
         logger.error("{} is not named properly".format(df))
+        return
 
-    study_name = config.map_xnat_archive_to_project(proj_name)
+    study_name = config.map_xnat_archive_to_project(ident.study)
     # Get study object if it exists, or make one
     if Study.query.filter(Study.nickname == study_name).count():
         study = Study.query.filter(Study.nickname == study_name).first()
@@ -188,21 +192,24 @@ def parse_datafile(df, df_path):
         return
 
     # Get session object if it exists, or make one
-    session_name = study_name + "_" + site_name + "_" + subj_name + "_" + timepoint
+    #session_name = study_name + "_" + site_name + "_" + subj_name + "_" + timepoint
+    session_name = ident.get_full_subjectid_with_timepoint()
+
     if Session.query.filter(Session.name == session_name).count():
         session = Session.query.filter(Session.name == session_name).first()
     else:
         session = Session()
         session.name = session_name
+        session.is_phantom = True
     study.sessions.append(session)
 
     # Ensure site is a possible site, and fetch the object
     possible_sites = study.sites
     for site in possible_sites:
-        if site.name == site_name:
+        if ident.site == site.name:
             session.site = site
     if not session.site:
-        logger.warning("Site {} not associated with study {}; skipping.".format(site_name, proj_name))
+        logger.warning("Site {} not associated with study {}; skipping.".format(site.name, ident.study))
         return
 
     # Get session object if it exists, or make one
@@ -221,7 +228,7 @@ def parse_datafile(df, df_path):
         if scantype.name == tag:
             scan.scantype = scantype
     if not scan.scantype:
-        logger.warning("Scantype {} not associated with study {}; skipping.".format(tag, proj_name))
+        logger.warning("Scantype {} not associated with study {}; skipping.".format(tag, ident.study))
         return
 
     # Parsing differs depending on format of csv file
@@ -236,7 +243,7 @@ def parse_datafile(df, df_path):
     elif df.endswith("_qascript_fmri.csv") or df.endswith("_qascript_dti.csv") or df.endswith("_qascripts_bold.csv") or df.endswith("_qascripts_dti.csv"):
         insert_from_rowfile(True, df_path, scan)
 
-    print "done"
+    logger.info("done")
     # Add the new row to the database
     db.session.commit()
 
