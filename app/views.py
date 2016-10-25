@@ -41,6 +41,19 @@ def sites():
 def scantypes():
     pass
 
+@app.route('/session')
+@app.route('/session/<int:session_id>', methods=['GET'])
+def session(session_id=None):
+    if session_id is None:
+        return redirect('/index')
+
+    session = Session.query.get(session_id)
+    studies = Study.query.order_by(Study.nickname).all()
+
+    return render_template('session.html',
+                           studies=studies,
+                           study=session.study,
+                           session=session)
 
 @app.route('/study')
 @app.route('/study/<int:study_id>', methods=['GET', 'POST'])
