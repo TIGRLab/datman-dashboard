@@ -50,10 +50,18 @@ def get_todo(study=None, timeout=30):
     output = {}
     if result:
         results = result.split('\n')
+
         for result in results:
             if len(result) > 0:  # last result is empty string
                 result = result.split(':')
-                output[result[0]] = result[1]
+                if len(result) > 1:
+                    # got a valid qc doc
+                    session_name = result[0].split('/')[-2]
+                    output[session_name] = [result[0], result[1]]
+                else:
+                    session_name = result[0].split('/')[-1]
+                    output[session_name] = [result[0].split('/', 1)[1],
+                                            result[0].split('/', 1)[0]]
 
     return output
 

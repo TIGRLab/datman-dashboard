@@ -6,10 +6,17 @@
   </div>
 
 <script type=text/javascript>
-  function add_qc_entry(file, status){
+  function add_qc_entry(session, data){
+
     var html = "<span class='row'>";
-    html = html + "<a href='" + file +"' target='#'>" + file +"</a>";
-    html = html + "</span>"
+    if(data[0].trim().startsWith('QC doc')){
+      html = html + "<a href='" + data[1] +"' target='#'>" + session +"</a>";
+    }else if(data[0].trim().startsWith('NO QC')){
+      html = html + "<span class='label-warning'>QC doc missing for:" + session + "</span>";
+    }else{
+      html = html + "<span class='label-warning'>Checklist entry missing for:" + session + "</span>";
+    }
+      html = html + "</span>"
     return html
   }
 
