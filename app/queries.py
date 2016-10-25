@@ -46,7 +46,7 @@ def query_metric_values_byid(**kwargs):
     for key in good_keys:
         if kwargs[key]:
             q = q.filter(eval(filters[key]).in_(kwargs[key]))
-
+    q = q.order_by(Session.name)
     logger.debug('Query string: {}'.format(str(q)))
 
     result = q.all()
@@ -95,8 +95,10 @@ def query_metric_values_byname(**kwargs):
     for key in good_keys:
         q = q.filter(eval(filters[key]).in_(kwargs[key]))
 
+    q = q.order_by(Session.name)
+
     logger.debug('Query string: {}'.format(str(q)))
-    
+
     result = q.all()
 
     return(result)
