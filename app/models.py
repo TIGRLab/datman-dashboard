@@ -1,6 +1,7 @@
 """Object definition file for dashboard app"""
 
 from app import db
+from . import utils
 
 study_site_table = db.Table('study_site',
                             db.Column('study_id', db.Integer,
@@ -88,6 +89,10 @@ class Session(db.Model):
                .format(self.name,
                        self.study.nickname,
                        self.site.name))
+
+    def get_qc_doc(self):
+        """Return the absolute path to the session qc doc if it exists"""
+        return(utils.get_qc_doc(str(self.name)))
 
 
 class ScanType(db.Model):

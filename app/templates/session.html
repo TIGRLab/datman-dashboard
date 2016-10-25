@@ -7,8 +7,18 @@
     {% if session.is_phantom %}
       <p class="lead">Phantom</p>
     {% else %}
-      <p class="lead">Phantom</p>
+      <p class="lead">Human</p>
     {% endif %}
     </h1>
+  </div>
+  <div>
+    <h3>
+      {% if session.get_qc_doc() %}
+      <span class="label label-default">QC Doc:</span>
+        <a href="{{ session.get_qc_doc() }}" target='#'>{{ session.name }}</a>
+      {% else %}
+        <span class="label label-warning">No QC Doc available</span>
+      {% endif %}
+    </h3>
   </div>
 {% endblock %}
