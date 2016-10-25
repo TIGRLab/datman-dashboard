@@ -1,6 +1,6 @@
 <h2>QC ToDo</h2>
   <div class="well well-lg camh" id="waiting">
-    <img align="centered" src='/static/images/ajax-loader.gif' alt="loading">
+    <img class='center-block' src='/static/images/ajax-loader.gif' alt="loading">
   </div>
   <div class="container" id="qc_entries">
   </div>
@@ -8,7 +8,7 @@
 <script type=text/javascript>
   function add_qc_entry(file, status){
     var html = "<span class='row'>";
-    html = html + "<a href='" + file +"'>" + file +"</a>";
+    html = html + "<a href='" + file +"' target='#'>" + file +"</a>";
     html = html + "</span>"
     return html
   }
