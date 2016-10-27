@@ -1,8 +1,9 @@
 from flask import render_template, flash, url_for, redirect, request, jsonify, abort
+from sqlalchemy.exc import SQLAlchemyError
 from app import app, db
 from .queries import query_metric_values_byid, query_metric_types, query_metric_values_byname
 from .models import Study, Site, Session, ScanType
-from .forms import SelectMetricsForm, StudyOverviewForm
+from .forms import SelectMetricsForm, StudyOverviewForm, SessionForm
 from . import utils
 import json
 import os
@@ -42,18 +43,31 @@ def scantypes():
     pass
 
 @app.route('/session')
-@app.route('/session/<int:session_id>', methods=['GET'])
+@app.route('/session/<int:session_id>', methods=['GET', 'POST'])
 def session(session_id=None):
     if session_id is None:
         return redirect('/index')
 
     session = Session.query.get(session_id)
     studies = Study.query.order_by(Study.nickname).all()
+    form = SessionForm()
+
+    if form.validate_on_submit():
+        # form has been submitted
+        session.cl_comment = form.cl_comment.data
+        try:
+            db.session.add(session)
+            db.session.commit()
+            flash('Session updated')
+        except SQLAlchemyError as err:
+            logger.error('Session update failed:{}'.format(str(err)))
+            flash('Update failed, admins have been notified, please try again')
 
     return render_template('session.html',
                            studies=studies,
                            study=session.study,
-                           session=session)
+                           session=session,
+                           form=form)
 
 @app.route('/study')
 @app.route('/study/<int:study_id>', methods=['GET', 'POST'])

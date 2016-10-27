@@ -1,7 +1,8 @@
 """Object definition file for dashboard app"""
 
 from app import db
-from . import utils
+import utils
+from sqlalchemy.orm import validates
 
 study_site_table = db.Table('study_site',
                             db.Column('study_id', db.Integer,
@@ -83,6 +84,8 @@ class Session(db.Model):
     site = db.relationship('Site', back_populates='sessions')
     scans = db.relationship('Scan')
     is_phantom = db.Column(db.Boolean)
+    cl_comment = db.Column(db.String(1024))
+
 
     def __repr__(self):
         return('<Session {} from Study {} at Site {}>'
@@ -90,10 +93,21 @@ class Session(db.Model):
                        self.study.nickname,
                        self.site.name))
 
+    def is_qcd(self):
+        if self.cl_comment:
+            return True
+
     def get_qc_doc(self):
         """Return the absolute path to the session qc doc if it exists"""
         return(utils.get_qc_doc(str(self.name)))
 
+
+    @validates('cl_comment')
+    def validate_comment(self, key, comment):
+        """check the comment isn't empty and that the checklist.csv can be updated"""
+        assert comment
+        assert utils.update_checklist(self.name, comment)
+        return comment
 
 class ScanType(db.Model):
     __tablename__ = 'scantypes'

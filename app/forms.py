@@ -31,3 +31,8 @@ class SelectMetricsForm(FlaskForm):
 class StudyOverviewForm(FlaskForm):
     readme_txt = TextAreaField(u'README', id='readme_editor')
     study_id = HiddenField()
+
+
+class SessionForm(FlaskForm):
+    cl_comment = TextAreaField(u'Checklist_comment',
+                               validators=[DataRequired()])
