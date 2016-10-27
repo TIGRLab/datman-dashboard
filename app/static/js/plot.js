@@ -18,7 +18,7 @@ var siteSet = new Set();
 var valueList = [];
 var subjectList = [];
 var overallValueList = [];
-var session_lengths = []
+session_lengths = []
 overallSubjectList = {};
 
 dataList.forEach(function(entry){
@@ -31,16 +31,16 @@ siteSet.forEach(function(site){
   dataList.forEach(function(entry){
     if (entry.site_name == site) {
       valueList.push(entry.value);
-      subjectList.push(entry.session_id)
+      subjectList.push(entry.session_id);
     }
   } );
   valueList.unshift(site);
   overallValueList.push(valueList);
-  session_lengths.push(subjectList.length)
+  session_lengths.push(subjectList.length);
   overallSubjectList[site] = subjectList;
 });
 
-var max_session_length = Math.max(...session_lengths)
+var max_session_length = Math.max.apply(null, session_lengths);
 
 var chart = c3.generate({
     bindto: element,
