@@ -4,6 +4,9 @@ from app import db
 import utils
 import datman.scanid
 from sqlalchemy.orm import validates
+import logging
+
+logger = logging.getLogger(__name__)
 
 study_site_table = db.Table('study_site',
                             db.Column('study_id', db.Integer,
