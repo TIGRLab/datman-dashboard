@@ -42,6 +42,26 @@ def sites():
 def scantypes():
     pass
 
+
+@app.route('/session_by_name')
+@app.route('/session_by_name/<session_name>', methods=['GET'])
+def session_by_name(session_name=None):
+    if session_name is None:
+        return redirect('/index')
+    # Strip any file extension or qc_ prefix
+    session_name = session_name.replace('qc_', '')
+    session_name = os.path.splitext(session_name)[0]
+
+    q = Session.query.filter(Session.name == session_name)
+    if q.count() < 1:
+        flash('Session not found')
+        return redirect(url_for('index'))
+
+    session = q.first()
+    return redirect(url_for('session', session_id=session.id))
+
+
+
 @app.route('/session')
 @app.route('/session/<int:session_id>', methods=['GET', 'POST'])
 def session(session_id=None):
