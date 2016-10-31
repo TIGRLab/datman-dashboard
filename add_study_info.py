@@ -6,7 +6,7 @@ from app.models import Study, Person, Site, ScanType
 import datman as dm
 import logging
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -100,5 +100,5 @@ def main():
 
 
 if __name__ == '__main__':
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.INFO)
     main()
