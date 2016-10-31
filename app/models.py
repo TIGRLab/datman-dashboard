@@ -2,6 +2,7 @@
 
 from app import db
 import utils
+import datman.scanid
 from sqlalchemy.orm import validates
 
 study_site_table = db.Table('study_site',
@@ -94,6 +95,7 @@ class Session(db.Model):
                        self.site.name))
 
     def is_qcd(self):
+        """checks if session has been quality checked"""
         if self.cl_comment:
             return True
 
