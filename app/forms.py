@@ -1,7 +1,7 @@
 from datetime import timedelta
 from flask import session
 from flask_wtf import FlaskForm
-from wtforms import SelectField, SelectMultipleField, HiddenField, TextAreaField
+from wtforms import SelectField, SelectMultipleField, HiddenField, TextAreaField, TextField
 from wtforms.validators import DataRequired
 
 from wtforms.csrf.session import SessionCSRF
@@ -34,5 +34,5 @@ class StudyOverviewForm(FlaskForm):
 
 
 class SessionForm(FlaskForm):
-    cl_comment = TextAreaField(u'Checklist_comment',
+    cl_comment = TextField(u'Checklist_comment',
                                validators=[DataRequired()])
