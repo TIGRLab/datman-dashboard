@@ -2,8 +2,8 @@ from flask import render_template, flash, url_for, redirect, request, jsonify, a
 from sqlalchemy.exc import SQLAlchemyError
 from app import app, db
 from .queries import query_metric_values_byid, query_metric_types, query_metric_values_byname
-from .models import Study, Site, Session, ScanType
-from .forms import SelectMetricsForm, StudyOverviewForm, SessionForm
+from .models import Study, Site, Session, ScanType, Scan
+from .forms import SelectMetricsForm, StudyOverviewForm, SessionForm, ScanForm
 from . import utils
 import json
 import os
@@ -70,7 +70,7 @@ def session(session_id=None):
 
     session = Session.query.get(session_id)
     studies = Study.query.order_by(Study.nickname).all()
-    form = SessionForm()
+    form = SessionForm(obj=session)
 
     if form.validate_on_submit():
         # form has been submitted
@@ -82,12 +82,40 @@ def session(session_id=None):
         except SQLAlchemyError as err:
             logger.error('Session update failed:{}'.format(str(err)))
             flash('Update failed, admins have been notified, please try again')
+        form.populate_obj(session)
 
     return render_template('session.html',
                            studies=studies,
                            study=session.study,
                            session=session,
                            form=form)
+
+
+@app.route('/scan', methods=["GET"])
+@app.route('/scan/<int:scan_id>', methods=['GET', 'POST'])
+def scan(scan_id=None):
+    if scan_id is None:
+        flash('Invalid scan')
+        return redirect(url_for('index'))
+
+    studies = Study.query.order_by(Study.nickname).all()
+    scan = Scan.query.get(scan_id)
+    form = ScanForm()
+    if form.validate_on_submit():
+        scan.bl_comment = form.bl_comment.data
+        try:
+            db.session.add(scan)
+            db.session.commit()
+            flash("Blacklist updated")
+        except SQLAlchemyError as err:
+            logger.error('Scan blacklist update failed:{}'.format(str(err)))
+            flash('Update failed, admins have been notified, please try again')
+
+    return render_template('scan.html',
+                           studies=studies,
+                           scan=scan,
+                           form=form)
+
 
 @app.route('/study')
 @app.route('/study/<int:study_id>', methods=['GET', 'POST'])

@@ -1,0 +1,31 @@
+<!-- Overview for a single scan -->
+{% extends "base.html" %}
+{% include 'flash.html' %}
+{% block content %}
+<div class="bd-pageheader jumbotron">
+  <div class="row">
+    <div class="col-md-6">
+      <h1>{{ scan.name }}</h1>
+      <span class="lead"><strong>Session:</strong>
+        <a href="{{ url_for('session',session_id=scan.session.id) }}">
+          {{ scan.session.name }}
+        </a>
+      </span>
+      {% if scan.session.is_phantom %}
+        <p class="lead">Phantom</p>
+      {% else %}
+        <p class="lead">Human</p>
+      {% endif %}
+      </h1>
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="col-sm-12 form-group">
+    <label for="blacklist_comment">Blacklist comment:</label>
+    {{ form.bl_comment(id="blacklist_comment") }}
+  </div>
+  <button type="submit" class="btn btn-default">Update</button>
+</div>
+
+  {% endblock %}

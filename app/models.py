@@ -82,11 +82,11 @@ class Session(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True)
     date = db.Column(db.DateTime)
-    study_id = db.Column(db.Integer, db.ForeignKey('studies.id'))
+    study_id = db.Column(db.Integer, db.ForeignKey('studies.id'), nullable=False)
     study = db.relationship('Study', back_populates='sessions')
-    site_id = db.Column(db.Integer, db.ForeignKey('sites.id'))
+    site_id = db.Column(db.Integer, db.ForeignKey('sites.id'), nullable=False)
     site = db.relationship('Site', back_populates='sessions')
-    scans = db.relationship('Scan')
+    scans = db.relationship('Scan', order_by="Scan.series_number")
     is_phantom = db.Column(db.Boolean)
     cl_comment = db.Column(db.String(1024))
 
@@ -133,7 +133,7 @@ class MetricType(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(12))
-    scantype_id = db.Column(db.Integer, db.ForeignKey('scantypes.id'))
+    scantype_id = db.Column(db.Integer, db.ForeignKey('scantypes.id'), nullable=False)
     scantype = db.relationship('ScanType', back_populates='metrictypes')
     metricvalues = db.relationship('MetricValue')
 
@@ -162,13 +162,14 @@ class Scan(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(128), index=True, unique=True)
-    session_id = db.Column(db.Integer, db.ForeignKey('sessions.id'))
+    session_id = db.Column(db.Integer, db.ForeignKey('sessions.id'), nullable=False)
     session = db.relationship('Session', back_populates='scans')
 
-    scantype_id = db.Column(db.Integer, db.ForeignKey('scantypes.id'))
+    scantype_id = db.Column(db.Integer, db.ForeignKey('scantypes.id'), nullable=False)
     scantype = db.relationship('ScanType', back_populates="scans")
     metricvalues = db.relationship('MetricValue')
     bl_comment = db.Column(db.String(1024))
+    series_number = db.Column(db.Integer, nullable=False)
 
     def __repr__(self):
         return('<Scan {}>'.format(self.name))
@@ -189,7 +190,7 @@ class MetricValue(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     _value = db.Column('value', db.String)
-    scan_id = db.Column(db.Integer, db.ForeignKey('scans.id'))
+    scan_id = db.Column(db.Integer, db.ForeignKey('scans.id'), nullable=False)
     scan = db.relationship('Scan', back_populates="metricvalues")
     metrictype_id = db.Column(db.Integer, db.ForeignKey('metrictypes.id'))
     metrictype = db.relationship('MetricType', back_populates="metricvalues")

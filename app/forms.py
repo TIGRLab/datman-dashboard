@@ -1,9 +1,9 @@
 from datetime import timedelta
 from flask import session
 from flask_wtf import FlaskForm
-from wtforms import SelectField, SelectMultipleField, HiddenField, TextAreaField, TextField
+from wtforms import SelectField, SelectMultipleField, HiddenField, TextAreaField, TextField, FormField
 from wtforms.validators import DataRequired
-
+from models import Scan, Session
 from wtforms.csrf.session import SessionCSRF
 
 
@@ -31,6 +31,11 @@ class SelectMetricsForm(FlaskForm):
 class StudyOverviewForm(FlaskForm):
     readme_txt = TextAreaField(u'README', id='readme_editor')
     study_id = HiddenField()
+
+
+class ScanForm(FlaskForm):
+    bl_comment = TextField(u'Blacklist_comment',
+                                validators=[DataRequired()])
 
 
 class SessionForm(FlaskForm):
