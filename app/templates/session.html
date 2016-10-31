@@ -1,6 +1,6 @@
 <!-- Overview for a single study -->
 {% extends "base.html" %}
-
+{% include 'flash.html' %}
 {% block content %}
   <div class="bd-pageheader jumbotron">
     <div class="row">
@@ -32,16 +32,17 @@
   </div>
   <div class="row">
     <h3>
-    {% if session.is_qcd() %}
-      <span class="label label-default">QC Comment:</span>
-        {{ session.cl_comment }}
-    {% else %}
-    <form action="" method="post" name="session_qc">
-      {{ form.hidden_tag() }}
-      {{ form.cl_comment }}
-      <input type="submit" value="update" id="btn_update">
-    </form>
-    {% endif %}
+      {% if session.is_qcd() %}
+        <span class="label label-default">QC Comment:</span>
+          {{ session.cl_comment }}
+      {% else %}
+      <form action="" method="post" name="session_qc">
+        {{ form.hidden_tag() }}
+        <span class="label label-default">QC Comment</span>
+        {{ form.cl_comment }}
+        <input type="submit" value="update" id="btn_update">
+      </form>
+      {% endif %}
     </h3>
   </div>
   <script type="text/javascript">
