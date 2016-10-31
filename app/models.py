@@ -163,10 +163,21 @@ class Scan(db.Model):
     scantype_id = db.Column(db.Integer, db.ForeignKey('scantypes.id'))
     scantype = db.relationship('ScanType', back_populates="scans")
     metricvalues = db.relationship('MetricValue')
+    bl_comment = db.Column(db.String(1024))
 
     def __repr__(self):
         return('<Scan {}>'.format(self.name))
 
+    def is_blacklisted(self):
+        if self.bl_comment:
+            return True
+
+    @validates('bl_comment')
+    def validate_comment(self, key, comment):
+        """check the comment isn't empty and that the blacklist.csv can be updated"""
+        assert comment
+        assert utils.update_blacklist(self.name, comment)
+        return comment
 
 class MetricValue(db.Model):
     __tablename__ = 'scanmetrics'
