@@ -9,12 +9,17 @@
   function add_qc_entry(session, data){
 
     var html = "<span class='row'>";
-    if(data[0].trim().startsWith('QC doc')){
-      html = html + "<a href='" + data[1] +"' target='#'>" + session +"</a>";
-    }else if(data[0].trim().startsWith('NO QC')){
-      html = html + "<span class='label-warning'>QC doc missing for:" + session + "</span>";
-    }else{
+
+    if(data[1].trim().startsWith('QC doc')){
+      html = html + "<span class='label-info'>QC check required for:"
+        + "<a href={{ url_for('session_by_name') }}/"+ session + ">"
+        + session + "</a></span>";
+    }else if(data[1].trim().startsWith('NO checklist')){
       html = html + "<span class='label-warning'>Checklist entry missing for:"
+        + "<a href={{ url_for('session_by_name') }}/"+ session + ">"
+        + session + "</a></span>";
+    }else{
+      html = html + "<span class='label-warning'>QC doc not generated for:"
         + "<a href={{ url_for('session_by_name') }}/"+ session + ">"
         + session + "</a></span>";
     }
