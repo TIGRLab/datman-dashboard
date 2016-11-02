@@ -23,9 +23,9 @@ import pandas as pd
 import os
 import sys
 import logging
-from datman import utils
-from datman import config
-from datman import scanid
+import datman.utils
+import datman.config
+import datman.scanid
 from docopt import docopt
 from app import db
 from app.models import Study, Session, Scan, MetricType, MetricValue
@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 
 root_dir = "/archive/data/"
 
-config = config.config()
+config = datman.config.config()
 
 num_in_project = 0
 num_success = 0
@@ -112,8 +112,8 @@ def main():
 def add_session(session_name):
     logger.debug('Checking session:{}'.format(session_name))
     try:
-        is_phantom = scanid.is_phantom(session_name)
-        ident = scanid.parse(session_name)
+        is_phantom = datman.scanid.is_phantom(session_name)
+        ident = datman.scanid.parse(session_name)
         # sep_df = df.split("_")
         # is_phantom = False
         # if sep_df[2] == "PHA":
@@ -123,7 +123,7 @@ def add_session(session_name):
         # else:
         #     proj_name, site_name, subj_name, timepoint, repeat, tag = sep_df[0], sep_df[1], \
         #         sep_df[2], sep_df[3], sep_df[4], sep_df[5]
-    except scanid.ParseException:
+    except datman.scanid.ParseException:
         logger.error("{} is not named properly".format(session_name))
         return
 
@@ -153,17 +153,59 @@ def add_session(session_name):
         session.study = study
         session.site = site
         session.is_phantom = is_phantom
-        db.session.add(session)
+
     else:
         session = query.first()
 
     logger.info('Checking checklist')
-    checklist_comment = utils.check_checklist(session_name)
+    checklist_comment = datman.utils.check_checklist(session_name)
     if checklist_comment:
         logger.info('Checklist comment {} found'.format(checklist_comment))
         session.cl_comment = checklist_comment
 
+    db.session.add(session)
     db.session.commit()
+    return(session)
+
+def add_scan(session, filename):
+    """Add or return a scan object"""
+    try:
+        ident, tag, series, description = datman.scanid.parse_filename(filename)
+    except datman.scanid.ParseException:
+        logger.error("{} is not named properly".format(filename))
+        return
+    scan_name = '{}_{}_{}'.format(ident.get_full_subjectid_with_timepoint_session(),
+                                     tag, series)
+
+    scantype = [s for s in session.study.scantypes if s.name == tag]
+    if not scantype:
+        logger.error('Scantype:{} not found.'.format(tag))
+        return
+    else:
+        scantype = scantype[0]
+
+    query = Scan.query.filter(Scan.name == scan_name)
+    if not query.count():
+        logger.info('Adding new scan with name{}:'.format(scan_name))
+        scan = Scan()
+        scan.name = scan_name
+        scan.session = session
+        scan.scantype = scantype
+        scan.series_number = series
+
+    else:
+        scan = query.first()
+
+    logger.info('Checking blacklist')
+    blacklist_comment = datman.utils.check_blacklist(filename)
+
+    if blacklist_comment:
+        logger.info('Blacklist comment {} found'.format(blacklist_comment))
+        scan.bl_comment = blacklist_comment
+
+    db.session.add(scan)
+    db.session.commit()
+    return(scan)
 
 
 def read_qcfile(path_to_file, space_delimited):
@@ -192,7 +234,9 @@ def insert_from_rowfile(is_qascript, df_path, scan):
                 db.session.add(metrictype)
             metricvalue.metrictype = metrictype
             metricvalue.value = datapoint[1]
-            scan.metricvalues.append(metricvalue)
+            metricvalue.scan = scan
+            db.session.add(metricvalue)
+            db.session.commit()
     except (IndexError, ValueError):
         logger.error("{} is missing data".format(df_path))
 
@@ -214,7 +258,9 @@ def insert_from_singleval(metrictype_name, has_header, df_path, scan):
             metricvalue.value = data[0][1]
         else:
             metricvalue.value = data[0][0]
-        scan.metricvalues.append(metricvalue)
+        metricvalue.scan = scan
+        db.session.add(metricvalue)
+        db.session.commit()
     except (IndexError, ValueError):
         logger.error("{} is missing data".format(df_path))
 
@@ -235,7 +281,8 @@ def insert_from_contrasts(df_path, scan):
                 db.session.add(metrictype)
             metricvalue.metrictype = metrictype
             metricvalue.value = contrast[0]
-            scan.metricvalues.append(metricvalue)
+            metricvalue.scan = scan
+            db.session.add(metricvalue)
     except (IndexError, ValueError):
         logger.error("{} is missing data".format(df_path))
 
@@ -243,8 +290,8 @@ def insert_from_contrasts(df_path, scan):
 def parse_datafile(df, df_path, session):
     global config
     try:
-        ident, tag, series, description = scanid.parse_filename(df)
-    except scanid.ParseException:
+        ident, tag, series, description = datman.scanid.parse_filename(df)
+    except datman.scanid.ParseException:
         logger.error("{} is not named properly".format(df))
         return
 
@@ -258,32 +305,9 @@ def parse_datafile(df, df_path, session):
     """
     logger.info('Parsing file:{}'.format(df))
     # Get project, site, and subject from filename
-    scan_name = scanid.make_filename(ident, tag, series, description)
-    logger.info('Checking scan {} exists.'.format(scan_name))
-    q = Scan.query.filter(Scan.name == scan_name)
-    if q.count():
-        scan = q.first()
-        logger.info('Found scan')
-    else:
-        scan = Scan()
-        scan.name = scan_name
-        session.scans.append(scan)
-        logger.info('Added scan')
-
-    logger.info('Checking blacklist')
-    blacklist_comment = utils.check_blacklist(scan_name)
-    if blacklist_comment:
-        logger.info('Found blacklist comment:{}'.format(blacklist_comment))
-        scan.bl_comment = blacklist_comment
-
-    scantype = [scantype for scantype
-                in session.study.scantypes if scantype.name == tag]
-    if not scantype:
-        logger.warning("Scantype {} not associated with study {}; skipping."
-                       .format(tag, ident.study))
+    scan = add_scan(session, df)
+    if not scan:
         return
-    else:
-        scan.scantype = scantype[0]
 
     # Parsing differs depending on format of csv file
     if df.endswith("_stats.csv"):
@@ -305,4 +329,5 @@ def parse_datafile(df, df_path, session):
     sys.stdout.flush()
 
 if __name__ == '__main__':
+    logging.basicConfig()
     main()
