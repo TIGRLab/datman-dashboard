@@ -23,8 +23,8 @@ import sys
 import logging
 import datman as dm
 from docopt import docopt
-from app import db
-from app.models import Study, Session, Scan, MetricType, MetricValue
+from dashboard import db
+from dashboard.models import Study, Session, Scan, MetricType, MetricValue
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARN)

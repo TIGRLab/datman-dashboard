@@ -9,17 +9,33 @@
   </div>
   <div class="container">
     <ul class="nav nav-tabs">
-      <li class="active"><a data-toggle="tab" href="#overview">Overview</a></li>
-      <li><a data-toggle="tab" href="#qc">Session QC</a></li>
+      {% if active_tab %}
+        <li><a data-toggle="tab" href="#overview">Overview</a></li>
+      {% else %}
+        <li class="active"><a data-toggle="tab" href="#overview">Overview</a></li>
+      {% endif %}
+      {% if active_tab=='qc' %}
+        <li class=active><a data-toggle="tab" href="#qc">Session QC</a></li>
+      {% else %}
+        <li><a data-toggle="tab" href="#qc">Session QC</a></li>
+      {% endif %}
       <li><a data-toggle="tab" href="#phantoms">Phantoms</a></li>
       <li><a data-toggle="tab" href="#humans">Subjects</a></li>
     </ul>
 
     <div class="tab-content">
-      <div id="overview" class="tab-pane fade in active">
+      {% if active_tab %}
+        <div id="overview" class="tab-pane fade in">
+      {% else %}
+        <div id="overview" class="tab-pane fade in active">
+      {% endif %}
         {% include 'study_overview_snip.html' %}
       </div><!--/overview-content-->
-      <div id="qc" class="tab-pane fade in">
+      {% if active_tab=='qc' %}
+        <div id="qc" class="tab-pane fade in active">
+      {% else %}
+        <div id="qc" class="tab-pane fade in">
+      {% endif %}
         {% include 'qc_snip.html' %}
       </div><!--/qc-content-->
       <div id="phantoms" class="tab-pane fade in metrics">

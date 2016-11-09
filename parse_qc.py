@@ -27,8 +27,8 @@ import datman.utils
 import datman.config
 import datman.scanid
 from docopt import docopt
-from app import db
-from app.models import Study, Session, Scan, MetricType, MetricValue
+from dashboard import db
+from dashboard.models import Study, Session, Scan, MetricType, MetricValue
 
 
 logger = logging.getLogger(__name__)
@@ -171,6 +171,9 @@ def add_scan(session, filename):
     """Add or return a scan object"""
     try:
         ident, tag, series, description = datman.scanid.parse_filename(filename)
+        # metadata descriptions also have metric type inluded
+        description = description.split('_')[0]
+
     except datman.scanid.ParseException:
         logger.error("{} is not named properly".format(filename))
         return
@@ -185,19 +188,21 @@ def add_scan(session, filename):
         scantype = scantype[0]
 
     query = Scan.query.filter(Scan.name == scan_name)
-    if not query.count():
+    if query.count():
+        scan = query.first()
+    else:
         logger.info('Adding new scan with name{}:'.format(scan_name))
         scan = Scan()
-        scan.name = scan_name
-        scan.session = session
-        scan.scantype = scantype
-        scan.series_number = series
 
-    else:
-        scan = query.first()
+    scan.name = scan_name
+    scan.session = session
+    scan.scantype = scantype
+    scan.series_number = series
+    scan.description = description
 
     logger.info('Checking blacklist')
-    blacklist_comment = datman.utils.check_blacklist(filename)
+    blacklist_name = '{}_{}'.format(scan_name, description)
+    blacklist_comment = datman.utils.check_blacklist(blacklist_name)
 
     if blacklist_comment:
         logger.info('Blacklist comment {} found'.format(blacklist_comment))

@@ -1,8 +1,8 @@
 #!venv/bin/python
 """Add extra study information into the database."""
 
-from app import db
-from app.models import Study, Person, Site, ScanType
+from dashboard import db
+from dashboard.models import Study, Person, Site, ScanType
 import datman as dm
 import logging
 

@@ -31,4 +31,4 @@ if not app.debug:
     app.logger.addHandler(file_handler)
     app.logger.info('Dashboard startup')
 
-from app import views, models
+from dashboard import views, models

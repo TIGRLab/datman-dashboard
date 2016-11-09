@@ -132,6 +132,8 @@ def update_blacklist(scan_name, comment, blacklist_file=None):
     target_idx = None
     existing_comment = None
     for idx, val in enumerate(lines):
+        if not val.strip(): # deal with blank lines
+            continue
         parts = val.split(None, 1)
         if scan_name == parts[0]:
             target_idx = idx
@@ -204,9 +206,10 @@ def update_checklist(session_name, comment, checklist_file=None):
     target_idx = None
     existing_comment = None
     for idx, val in enumerate(lines):
+        if not val.strip(): # deal with blank lines
+            continue
         parts = val.split(None, 1)
 
-        # split off the file extension part
         scan_id = parts[0].split('.')[0]
         if scan_id == 'qc_{}'.format(session_name):
             target_idx = idx
@@ -227,7 +230,6 @@ def update_checklist(session_name, comment, checklist_file=None):
     # ensure to get rid of whitespace, trailing newlines etc
     comment = comment.strip()
     existing_comment = existing_comment.strip()
-
     if not existing_comment == comment:
         lines[target_idx] = 'qc_{}.html {}\n'.format(session_name, comment)
 

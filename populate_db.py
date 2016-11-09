@@ -1,5 +1,5 @@
-from app.database import db_session
-from app.models import Study, Site, Session, Scan, ScanType, MetricType, MetricValue
+from dashboard.database import db_session
+from dashboard.models import Study, Site, Session, Scan, ScanType, MetricType, MetricValue
 import numpy as np
 import random, datetime
 

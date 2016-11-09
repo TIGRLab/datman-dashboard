@@ -1,6 +1,6 @@
 from flask import render_template, flash, url_for, redirect, request, jsonify, abort
 from sqlalchemy.exc import SQLAlchemyError
-from app import app, db
+from dashboard import app, db
 from .queries import query_metric_values_byid, query_metric_types, query_metric_values_byname
 from .models import Study, Site, Session, ScanType, Scan
 from .forms import SelectMetricsForm, StudyOverviewForm, SessionForm, ScanForm
@@ -66,7 +66,7 @@ def session_by_name(session_name=None):
 @app.route('/session/<int:session_id>', methods=['GET', 'POST'])
 def session(session_id=None):
     if session_id is None:
-        return redirect('/index')
+        return redirect('index')
 
     session = Session.query.get(session_id)
     studies = Study.query.order_by(Study.nickname).all()
@@ -79,6 +79,10 @@ def session(session_id=None):
             db.session.add(session)
             db.session.commit()
             flash('Session updated')
+            return redirect(url_for('study',
+                                    study_id=session.study_id,
+                                    active_tab='qc'))
+
         except SQLAlchemyError as err:
             logger.error('Session update failed:{}'.format(str(err)))
             flash('Update failed, admins have been notified, please try again')
@@ -119,7 +123,8 @@ def scan(scan_id=None):
 
 @app.route('/study')
 @app.route('/study/<int:study_id>', methods=['GET', 'POST'])
-def study(study_id=None):
+@app.route('/study/<int:study_id>/<active_tab>', methods=['GET', 'POST'])
+def study(study_id=None, active_tab=None):
     if study_id is None:
         return redirect('/index')
 
@@ -171,7 +176,8 @@ def study(study_id=None):
                            studies=Study.query.order_by(Study.nickname),
                            metricnames=study.get_valid_metric_names(),
                            study=study,
-                           form=form)
+                           form=form,
+                           active_tab=active_tab)
 
 
 @app.route('/person')

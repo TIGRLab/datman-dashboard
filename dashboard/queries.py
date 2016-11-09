@@ -1,4 +1,4 @@
-from app import db
+from dashboard import db
 from .models import Study, Site, Session, Scan, MetricType, \
     MetricValue, ScanType  # noqa: F401
 import logging

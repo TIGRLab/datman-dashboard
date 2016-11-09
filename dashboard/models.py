@@ -1,6 +1,6 @@
 """Object definition file for dashboard app"""
 
-from app import db
+from dashboard import db
 import utils
 import datman.scanid
 from sqlalchemy.orm import validates
@@ -162,6 +162,7 @@ class Scan(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(128), index=True, unique=True)
+    description = db.Column(db.String(128))
     session_id = db.Column(db.Integer, db.ForeignKey('sessions.id'), nullable=False)
     session = db.relationship('Session', back_populates='scans')
 
@@ -182,7 +183,8 @@ class Scan(db.Model):
     def validate_comment(self, key, comment):
         """check the comment isn't empty and that the blacklist.csv can be updated"""
         assert comment
-        assert utils.update_blacklist(self.name, comment)
+        assert utils.update_blacklist('{}_{}'.format(self.name, self.description),
+                                                     comment)
         return comment
 
 class MetricValue(db.Model):

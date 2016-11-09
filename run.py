@@ -1,6 +1,6 @@
 #!python
 import os
-from app import app
+from dashboard import app
 import logging
 
 logging.basicConfig(level=logging.DEBUG)

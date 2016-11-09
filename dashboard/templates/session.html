@@ -66,6 +66,7 @@
       <thead>
         <th>Series</th>
         <th>Tag</th>
+        <th>Description</th>
         <th>Blacklisted</th>
         <th>&nbsp;</th>
       </thead>
@@ -74,6 +75,7 @@
         <tr>
           <td> {{ scan.series_number }}</td>
           <td> {{ scan.scantype.name }}</td>
+          <td> {{ scan.description }} </td>
           {% if scan.bl_comment %}
             <td> {{ scan.bl_comment }}</td>
           {% else %}
