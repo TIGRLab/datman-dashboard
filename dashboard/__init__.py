@@ -1,7 +1,7 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from config import basedir, ADMINS, MAIL_SERVER, MAIL_PORT, MAIL_USERNAME, MAIL_PASSWORD
-
+import os
 app = Flask(__name__)
 app.config.from_object('config')
 
@@ -19,7 +19,11 @@ if not app.debug:
                                 ADMINS,
                                 'Dashboard failure',
                                 credentials)
-    file_handler = RotatingFileHandler('logs/dashboard.log',
+    base_dir = os.path.dirname(os.path.realpath(__file__))
+    base_dir = os.path.realpath(os.path.join(base_dir, '..'))
+
+    file_handler = RotatingFileHandler(os.path.join(base_dir,
+                                                    'logs/dashboard.log'),
                                        'a',
                                        1 * 1024 * 1024,
                                        10)
