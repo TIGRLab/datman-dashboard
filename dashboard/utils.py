@@ -87,7 +87,7 @@ def get_qc_doc(session_name):
     else:
         return None
 
-def update_blacklist(scan_name, comment, blacklist_file=None):
+def update_blacklist(scan_name, comment, blacklist_file=None, study_name=None):
     """
     Searches for the blacklist file identified by scan_name
     creates the file if it doesn't exist
@@ -108,12 +108,12 @@ def update_blacklist(scan_name, comment, blacklist_file=None):
             logger.warning('Invalid scan_name:{}'.format(scan_name))
             return
         ident = ident[0]
-
-        try:
-            study_name = CFG.map_xnat_archive_to_project(ident.study)
-        except KeyError:
-            logger.warning('scan name: {} not recoginzed'.format(scan_name))
-            return
+        if not study_name:
+            try:
+                study_name = CFG.map_xnat_archive_to_project(ident.study)
+            except KeyError:
+                logger.warning('scan name: {} not recoginzed'.format(scan_name))
+                return
 
         blacklist = os.path.join(CFG.get_path('meta', study_name), 'blacklist.csv')
     else:
@@ -162,7 +162,7 @@ def update_blacklist(scan_name, comment, blacklist_file=None):
     return True
 
 
-def update_checklist(session_name, comment, checklist_file=None):
+def update_checklist(session_name, comment, checklist_file=None, study_name=None):
     """
     Searches for the checklist file identified by session_name
     creates the file if it doesn't exist
@@ -183,11 +183,12 @@ def update_checklist(session_name, comment, checklist_file=None):
             logger.warning('Invalid session name:{}'.format(session_name))
             return
 
-        try:
-            study_name = CFG.map_xnat_archive_to_project(ident.study)
-        except KeyError:
-            logger.warning('session name: {} not recoginzed'.format(session_name))
-            return
+        if not study_name:
+            try:
+                study_name = CFG.map_xnat_archive_to_project(ident.study)
+            except KeyError:
+                logger.warning('session name: {} not recoginzed'.format(session_name))
+                return
 
         checklist = os.path.join(CFG.get_path('meta', study_name), 'checklist.csv')
     else:

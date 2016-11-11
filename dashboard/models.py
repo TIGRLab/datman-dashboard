@@ -80,7 +80,7 @@ class Session(db.Model):
     __tablename__ = 'sessions'
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(64), unique=True)
+    name = db.Column(db.String(64))
     date = db.Column(db.DateTime)
     study_id = db.Column(db.Integer, db.ForeignKey('studies.id'), nullable=False)
     study = db.relationship('Study', back_populates='sessions')
@@ -111,7 +111,9 @@ class Session(db.Model):
     def validate_comment(self, key, comment):
         """check the comment isn't empty and that the checklist.csv can be updated"""
         assert comment
-        assert utils.update_checklist(self.name, comment)
+        assert utils.update_checklist(self.name,
+                                      comment,
+                                      study_name=self.study.nickname)
         return comment
 
 class ScanType(db.Model):
@@ -183,8 +185,9 @@ class Scan(db.Model):
     def validate_comment(self, key, comment):
         """check the comment isn't empty and that the blacklist.csv can be updated"""
         assert comment
-        assert utils.update_blacklist('{}_{}'.format(self.name, self.description),
-                                                     comment)
+        assert utils.update_blacklist('{}_{}'.format(self.name,
+                                                     self.description),
+                                      comment, study_name=self.session.study.nickname)
         return comment
 
 class MetricValue(db.Model):
