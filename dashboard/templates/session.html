@@ -15,7 +15,12 @@
     </div>
     <div class="col-md-6">
       <span class="pull-right pull-down">
+        <div class="row">
         <button class="btn btn-primary btn-lg" id="print_brain">Print Brain</button>
+        </div>
+        <div class="row">
+        <button class="btn btn-primary btn-lg" id="delete_session">Delete Session</button>
+      </div>
       </span>
     </div>
   </div>
@@ -100,6 +105,10 @@
   })
   $('.btn_blacklist').bind('click', function(){
     window.location.href = "{{url_for('scan')}}/" + $(this).attr('value')
+  })
+  $('#delete_session').bind('click', function(){
+    alert('fired');
+    window.location.href = "{{url_for('session',session_id=session.id, delete=True)}}";
   })
   </script>
 {% endblock %}
