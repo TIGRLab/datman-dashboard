@@ -64,11 +64,24 @@ def session_by_name(session_name=None):
 
 @app.route('/session')
 @app.route('/session/<int:session_id>', methods=['GET', 'POST'])
-def session(session_id=None):
+@app.route('/session/<int:session_id>/<delete>', methods=['GET', 'POST'])
+def session(session_id=None, delete=False):
     if session_id is None:
         return redirect('index')
 
     session = Session.query.get(session_id)
+
+    if delete:
+        try:
+            db.session.delete(session)
+            db.session.commit()
+            flash('Deleted session:{}'.format(session.name))
+            return redirect(url_for('study',
+                                    study_id=session.study_id,
+                                    active_tab='qc'))
+        except Exception:
+            flash('Failed to delete session:{}'.format(session.name))
+
     studies = Study.query.order_by(Study.nickname).all()
     form = SessionForm(obj=session)
 

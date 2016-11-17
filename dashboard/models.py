@@ -86,7 +86,7 @@ class Session(db.Model):
     study = db.relationship('Study', back_populates='sessions')
     site_id = db.Column(db.Integer, db.ForeignKey('sites.id'), nullable=False)
     site = db.relationship('Site', back_populates='sessions')
-    scans = db.relationship('Scan', order_by="Scan.series_number")
+    scans = db.relationship('Scan', order_by="Scan.series_number", cascade="all, delete-orphan" )
     is_phantom = db.Column(db.Boolean)
     cl_comment = db.Column(db.String(1024))
 
@@ -170,7 +170,7 @@ class Scan(db.Model):
 
     scantype_id = db.Column(db.Integer, db.ForeignKey('scantypes.id'), nullable=False)
     scantype = db.relationship('ScanType', back_populates="scans")
-    metricvalues = db.relationship('MetricValue')
+    metricvalues = db.relationship('MetricValue', cascade="all, delete-orphan")
     bl_comment = db.Column(db.String(1024))
     series_number = db.Column(db.Integer, nullable=False)
 
