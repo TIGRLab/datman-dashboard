@@ -82,3 +82,8 @@ $( ".dropdown-menu li").bind('click' , function( event ){
 $("input[name='site']").bind('click', updatePlot);
 $("#metrictypeselector li").bind('click', updatePlot);
 $("input[name='scantype']").bind('click', updatePlot);
+
+// make the sessions table dynamic
+$(document).ready(function (){
+  $('#tbl_sessions').DataTable();
+})
