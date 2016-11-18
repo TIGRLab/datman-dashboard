@@ -17,6 +17,7 @@ import datetime
 import datman as dm
 import shutil
 import logging
+from github import Github
 from xml.sax.saxutils import escape
 
 logger = logging.getLogger(__name__)
@@ -46,7 +47,7 @@ def before_request():
 
 @app.route('/')
 @app.route('/index')
-@login_required
+#@login_required
 def index():
     flash(flask_session['active_token'])
     # studies = db_session.query(Study).order_by(Study.nickname).all()
@@ -102,12 +103,23 @@ def create_issue(session_id):
 @app.route('/session')
 @app.route('/session/<int:session_id>', methods=['GET', 'POST'])
 @app.route('/session/<int:session_id>/<delete>', methods=['GET', 'POST'])
-def session(session_id=None, delete=False):
+@app.route('/session/<int:session_id>/<issue_title>/<issue_body>', methods=['GET', 'POST'])
+def session(session_id=None, delete=False, issue_title="", issue_body=""):
     if session_id is None:
         return redirect('index')
 
     session = Session.query.get(session_id)
 
+    if issue_title and issue_body:
+        try:
+            #Works with personal access token; redacted for privacy
+            token = ""
+            gh = Github(token)
+            repo = gh.get_user("TIGRLab").get_repo("Admin")
+            iss = repo.create_issue(issue_title, issue_body)
+            flash("Issue '{}' created!".format(issue_title))
+        except:
+            flash("Issue '{}' was not created successfully.".format(issue_title))
     if delete:
         try:
             db.session.delete(session)
