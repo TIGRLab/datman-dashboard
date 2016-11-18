@@ -31,7 +31,7 @@ study_user_table = db.Table('study_users',
                              db.Column('study_id', db.Integer,
                                        db.ForeignKey('studies.id')),
                              db.Column('user_id', db.Integer,
-                                       db.ForeignKey('user.id')))
+                                       db.ForeignKey('users.id')))
 
 
 class User(UserMixin, db.Model):
