@@ -59,7 +59,7 @@ class GithubSignIn(OAuthSignIn):
     def authorize(self):
         self.random_string()
         return redirect(self.service.get_authorize_url(
-            scope='user',
+            scope='user public_repo',
             state=self.str_rnd)
             )
 

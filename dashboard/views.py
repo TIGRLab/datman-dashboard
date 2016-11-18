@@ -112,8 +112,7 @@ def session(session_id=None, delete=False, issue_title="", issue_body=""):
 
     if issue_title and issue_body:
         try:
-            #Works with personal access token; redacted for privacy
-            token = ""
+            token = flask_session['active_token']
             gh = Github(token)
             repo = gh.get_user("TIGRLab").get_repo("Admin")
             iss = repo.create_issue(issue_title, issue_body)
