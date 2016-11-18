@@ -57,15 +57,16 @@ class GithubSignIn(OAuthSignIn):
         self.str_rnd = rnd
 
     def authorize(self):
+        self.random_string()
         return redirect(self.service.get_authorize_url(
             scope='user',
-            state=self.random_string)
+            state=self.str_rnd)
             )
 
     def callback(self):
         if 'code' not in request.args:
             return None, None
-        if not request.args.get('status') == self.str_rnd:
+        if not request.args.get('state') == self.str_rnd:
             return None, None
         oauth_session = self.service.get_auth_session(
             data={'code': request.args['code'],
