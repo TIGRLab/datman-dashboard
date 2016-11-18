@@ -2,7 +2,7 @@ from functools import wraps
 from flask import render_template, flash, url_for, redirect, request, jsonify, abort
 from flask import session as flask_session
 from flask_login import login_user, logout_user, current_user, \
-    login_required
+    login_required, fresh_login_required
 from sqlalchemy.exc import SQLAlchemyError
 from dashboard import app, db, lm
 from oauth import OAuthSignIn
@@ -91,7 +91,7 @@ def session_by_name(session_name=None):
 
 
 @app.route('/create_issue/<int:session_id>', methods=['GET', 'POST'])
-@login_required
+@fresh_login_required
 def create_issue(session_id):
     active_token = flask_session['active_token']
     if not current_user.is_allowed():
