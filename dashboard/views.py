@@ -1,5 +1,6 @@
 from functools import wraps
 from flask import render_template, flash, url_for, redirect, request, jsonify, abort
+from flask import session as flask_session
 from flask_login import login_user, logout_user, current_user, \
     login_required
 from sqlalchemy.exc import SQLAlchemyError
@@ -48,6 +49,7 @@ def before_request():
 @app.route('/index')
 #@login_required
 def index():
+    flash(flask_session['active_token'])
     # studies = db_session.query(Study).order_by(Study.nickname).all()
     studies = Study.query.order_by(Study.nickname).all()
     session_count = Session.query.count()
@@ -92,6 +94,7 @@ def session_by_name(session_name=None):
 @app.route('/create_issue/<int:session_id>', methods=['GET', 'POST'])
 @login_required
 def create_issue(session_id):
+    active_token = flask_session['active_token']
     if not current_user.is_allowed():
         flash('Go Away')
     pass
@@ -435,6 +438,7 @@ def oauth_callback(provider):
                     email=github_user['email'])
         db.session.add(user)
         db.session.commit()
-    user.access_token = access_token
+
     login_user(user, remember=True)
+    flask_session['active_token'] = access_token
     return redirect(url_for('index'))
