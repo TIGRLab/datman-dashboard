@@ -3,7 +3,9 @@
 from dashboard import db
 import utils
 import datman.scanid
+from hashlib import md5
 from sqlalchemy.orm import validates
+from flask_login import UserMixin
 import logging
 
 logger = logging.getLogger(__name__)
@@ -25,6 +27,63 @@ study_people_table = db.Table('study_people',
                                         db.ForeignKey('studies.id')),
                               db.Column('person_id', db.Integer,
                                         db.ForeignKey('people.id')))
+study_user_table = db.Table('study_users',
+                             db.Column('study_id', db.Integer,
+                                       db.ForeignKey('studies.id')),
+                             db.Column('user_id', db.Integer,
+                                       db.ForeignKey('user.id')))
+
+
+class User(UserMixin, db.Model):
+    __tablename__ = 'users'
+
+    id = db.Column(db.Integer, primary_key=True)
+    realname = db.Column(db.String(64))
+    username = db.Column(db.String(64), index=True)
+    email = db.Column(db.String(120), index=True)
+    studies = db.relationship('Study', secondary=study_user_table,
+                              back_populates='users')
+    is_admin = db.Column(db.Boolean, default=False)
+
+    @staticmethod
+    def make_unique_nickname(nickname):
+        if User.query.filter_by(username=nickname).first() is None:
+            return nickname
+        version = 2
+        while True:
+            new_nickname = nickname + str(version)
+            if User.query.filter_by(username=new_nickname).first() is None:
+                break
+            version += 1
+        return new_nickname
+
+    @property
+    def is_authenticated(self):
+        return True
+
+    @property
+    def is_active(self):
+        return True
+
+    @property
+    def is_anonymous(self):
+        return True
+
+    def get_id(self):
+        try:
+            return unicode(self.id)  # python 2
+        except:
+            return str(self.id)  # python 3
+
+    def avatar(self, size):
+        if self.email:
+            return 'http://www.gravatar.com/avatar/{}?d=mm&s={}'.format(
+                md5(self.email.encode('utf-8')).hexdigest(),
+                size)
+        else:
+            return 'http://www.gravatar.com/avatar/{}?d=mm&s={}'.format(
+                md5('this isnt here').hexdigest(),
+                size)
 
 
 class Study(db.Model):
@@ -42,6 +101,9 @@ class Study(db.Model):
     fullname = db.Column(db.String(1024))
     primary_contact_id = db.Column(db.Integer, db.ForeignKey('people.id'))
     primary_contact = db.relationship('Person')
+    users = db.relationship('User', secondary=study_user_table,
+                            back_populates='studies')
+
 
     def __repr__(self):
         return ('<Study {}>'.format(self.nickname))

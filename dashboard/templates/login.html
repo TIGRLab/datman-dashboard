@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% include 'flash.html' %}
+{% block content %}
+<div class="bd-pageheader jumbotron">
+  <h1>Welcome</h1>
+    <p class="lead"> Please login using the provider listed below</p>
+  </h1>
+</div>
+<div class="container">
+  <h2><a href="{{ url_for('oauth_authorize', provider='github') }}">GitHub</a></h2>
+</div>
+{% endblock %}

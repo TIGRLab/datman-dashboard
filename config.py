@@ -16,3 +16,13 @@ MAIL_PASSWORD = None
 
 # administrator list
 ADMINS = ['tom@maladmin.com']
+
+
+OPENID_PROVIDERS = [
+    {'name': 'GitHub',
+     'url': "https://github.com/login/oauth/authorize"}
+]
+
+OAUTH_CREDENTIALS = {'github': {'id': '7ea548a6ab79d6c509a0',
+                                'secret': os.environ.get('OAUTH_SECRET_GITHUB')
+                                }}

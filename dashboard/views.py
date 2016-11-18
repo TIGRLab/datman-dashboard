@@ -1,8 +1,12 @@
+from functools import wraps
 from flask import render_template, flash, url_for, redirect, request, jsonify, abort
+from flask_login import login_user, logout_user, current_user, \
+    login_required
 from sqlalchemy.exc import SQLAlchemyError
-from dashboard import app, db
+from dashboard import app, db, lm
+from oauth import OAuthSignIn
 from .queries import query_metric_values_byid, query_metric_types, query_metric_values_byname
-from .models import Study, Site, Session, ScanType, Scan
+from .models import Study, Site, Session, ScanType, Scan, User
 from .forms import SelectMetricsForm, StudyOverviewForm, SessionForm, ScanForm
 from . import utils
 import json
@@ -17,8 +21,31 @@ from xml.sax.saxutils import escape
 logger = logging.getLogger(__name__)
 logger.info('Loading views')
 
+
+@lm.user_loader
+def load_user(id):
+    return User.query.get(id)
+
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            return redirect(url_for('login', next=request.url))
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+@app.before_request
+def before_request():
+    if current_user.is_authenticated:
+        db.session.add(current_user)
+        db.session.commit()
+
+
 @app.route('/')
 @app.route('/index')
+@login_required
 def index():
     # studies = db_session.query(Study).order_by(Study.nickname).all()
     studies = Study.query.order_by(Study.nickname).all()
@@ -60,6 +87,13 @@ def session_by_name(session_name=None):
     session = q.first()
     return redirect(url_for('session', session_id=session.id))
 
+
+@app.route('/create_issue/<int:session_id>', methods=['GET', 'POST'])
+@login_required
+def create_issue(session_id):
+    if not current_user.is_allowed():
+        flash('Go Away')
+    pass
 
 
 @app.route('/session')
@@ -140,7 +174,7 @@ def scan(scan_id=None):
 def study(study_id=None, active_tab=None):
     if study_id is None:
         return redirect('/index')
-
+    flash(current_user.access_token)
     study = Study.query.get(study_id)
     form = StudyOverviewForm()
 
@@ -356,3 +390,39 @@ def not_found_error(error):
 def internal_error(error):
     db.session.rollback()
     return render_template('500.html'), 500
+
+
+@app.route('/login')
+def login():
+    return render_template('login.html')
+
+@app.route('/authorize/<provider>')
+def oauth_authorize(provider):
+    if not current_user.is_anonymous:
+        return redirect(url_for('login'))
+    oauth = OAuthSignIn.get_provider(provider)
+    return oauth.authorize()
+
+
+@app.route('/callback/<provider>')
+def oauth_callback(provider):
+    if not current_user.is_anonymous:
+        return redirect(url_for('index'))
+    oauth = OAuthSignIn.get_provider(provider)
+    access_token, github_user = oauth.callback()
+
+    if access_token is None:
+        flash('Authentication failed.')
+        return redirect(url_for('login'))
+
+    user = User.query.filter_by(username=github_user['login']).first()
+    if not user:
+        username = User.make_unique_nickname(github_user['login'])
+        user = User(username=username,
+                    realname=github_user['name'],
+                    email=github_user['email'])
+        db.session.add(user)
+        db.session.commit()
+    user.access_token = access_token
+    login_user(user, remember=True)
+    return redirect(url_for('index'))

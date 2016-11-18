@@ -41,22 +41,24 @@
           </div>
           <div id="navbar" class="navbar-collapse collapse">
             <ul class="nav navbar-nav navbar-right">
-              <li class=dropdown>
-                {% if study %}
-                  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">{{ study.nickname }} <span class="caret"></span></a>
-                {% else %}
-                  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Studies <span class="caret"></span></a>
-                {% endif %}
-                <ul class="dropdown-menu" role="menu" aria-labelledby="site_menu">
-                  {% for study in studies %}
-                  <li role="presentation">
-                    <a role="menuitem" href= {{ url_for('study', study_id=study.id) }} >
-                      {{ study.nickname }}
-                    </a>
-                  </li>
-                {% endfor %}
-              </ul>
-            </li>
+              {% if studies %}
+                <li class=dropdown>
+                  {% if study %}
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">{{ study.nickname }} <span class="caret"></span></a>
+                  {% else %}
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Studies <span class="caret"></span></a>
+                  {% endif %}
+                  <ul class="dropdown-menu" role="menu" aria-labelledby="site_menu">
+                    {% for study in studies %}
+                    <li role="presentation">
+                      <a role="menuitem" href= {{ url_for('study', study_id=study.id) }} >
+                        {{ study.nickname }}
+                      </a>
+                    </li>
+                  {% endfor %}
+                </ul>
+              </li>
+            {% endif %}
           </ul>
         </div>
       </div>
