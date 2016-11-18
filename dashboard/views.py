@@ -116,6 +116,8 @@ def session(session_id=None, delete=False, issue_title="", issue_body=""):
             gh = Github(token)
             repo = gh.get_user("TIGRLab").get_repo("Admin")
             iss = repo.create_issue(issue_title, issue_body)
+            session.gh_issue = iss.number
+            db.session.commit()
             flash("Issue '{}' created!".format(issue_title))
         except:
             flash("Issue '{}' was not created successfully.".format(issue_title))
@@ -188,7 +190,7 @@ def scan(scan_id=None):
 def study(study_id=None, active_tab=None):
     if study_id is None:
         return redirect('/index')
-    flash(current_user.access_token)
+
     study = Study.query.get(study_id)
     form = StudyOverviewForm()
 

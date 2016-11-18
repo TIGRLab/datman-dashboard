@@ -151,6 +151,7 @@ class Session(db.Model):
     scans = db.relationship('Scan', order_by="Scan.series_number", cascade="all, delete-orphan" )
     is_phantom = db.Column(db.Boolean)
     cl_comment = db.Column(db.String(1024))
+    gh_issue = db.Column(db.Integer)
 
 
     def __repr__(self):
