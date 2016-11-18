@@ -121,6 +121,7 @@ def session(session_id=None, delete=False, issue_title="", issue_body=""):
             flash("Issue '{}' created!".format(issue_title))
         except:
             flash("Issue '{}' was not created successfully.".format(issue_title))
+        return(redirect(url_for('session', session_id=session.id)))
     if delete:
         try:
             db.session.delete(session)
