@@ -90,6 +90,7 @@ def session_by_name(session_name=None):
     return redirect(url_for('session', session_id=session.id))
 
 
+@app.route('/create_issue/<int:session_id>', methods=['GET', 'POST'])
 @app.route('/create_issue/<int:session_id>/<issue_title>/<issue_body>', methods=['GET', 'POST'])
 @fresh_login_required
 def create_issue(session_id, issue_title="", issue_body=""):
@@ -121,7 +122,7 @@ def session(session_id=None, delete=False):
     token = flask_session['active_token']
     try:
         gh = Github(token)
-        open_issues = gh.search_issues("{} in:title repo:TIGRLab/admin state:open")
+        open_issues = gh.search_issues("{} in:title repo:TIGRLab/admin state:open".format(session.name))
         if open_issues.totalCount:
             session.gh_issue = open_issues[0].number
         else:
