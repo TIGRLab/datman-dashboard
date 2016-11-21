@@ -47,9 +47,8 @@ def before_request():
 
 @app.route('/')
 @app.route('/index')
-#@login_required
+@login_required
 def index():
-    flash(flask_session['active_token'])
     # studies = db_session.query(Study).order_by(Study.nickname).all()
     studies = Study.query.order_by(Study.nickname).all()
     session_count = Session.query.count()
