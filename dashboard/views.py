@@ -100,32 +100,19 @@ def session_by_name(session_name=None):
 
 
 @app.route('/create_issue/<int:session_id>', methods=['GET', 'POST'])
+@app.route('/create_issue/<int:session_id>/<issue_title>/<issue_body>', methods=['GET', 'POST'])
 @fresh_login_required
-def create_issue(session_id):
-    active_token = flask_session['active_token']
-    if not current_user.is_allowed():
-        flash('Go Away')
-    pass
 
-
-@app.route('/session')
-@app.route('/session/<int:session_id>', methods=['GET', 'POST'])
-@app.route('/session/<int:session_id>/<delete>', methods=['GET', 'POST'])
-@app.route('/session/<int:session_id>/<issue_title>/<issue_body>', methods=['GET', 'POST'])
-@login_required
-def session(session_id=None, delete=False, issue_title="", issue_body=""):
-    if session_id is None:
-        return redirect('index')
-
+def create_issue(session_id, issue_title="", issue_body=""):
     session = Session.query.get(session_id)
-
     if not current_user.has_study_access(session.study):
-        flash('Not authorised')
+        flash("Not authorised")
         return redirect(url_for('index'))
+        
+    token = flask_session['active_token']
 
     if issue_title and issue_body:
         try:
-            token = flask_session['active_token']
             gh = Github(token)
             repo = gh.get_user("TIGRLab").get_repo("Admin")
             iss = repo.create_issue(issue_title, issue_body)
@@ -134,7 +121,34 @@ def session(session_id=None, delete=False, issue_title="", issue_body=""):
             flash("Issue '{}' created!".format(issue_title))
         except:
             flash("Issue '{}' was not created successfully.".format(issue_title))
-        return(redirect(url_for('session', session_id=session.id)))
+    else:
+        flash("Please enter both an issue title and description.")
+    return(redirect(url_for('session', session_id=session.id)))
+
+@app.route('/session')
+@app.route('/session/<int:session_id>', methods=['GET', 'POST'])
+@app.route('/session/<int:session_id>/<delete>', methods=['GET', 'POST'])
+def session(session_id=None, delete=False):
+    if session_id is None:
+        return redirect('index')
+
+    session = Session.query.get(session_id)
+    if not current_user.has_study_access(session.study):
+        flash('Not authorised')
+        return redirect(url_for('index'))
+    #Update open issue ID if necessary
+    token = flask_session['active_token']
+    try:
+        gh = Github(token)
+        open_issues = gh.search_issues("{} in:title repo:TIGRLab/admin state:open".format(session.name))
+        if open_issues.totalCount:
+            session.gh_issue = open_issues[0].number
+        else:
+            session.gh_issue = ""
+        db.session.commit()
+    except:
+        flash("Error searching for session's GitHub issue.")
+
     if delete:
         try:
             db.session.delete(session)

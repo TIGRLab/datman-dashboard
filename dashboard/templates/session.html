@@ -141,9 +141,8 @@
   if (issBody === null) {
     return;
   }
-  url = "{{url_for('session', session_id=session.id)}}/" + encodeURIComponent(issTitle) + '/' + encodeURIComponent(issBody)
+  url = "{{url_for('create_issue', session_id=session.id)}}/" + encodeURIComponent(issTitle) + '/' + encodeURIComponent(issBody)
   window.location.href = url;
-
   })
   </script>
 {% endblock %}
