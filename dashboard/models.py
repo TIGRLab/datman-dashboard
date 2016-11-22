@@ -44,6 +44,28 @@ class User(UserMixin, db.Model):
     studies = db.relationship('Study', secondary=study_user_table,
                               back_populates='users')
     is_admin = db.Column(db.Boolean, default=False)
+    has_phi = db.Column(db.Boolean, default=False)
+
+    def get_studies(self):
+        # returns the list of studies that a user has access to
+        if self.is_admin:
+            studies = Study.query.order_by(Study.nickname).all()
+        else:
+            studies = self.studies
+        return(studies)
+
+    def has_study_access(self, study):
+        if not isinstance(study, Study):
+            # see is we can get by id
+            study = Study.query.get(study)
+            if not study:
+                study = Study.query.filter_by(nickname=study)
+
+        if self.is_admin or study in self.studies:
+            return True
+        else:
+            return
+
 
     @staticmethod
     def make_unique_nickname(nickname):

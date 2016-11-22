@@ -50,7 +50,8 @@ def before_request():
 @login_required
 def index():
     # studies = db_session.query(Study).order_by(Study.nickname).all()
-    studies = Study.query.order_by(Study.nickname).all()
+    studies = current_user.get_user_studies()
+
     session_count = Session.query.count()
     study_count = Study.query.count()
     site_count = Site.query.count()
@@ -63,17 +64,20 @@ def index():
 
 
 @app.route('/sites')
+@login_required
 def sites():
     pass
 
 
 @app.route('/scantypes')
+@login_required
 def scantypes():
     pass
 
 
 @app.route('/session_by_name')
 @app.route('/session_by_name/<session_name>', methods=['GET'])
+@login_required
 def session_by_name(session_name=None):
     if session_name is None:
         return redirect('/index')
@@ -87,6 +91,11 @@ def session_by_name(session_name=None):
         return redirect(url_for('index'))
 
     session = q.first()
+
+    if not current_user.has_study_access(session.study):
+        flash('Not authorised')
+        return redirect(url_for('index'))
+
     return redirect(url_for('session', session_id=session.id))
 
 
@@ -103,11 +112,16 @@ def create_issue(session_id):
 @app.route('/session/<int:session_id>', methods=['GET', 'POST'])
 @app.route('/session/<int:session_id>/<delete>', methods=['GET', 'POST'])
 @app.route('/session/<int:session_id>/<issue_title>/<issue_body>', methods=['GET', 'POST'])
+@login_required
 def session(session_id=None, delete=False, issue_title="", issue_body=""):
     if session_id is None:
         return redirect('index')
 
     session = Session.query.get(session_id)
+
+    if not current_user.has_study_access(session.study):
+        flash('Not authorised')
+        return redirect(url_for('index'))
 
     if issue_title and issue_body:
         try:
@@ -132,7 +146,7 @@ def session(session_id=None, delete=False, issue_title="", issue_body=""):
         except Exception:
             flash('Failed to delete session:{}'.format(session.name))
 
-    studies = Study.query.order_by(Study.nickname).all()
+    studies = current_user.get_user_studies()
     form = SessionForm(obj=session)
 
     if form.validate_on_submit():
@@ -160,13 +174,18 @@ def session(session_id=None, delete=False, issue_title="", issue_body=""):
 
 @app.route('/scan', methods=["GET"])
 @app.route('/scan/<int:scan_id>', methods=['GET', 'POST'])
+@login_required
 def scan(scan_id=None):
     if scan_id is None:
         flash('Invalid scan')
         return redirect(url_for('index'))
 
-    studies = Study.query.order_by(Study.nickname).all()
+    studies = current_user.get_user_studies()
     scan = Scan.query.get(scan_id)
+    if not current_user.has_study_access(scan.session.study):
+        flash('Not authorised')
+        return redirect(url_for('index'))
+
     form = ScanForm()
     if form.validate_on_submit():
         scan.bl_comment = form.bl_comment.data
@@ -187,11 +206,17 @@ def scan(scan_id=None):
 @app.route('/study')
 @app.route('/study/<int:study_id>', methods=['GET', 'POST'])
 @app.route('/study/<int:study_id>/<active_tab>', methods=['GET', 'POST'])
+@login_required
 def study(study_id=None, active_tab=None):
     if study_id is None:
         return redirect('/index')
 
     study = Study.query.get(study_id)
+
+    if not current_user.has_study_access(study):
+        flash('Not authorised')
+        return redirect(url_for('index'))
+
     form = StudyOverviewForm()
 
     # load the study config
@@ -236,7 +261,7 @@ def study(study_id=None, active_tab=None):
     form.study_id.data = study_id
 
     return render_template('study.html',
-                           studies=Study.query.order_by(Study.nickname),
+                           studies=current_user.get_user_studies(),
                            metricnames=study.get_valid_metric_names(),
                            study=study,
                            form=form,
@@ -245,11 +270,13 @@ def study(study_id=None, active_tab=None):
 
 @app.route('/person')
 @app.route('/person/<int:person_id>', methods=['GET'])
+@login_required
 def person(person_id=None):
     return redirect('/index')
 
 
 @app.route('/metricData', methods=['GET', 'POST'])
+@login_required
 def metricData():
     form = SelectMetricsForm()
     data = None
@@ -310,6 +337,7 @@ def _checkRequest(request, key):
 
 
 @app.route('/metricDataAsJson', methods=['Get', 'Post'])
+@login_required
 def metricDataAsJson(format='http'):
     fields = {'studies': 'study_id',
               'sites': 'site_id',
@@ -379,12 +407,17 @@ def metricDataAsJson(format='http'):
 
 @app.route('/todo')
 @app.route('/todo/<int:study_id>', methods=['GET'])
+@login_required
 def todo(study_id=None):
     if study_id:
         study = Study.query.get(study_id)
         study_name = study.nickname
     else:
         study_name = None
+
+    if not current_user.has_study_access(study_id):
+        flash('Not authorised')
+        return redirect(url_for('index'))
 
     # todo_list = utils.get_todo(study_name)
     try:
