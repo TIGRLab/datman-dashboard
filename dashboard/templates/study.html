@@ -4,7 +4,11 @@
 {% block content %}
   <div class="bd-pageheader jumbotron">
     <h1>{{ study.name }}</h1>
-      <p class="lead"> {{ study.description }}</p>
+      {% if study.description %}
+      <p class="lead">
+        {{ study.description }}
+        </p>
+        {% endif %}
     </h1>
   </div>
   <div class="container">
@@ -48,6 +52,7 @@
       {% else %}
         <div id="sessions" class="tab-pane fade in">
       {% endif %}
+    </br>
         <table class="table table-condensed table-hover table-striped" id="tbl_sessions">
           <thead>
             <tr>
