@@ -50,7 +50,7 @@ def before_request():
 @login_required
 def index():
     # studies = db_session.query(Study).order_by(Study.nickname).all()
-    studies = current_user.get_user_studies()
+    studies = current_user.get_studies()
 
     session_count = Session.query.count()
     study_count = Study.query.count()
@@ -108,7 +108,7 @@ def create_issue(session_id, issue_title="", issue_body=""):
     if not current_user.has_study_access(session.study):
         flash("Not authorised")
         return redirect(url_for('index'))
-        
+
     token = flask_session['active_token']
 
     if issue_title and issue_body:
@@ -160,7 +160,7 @@ def session(session_id=None, delete=False):
         except Exception:
             flash('Failed to delete session:{}'.format(session.name))
 
-    studies = current_user.get_user_studies()
+    studies = current_user.get_studies()
     form = SessionForm(obj=session)
 
     if form.validate_on_submit():
@@ -194,7 +194,7 @@ def scan(scan_id=None):
         flash('Invalid scan')
         return redirect(url_for('index'))
 
-    studies = current_user.get_user_studies()
+    studies = current_user.get_studies()
     scan = Scan.query.get(scan_id)
     if not current_user.has_study_access(scan.session.study):
         flash('Not authorised')
@@ -275,7 +275,7 @@ def study(study_id=None, active_tab=None):
     form.study_id.data = study_id
 
     return render_template('study.html',
-                           studies=current_user.get_user_studies(),
+                           studies=current_user.get_studies(),
                            metricnames=study.get_valid_metric_names(),
                            study=study,
                            form=form,

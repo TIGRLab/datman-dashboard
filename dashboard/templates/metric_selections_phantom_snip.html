@@ -1,69 +1,72 @@
 <div style="display:none" id='study_name'>{{ study.nickname }}</div>
 <div style="display:none" id='phantoms'>1</div>
+</br>
 <div class="row">
   <div class="input-group" role="group" aria-label="site">
     <span class="input-group-addon">
-      <h3 class="text-left">
-      <strong>Select sites:</strong>
+      <div class="row">
+      <h4>
+      Select sites:
       {% for site in study.sites %}
         <label>{{ site.name }} <input type="checkbox" aria-label="{{site.name}}" value="{{site.name}}" name="site"/></label>
       {% endfor %}
-    </h3>
-    </span>
+    </h4>
   </div>
+<div class="row"><center>
+    <div class="btn-group col-md-4" role="group" aria-label="scan type" id="scanclassselector">Select scan type:
+      <center><button type="button" class="btn btn-default centered dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="margin-top: 5px;">
+        <span data-bind="label" id="scantypeselector">Scan Type: </span><span class="caret"></span>
+      </button>
+      <ul class="dropdown-menu" role="menu">
+        <li><a href="#">FMRI </a></li>
+        <li><a href="#">DTI </a></li>
+        <li><a href="#">T1 </a></li>
+      </ul></center>
 </div>
 
-<div class="row">
-  <div class="btn-group col-md-3" role="group" aria-label="scan type" id="scanclassselector">
-    <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-      <span data-bind="label" id="scantypeselector">Scan Type: </span><span class="caret"></span>
-    </button>
-    <ul class="dropdown-menu" role="menu">
-      <li><a href="#">FMRI </a></li>
-      <li><a href="#">DTI </a></li>
-      <li><a href="#">T1 </a></li>
-    </ul>
-  </div>
+<div class="btn-group col-md-3" role="group" aria-label="scan tags" id="scantypeselector">Select scan subtype:</br>
+  {% for scantype in study.scantypes %}
+    {% if scantype.name in ['T1'] %}
+      <label style="display:none" class="scantype_t1"> {{ scantype.name }}<input type="radio" aria-label="{{scantype.name}}" value="{{scantype.name}}" name="scantype" style="margin-top: 5px;"/></label>
+    {% elif scantype.name.startswith('DTI') %}
+      <label style="display:none" class="scantype_dti"> {{ scantype.name }}<input type="radio" aria-label="{{scantype.name}}" value="{{scantype.name}}" name="scantype" style="margin-top: 5px;"/></label>
+    {% elif scantype.name in ['RST'] %}
+      <label style="display:none" class="scantype_fmri"> {{ scantype.name }}<input type="radio" aria-label="{{scantype.name}}" value="{{scantype.name}}" name="scantype" style="margin-top: 5px;"/></label>
+    {% endif %}
+  {% endfor %}
+</div>
 
-  <div class="col-md-6">
-    <div class="input-group col-md-4" role="group" aria-label="scan tags" id="scantypeselector">
-        <span class="text-left">
-        {% for scantype in study.scantypes %}
-          {% if scantype.name in ['T1'] %}
-            <label style="display:none" class="scantype_t1"> {{ scantype.name }}<input type="radio" aria-label="{{scantype.name}}" value="{{scantype.name}}" name="scantype"/></label>
-          {% elif scantype.name.startswith('DTI') %}
-            <label style="display:none" class="scantype_dti"> {{ scantype.name }}<input type="radio" aria-label="{{scantype.name}}" value="{{scantype.name}}" name="scantype"/></label>
-          {% elif scantype.name in ['RST'] %}
-            <label style="display:none" class="scantype_fmri"> {{ scantype.name }}<input type="radio" aria-label="{{scantype.name}}" value="{{scantype.name}}" name="scantype"/></label>
-          {% endif %}
-        {% endfor %}
-      </span>
+<div class="btn-group col-md-4" role="group" aria-label="metric types" id="metrictypeselector">Select metric type:
+  <center><button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="margin-top: 5px;">
+    <span data-bind="label">Metric Type: </span><span class="caret"></span>
+  </button>
+  <ul class="dropdown-menu drawplot" role='menu'>
+  {% for metrictype in metricnames %}
+    {% if metrictype[0] == 'DTI' %}
+      {% if metrictype[1] in ['AVENyqratio', 'AVE Ave.radpixshift', 'AVE Ave.colpixshift', 'aveSNR_dwi'] %}
+        <li style="display:none" class="scantype_dti">{{ metrictype[1] }} </li>
+      {% endif %}
+    {% elif metrictype[0] == 'FMRI' %}
+      {% if metrictype[1] in  ['sfnr', 'rdc'] %}
+        <li style="display:none" class="scantype_fmri">{{ metrictype[1] }} </li>
+      {% endif %}
+    {% elif metrictype[0] == 'T1' %}
+      {% if metrictype[1] in ['c1', 'c2', 'c3', 'c4'] %}
+        <li style="display:none" class="scantype_t1"> {{ metrictype[1] }} </li>
+      {% endif %}
+    {% endif %}
+  {% endfor %}
+</ul></center>
+</div>
+
+</center>
+</div>
+
+    </span>
     </div>
   </div>
 
-  <div class="btn-group col-md-3" role="group" aria-label="metric types" id="metrictypeselector">
-    <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-      <span data-bind="label">Metric Type: </span><span class="caret"></span>
-    </button>
-    <ul class="dropdown-menu drawplot" role='menu'>
-    {% for metrictype in metricnames %}
-      {% if metrictype[0] == 'DTI' %}
-        {% if metrictype[1] in ['AVENyqratio', 'AVE Ave.radpixshift', 'AVE Ave.colpixshift', 'aveSNR_dwi'] %}
-          <li style="display:none" class="scantype_dti">{{ metrictype[1] }} </li>
-        {% endif %}
-      {% elif metrictype[0] == 'FMRI' %}
-        {% if metrictype[1] in  ['sfnr', 'rdc'] %}
-          <li style="display:none" class="scantype_fmri">{{ metrictype[1] }} </li>
-        {% endif %}
-      {% elif metrictype[0] == 'T1' %}
-        {% if metrictype[1] in ['c1', 'c2', 'c3', 'c4'] %}
-          <li style="display:none" class="scantype_t1"> {{ metrictype[1] }} </li>
-        {% endif %}
-      {% endif %}
-    {% endfor %}
-    </ul>
-  </div>
-</div>
+</br>
 <div class="row" id="loading_chart" style="display:none">
   <img class="center-block" src='/static/images/ajax-loader.gif' alt="loading">
 </div>
