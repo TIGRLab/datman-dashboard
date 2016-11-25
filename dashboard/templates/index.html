@@ -11,16 +11,19 @@
   <div>
     <h3>Select a study below:</h3>
     <table class="table-striped">
-      <tr><td><b>Study name</b></td>
-        <td><b># of sessions</b></td>
-      </tr>
-      {% for study in studies %}
-      {% if study.name %}
+      <th>
         <tr>
-          <td><a href="{{ url_for('study', study_id=study.id) }}"> {{ study.name }}</a></td>
-          <td><center>{{study.sessions|count}}</center></td>
+          <td>Nickname</td>
+          <td>Study name</td>
+          <td># of sessions</td>
         </tr>
-        {% endif %}
+      </th>
+      {% for study in studies %}
+      <tr>
+        <td><a href="{{ url_for('study', study_id=study.id) }}"> {{ study.nickname }}</a></td>
+        <td><a href="{{ url_for('study', study_id=study.id) }}"> {{ study.name }}</a></td>
+        <td><center>{{study.sessions|count}}</center></td>
+      </tr>
       {% endfor %}
     </table>
   </div>

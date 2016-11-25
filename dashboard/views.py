@@ -8,7 +8,7 @@ from dashboard import app, db, lm
 from oauth import OAuthSignIn
 from .queries import query_metric_values_byid, query_metric_types, query_metric_values_byname
 from .models import Study, Site, Session, ScanType, Scan, User
-from .forms import SelectMetricsForm, StudyOverviewForm, SessionForm, ScanForm
+from .forms import SelectMetricsForm, StudyOverviewForm, SessionForm, ScanForm, UserForm
 from . import utils
 import json
 import os
@@ -44,6 +44,11 @@ def before_request():
         db.session.add(current_user)
         db.session.commit()
 
+@app.route('/logout')
+def logout():
+    logout_user()
+    flash('You have been logged out.')
+    return redirect(url_for('login'))
 
 @app.route('/')
 @app.route('/index')
@@ -55,13 +60,11 @@ def index():
     session_count = Session.query.count()
     study_count = Study.query.count()
     site_count = Site.query.count()
-
     return render_template('index.html',
                            studies=studies,
                            session_count=session_count,
                            study_count=study_count,
                            site_count=site_count)
-
 
 @app.route('/sites')
 @login_required
@@ -74,6 +77,72 @@ def sites():
 def scantypes():
     pass
 
+@app.route('/users')
+@login_required
+def users():
+    if not current_user.is_admin:
+        flash('You are not authorised')
+        return redirect(url_for('user'))
+    users = User.query.all()
+    user_forms = []
+    for user in users:
+        form = UserForm()
+        form.user_id.data = user.id
+        form.realname.data = user.realname
+        form.is_admin.data = user.is_admin
+        form.has_phi.data = user.has_phi
+        for study in user.studies:
+            form.studies.data.append(study.id)
+        user_forms.append(form)
+    return render_template('users.html',
+                           studies=current_user.get_studies(),
+                           user_forms=user_forms)
+
+@app.route('/user', methods=['GET', 'POST'])
+@app.route('/user/<int:user_id>', methods=['GET', 'POST'])
+@login_required
+def user(user_id=None):
+    form = UserForm()
+
+    if form.validate_on_submit():
+        if form.user_id.data == current_user.id or current_user.is_admin:
+            user = User.query.get(form.user_id.data)
+            user.realname = form.realname.data
+            if current_user.is_admin:
+                # only admins can update this info
+                user.is_admin = form.is_admin.data
+                user.has_phi = form.has_phi.data
+                for study_id in form.studies.data:
+                    study = Study.query.get(int(study_id))
+                    user.studies.append(study)
+            db.session.add(user)
+            db.session.commit()
+            flash('User profile updated')
+            return(redirect(url_for('user', user_id=user_id)))
+        else:
+            flash('You are not authorised to update this')
+            return(redirect(url_for('user')))
+    else:
+        if user_id and current_user.is_admin:
+            user = User.query.get(user_id)
+        else:
+            user = current_user
+
+        user_studyids = [study.id for study in user.studies]
+
+        form.user_id.data = user.id
+        form.realname.data = user.realname
+        form.is_admin.data = user.is_admin
+        form.has_phi.data = user.has_phi
+        form.studies.data = user_studyids
+        if not current_user.is_admin:
+            # disable some fields
+            form.is_admin(disabled=True)
+            form.has_phi(disabled=True)
+            form.studies(disabled=True)
+    return render_template('user.html',
+                           user=user,
+                           form=form)
 
 @app.route('/session_by_name')
 @app.route('/session_by_name/<session_name>', methods=['GET'])
@@ -102,7 +171,6 @@ def session_by_name(session_name=None):
 @app.route('/create_issue/<int:session_id>', methods=['GET', 'POST'])
 @app.route('/create_issue/<int:session_id>/<issue_title>/<issue_body>', methods=['GET', 'POST'])
 @fresh_login_required
-
 def create_issue(session_id, issue_title="", issue_body=""):
     session = Session.query.get(session_id)
     if not current_user.has_study_access(session.study):
@@ -184,7 +252,6 @@ def session(session_id=None, delete=False):
                            study=session.study,
                            session=session,
                            form=form)
-
 
 @app.route('/scan', methods=["GET"])
 @app.route('/scan/<int:scan_id>', methods=['GET', 'POST'])

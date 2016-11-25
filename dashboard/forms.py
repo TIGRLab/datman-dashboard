@@ -1,9 +1,9 @@
 from datetime import timedelta
 from flask import session
 from flask_wtf import FlaskForm
-from wtforms import SelectField, SelectMultipleField, HiddenField, TextAreaField, TextField, FormField
+from wtforms import SelectField, SelectMultipleField, HiddenField, TextAreaField, TextField, FormField, BooleanField
 from wtforms.validators import DataRequired
-from models import Scan, Session
+from models import Study
 from wtforms.csrf.session import SessionCSRF
 
 
@@ -35,9 +35,21 @@ class StudyOverviewForm(FlaskForm):
 
 class ScanForm(FlaskForm):
     bl_comment = TextField(u'Blacklist_comment',
-                                validators=[DataRequired()])
+                           validators=[DataRequired()])
 
 
 class SessionForm(FlaskForm):
     cl_comment = TextField(u'Checklist_comment',
-                               validators=[DataRequired()])
+                           validators=[DataRequired()])
+
+class UserForm(FlaskForm):
+    studies = Study.query.all()
+    study_choices = [(str(study.id), study.nickname) for study in studies]
+
+    user_id = HiddenField()
+    realname = TextField(u'realname',
+                         validators=[DataRequired()])
+    is_admin = BooleanField(u'is_admin', default=False)
+    has_phi = BooleanField(u'has_phi', default=False)
+    studies = SelectMultipleField(u'studies',
+                                  choices=study_choices)

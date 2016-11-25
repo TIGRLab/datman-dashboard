@@ -41,8 +41,30 @@
             <a class="navbar-brand" href="/">Kimel Lab QC Monitor</a>
           </div>
           <div id="navbar" class="navbar-collapse collapse">
+            {% if current_user.is_authenticated %}
             <ul class="nav navbar-nav navbar-right">
-              {% if studies %}
+              {% if current_user.is_admin %}
+                <li class="dropdown">
+                  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Admin <span class="caret"></span></a>
+                  <ul class="dropdown-menu" role="menu" aria-labelledby="admin_roles">
+                    <li role="presentation">
+                      <a role="menuitem" href={{ url_for('users') }} >Users</a>
+                    </li>
+                  </ul>
+                </li>
+              {% endif %}
+                <li class="dropdown">
+                  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">User <span class="caret"></span></a>
+                  <ul class="dropdown-menu" role="menu" aria-labelledby="user_menu">
+                    <li role="presentation">
+                      <a role="menuitem" href={{ url_for('user') }} >Profile</a>
+                    </li>
+                    <li role="presentation">
+                      <a role="menuitem" href={{ url_for('logout') }} >Logout</a>
+                    </li>
+                  </ul>
+                </li>
+
                 <li class=dropdown>
                   {% if study %}
                     <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">{{ study.nickname }} <span class="caret"></span></a>
@@ -50,7 +72,7 @@
                     <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Studies <span class="caret"></span></a>
                   {% endif %}
                   <ul class="dropdown-menu" role="menu" aria-labelledby="site_menu">
-                    {% for study in studies %}
+                    {% for study in current_user.get_studies() %}
                     <li role="presentation">
                       <a role="menuitem" href= {{ url_for('study', study_id=study.id) }} >
                         {{ study.nickname }}
