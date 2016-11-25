@@ -5,8 +5,7 @@ from subprocess import Popen, STDOUT, PIPE
 import datman.config
 import datman.scanid
 
-
-
+DM_QC_TODO = '/archive/code/datman/bin/dm-qc-todo.py'
 logger = logging.getLogger(__name__)
 logger.info('loading utils')
 
@@ -34,10 +33,10 @@ def get_todo(study=None, timeout=30):
         if not _check_study(study):
             logger.error('Invalid study:{}'.format(study))
             return
-        out = Popen(['timeout', str(timeout), "dm-qc-todo.py", "--study", str(study)],
+        out = Popen(['timeout', str(timeout), DM_QC_TODO, "--study", str(study)],
                     stderr=STDOUT, stdout=PIPE)
     else:
-        out = Popen(['timeout', str(timeout), "dm-qc-todo.py"],
+        out = Popen(['timeout', str(timeout), DM_QC_TODO],
                     stderr=STDOUT, stdout=PIPE)
 
     result = out.communicate()[0]
@@ -196,7 +195,6 @@ def update_checklist(session_name, comment, checklist_file=None, study_name=None
 
     if not os.path.isfile(checklist):
         logger.warning('Checklist file:{} not found, creating'.format(checklist))
-
     try:
         with open(checklist, 'r') as cl_file:
             lines = cl_file.readlines()
@@ -224,6 +222,7 @@ def update_checklist(session_name, comment, checklist_file=None, study_name=None
     if not target_idx:
         logger.warning('Entry:{} not found in checklist:{}, adding.'
                        .format(session_name, checklist))
+        logger.info('Running as user:{}'.format(os.getuid()))
         with open(checklist, 'a+') as cl_file:
             cl_file.write('qc_{}.html {}\n'.format(session_name, comment))
         return True
