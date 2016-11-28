@@ -91,8 +91,8 @@ def users():
         form.realname.data = user.realname
         form.is_admin.data = user.is_admin
         form.has_phi.data = user.has_phi
-        for study in user.studies:
-            form.studies.data.append(study.id)
+        study_ids = [str(study.id) for study in user.studies]
+        form.studies.data = study_ids
         user_forms.append(form)
     return render_template('users.html',
                            studies=current_user.get_studies(),
