@@ -14,7 +14,7 @@
       html = html + "<span class='label-info'>QC check required for:"
         + "<a href={{ url_for('session_by_name') }}/"+ session + ">"
         + session + "</a></span>";
-    }else if(data[1].trim().startsWith('NO checklist')){
+    }else if(data[1].trim().startsWith('No checklist')){
       html = html + "<span class='label-warning'>Checklist entry missing for:"
         + "<a href={{ url_for('session_by_name') }}/"+ session + ">"
         + session + "</a></span>";
