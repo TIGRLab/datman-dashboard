@@ -42,6 +42,7 @@ def query_metric_values_byid(**kwargs):
     q = q.join(Session, Scan.session)
     q = q.join(Site, Session.site)
     q = q.join(Study, Session.study)
+    q = q.filter(Scan.bl_comment == None)
 
     for key in good_keys:
         if kwargs[key]:
@@ -91,6 +92,7 @@ def query_metric_values_byname(**kwargs):
     q = q.join(Session, Scan.session)
     q = q.join(Site, Session.site)
     q = q.join(Study, Session.study)
+    q = q.filter(Scan.bl_comment == None)
 
     for key in good_keys:
         q = q.filter(eval(filters[key]).in_(kwargs[key]))
