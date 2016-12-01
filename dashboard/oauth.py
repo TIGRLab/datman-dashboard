@@ -66,8 +66,8 @@ class GithubSignIn(OAuthSignIn):
     def callback(self):
         if 'code' not in request.args:
             return None, None
-        if not request.args.get('state') == self.str_rnd:
-            return None, None
+        # if not request.args.get('state') == self.str_rnd:
+        #     return None, None
         oauth_session = self.service.get_auth_session(
             data={'code': request.args['code'],
                   'grant_type': 'authorization_code',
