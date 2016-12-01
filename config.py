@@ -23,6 +23,6 @@ OPENID_PROVIDERS = [
      'url': "https://github.com/login/oauth/authorize"}
 ]
 
-OAUTH_CREDENTIALS = {'github': {'id': '7ea548a6ab79d6c509a0',
+OAUTH_CREDENTIALS = {'github': {'id': os.environ.get('OAUTH_CLIENT_GITHUB'),
                                 'secret': os.environ.get('OAUTH_SECRET_GITHUB')
                                 }}
