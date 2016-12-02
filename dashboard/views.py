@@ -196,6 +196,7 @@ def create_issue(session_id, issue_title="", issue_body=""):
 @app.route('/session')
 @app.route('/session/<int:session_id>', methods=['GET', 'POST'])
 @app.route('/session/<int:session_id>/<delete>', methods=['GET', 'POST'])
+@login_required
 def session(session_id=None, delete=False):
     if session_id is None:
         return redirect('index')

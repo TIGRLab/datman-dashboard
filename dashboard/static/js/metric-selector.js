@@ -31,6 +31,44 @@ function getQueryParams(element){
   }
 }
 
+//In callback function, this[0] is mean, this[1] is stdev, this[2] is number of stdevs to set threshold at
+function notOutlier(element){
+  return ((element.value <= this[0] + this[1] * this[2]) && (element.value >= this[0] - this[1] * this[2]));
+};
+
+function noOutliersPlot(){
+  var base_element = $(this).closest('.metrics')
+  var params = getQueryParams(base_element)
+  var base_url = "/metricDataAsJson"
+  if(params){
+    base_element.find('#loading_chart').show()
+
+    $.getJSON( base_url, params,
+      function ( data ) {
+        base_element.find('#loading_chart').hide()
+        var sum = 0;
+        var dat = data['data'];
+        var n = dat.length;
+
+        dat.forEach(function(entry){
+          sum += entry.value;
+        });
+
+        var mean = sum / n;
+        var sumsqdiff = 0;
+        dat.forEach(function(entry){
+          sumsqdiff += Math.pow(mean - entry.value, 2);
+        });
+
+        std = Math.sqrt(sumsqdiff / n);
+
+        //Number of standard deviations to exclude (make this user selectable)
+        var threshold = 2;
+        initPlot(base_element.find('#chart')[0], dat.filter(notOutlier, [mean, std, threshold]));
+      });
+  }
+}
+
 function updatePlot(){
   var base_element = $(this).closest('.metrics')
   var params = getQueryParams(base_element)
@@ -41,6 +79,7 @@ function updatePlot(){
     $.getJSON( base_url, params,
       function ( data ) {
         base_element.find('#loading_chart').hide()
+        base_element.find('#remove_outliers').show()
         initPlot(base_element.find('#chart')[0], data['data']);
       });
   }
@@ -82,6 +121,7 @@ $( ".dropdown-menu li").bind('click' , function( event ){
 $("input[name='site']").bind('click', updatePlot);
 $("#metrictypeselector li").bind('click', updatePlot);
 $("input[name='scantype']").bind('click', updatePlot);
+$("#remove_outliers").bind('click', noOutliersPlot);
 
 // make the sessions table dynamic
 $(document).ready(function (){
