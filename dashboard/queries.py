@@ -2,6 +2,7 @@ from dashboard import db
 from .models import Study, Site, Session, Scan, MetricType, \
     MetricValue, ScanType  # noqa: F401
 import logging
+import utils
 
 logger = logging.getLogger(__name__)
 logger.info('Loading queries')

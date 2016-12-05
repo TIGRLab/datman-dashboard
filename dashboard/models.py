@@ -146,6 +146,23 @@ class Study(db.Model):
         names = sorted(set(names))
         return(names)
 
+    def session_count(self, type=None):
+        if type.lower() == 'human':
+            sessions = [session for session
+                        in self.sessions
+                        if not session.is_phantom]
+        elif type.lower() == 'phantom':
+            sessions = [session for session
+                        in self.sessions
+                        if session.is_phantom]
+        else:
+            sessions = [session for session
+                        in self.sessions]
+
+        return(len(sessions))
+
+
+
 
 class Site(db.Model):
     __tablename__ = 'sites'

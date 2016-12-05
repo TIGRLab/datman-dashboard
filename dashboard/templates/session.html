@@ -116,7 +116,6 @@
     window.location.href = "{{url_for('scan')}}/" + $(this).attr('value')
   })
   $('#delete_session').bind('click', function(){
-    alert('fired');
     window.location.href = "{{url_for('session',session_id=session.id, delete=True)}}";
   })
   $('#goto_issue').bind('click', function(){
