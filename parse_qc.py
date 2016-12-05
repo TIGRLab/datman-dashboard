@@ -131,14 +131,14 @@ def add_session(session_name):
 
     q = Study.query.filter(Study.nickname == study_name)
     if q.count() < 1:
-        logger.error('Study:{} not found, skipping').format(study_name)
+        logger.error('Study:{} not found, skipping'.format(study_name))
         return
     study = q.first()
 
     site = [s for s in study.sites if s.name == ident.site]
     if not site:
         logger.error('Site:{} not valid for Study:{}, skipping.'
-                     .format(ident.site, Study.nickname))
+                     .format(ident.site, study.nickname))
         return
     else:
         site = site[0]
