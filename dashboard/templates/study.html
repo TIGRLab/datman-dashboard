@@ -7,8 +7,14 @@
       {% if study.description %}
       <p class="lead">
         {{ study.description }}
-        </p>
+      </p>
         {% endif %}
+      <p class="lead">
+        <ul class="list-inline">
+          <li>Human: <span class="badge">{{study.session_count('human')}}</span></li>
+          <li>Phantom: <span class="badge">{{study.session_count('phantom')}}</span></li>
+        </ul>
+      </p>
     </h1>
   </div>
   <div class="container">
