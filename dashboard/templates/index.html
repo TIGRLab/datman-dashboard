@@ -9,6 +9,7 @@
     </h1>
   </div>
   <div>
+    {% if studies|count > 0 %}
     <h3>Select a study below:</h3>
     <table class="table-striped">
       <th>
@@ -26,5 +27,8 @@
       </tr>
       {% endfor %}
     </table>
+    {% else %}
+    <h3>You do not have access to any studies. Please contact an administrator to receive access.</h3>
+    {% endif %}
   </div>
 {% endblock %}
