@@ -43,13 +43,15 @@ class SessionForm(FlaskForm):
                            validators=[DataRequired()])
 
 class UserForm(FlaskForm):
-    studies = Study.query.all()
-    study_choices = [(str(study.id), study.nickname) for study in studies]
-
     user_id = HiddenField()
     realname = TextField(u'realname',
                          validators=[DataRequired()])
     is_admin = BooleanField(u'is_admin', default=False)
     has_phi = BooleanField(u'has_phi', default=False)
-    studies = SelectMultipleField(u'studies',
-                                  choices=study_choices)
+    studies = SelectMultipleField(u'studies')
+
+    def __init__(self, *args, **kwargs):
+        FlaskForm.__init__(self, *args, **kwargs)
+        studies = Study.query.all()
+        study_choices = [(str(study.id), study.nickname) for study in studies]
+        self.studies.choices = study_choices
