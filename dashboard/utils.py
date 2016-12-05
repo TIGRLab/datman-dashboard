@@ -203,6 +203,7 @@ def update_checklist(session_name, comment, checklist_file=None, study_name=None
         lines = []
 
     target_idx = None
+    found = False
     existing_comment = None
     for idx, val in enumerate(lines):
         if not val.strip(): # deal with blank lines
@@ -211,6 +212,7 @@ def update_checklist(session_name, comment, checklist_file=None, study_name=None
 
         scan_id = parts[0].split('.')[0]
         if scan_id == 'qc_{}'.format(session_name):
+            found = True
             target_idx = idx
             try:
                 #  ensure to get rid of trailing newline
@@ -219,7 +221,7 @@ def update_checklist(session_name, comment, checklist_file=None, study_name=None
                 existing_comment = ''
             break
 
-    if not target_idx:
+    if not found:
         logger.warning('Entry:{} not found in checklist:{}, adding.'
                        .format(session_name, checklist))
         logger.info('Running as user:{}'.format(os.getuid()))
