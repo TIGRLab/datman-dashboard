@@ -237,3 +237,7 @@ def update_checklist(session_name, comment, checklist_file=None, study_name=None
             cl_file.writelines(lines)
 
     return True
+
+    def get_export_info(study, site):
+        export_info = CFG.get_exportinfo(site=site, study=study)
+        return export_info
