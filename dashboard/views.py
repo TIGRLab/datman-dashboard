@@ -205,11 +205,13 @@ def session(session_id=None, delete=False):
     if not current_user.has_study_access(session.study):
         flash('Not authorised')
         return redirect(url_for('index'))
-    #Update open issue ID if necessary
+    # Update open issue ID if necessary
     token = flask_session['active_token']
     try:
         gh = Github(token)
-        open_issues = gh.search_issues("{} in:title repo:TIGRLab/admin state:open".format(session.name))
+        # Due to the way GitHub search API works, splitting session name into separate search terms will find a session
+        # regardless of repeat number, and will not match other sessions with the same study/site
+        open_issues = gh.search_issues("{} in:title repo:TIGRLab/admin state:open".format(str(session.name).replace("_"," ")))
         if open_issues.totalCount:
             session.gh_issue = open_issues[0].number
         else:
