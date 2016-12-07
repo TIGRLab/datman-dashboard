@@ -205,8 +205,12 @@ def session(session_id=None, delete=False):
     if not current_user.has_study_access(session.study):
         flash('Not authorised')
         return redirect(url_for('index'))
-    # Update open issue ID if necessary
-    token = flask_session['active_token']
+    try:
+        # Update open issue ID if necessary
+        token = flask_session['active_token']
+    except:
+        flash('It appears you\'ve been idle too long; please sign in again.')
+        return redirect(url_for('login'))
     try:
         gh = Github(token)
         # Due to the way GitHub search API works, splitting session name into separate search terms will find a session
