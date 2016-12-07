@@ -101,3 +101,12 @@ a {
 .control-label{
   font-weight: bold;fg
 }
+
+body {
+  padding-bottom: 100px;
+}
+@media (max-width: 980px){
+  body{
+    padding-bottom: 0;
+  }
+}
