@@ -21,9 +21,11 @@
         <div class="row">
         <button class="btn btn-primary btn" id="print_brain" style="">Print Brain</button>
         </div>
+        {% if current_user.is_admin %}
         <div class="row">
         <button class="btn btn-primary btn" id="delete_session">Delete Session</button>
       </div>
+      {% endif %}
       <div class="row">
         {% if session.gh_issue %}
         <button class="btn btn-primary btn" id="goto_issue">Go to open GitHub Issue</button>
