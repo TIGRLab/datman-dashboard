@@ -18,10 +18,10 @@
         <div class="row">
           Choose an option:
         </div>
+        {% if current_user.is_admin %}
         <div class="row">
         <button class="btn btn-primary btn" id="print_brain" style="">Print Brain</button>
         </div>
-        {% if current_user.is_admin %}
         <div class="row">
         <button class="btn btn-primary btn" id="delete_session">Delete Session</button>
       </div>

@@ -78,6 +78,11 @@ function updatePlot(){
 
     $.getJSON( base_url, params,
       function ( data ) {
+        if (data['data'].length == 0){
+          base_element.find('#loading_chart').hide()
+          document.getElementById('chart').innerHTML = "No data for these settings. Try a different metric type or scan type."
+          return;
+        }
         base_element.find('#loading_chart').hide()
         base_element.find('#remove_outliers').show()
         initPlot(base_element.find('#chart')[0], data['data']);
