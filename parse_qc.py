@@ -330,8 +330,7 @@ def parse_datafile(df, df_path, session):
     db.session.commit()
     global num_success
     num_success += 1
-    print '.'
-    sys.stdout.flush()
+    logger.debug('Parsed {} files'.format(num_success))
 
 if __name__ == '__main__':
     logging.basicConfig()
