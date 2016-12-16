@@ -8,13 +8,13 @@
 <script type=text/javascript>
   function add_qc_entry(session, data){
 
-    var html = "<span class='row'>";
+    var html = "<div class='row'>";
 
-    if(data[1].trim().startsWith('QC doc')){
+    if(data[1].trim().match('QC doc')){
       html = html + "<span class='label-info'>QC check required for:"
         + "<a href={{ url_for('session_by_name') }}/"+ session + ">"
         + session + "</a></span>";
-    }else if(data[1].trim().startsWith('No checklist')){
+    }else if(data[1].trim().match('No checklist')){
       html = html + "<span class='label-warning'>Checklist entry missing for:"
         + "<a href={{ url_for('session_by_name') }}/"+ session + ">"
         + session + "</a></span>";
@@ -23,7 +23,7 @@
         + "<a href={{ url_for('session_by_name') }}/"+ session + ">"
         + session + "</a></span>";
     }
-      html = html + "</span>"
+      html = html + "</div>"
     return html
   }
 
