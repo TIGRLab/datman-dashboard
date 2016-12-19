@@ -43,6 +43,17 @@
           <div id="navbar" class="navbar-collapse collapse">
             {% if current_user.is_authenticated %}
             <ul class="nav navbar-nav navbar-right">
+              <li class="dropdown">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Help <span class="caret"></span></a>
+                <ul class="dropdown-menu" role="menu" aria-labelledby="help_menu">
+                  <li role="presentation">
+                    <a role="menuitem" href="https://github.com/TIGRLab/documentation/wiki/QC---dashboard">Dashboard Help</a>
+                  </li>
+                  <li role="presentation">
+                    <a role="menuitem" href="https://github.com/TIGRLab/documentation/files/530007/qual-qc-manual.pdf">QC Guide</a>
+                  </li>
+                </ul>
+              </li>
               {% if current_user.is_admin %}
                 <li class="dropdown">
                   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Admin <span class="caret"></span></a>
