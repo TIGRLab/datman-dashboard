@@ -1,4 +1,4 @@
-#!venv/bin/python
+#!/usr/bin/env python
 """Parse QC files for a project or subject
 
 Usage:
