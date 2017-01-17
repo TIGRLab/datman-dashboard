@@ -518,6 +518,18 @@ def todo(study_id=None):
 
     return jsonify(todo_list)
 
+
+@app.route('/redcap', methods=['GET', 'POST'])
+def redcap():
+    logger.info('Recieved a query from redcap')
+    if request.method == 'POST':
+        logger.info('REDCAP method was POST')
+        logger.info('POST fields were:{}'.format(request.form.keys()))
+    else:
+        logger.info('REDCAP method was GET')
+        logger.info('GET fields were:{}'.format(request.args))
+
+
 @app.errorhandler(404)
 def not_found_error(error):
     return render_template('404.html'), 404
