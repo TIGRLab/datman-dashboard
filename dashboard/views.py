@@ -221,7 +221,7 @@ def session(session_id=None, delete=False):
         if open_issues.totalCount:
             session.gh_issue = open_issues[0].number
         else:
-            session.gh_issue = ""
+            session.gh_issue = None
         db.session.commit()
     except:
         flash("Error searching for session's GitHub issue.")
