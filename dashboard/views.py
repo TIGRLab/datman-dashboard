@@ -11,6 +11,8 @@ from .models import Study, Site, Session, ScanType, Scan, User
 from .forms import SelectMetricsForm, StudyOverviewForm, SessionForm, ScanForm, UserForm
 from . import utils
 import json
+import csv
+import io
 import os
 import codecs
 import datetime
@@ -368,10 +370,20 @@ def person(person_id=None):
 def metricData():
     form = SelectMetricsForm()
     data = None
+    csv_data = None
     # Need to add a query_complete flag to the form
 
     if form.query_complete.data == 'True':
         data = metricDataAsJson()
+        # Need the data field of the response object (data.data)
+        temp_data = json.loads(data.data)["data"]
+        if temp_data:
+            csv_data = io.BytesIO()
+            csvwriter = csv.writer(csv_data)
+            csvwriter.writerow(temp_data[0].keys())
+            for row in temp_data:
+                csvwriter.writerow(row.values())
+
 
     if any([form.study_id.data,
             form.site_id.data,
@@ -413,8 +425,10 @@ def metricData():
     form.scantype_id.choices = scantype_vals
     form.metrictype_id.choices = metrictype_vals
 
-    return render_template('getMetricData.html', form=form, data=data)
-
+    if csv_data:
+        return render_template('getMetricData.html', form=form, data=csv_data.getvalue())
+    else:
+        return render_template('getMetricData.html', form=form, data="")
 
 def _checkRequest(request, key):
     # Checks a post request, returns none if key doesn't exist

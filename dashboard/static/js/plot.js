@@ -13,7 +13,10 @@ function initPlot(element, data){
 
 //var dataFromSelection = document.getElementById('data');
 //var dataList = JSON.parse(dataFromSelection.innerHTML);
-var dataList = data
+var dataList = data;
+if (typeof(dataList) == "undefined") {
+  return;
+}
 var siteSet = new Set();
 var valueList = [];
 var subjectList = [];
