@@ -212,6 +212,26 @@ def add_scan(session, filename):
     db.session.commit()
     return(scan)
 
+def add_metric_value(scan, metrictype, value):
+    """Checks to see if metric value exists in the database, adds if not
+    If value does exist, but is of a different value it updates the record"""
+    assert isinstance(scan, Scan)
+    assert isinstance(metrictype, MetricType)
+
+    qry = MetricValue.query.filter(MetricValue.scan_id == scan.id) \
+        .filter(MetricValue.metrictype_id == metrictype.id)
+
+    if qry.count():
+        # entry already exists
+        metricvalue = qry.first()
+    else:
+        metricvalue = MetricValue()
+        metricvalue.scan = scan
+        metricvalue.metrictype = metrictype
+        db.session.add(metricvalue)
+
+    metricvalue.value = value
+    db.session.commit()
 
 def read_qcfile(path_to_file, space_delimited):
     return pd.read_csv(path_to_file,
@@ -228,7 +248,6 @@ def insert_from_rowfile(is_qascript, df_path, scan):
             # Rotate data
             data = zip(data[0], data[1])
         for datapoint in data:
-            metricvalue = MetricValue()
             st_id = int(scan.scantype.id)
             if MetricType.query.filter(MetricType.name == datapoint[0]).filter(MetricType.scantype_id == st_id).count():
                 metrictype = MetricType.query.filter(MetricType.name == datapoint[0]).filter(MetricType.scantype_id == st_id).first()
@@ -237,11 +256,10 @@ def insert_from_rowfile(is_qascript, df_path, scan):
                 metrictype.name = datapoint[0]
                 metrictype.scantype_id = scan.scantype_id
                 db.session.add(metrictype)
-            metricvalue.metrictype = metrictype
-            metricvalue.value = datapoint[1]
-            metricvalue.scan = scan
-            db.session.add(metricvalue)
-            db.session.commit()
+                db.session.commit()
+
+            add_metric_value(scan, metrictype, datapoint[1])
+
     except (IndexError, ValueError):
         logger.error("{} is missing data".format(df_path))
 
@@ -249,7 +267,6 @@ def insert_from_rowfile(is_qascript, df_path, scan):
 def insert_from_singleval(metrictype_name, has_header, df_path, scan):
     try:
         data = read_qcfile(df_path, False)
-        metricvalue = MetricValue()
         st_id = int(scan.scantype.id)
         if MetricType.query.filter(MetricType.name == metrictype_name).filter(MetricType.scantype_id == st_id).count():
             metrictype = MetricType.query.filter(MetricType.name == metrictype_name).filter(MetricType.scantype_id == st_id).first()
@@ -258,16 +275,15 @@ def insert_from_singleval(metrictype_name, has_header, df_path, scan):
             metrictype.name = metrictype_name
             metrictype.scantype_id = scan.scantype_id
             db.session.add(metrictype)
-        metricvalue.metrictype = metrictype
+            db.session.commit()
         if has_header:
-            metricvalue.value = data[0][1]
+            value = data[0][1]
         else:
-            metricvalue.value = data[0][0]
-        metricvalue.scan = scan
-        db.session.add(metricvalue)
-        db.session.commit()
+            value = data[0][0]
+        add_metric_value(scan, metrictype, value)
     except (IndexError, ValueError):
         logger.error("{} is missing data".format(df_path))
+
 
 def insert_from_contrasts(df_path, scan):
     try:
@@ -275,7 +291,6 @@ def insert_from_contrasts(df_path, scan):
         contrasts = ((data[1][0]/data[0][0],"c1"), (data[2][0]/data[0][0], "c2"),
                      (data[3][0]/data[0][0], "c3"), (data[4][0]/data[0][0], "c4"))
         for contrast in contrasts:
-            metricvalue = MetricValue()
             st_id = int(scan.scantype.id)
             if MetricType.query.filter(MetricType.name == contrast[1]).filter(MetricType.scantype_id == st_id).count():
                 metrictype = MetricType.query.filter(MetricType.name == contrast[1]).filter(MetricType.scantype_id == st_id).first()
@@ -284,10 +299,8 @@ def insert_from_contrasts(df_path, scan):
                 metrictype.name = contrast[1]
                 metrictype.scantype = scan.scantype
                 db.session.add(metrictype)
-            metricvalue.metrictype = metrictype
-            metricvalue.value = contrast[0]
-            metricvalue.scan = scan
-            db.session.add(metricvalue)
+                db.session.commit()
+            add_metric_value(scan, metrictype, contrast[0])
     except (IndexError, ValueError):
         logger.error("{} is missing data".format(df_path))
 
