@@ -33,7 +33,7 @@
         if (data['error'] == 'timeout'){
           $('#qc_entries').append('<span class="label label-warning"><stong>Error:</strong>Getting the QC list took too long. Try again later</span>')
         }else{
-          $('#qc_entries').append('<span class="label label-danger"><stong>Error:</strong>An error occured getting the QC list. The admins have been notified</span>')
+          $('#qc_entries').append('<span class="label label-danger"><stong>Error:</strong>An error occured getting the QC list. The admins have been notified.<br>' + data['error'] + '</span>')
         }
       }else{
         $.each(data, function (key, val){
