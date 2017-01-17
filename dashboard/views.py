@@ -513,8 +513,10 @@ def todo(study_id=None):
     except utils.TimeoutError:
         # should do something nicer here
         todo_list = {'error': 'timeout'}
+    except RuntimeError as e:
+        todo_list = {'error': 'runtime:{}'.format(e)}
     except:
-        todo_list = {'error': 'runtime'}
+        todo_list = {'error': 'other'}
 
     return jsonify(todo_list)
 
