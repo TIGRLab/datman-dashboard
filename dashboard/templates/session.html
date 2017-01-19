@@ -82,6 +82,7 @@
       <thead>
         <th>Series</th>
         <th>Tag</th>
+        <th>Repeat number</th>
         <th>Description</th>
         <th>Blacklisted</th>
         <th>&nbsp;</th>
@@ -91,6 +92,8 @@
         <tr>
           <td> {{ scan.series_number }}</td>
           <td> {{ scan.scantype.name }}</td>
+          {% set repeat = scan.name.split("_")[4] %}
+          <td> {{ repeat }} </td>
           <td> {{ scan.description }} </td>
           {% if scan.bl_comment %}
             <td> {{ scan.bl_comment }}</td>
