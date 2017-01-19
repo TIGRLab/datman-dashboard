@@ -181,7 +181,7 @@ class Session(db.Model):
     __tablename__ = 'sessions'
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(64))
+    name = db.Column(db.String(256))
     date = db.Column(db.DateTime)
     study_id = db.Column(db.Integer, db.ForeignKey('studies.id'), nullable=False)
     study = db.relationship('Study', back_populates='sessions')

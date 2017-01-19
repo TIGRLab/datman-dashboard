@@ -221,7 +221,7 @@ def session(session_id=None, delete=False):
         if open_issues.totalCount:
             session.gh_issue = open_issues[0].number
         else:
-            session.gh_issue = ""
+            session.gh_issue = None
         db.session.commit()
     except:
         flash("Error searching for session's GitHub issue.")
@@ -527,10 +527,24 @@ def todo(study_id=None):
     except utils.TimeoutError:
         # should do something nicer here
         todo_list = {'error': 'timeout'}
+    except RuntimeError as e:
+        todo_list = {'error': 'runtime:{}'.format(e)}
     except:
-        todo_list = {'error': 'runtime'}
+        todo_list = {'error': 'other'}
 
     return jsonify(todo_list)
+
+
+@app.route('/redcap', methods=['GET', 'POST'])
+def redcap():
+    logger.info('Recieved a query from redcap')
+    if request.method == 'POST':
+        logger.info('REDCAP method was POST')
+        logger.info('POST fields were:{}'.format(request.form.keys()))
+    else:
+        logger.info('REDCAP method was GET')
+        logger.info('GET fields were:{}'.format(request.args))
+
 
 @app.errorhandler(404)
 def not_found_error(error):
