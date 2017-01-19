@@ -20,9 +20,11 @@ if (typeof(dataList) == "undefined") {
 var siteSet = new Set();
 var valueList = [];
 var subjectList = [];
+var sessionNameList = [];
 var overallValueList = [];
 session_lengths = []
 overallSubjectList = {};
+overallSessionNameList = {};
 
 dataList.forEach(function(entry){
   siteSet.add(entry.site_name);
@@ -31,16 +33,19 @@ dataList.forEach(function(entry){
 siteSet.forEach(function(site){
   valueList = [];
   subjectList = [];
+  sessionNameList = [];
   dataList.forEach(function(entry){
     if (entry.site_name == site) {
       valueList.push(entry.value);
       subjectList.push(entry.session_id);
+      sessionNameList.push(entry.session_name);
     }
   } );
   valueList.unshift(site);
   overallValueList.push(valueList);
   session_lengths.push(subjectList.length);
   overallSubjectList[site] = subjectList;
+  overallSessionNameList[site] = sessionNameList;
 });
 
 var max_session_length = Math.max.apply(null, session_lengths);
@@ -64,7 +69,13 @@ var chart = c3.generate({
       }
     },
     tooltip: {
-    grouped: false
+    grouped: false,
+    contents: function(d, defaultTitleFormat, defaultValueFormat, color) {
+      console.log(data[0]);
+      session_name = overallSessionNameList[d[0].name][d[0].index];
+      text = "<table> <tr><th>" + session_name + "</th></tr></table>";
+      return text;
+    }
 },
 zoom: {
     enabled: true
