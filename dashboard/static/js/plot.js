@@ -56,7 +56,7 @@ var chart = c3.generate({
       x: {
         type: 'category',
         show: true,
-        categories: gen_range(max_session_length)m //TODO
+        categories: gen_range(max_session_length), //TODO
         label: 'Time',
         tick: {
           values: []
