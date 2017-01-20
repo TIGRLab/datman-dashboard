@@ -426,7 +426,8 @@ def metricData():
     form.metrictype_id.choices = metrictype_vals
 
     if csv_data:
-        return render_template('getMetricData.html', form=form, data=csv_data.getvalue())
+        csv_data.seek(0)
+        return render_template('getMetricData.html', form=form, data=csv_data.readlines())
     else:
         return render_template('getMetricData.html', form=form, data="")
 

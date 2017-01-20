@@ -52,7 +52,9 @@
 
     <br/>
     <div id='data' class="container">
-          {{data}}
+          {% for line in data %}
+          {{line}}<br/>
+          {% endfor %}
     </div>
     <div id='chart'></div>
     <script async src="/static/js/plot.js" onload="initPlot()"></script>
