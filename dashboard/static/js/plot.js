@@ -20,9 +20,11 @@ if (typeof(dataList) == "undefined") {
 var siteSet = new Set();
 var valueList = [];
 var subjectList = [];
+var sessionNameList = [];
 var overallValueList = [];
 session_lengths = []
 overallSubjectList = {};
+overallSessionNameList = {};
 
 dataList.forEach(function(entry){
   siteSet.add(entry.site_name);
@@ -31,16 +33,19 @@ dataList.forEach(function(entry){
 siteSet.forEach(function(site){
   valueList = [];
   subjectList = [];
+  sessionNameList = [];
   dataList.forEach(function(entry){
     if (entry.site_name == site) {
       valueList.push(entry.value);
       subjectList.push(entry.session_id);
+      sessionNameList.push(entry.session_name);
     }
   } );
   valueList.unshift(site);
   overallValueList.push(valueList);
   session_lengths.push(subjectList.length);
   overallSubjectList[site] = subjectList;
+  overallSessionNameList[site] = sessionNameList;
 });
 
 var max_session_length = Math.max.apply(null, session_lengths);
@@ -55,12 +60,24 @@ var chart = c3.generate({
     axis: {
       x: {
         type: 'category',
-        show: false,
-        categories: gen_range(max_session_length) //TODO
+        show: true,
+        categories: gen_range(max_session_length), //TODO
+        label: 'Time',
+        tick: {
+          values: []
+        }
       }
     },
     tooltip: {
-    grouped: false
+    grouped: false,
+    contents: function(d, defaultTitleFormat, defaultValueFormat, color) {
+      console.log(d[0]);
+      session_name = overallSessionNameList[d[0].name][d[0].index];
+      session_value = Math.round((d[0].value + 0.00001) * 100) / 100
+      text = "<table class='c3-tooltip'> <tr><th colspan='2'>" + session_name + "</th></tr>";
+      text = text + "<tr><td>Value:</td><td class='c3-value'>" + session_value + "</td></tr>"
+      return text + "</table>";
+    }
 },
 zoom: {
     enabled: true
