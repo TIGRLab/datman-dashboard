@@ -71,10 +71,12 @@ var chart = c3.generate({
     tooltip: {
     grouped: false,
     contents: function(d, defaultTitleFormat, defaultValueFormat, color) {
-      console.log(data[0]);
+      console.log(d[0]);
       session_name = overallSessionNameList[d[0].name][d[0].index];
-      text = "<table> <tr><th>" + session_name + "</th></tr></table>";
-      return text;
+      session_value = Math.round((d[0].value + 0.00001) * 100) / 100
+      text = "<table class='c3-tooltip'> <tr><th colspan='2'>" + session_name + "</th></tr>";
+      text = text + "<tr><td>Value:</td><td class='c3-value'>" + session_value + "</td></tr>"
+      return text + "</table>";
     }
 },
 zoom: {
