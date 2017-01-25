@@ -182,7 +182,8 @@ def add_scan(session, filename):
 
     scantype = [s for s in session.study.scantypes if s.name == tag]
     if not scantype:
-        logger.error('Scantype:{} not found.'.format(tag))
+        logger.error('Scantype:{} not found in study:{}.'
+                     .format(tag, session.study.nickname))
         return
     else:
         scantype = scantype[0]

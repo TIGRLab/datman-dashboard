@@ -18,7 +18,9 @@ MAIL_USERNAME = None
 MAIL_PASSWORD = None
 
 # administrator list
-ADMINS = ['tom@maladmin.com']
+ADMINS = ['tom@maladmin.com',
+          'dawson.overton@camh.ca',
+          'admins@tigrsrv.camhres.ca']
 
 
 OPENID_PROVIDERS = [
