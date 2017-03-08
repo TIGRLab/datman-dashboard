@@ -18,6 +18,8 @@ if (typeof(dataList) == "undefined") {
   return;
 }
 var siteSet = new Set();
+var site_scantype_set = new Set();
+
 var valueList = [];
 var subjectList = [];
 var sessionNameList = [];
@@ -28,24 +30,26 @@ overallSessionNameList = {};
 
 dataList.forEach(function(entry){
   siteSet.add(entry.site_name);
+  site_scantype_set.add(entry.site_name + ':' + entry.scan_description);
 });
 
-siteSet.forEach(function(site){
+site_scantype_set.forEach(function(site_scantype){
   valueList = [];
   subjectList = [];
   sessionNameList = [];
   dataList.forEach(function(entry){
-    if (entry.site_name == site) {
+    entry_site_scantype = entry.site_name + ':' + entry.scan_description;
+    if (entry_site_scantype == site_scantype) {
       valueList.push(entry.value);
       subjectList.push(entry.session_id);
       sessionNameList.push(entry.session_name);
     }
   } );
-  valueList.unshift(site);
+  valueList.unshift(site_scantype);
   overallValueList.push(valueList);
   session_lengths.push(subjectList.length);
-  overallSubjectList[site] = subjectList;
-  overallSessionNameList[site] = sessionNameList;
+  overallSubjectList[site_scantype] = subjectList;
+  overallSessionNameList[site_scantype] = sessionNameList;
 });
 
 var max_session_length = Math.max.apply(null, session_lengths);

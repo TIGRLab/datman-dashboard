@@ -3,6 +3,7 @@ function getQueryParams(element){
   // returns false if not all parameters are selected
   var study = ''
   var siteSet = []
+  var scantypeSet = []
   var scanType = ''
   var metricType = ''
   var phantom = ''
@@ -10,18 +11,26 @@ function getQueryParams(element){
   phantom = element.find("#phantoms").text()
 
   $.each(element.find("input[name='site']:checked"), function(){
-    siteSet.push($(this).val());
+    if($(this).is(':visible')){
+      siteSet.push($(this).val());
+    }
   });
-  scanType = element.find("input[name='scantype']:checked").val();
+  // modification to enable multiple scantypes to be selected
+  $.each(element.find("input[name='scantype']:checked"), function(){
+    if($(this).is(':visible')){
+      scantypeSet.push($(this).val());
+    }
+  });
+  // scanType = element.find("input[name='scantype']:checked").val();
   metricType = element.find("#metrictypeselector").find('[data-bind="label"]').text();
   if (metricType.trim() == "Metric Type:"){
     metricType = false;
   }
 
-  if(study && phantom && siteSet.length > 0 && scanType && metricType){
+  if(study && phantom && siteSet.length > 0 && scantypeSet.length > 0 && metricType){
     return { studies:study,
              sites:siteSet.join(','),
-             scantypes:scanType,
+             scantypes:scantypeSet.join(','),
              metrictypes:metricType,
              isphantom:phantom,
              byname:'1'
