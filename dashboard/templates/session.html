@@ -92,8 +92,7 @@
         <tr>
           <td> {{ scan.series_number }}</td>
           <td> {{ scan.scantype.name }}</td>
-          {% set repeat = scan.name.split("_")[4] %}
-          <td> {{ repeat }} </td>
+          <td> {{ scan.repeat_number }} </td>
           <td> {{ scan.description }} </td>
           {% if scan.bl_comment %}
             <td> {{ scan.bl_comment }}</td>

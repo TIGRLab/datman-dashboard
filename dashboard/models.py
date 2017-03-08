@@ -189,6 +189,9 @@ class Session(db.Model):
     site = db.relationship('Site', back_populates='sessions')
     scans = db.relationship('Scan', order_by="Scan.series_number", cascade="all, delete-orphan" )
     is_phantom = db.Column(db.Boolean)
+    is_repeated = db.Column(db.Boolean)
+    repeat_count = db.Column(db.Integer)
+    last_repeat_qcd = db.Column(db.Integer)
     cl_comment = db.Column(db.String(1024))
     gh_issue = db.Column(db.Integer)
 
@@ -200,8 +203,13 @@ class Session(db.Model):
                        self.site.name))
 
     def is_qcd(self):
-        """checks if session has been quality checked"""
+        """checks if session has (ever) been quality checked"""
         if self.cl_comment:
+            return True
+
+    def is_current_qcd(self):
+        """checks if the most recent repeat of a session has been quality checked"""
+        if self.last_repeat_qcd == self.repeat_count:
             return True
 
     def get_qc_doc(self):
@@ -216,6 +224,7 @@ class Session(db.Model):
         assert utils.update_checklist(self.name,
                                       comment,
                                       study_name=self.study.nickname)
+        self.last_repeat_qcd = self.repeat_count
         return comment
 
 class ScanType(db.Model):
@@ -275,6 +284,7 @@ class Scan(db.Model):
     metricvalues = db.relationship('MetricValue', cascade="all, delete-orphan")
     bl_comment = db.Column(db.String(1024))
     series_number = db.Column(db.Integer, nullable=False)
+    repeat_number = db.Column(db.Integer)
 
     def __repr__(self):
         return('<Scan {}>'.format(self.name))

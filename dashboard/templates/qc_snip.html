@@ -5,6 +5,22 @@
   <div class="container" id="qc_entries">
   </div>
 
+<h3>Outstanding QC:</h3>
+Sessions where scans have been repeated.
+<div class="container" id="qc_outstanding">
+  <table>
+    {% for session in study.sessions %}
+      {% if not session.is_current_qcd() and not session.is_phantom %}
+        <tr><td>
+          <a href={{ url_for('session', session_id=session.id) }}>
+            {{ session.name }}
+          </a>
+        </td></tr>
+      {% endif %}
+    {% endfor %}
+  </table>
+</div>
+
 <script type=text/javascript>
   function add_qc_entry(session, data){
 
