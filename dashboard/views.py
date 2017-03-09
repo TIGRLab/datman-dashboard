@@ -492,6 +492,7 @@ def metricDataAsJson(format='http'):
                         'metrictype_id':    metricValue.metrictype_id,
                         'scan_id':          metricValue.scan_id,
                         'scan_name':        metricValue.scan.name,
+                        'scan_description': metricValue.scan.description,
                         'scantype':         metricValue.scan.scantype.name,
                         'scantype_id':      metricValue.scan.scantype_id,
                         'session_id':       metricValue.scan.session_id,
@@ -545,6 +546,7 @@ def redcap():
     else:
         logger.info('REDCAP method was GET')
         logger.info('GET fields were:{}'.format(request.args))
+    return render_template('200.html'), 200
 
 
 @app.errorhandler(404)
