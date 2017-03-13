@@ -191,6 +191,7 @@ class Session(db.Model):
     is_phantom = db.Column(db.Boolean)
     is_repeated = db.Column(db.Boolean)
     repeat_count = db.Column(db.Integer)
+    last_repeat_qc_generated = db.Column(db.Integer, default=1)
     last_repeat_qcd = db.Column(db.Integer)
     cl_comment = db.Column(db.String(1024))
     gh_issue = db.Column(db.Integer)
@@ -216,6 +217,9 @@ class Session(db.Model):
         """Return the absolute path to the session qc doc if it exists"""
         return(utils.get_qc_doc(str(self.name)))
 
+    def flush_changes(self):
+        """Flush changes to the object back to the database"""
+        db.session.commit()
 
     @validates('cl_comment')
     def validate_comment(self, key, comment):
