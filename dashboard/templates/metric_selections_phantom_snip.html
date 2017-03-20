@@ -43,15 +43,15 @@
   <ul class="dropdown-menu drawplot" role='menu'>
   {% for metrictype in metricnames %}
     {% if metrictype[0] == 'DTI' %}
-      {% if metrictype[1] in ['AVENyqratio', 'AVE Ave.radpixshift', 'AVE Ave.colpixshift', 'aveSNR_dwi'] %}
+      {% if metrictype[1] in display_metrics['phantom']['dti'] %}
         <li style="display:none" class="scantype_dti">{{ metrictype[1] }} </li>
       {% endif %}
     {% elif metrictype[0] == 'FMRI' %}
-      {% if metrictype[1] in  ['sfnr', 'rdc'] %}
+      {% if metrictype[1] in  display_metrics['phantom']['fmri'] %}
         <li style="display:none" class="scantype_fmri">{{ metrictype[1] }} </li>
       {% endif %}
     {% elif metrictype[0] == 'T1' %}
-      {% if metrictype[1] in ['c1', 'c2', 'c3', 'c4'] %}
+      {% if metrictype[1] in display_metrics['phantom']['t1'] %}
         <li style="display:none" class="scantype_t1"> {{ metrictype[1] }} </li>
       {% endif %}
     {% endif %}

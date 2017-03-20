@@ -349,13 +349,15 @@ def study(study_id=None, active_tab=None):
 
     form.readme_txt.data = data
     form.study_id.data = study_id
+    display_metrics = app.config['DISPLAY_METRICS']
 
     return render_template('study.html',
                            studies=current_user.get_studies(),
                            metricnames=study.get_valid_metric_names(),
                            study=study,
                            form=form,
-                           active_tab=active_tab)
+                           active_tab=active_tab,
+                           display_metrics=display_metrics)
 
 
 @app.route('/person')

@@ -34,3 +34,10 @@ OAUTH_CREDENTIALS = {'github': {'id': os.environ.get('OAUTH_CLIENT_GITHUB'),
                      'gitlab': {'id': os.environ.get('OAUTH_CLIENT_GITLAB'),
                                 'secret': os.environ.get('OAUTH_SECRET_GITLAB')
                                 }}
+
+DISPLAY_METRICS = {'phantom': {'t1': ['c1', 'c2', 'c3', 'c4'],
+                              'dti': ['AVENyqratio', 'AVE Ave.radpixshift', 'AVE Ave.colpixshift', 'aveSNR_dwi'],
+                              'fmri': ['sfnr', 'rdc']},
+                   'human': {'t1': [],
+                            'dti': ['tsnr_bX', 'meanRELrms', '#ndirs'],
+                            'fmri': ['mean_fd', 'mean_sfnr', 'ScanLength']}}

@@ -45,11 +45,11 @@
       <ul class="dropdown-menu drawplot" role='menu'>
       {% for metrictype in metricnames %}
         {% if metrictype[0] == 'DTI' %}
-          {% if metrictype[1] in ['tsnr_bX', 'meanRELrms', '#ndirs'] %}
+          {% if metrictype[1] in display_metrics['human']['dti'] %}
             <li style="display:none" class="scantype_dti">{{ metrictype[1] }} </li>
           {% endif %}
         {% elif metrictype[0] == 'FMRI' %}
-          {% if metrictype[1] in  ['mean_fd', 'mean_sfnr', 'ScanLength'] %}
+          {% if metrictype[1] in  display_metrics['human']['fmri']%}
             <li style="display:none" class="scantype_fmri">{{ metrictype[1] }} </li>
           {% endif %}
         {% endif %}
