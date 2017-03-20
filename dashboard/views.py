@@ -583,9 +583,14 @@ def oauth_callback(provider):
         flash('Authentication failed.')
         return redirect(url_for('login'))
 
-    user = User.query.filter_by(username=github_user['login']).first()
+    if provider == 'github':
+        username = github_user['login']
+    elif provider == 'gitlab':
+        username = github_user['username']
+
+    user = User.query.filter_by(username=username).first()
     if not user:
-        username = User.make_unique_nickname(github_user['login'])
+        username = User.make_unique_nickname(username)
         user = User(username=username,
                     realname=github_user['name'],
                     email=github_user['email'])

@@ -30,4 +30,7 @@ OPENID_PROVIDERS = [
 
 OAUTH_CREDENTIALS = {'github': {'id': os.environ.get('OAUTH_CLIENT_GITHUB'),
                                 'secret': os.environ.get('OAUTH_SECRET_GITHUB')
+                                },
+                     'gitlab': {'id': os.environ.get('OAUTH_CLIENT_GITLAB'),
+                                'secret': os.environ.get('OAUTH_SECRET_GITLAB')
                                 }}

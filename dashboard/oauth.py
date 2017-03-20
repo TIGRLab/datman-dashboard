@@ -77,3 +77,52 @@ class GithubSignIn(OAuthSignIn):
         access_token = oauth_session.access_token
         user = oauth_session.get('https://api.github.com/user').json()
         return(access_token, user)
+
+
+class GitlabSignIn(OAuthSignIn):
+    str_rnd = None
+    def __init__(self):
+        super(GitlabSignIn, self).__init__('gitlab')
+
+        self.service = OAuth2Service(
+            name='gitlab',
+            client_id=self.consumer_id,
+            client_secret=self.consumer_secret,
+            authorize_url='http://sdrshgitlabv.camhres.ca/oauth/authorize',
+            #authorize_url='https://github.com/login/oauth/authorize',
+            base_url='http://sdrshgitlabv.camhres.ca',
+            #base_url='https://github.com/login/',
+            access_token_url='http://sdrshgitlabv.camhres.ca/oauth/token'
+            #access_token_url='https://github.com/login/oauth/access_token'
+        )
+
+    def random_string(self, size=10, chars=string.ascii_uppercase +
+                                           string.ascii_lowercase +
+                                           string.digits):
+        """Generates a random string"""
+        rnd = ''.join(random.SystemRandom().choice(chars) for _ in range(size))
+        self.str_rnd = rnd
+
+    def authorize(self):
+        self.random_string()
+        #R==url_for('oauth_callback', provider='github', _external=True),
+        return redirect(self.service.get_authorize_url(
+            state=self.str_rnd,
+            redirect_uri=url_for('oauth_callback', provider='gitlab', _external=True),
+            response_type='code')
+            )
+
+    def callback(self):
+        if 'code' not in request.args:
+            return None, None
+        oauth_session = self.service.get_auth_session(
+            data={'code': request.args['code'],
+                  'grant_type': 'authorization_code',
+                  'redirect_uri': self.get_callback_url()
+                  },
+            decoder=json.loads)
+        #me = oauth_session.get('').json()
+        access_token = oauth_session.access_token
+        api_url = 'http://sdrshgitlabv.camhres.ca/api/v3/user'
+        user = oauth_session.get(api_url).json()
+        return(access_token, user)
