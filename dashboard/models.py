@@ -2,7 +2,6 @@
 
 from dashboard import db
 import utils
-import datman.scanid
 from hashlib import md5
 from sqlalchemy.orm import validates
 from flask_login import UserMixin
@@ -195,6 +194,13 @@ class Session(db.Model):
     last_repeat_qcd = db.Column(db.Integer)
     cl_comment = db.Column(db.String(1024))
     gh_issue = db.Column(db.Integer)
+    redcap_record = db.Column(db.Integer)  # ID of the record in redcap
+    redcap_entry_date = db.Column(db.Date)  # date of record entry in redcap
+    redcap_user = db.Column(db.Integer)  # ID of the user who filled in the redcap record
+    redcap_comment = db.Column(db.String(1024))  # Redcap comment field
+    redcap_url = db.Column(db.String(1024))  # URL for the redcap server
+    redcap_projectid = db.Column(db.Integer)  # ID for redcap Project
+    redcap_instrument = db.Column(db.String(1024))  #  name of the redcap form
 
 
     def __repr__(self):
@@ -219,7 +225,11 @@ class Session(db.Model):
 
     def flush_changes(self):
         """Flush changes to the object back to the database"""
+        db.session.add(self)
         db.session.commit()
+
+    def scan_count(self):
+        return len(self.scans)
 
     @validates('cl_comment')
     def validate_comment(self, key, comment):

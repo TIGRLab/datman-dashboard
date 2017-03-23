@@ -1,5 +1,5 @@
 from functools import wraps
-from flask import render_template, flash, url_for, redirect, request, jsonify, abort
+from flask import render_template, flash, url_for, redirect, request, jsonify, abort, g
 from flask import session as flask_session
 from flask_login import login_user, logout_user, current_user, \
     login_required, fresh_login_required
@@ -10,6 +10,7 @@ from .queries import query_metric_values_byid, query_metric_types, query_metric_
 from .models import Study, Site, Session, ScanType, Scan, User
 from .forms import SelectMetricsForm, StudyOverviewForm, SessionForm, ScanForm, UserForm
 from . import utils
+from . import redcap as REDCAP
 import json
 import csv
 import io
@@ -20,11 +21,36 @@ import datman as dm
 import shutil
 import logging
 from github import Github
+
 from xml.sax.saxutils import escape
 
 logger = logging.getLogger(__name__)
 logger.info('Loading views')
 
+
+class InvalidUsage(Exception):
+    """
+    Generic exception for API
+    """
+    status_code = 400
+
+    def __init__(self, message, status_code=None, payload=None):
+        Exception.__init__(self)
+        self.message = message
+        if status_code is not None:
+            self.status_code = status_code
+        self.payload = payload
+
+    def to_dict(self):
+        rv = dict(self.payload or ())
+        rv['message'] = self.message
+        return rv
+
+@app.errorhandler(InvalidUsage)
+def handle_invalid_usage(error):
+    response = jsonify(error.to_dict())
+    response.status_code = error.status_code
+    return response
 
 @lm.user_loader
 def load_user(id):
@@ -195,6 +221,7 @@ def create_issue(session_id, issue_title="", issue_body=""):
         flash("Please enter both an issue title and description.")
     return(redirect(url_for('session', session_id=session.id)))
 
+
 @app.route('/session')
 @app.route('/session/<int:session_id>', methods=['GET', 'POST'])
 @app.route('/session/<int:session_id>/<delete>', methods=['GET', 'POST'])
@@ -261,6 +288,18 @@ def session(session_id=None, delete=False):
                            study=session.study,
                            session=session,
                            form=form)
+
+
+@app.route('/redcap_redirect/<int:session_id>', methods=['GET'])
+@login_required
+def redcap_redirect(session_id):
+    session = Session.query.get(session_id)
+    redcap_url = '{}redcap_v6.11.4/DataEntry/index.php?pid={}&page={}&id={}'
+    redcap_url = redcap_url.format(session.redcap_url,
+                                   session.redcap_projectid,
+                                   session.redcap_instrument,
+                                   session.redcap_record)
+    return(redirect(redcap_url))
 
 @app.route('/scan', methods=["GET"])
 @app.route('/scan/<int:scan_id>', methods=['GET', 'POST'])
@@ -543,11 +582,24 @@ def todo(study_id=None):
 def redcap():
     logger.info('Recieved a query from redcap')
     if request.method == 'POST':
-        logger.info('REDCAP method was POST')
-        logger.info('POST fields were:{}'.format(request.form.keys()))
+        logger.debug('Recieved keys:{} from REDcap.'.format(request.form.keys()))
+        logger.debug(request.form['project_url'])
+        try:
+            rc = REDCAP.redcap_record(request)
+        except Exception as e:
+            logger.debug(str(e))
+            raise InvalidUsage(str(e), status_code=400)
     else:
-        logger.info('REDCAP method was GET')
-        logger.info('GET fields were:{}'.format(request.args))
+        raise InvalidUsage('Expected a POST request', status_code=400)
+
+    if rc.instrument_completed:
+        logger.info('Updating db session.')
+        rc.update_db_session()
+    else:
+        logger.info('Instrument not complete, ignoring.')
+
+    rc.get_survey_return_code()
+
     return render_template('200.html'), 200
 
 
@@ -565,6 +617,7 @@ def internal_error(error):
 @app.route('/login')
 def login():
     return render_template('login.html')
+
 
 @app.route('/authorize/<provider>')
 def oauth_authorize(provider):

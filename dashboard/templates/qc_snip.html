@@ -6,11 +6,59 @@
   </div>
 
 <h3>Outstanding QC:</h3>
-Sessions where scans have been repeated.
+<span class="label label-info">
+Highlight indicates sessions where scans have been repeated.
+dm-qc-report.py should be manually re-run with --rewrite flag before these scans are qc'd</span>
 <div class="container" id="qc_outstanding">
   <table>
     {% for session in study.sessions %}
-      {% if not session.is_current_qcd() and not session.is_phantom %}
+      {% if not session.is_current_qcd()
+            and not session.is_phantom
+            and session.scan_count() > 0 %}
+        <tr><td>
+          <a href={{ url_for('session', session_id=session.id) }}>
+            {% if session.is_repeated %}
+              <span class="label label-info">
+                {{ session.name }}
+              </span>
+            {% else %}
+              {{ session.name }}
+            {% endif %}
+          </a>
+        </td></tr>
+      {% endif %}
+    {% endfor %}
+  </table>
+</div>
+
+<h3>Missing Redcap:</h3>
+Sessions where redcap records are missing.
+<span class="label label-info">Limited to CAMH sessions.</span>
+<div class="container" id="qc_outstanding">
+  <table>
+    {% for session in study.sessions %}
+      {% if session.site.name=='CMH'
+            and not session.is_phantom
+            and session.redcap_record == '' %}
+        <tr><td>
+          <a href={{ url_for('session', session_id=session.id) }}>
+            {{ session.name }}
+          </a>
+        </td></tr>
+      {% endif %}
+    {% endfor %}
+  </table>
+</div>
+
+<h3>Missing Imaging:</h3>
+Sessions where redcap records are present, but no scans exist.
+<span class="label label-info">Limited to CAMH sessions.</span>
+<div class="container" id="qc_outstanding">
+  <table>
+    {% for session in study.sessions %}
+      {% if session.site.name=='CMH'
+            and session.redcap_record
+            and session.scan_count() == 0 %}
         <tr><td>
           <a href={{ url_for('session', session_id=session.id) }}>
             {{ session.name }}
@@ -27,17 +75,17 @@ Sessions where scans have been repeated.
     var html = "<div class='row'>";
 
     if(data[1].trim().match('QC doc')){
-      html = html + "<span class='label-info'>QC check required for:"
+      html = html + "QC check required for:"
         + "<a href={{ url_for('session_by_name') }}/"+ session + ">"
-        + session + "</a></span>";
+        + session + "</a>";
     }else if(data[1].trim().match('No checklist')){
-      html = html + "<span class='label-warning'>Checklist entry missing for:"
+      html = html + "Checklist entry missing for:"
         + "<a href={{ url_for('session_by_name') }}/"+ session + ">"
-        + session + "</a></span>";
+        + session + "</a>";
     }else{
-      html = html + "<span class='label-warning'>QC doc not generated for:"
+      html = html + "QC doc not generated for:"
         + "<a href={{ url_for('session_by_name') }}/"+ session + ">"
-        + session + "</a></span>";
+        + session + "</a>";
     }
       html = html + "</div>"
     return html

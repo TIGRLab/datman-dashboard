@@ -36,5 +36,7 @@ if not app.debug:
     app.logger.addHandler(mail_handler)
     app.logger.addHandler(file_handler)
     app.logger.info('Dashboard startup')
+else:
+    app.config['SQLALCHEMY_ECHO'] = True
 
 from dashboard import views, models

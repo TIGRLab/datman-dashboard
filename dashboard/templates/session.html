@@ -50,6 +50,21 @@
     </div>
   </div>
   <div class="row">
+    <div class="col-sm-12">
+      <h3>
+        {% if session.redcap_comment %}
+          Redcap comment:
+          <small>
+            {{ session.redcap_comment }}
+            <a href="{{ url_for('redcap_redirect', session_id=session.id) }}">link</a>
+          </small>
+        {% else %}
+          <span class="label label-warning">No Redcap record available</span>
+        {% endif %}
+      </h3>
+    </div>
+  </div>
+  <div class="row">
     <h3>
       <div class="col-sm-2">
         QC Comment:
@@ -60,13 +75,13 @@
         </button>
       </div>
       <div class="col-sm-9 text-left">
-        <span class="collapse in text-left" id="qc_comment">
+        <span class="collapse in text-left" id="qc_comment"><small>
           {% if session.is_qcd() %}
               {{ session.cl_comment }}
           {% else %}
               Not checked
           {% endif %}
-        </span>
+        </small></span>
         <span class="collapse" id="qc_form">
           <form action="" method="post" name="session_qc">
             {{ form.hidden_tag() }}

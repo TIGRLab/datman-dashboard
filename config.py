@@ -41,3 +41,5 @@ DISPLAY_METRICS = {'phantom': {'t1': ['c1', 'c2', 'c3', 'c4'],
                    'human': {'t1': [],
                             'dti': ['tsnr_bX', 'meanRELrms', '#ndirs'],
                             'fmri': ['mean_fd', 'mean_sfnr', 'ScanLength']}}
+
+REDCAP_TOKEN = os.environ.get('REDCAP_TOKEN')
