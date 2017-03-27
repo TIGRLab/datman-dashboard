@@ -153,6 +153,7 @@ def add_session(session_name):
         session.study = study
         session.site = site
         session.is_phantom = is_phantom
+        session.is_repeated = False
 
     else:
         session = query.first()
