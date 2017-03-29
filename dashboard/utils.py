@@ -15,6 +15,16 @@ class TimeoutError(Exception):
     pass
 
 
+def get_study_name(str):
+    """
+    'get_study_name' Convert a study identifier to a study name
+
+    >>> get_study_name('SPN01')
+    "SPINS"
+    """
+    return CFG.map_xnat_archive_to_project(str)
+
+
 def _check_study(study):
     """Check if study is a valid study"""
     study = str(study)

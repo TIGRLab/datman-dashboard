@@ -3,6 +3,7 @@ from __future__ import absolute_import
 from config import REDCAP_TOKEN
 import redcap as REDCAP
 from .models import Session, Study, Site
+from . import utils
 from urlparse import urlparse
 import logging
 import datman.scanid
@@ -137,6 +138,9 @@ class redcap_record(object):
         """
         Set the study from the id in the session name
         """
+        if not utils._check_study(study_str):
+            study_str = utils.get_study_name(study_str)
+
         db_study = Study.query.filter(Study.nickname == study_str)
 
         if db_study.count() != 1:
