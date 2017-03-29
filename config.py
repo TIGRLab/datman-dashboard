@@ -1,3 +1,9 @@
+"""
+Config file for dashboard webapp
+In production environment variables are defined in:
+    /etc/uwsgi/apps-available/dashboard.ini
+"""
+
 import os
 
 basedir = os.path.abspath(os.path.dirname(__file__))
