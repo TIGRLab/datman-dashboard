@@ -587,11 +587,13 @@ def redcap():
         try:
             rc = REDCAP.redcap_record(request)
         except Exception as e:
+            logger.error('Failed creating redcap object:{}'.format(str(e)))
             logger.debug(str(e))
             raise InvalidUsage(str(e), status_code=400)
     else:
+        logger.error('Invalid redcap response')
         raise InvalidUsage('Expected a POST request', status_code=400)
-
+    logger.info('Processing query')
     if rc.instrument_completed:
         logger.info('Updating db session.')
         rc.update_db_session()
