@@ -44,6 +44,7 @@ class User(UserMixin, db.Model):
                               back_populates='users')
     is_admin = db.Column(db.Boolean, default=False)
     has_phi = db.Column(db.Boolean, default=False)
+    analysis_comments = db.relationship('ScanComment')
 
     def get_studies(self):
         # returns the list of studies that a user has access to
@@ -299,6 +300,7 @@ class Scan(db.Model):
     bl_comment = db.Column(db.String(1024))
     series_number = db.Column(db.Integer, nullable=False)
     repeat_number = db.Column(db.Integer)
+    analysis_comments = db.relationship('ScanComment')
 
     def __repr__(self):
         return('<Scan {}>'.format(self.name))
@@ -367,3 +369,30 @@ class MetricValue(db.Model):
         return('<Scan {}: Metric {}: Value {}>'.format(self.scan.name,
                                                        self.metrictype.name,
                                                        self.value))
+
+
+class Analysis(db.Model):
+    __tablename__ = 'analyses'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String, nullable=False)
+    description = db.Column(db.String, nullable=False)
+    software = db.Column(db.String)
+    analysis_comments = db.relationship('ScanComment')
+
+    def __repr__(self):
+        return('<Analysis:{} {}>'.format(self.id, self.name))
+
+
+class ScanComment(db.Model):
+    __tablename__ = 'scan_comments'
+
+    id = db.Column(db.Integer, primary_key=True)
+    scan_id = db.Column(db.Integer, db.ForeignKey('scans.id'), nullable=False)
+    scan = db.relationship('Scan', back_populates="analysis_comments")
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user = db.relationship('User', back_populates="analysis_comments")
+    analysis_id = db.Column(db.Integer, db.ForeignKey('analyses.id'), nullable=False)
+    analysis = db.relationship('Analysis', back_populates="analysis_comments")
+    excluded = db.Column(db.Boolean, default=False)
+    comment = db.Column(db.String)
