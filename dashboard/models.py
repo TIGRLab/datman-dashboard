@@ -1,4 +1,6 @@
-"""Object definition file for dashboard app"""
+"""
+Object definition file for dashboard app
+"""
 
 from dashboard import db
 import utils
@@ -27,10 +29,10 @@ study_people_table = db.Table('study_people',
                               db.Column('person_id', db.Integer,
                                         db.ForeignKey('people.id')))
 study_user_table = db.Table('study_users',
-                             db.Column('study_id', db.Integer,
-                                       db.ForeignKey('studies.id')),
-                             db.Column('user_id', db.Integer,
-                                       db.ForeignKey('users.id')))
+                            db.Column('study_id', db.Integer,
+                                      db.ForeignKey('studies.id')),
+                            db.Column('user_id', db.Integer,
+                                      db.ForeignKey('users.id')))
 
 
 class User(UserMixin, db.Model):
@@ -65,7 +67,6 @@ class User(UserMixin, db.Model):
             return True
         else:
             return
-
 
     @staticmethod
     def make_unique_nickname(nickname):
@@ -126,7 +127,6 @@ class Study(db.Model):
     users = db.relationship('User', secondary=study_user_table,
                             back_populates='studies')
 
-
     def __repr__(self):
         return ('<Study {}>'.format(self.nickname))
 
@@ -162,8 +162,6 @@ class Study(db.Model):
         return(len(sessions))
 
 
-
-
 class Site(db.Model):
     __tablename__ = 'sites'
 
@@ -183,11 +181,13 @@ class Session(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(256))
     date = db.Column(db.DateTime)
-    study_id = db.Column(db.Integer, db.ForeignKey('studies.id'), nullable=False)
+    study_id = db.Column(db.Integer, db.ForeignKey('studies.id'),
+                         nullable=False)
     study = db.relationship('Study', back_populates='sessions')
     site_id = db.Column(db.Integer, db.ForeignKey('sites.id'), nullable=False)
     site = db.relationship('Site', back_populates='sessions')
-    scans = db.relationship('Scan', order_by="Scan.series_number", cascade="all, delete-orphan" )
+    scans = db.relationship('Scan', order_by="Scan.series_number",
+                            cascade="all, delete-orphan")
     is_phantom = db.Column(db.Boolean)
     is_repeated = db.Column(db.Boolean)
     repeat_count = db.Column(db.Integer)
@@ -201,8 +201,7 @@ class Session(db.Model):
     redcap_comment = db.Column(db.String(1024))  # Redcap comment field
     redcap_url = db.Column(db.String(1024))  # URL for the redcap server
     redcap_projectid = db.Column(db.Integer)  # ID for redcap Project
-    redcap_instrument = db.Column(db.String(1024))  #  name of the redcap form
-
+    redcap_instrument = db.Column(db.String(1024))  # name of the redcap form
 
     def __repr__(self):
         return('<Session {} from Study {} at Site {}>'
@@ -216,7 +215,9 @@ class Session(db.Model):
             return True
 
     def is_current_qcd(self):
-        """checks if the most recent repeat of a session has been quality checked"""
+        """
+        checks if the most recent repeat of a session has been quality checked
+        """
         if self.last_repeat_qcd == self.repeat_count:
             return True
 
@@ -234,13 +235,16 @@ class Session(db.Model):
 
     @validates('cl_comment')
     def validate_comment(self, key, comment):
-        """check the comment isn't empty and that the checklist.csv can be updated"""
+        """
+        check the comment isn't empty and that the checklist.csv can be updated
+        """
         assert comment
         assert utils.update_checklist(self.name,
                                       comment,
                                       study_name=self.study.nickname)
         self.last_repeat_qcd = self.repeat_count
         return comment
+
 
 class ScanType(db.Model):
     __tablename__ = 'scantypes'
@@ -261,7 +265,8 @@ class MetricType(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(12))
-    scantype_id = db.Column(db.Integer, db.ForeignKey('scantypes.id'), nullable=False)
+    scantype_id = db.Column(db.Integer, db.ForeignKey('scantypes.id'),
+                            nullable=False)
     scantype = db.relationship('ScanType', back_populates='metrictypes')
     metricvalues = db.relationship('MetricValue')
 
@@ -291,10 +296,11 @@ class Scan(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(128), index=True, unique=True)
     description = db.Column(db.String(128))
-    session_id = db.Column(db.Integer, db.ForeignKey('sessions.id'), nullable=False)
+    session_id = db.Column(db.Integer, db.ForeignKey('sessions.id'),
+                           nullable=False)
     session = db.relationship('Session', back_populates='scans')
-
-    scantype_id = db.Column(db.Integer, db.ForeignKey('scantypes.id'), nullable=False)
+    scantype_id = db.Column(db.Integer, db.ForeignKey('scantypes.id'),
+                            nullable=False)
     scantype = db.relationship('ScanType', back_populates="scans")
     metricvalues = db.relationship('MetricValue', cascade="all, delete-orphan")
     bl_comment = db.Column(db.String(1024))
@@ -311,12 +317,16 @@ class Scan(db.Model):
 
     @validates('bl_comment')
     def validate_comment(self, key, comment):
-        """check the comment isn't empty and that the blacklist.csv can be updated"""
+        """
+        check the comment isn't empty and that the blacklist.csv can be updated
+        """
         assert comment
         assert utils.update_blacklist('{}_{}'.format(self.name,
                                                      self.description),
-                                      comment, study_name=self.session.study.nickname)
+                                      comment,
+                                      study_name=self.session.study.nickname)
         return comment
+
 
 class MetricValue(db.Model):
     __tablename__ = 'scanmetrics'
@@ -392,7 +402,8 @@ class ScanComment(db.Model):
     scan = db.relationship('Scan', back_populates="analysis_comments")
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     user = db.relationship('User', back_populates="analysis_comments")
-    analysis_id = db.Column(db.Integer, db.ForeignKey('analyses.id'), nullable=False)
+    analysis_id = db.Column(db.Integer, db.ForeignKey('analyses.id'),
+                            nullable=False)
     analysis = db.relationship('Analysis', back_populates="analysis_comments")
     excluded = db.Column(db.Boolean, default=False)
     comment = db.Column(db.String)
