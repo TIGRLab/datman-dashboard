@@ -83,23 +83,18 @@
                 </li>
 
                 <li class=dropdown>
-                  {% if study %}
-                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">{{ study.nickname }} <span class="caret"></span></a>
-                  {% else %}
-                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Studies <span class="caret"></span></a>
-                  {% endif %}
-                  <ul class="dropdown-menu" role="menu" aria-labelledby="site_menu">
-                    {% for study in current_user.get_studies() %}
+                  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">View<span class="caret"></span></a>
+                  <ul class="dropdown-menu" role="menu" aria-labelledby="Options menu">
                     <li role="presentation">
-                      <a role="menuitem" href= {{ url_for('study', study_id=study.id) }} >
-                        {{ study.nickname }}
-                      </a>
+                      <a role="menuitem" href= {{ url_for('study') }} >Study</a>
                     </li>
-                  {% endfor %}
+                    <li role="presentation">
+                      <a role="menuitem" href= {{ url_for('analysis') }} >Analyses</a>
+                    </li>
                 </ul>
               </li>
-            {% endif %}
           </ul>
+          {% endif %}
         </div>
       </div>
   </nav>
@@ -117,9 +112,9 @@
   <!-- Bootstrap core JavaScript
   ================================================== -->
   <!-- Placed at the end of the document so the pages load faster -->
-  <script src="/static/js/site.js"/>
+  <script type="text/javascript" src="/static/js/site.js"></script>
   <script src="/static/js/bootstrap.min.js"></script>
-  <script type="text/javascript" src="/static/js/datatables.js" />
+  <script type="text/javascript" src="/static/js/datatables.js"></script>
   <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
   <script src="/static/js/ie10-viewport-bug-workaround.js"></script>
   <!-- md file editor -->

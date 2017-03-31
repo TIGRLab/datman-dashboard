@@ -7,8 +7,8 @@ from sqlalchemy.exc import SQLAlchemyError
 from dashboard import app, db, lm
 from oauth import OAuthSignIn
 from .queries import query_metric_values_byid, query_metric_types, query_metric_values_byname
-from .models import Study, Site, Session, ScanType, Scan, User
-from .forms import SelectMetricsForm, StudyOverviewForm, SessionForm, ScanForm, UserForm
+from .models import Study, Site, Session, ScanType, Scan, User, ScanComment, Analysis
+from .forms import SelectMetricsForm, StudyOverviewForm, SessionForm, ScanForm, UserForm, ScanCommentForm, AnalysisForm
 from . import utils
 from . import redcap as REDCAP
 import json
@@ -266,6 +266,7 @@ def session(session_id=None, delete=False):
 
     studies = current_user.get_studies()
     form = SessionForm(obj=session)
+    scancomment_form = ScanCommentForm()
 
     if form.validate_on_submit():
         # form has been submitted
@@ -287,7 +288,8 @@ def session(session_id=None, delete=False):
                            studies=studies,
                            study=session.study,
                            session=session,
-                           form=form)
+                           form=form,
+                           scancomment_form=scancomment_form)
 
 
 @app.route('/redcap_redirect/<int:session_id>', methods=['GET'])
@@ -339,6 +341,7 @@ def scan(scan_id=None):
 def study(study_id=None, active_tab=None):
     if study_id is None:
         return redirect('/index')
+        #study_id = current_user.get_studies()[0].id
 
     study = Study.query.get(study_id)
 
@@ -391,7 +394,6 @@ def study(study_id=None, active_tab=None):
     display_metrics = app.config['DISPLAY_METRICS']
 
     return render_template('study.html',
-                           studies=current_user.get_studies(),
                            metricnames=study.get_valid_metric_names(),
                            study=study,
                            form=form,
@@ -657,3 +659,74 @@ def oauth_callback(provider):
     login_user(user, remember=True)
     flask_session['active_token'] = access_token
     return redirect(url_for('index'))
+
+@app.route('/scan_comment', methods=['GET','POST'])
+@app.route('/scan_comment/<scan_id>', methods=['GET','POST'])
+@login_required
+def scan_comment(scan_id):
+    """
+    View for adding scan comments
+    """
+    form = ScanCommentForm()
+    form.user_id = current_user.id
+    form.scan_id = scan_id
+
+    scan = Scan.query.get(scan_id)
+    session = scan.session
+
+    if not current_user.has_study_access(session.study):
+        flash('Not authorised')
+        return redirect(url_for('index'))
+
+    if form.validate_on_submit():
+        try:
+            scancomment = ScanComment()
+            scancomment.scan_id = scan_id
+            scancomment.user_id = current_user.id
+            scancomment.analysis_id = form.analyses.data
+            scancomment.excluded = form.excluded.data
+            scancomment.comment = form.comment.data
+
+            db.session.add(scancomment)
+            db.session.commit()
+            flash('Scan comment added')
+        except:
+            flash('Failed adding comment')
+
+    return redirect(url_for('session', session_id=session.id))
+
+
+@app.route('/analysis', methods=['GET','POST'])
+@app.route('/analysis/<analysis_id>')
+@login_required
+def analysis(analysis_id=None):
+    """
+    Default view for analysis
+    """
+    form = AnalysisForm()
+    if form.validate_on_submit():
+        try:
+            analysis = Analysis()
+            analysis.name = form.name.data
+            analysis.description = form.description.data
+            analysis.software = form.software.data
+
+            db.session.add(analysis)
+            db.session.commit()
+            flash('Analysis added')
+        except:
+            flash('Failed adding analysis')
+
+    if not analysis_id:
+        analyses = Analysis.query.all()
+    else:
+        analyses = Analysis.query.get(analysis_id)
+
+    for analysis in analyses:
+        # format the user objects for display on page
+        users = analysis.get_users()
+        analysis.user_names = ' '.join([user.realname for user in users])
+
+    return render_template('analyses.html',
+                           analyses=analyses,
+                           form=form)

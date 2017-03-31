@@ -1,9 +1,9 @@
-from datetime import timedelta
 from flask import session
 from flask_wtf import FlaskForm
-from wtforms import SelectField, SelectMultipleField, HiddenField, TextAreaField, TextField, FormField, BooleanField
+from wtforms import SelectField, SelectMultipleField, HiddenField
+from wtforms import TextAreaField, TextField, FormField, BooleanField
 from wtforms.validators import DataRequired
-from models import Study
+from models import Study, Analysis
 from wtforms.csrf.session import SessionCSRF
 
 
@@ -42,6 +42,7 @@ class SessionForm(FlaskForm):
     cl_comment = TextField(u'Checklist_comment',
                            validators=[DataRequired()])
 
+
 class UserForm(FlaskForm):
     user_id = HiddenField()
     realname = TextField(u'realname',
@@ -55,3 +56,27 @@ class UserForm(FlaskForm):
         studies = Study.query.all()
         study_choices = [(str(study.id), study.nickname) for study in studies]
         self.studies.choices = study_choices
+
+
+class AnalysisForm(FlaskForm):
+    name = TextField(u'Brief name',
+                     validators=[DataRequired()])
+    description = TextAreaField(u'Description',
+                            validators=[DataRequired()])
+    software = TextAreaField(u'Software')
+
+
+class ScanCommentForm(FlaskForm):
+    scan_id = HiddenField(id="scancomment_scan_id")
+    user_id = HiddenField(id="scancomment_user_id")
+    analyses = SelectField(u'Analysis used:', id="scancomment_analysis")
+    excluded = BooleanField(u'Was excluded:', id="scancomment_excluded", default=False)
+    comment = TextField(u'Comment',
+                        id="scancomment_comment",
+                        validators=[DataRequired()])
+    def __init__(self, *args, **kwargs):
+        FlaskForm.__init__(self, *args, **kwargs)
+        analyses = Analysis.query.all()
+        analysis_choices = [(str(analysis.id), analysis.name)
+                            for analysis in analyses]
+        self.analyses.choices = analysis_choices

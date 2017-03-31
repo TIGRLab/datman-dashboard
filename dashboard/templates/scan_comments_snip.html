@@ -1,0 +1,16 @@
+<table class="table">
+  <thead>
+    <th>User</th>
+    <th>Analysis</th>
+    <th>Comment</th>
+  </thead>
+  <tbody>
+    {% for comment in scan.analysis_comments %}
+      <tr>
+        <td>{{ comment.user.realname }}</td>
+        <td>{{ comment.analysis.name }}</td>
+        <td>{{ comment.comment }}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>

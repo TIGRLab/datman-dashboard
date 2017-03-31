@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% include 'flash.html' %}
+{% include 'add_analysis_modal.html' %}
+{% block content %}
+<div class="bd-pageheader jumbotron">
+  <div class="row">
+    <div class="col-md-6">
+      <h1>Analysis pipelines</h1>
+    </div>
+    <div class="col-md-6">
+      <span class="pull-right pull-down">
+        <div class="row">
+          Choose an option:
+        </div>
+        <div class="row">
+          <button class="btn btn-primary btn" id="add_analysis"  data-toggle="modal" data-target="#add_analysis_modal">Add New</button>
+        </div>
+      </span>
+    </div>
+  </div>
+</div>
+<div class="container">
+  {% for analysis in analyses %}
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <h3 class="panel-title">{{ analysis.name }}</h3>
+    </div>
+    <div class="panel-body">
+      <dl class="dl-horizontal">
+        <dt>Description</dt>
+        <dd>{{ analysis.description }}</dd>
+        <dt>Software</dt>
+        <dd>{{ analysis.software }}</dd>
+        <dt>Users</dt>
+        <dd>{{ analysis.user_names }}</dd>
+      </dl>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -315,6 +315,10 @@ class Scan(db.Model):
         if self.bl_comment:
             return True
 
+    @property
+    def comment_count(self):
+        return len(self.analysis_comments)
+
     @validates('bl_comment')
     def validate_comment(self, key, comment):
         """
@@ -389,6 +393,16 @@ class Analysis(db.Model):
     description = db.Column(db.String, nullable=False)
     software = db.Column(db.String)
     analysis_comments = db.relationship('ScanComment')
+
+    def get_users(self):
+        """
+        Returns a list of unique user objects who have posted comments
+        on this analysis.
+        """
+        user_ids = [comment.user_id for comment in self.analysis_comments]
+        user_ids = set(user_ids)
+        users = [User.query.get(uid) for uid in user_ids]
+        return users
 
     def __repr__(self):
         return('<Analysis:{} {}>'.format(self.id, self.name))

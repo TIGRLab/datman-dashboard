@@ -19,6 +19,20 @@
   </div>
   <div class="container">
     <ul class="nav nav-tabs">
+      <li role="presentation" class="dropdown">
+        <a class="dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
+          {{ study.nickname }} <span class="caret"></span>
+        </a>
+        <ul class="dropdown-menu" role="menu" aria-labelledby="site_menu">
+          {% for study in current_user.get_studies() %}
+          <li role="presentation">
+            <a role="menuitem" href= {{ url_for('study', study_id=study.id) }} >
+              {{ study.nickname }}
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+
       {% if active_tab %}
         <li><a data-toggle="tab" href="#overview">Overview</a></li>
       {% else %}
@@ -65,7 +79,6 @@
               <th>Session</th>
               <th>QC complete</th>
               <th>Is Phantom</th>
-              <th>Delete</th>
             </tr>
           </thead>
           <tbody>
