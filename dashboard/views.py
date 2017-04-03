@@ -318,15 +318,21 @@ def scan(scan_id=None):
         return redirect(url_for('index'))
 
     form = ScanForm()
+
+    if not form.is_submitted():
+        form.bl_comment.data = scan.bl_comment
+
     if form.validate_on_submit():
         scan.bl_comment = form.bl_comment.data
         try:
             db.session.add(scan)
             db.session.commit()
             flash("Blacklist updated")
+            return redirect(url_for('session', session_id=scan.session_id))
         except SQLAlchemyError as err:
             logger.error('Scan blacklist update failed:{}'.format(str(err)))
             flash('Update failed, admins have been notified, please try again')
+
 
     return render_template('scan.html',
                            studies=studies,

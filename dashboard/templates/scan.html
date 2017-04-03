@@ -26,6 +26,9 @@
       <label for="blacklist_comment">Blacklist comment:</label>
       {{ form.hidden_tag() }}
       {{ form.bl_comment(id="blacklist_comment") }}
+      {% for error in form.bl_comment.errors %}
+        <span class="text-danger">[{{ error }}]</span>
+      {% endfor %}
     </div>
     <button type="submit" class="btn btn-default">Update</button>
   </form>
