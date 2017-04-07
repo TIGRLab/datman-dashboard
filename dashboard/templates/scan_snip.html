@@ -2,7 +2,7 @@
   <td class="scan_series"> {{ scan.series_number }}</td>
   <td class="scan_type"> {{ scan.scantype.name }}</td>
   <td class="scan_repeat"> {{ scan.repeat_number }} </td>
-  <td class="scan_desc"> {{ scan.description }} </td>
+  <td class="scan_desc"> <a href="{{url_for('scan', scan_id=scan.id )}}">{{ scan.description }}</a> </td>
   {% if scan.bl_comment %}
     <td class="scan_bl"> {{ scan.bl_comment }}
   {% else %}

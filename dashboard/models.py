@@ -7,6 +7,7 @@ import utils
 from hashlib import md5
 from sqlalchemy.orm import validates
 from flask_login import UserMixin
+import os
 import logging
 
 logger = logging.getLogger(__name__)
@@ -330,6 +331,13 @@ class Scan(db.Model):
                                       comment,
                                       study_name=self.session.study.nickname)
         return comment
+
+    def get_file_path(self):
+        nii_path = utils.get_study_folder(study=self.session.study.nickname,
+                                          folder_type='nii')
+        file_name = '_'.join([self.name, self.description]) + '.nii.gz'
+        path = os.path.join(nii_path, self.session.name, file_name)
+        return(path)
 
 
 class MetricValue(db.Model):

@@ -250,6 +250,26 @@ def update_checklist(session_name, comment, checklist_file=None, study_name=None
 
     return True
 
-    def get_export_info(study, site):
-        export_info = CFG.get_exportinfo(site=site, study=study)
-        return export_info
+def get_export_info(study, site):
+    export_info = CFG.get_exportinfo(site=site, study=study)
+    return export_info
+
+def get_study_folder(study, folder_type=None):
+    """
+    Returns the base filesystem path for the study.
+    If folder is supplied and is defined in study config
+    then path to the foder is returned
+
+    >>> get_study_folder('TEST', 'nii')
+    /archive/data/TEST/data/nii/
+    """
+    try:
+        if folder_type:
+            path = CFG.get_path(folder_type, study)
+        else:
+            path = CFG.get_study_base(study=study)
+    except KeyError:
+        logger.error('Failed to find folder:{} for study:{}'
+                     .format(folder_type, study))
+        return None
+    return path
