@@ -2,6 +2,8 @@
 {% extends "base.html" %}
 {% include 'flash.html' %}
 {% block content %}
+{% include('add_scan_blacklist_modal.html') %}
+{% include('add_scan_comment_modal.html') %}
 <div class="bd-pageheader jumbotron">
   <div class="row">
     <div class="col-md-6">
@@ -20,25 +22,43 @@
     </div>
   </div>
 </div>
-<div class="row">
-    <form action="" method="post" name="scan_qc">
-      <div class="col-sm-12 form-group">
-        <label for="blacklist_comment">Blacklist comment:</label>
-        {{ form.hidden_tag() }}
-        {{ form.bl_comment(id="blacklist_comment") }}
-        {% for error in form.bl_comment.errors %}
-          <span class="text-danger">[{{ error }}]</span>
-        {% endfor %}
-        <div class="col-sm-12 form-group">
-      <button type="submit" class="btn btn-default">Update</button>
-    </form>
+<div class="container-fluid">
+  <div class="navbar">
+    <div class="pull-left">
+      <ul class="nav nav-tabs">
+        <li class="active"><a data-toggle="tab" href="#viewer">Viewer</a></li>
+        {% if scan.scantype.name == 'T1' %}
+          <li><a data-toggle="tab" href="#hcp">HCP QC</a></li>
+        {% endif %}
+        <li><a data-toggle="tab" href="#comments">Comments</a></li>
+      </ul>
+    </div>
+    <div class="pull-right">
+      <div class="nav btn-group">
+        <button type="button" class="btn btn-info btn_add_scan_blacklist" data-toggle="modal" data-scanid="{{ scan.id }}" data-scanname="{{ scan.name }}" data-toggle="modal" data-target="#add_scan_blacklist_modal">
+          Add to Blacklist
+        </button>
+      </div>
+    </div>
+  </div>
+  <div class="tab-content">
+    <div id="viewer" class="tab-pane fade in active">
+      {% include 'scan_viewer.html' %}
+    </div>
+    {% if scan.scantype.name == 'T1' %}
+      <div id="hcp" class="tab-pane fade in">
+      {% include 'hcp_qc.html' %}
+      </div>
+    {% endif %}
+    <div id="comments" class="tab-pane fade in">
+      {% include 'scan_comments_snip.html' %}
+      <button type="button" class="btn btn-info btn_add_scan_comments" data-scanid="{{ scan.id }}" data-scanname="{{ scan.name }}" data-toggle="modal" data-target="#add_scan_comment_modal">
+        Add analysis comment
+      </button>
+    </div>
+  </div>
+
 </div>
-<script type="text/javascript">
-    var params = [];
-    params["worldSpace"] = true;
-    params["images"] = ["{{ scan.get_file_path() }}"];
-</script>
-<div class="container">
-  <div class="papaya" data-params="params"></div>
-</div>
+<link rel="stylesheet" type="text/css" href="/static/css/papaya.css" />
+<script type="text/javascript" src="/static/js/papaya.js"></script>
 {% endblock %}

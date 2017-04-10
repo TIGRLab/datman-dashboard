@@ -325,11 +325,17 @@ class Scan(db.Model):
         """
         check the comment isn't empty and that the blacklist.csv can be updated
         """
-        assert comment
-        assert utils.update_blacklist('{}_{}'.format(self.name,
-                                                     self.description),
-                                      comment,
-                                      study_name=self.session.study.nickname)
+        assert comment, 'Comment not provided for scan:{}'.format(self.name)
+
+        try:
+            utils.update_blacklist('{}_{}'.format(self.name,
+                                                  self.description),
+                                   comment,
+                                   study_name=self.session.study.nickname)
+        except:
+            logger.error('Failed updating blacklist for scan:{}'
+                         .format(self.name))
+            return False
         return comment
 
     def get_file_path(self):
@@ -339,6 +345,20 @@ class Scan(db.Model):
         path = os.path.join(nii_path, self.session.name, file_name)
         return(path)
 
+    def get_hcp_path(self):
+        """
+        Returns the path to the scan hcp pipelines folder
+        False if subject folder doesnt exists
+        """
+        hcp_path = utils.get_study_folder(study=self.session.study.nickname,
+                                          folder_type='hcp')
+        sub_path = os.path.join(hcp_path,
+                                'qc_MNIfsaverage32k',
+                                self.session.name)
+        if not os.path.isdir(sub_path):
+            return False
+
+        return sub_path
 
 class MetricValue(db.Model):
     __tablename__ = 'scanmetrics'

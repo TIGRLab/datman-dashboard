@@ -33,8 +33,10 @@ class StudyOverviewForm(FlaskForm):
     study_id = HiddenField()
 
 
-class ScanForm(FlaskForm):
+class ScanBlacklistForm(FlaskForm):
+    scan_id = HiddenField(id="scan_id")
     bl_comment = TextField(u'Blacklist_comment',
+                           id="bl_comment",
                            validators=[DataRequired()])
 
 
@@ -67,12 +69,12 @@ class AnalysisForm(FlaskForm):
 
 
 class ScanCommentForm(FlaskForm):
-    scan_id = HiddenField(id="scancomment_scan_id")
-    user_id = HiddenField(id="scancomment_user_id")
-    analyses = SelectField(u'Analysis used:', id="scancomment_analysis")
-    excluded = BooleanField(u'Was excluded:', id="scancomment_excluded", default=False)
+    scan_id = HiddenField(id="scan_id")
+    user_id = HiddenField(id="user_id")
+    analyses = SelectField(u'Analysis used:', id="analysis")
+    excluded = BooleanField(u'Was excluded:', id="excluded", default=False)
     comment = TextField(u'Comment',
-                        id="scancomment_comment",
+                        id="comment",
                         validators=[DataRequired()])
     def __init__(self, *args, **kwargs):
         FlaskForm.__init__(self, *args, **kwargs)

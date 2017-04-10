@@ -8,7 +8,7 @@ from dashboard import app, db, lm
 from oauth import OAuthSignIn
 from .queries import query_metric_values_byid, query_metric_types, query_metric_values_byname
 from .models import Study, Site, Session, ScanType, Scan, User, ScanComment, Analysis
-from .forms import SelectMetricsForm, StudyOverviewForm, SessionForm, ScanForm, UserForm, ScanCommentForm, AnalysisForm
+from .forms import SelectMetricsForm, StudyOverviewForm, SessionForm, ScanBlacklistForm, UserForm, ScanCommentForm, AnalysisForm
 from . import utils
 from . import redcap as REDCAP
 import json
@@ -317,13 +317,15 @@ def scan(scan_id=None):
         flash('Not authorised')
         return redirect(url_for('index'))
 
-    form = ScanForm()
+    bl_form = ScanBlacklistForm()
+    scancomment_form = ScanCommentForm()
 
-    if not form.is_submitted():
-        form.bl_comment.data = scan.bl_comment
+    if not bl_form.is_submitted():
+        bl_form.scan_id = scan_id
+        bl_form.bl_comment.data = scan.bl_comment
 
-    if form.validate_on_submit():
-        scan.bl_comment = form.bl_comment.data
+    if bl_form.validate_on_submit():
+        scan.bl_comment = bl_form.bl_comment.data
         try:
             db.session.add(scan)
             db.session.commit()
@@ -337,7 +339,8 @@ def scan(scan_id=None):
     return render_template('scan.html',
                            studies=studies,
                            scan=scan,
-                           form=form)
+                           blacklist_form=bl_form,
+                           scancomment_form=scancomment_form)
 
 
 @app.route('/study')
@@ -698,6 +701,35 @@ def scan_comment(scan_id):
             flash('Scan comment added')
         except:
             flash('Failed adding comment')
+
+    return redirect(url_for('session', session_id=session.id))
+
+
+@app.route('/scan_blacklist', methods=['GET','POST'])
+@app.route('/scan_blacklist/<scan_id>', methods=['GET','POST'])
+@login_required
+def scan_blacklist(scan_id):
+    """
+    View for adding scan comments
+    """
+    form = ScanBlacklistForm()
+    form.scan_id = scan_id
+
+    scan = Scan.query.get(scan_id)
+    session = scan.session
+
+    if not current_user.has_study_access(session.study):
+        flash('Not authorised')
+        return redirect(url_for('index'))
+
+    if form.validate_on_submit():
+        try:
+            scan.bl_comment = form.bl_comment.data
+
+            db.session.commit()
+            flash('Scan blacklisted')
+        except:
+            flash('Failed blacklisting scan')
 
     return redirect(url_for('session', session_id=session.id))
 

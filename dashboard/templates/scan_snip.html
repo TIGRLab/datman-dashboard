@@ -19,7 +19,7 @@
         View <span class="badge">{{ scan.comment_count }}</span>
       </button>
     {% endif %}
-    <button type="button" class="btn btn-info btn_add_scan_comments" data-toggle="modal" data-target="#add_scan_comment_modal">
+    <button type="button" data-scanid="{{ scan.id }}" data-scanname="{{ scan.name }}" class="btn btn-info btn_add_scan_comments" data-toggle="modal" data-target="#add_scan_comment_modal">
       Add
     </button>
   </td>

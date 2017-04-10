@@ -1,0 +1,12 @@
+{% set subject_hcp = scan.get_hcp_path() %}
+<div class="container">
+  {% if not subject_hcp %}
+    <h4>HCP templates not found.</h4>
+  {% else %}
+    <img src="{{ subject_hcp + '/aparc1.png' }}" class="img-responsive" alt="parcellation">
+    <img src="{{ subject_hcp + '/VolSurfOutlineAx.png' }}" class="img-responsive" alt="Surface outline axial">
+    <img src="{{ subject_hcp + '/VolSurfOutlineCor.png' }}" class="img-responsive" alt="Surface outline coronal">
+    <img src="{{ subject_hcp + '/VolSurfOutlineSag.png' }}" class="img-responsive" alt="Surface outline sagital">
+    <img src="{{ subject_hcp + '/CombinedView.png' }}" class="img-responsive" alt="Parcellation combined">
+  {% endif %}
+</div>

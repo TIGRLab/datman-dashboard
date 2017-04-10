@@ -1,0 +1,25 @@
+<div id="add_scan_blacklist_modal" class="modal fade" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title">Blacklist scan</h4>
+      </div>
+      <div class="modal-body">
+        <div>
+          <form action="#" method="post" name="scancomment" class="form">
+            {{ blacklist_form.hidden_tag() }}
+            <div class="form-group">
+              <label for="scancomment_analysis">{{ blacklist_form.bl_comment.label }}</label>
+              {{ blacklist_form.bl_comment }}
+            </div>
+            <button type="submit" class="btn btn-default">Submit</button>
+          </form>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
