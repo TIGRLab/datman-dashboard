@@ -26,7 +26,7 @@ import logging
 import datman.utils
 import datman.config
 import datman.scanid
-from docopt import docopt
+from dashboard.docopt import docopt
 from dashboard import db
 from dashboard.models import Study, Session, Scan, MetricType, MetricValue
 
