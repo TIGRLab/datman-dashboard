@@ -7,8 +7,15 @@
   </h1>
 </div>
 <div class="container">
-  <h2><a href="{{ url_for('oauth_authorize', provider='github') }}">GitHub</a></h2>
-  <h2><a href="{{ url_for('oauth_authorize', provider='gitlab') }}">GitLab</a></h2>
-
+  <h3><p class="bg-danger">
+    Important note: By logging into this system, you agree to not upload/enter any information that has PHI. Screening forms and booking comments are to list only Participant Identifiers, without participant initials or other potentially identifying information.
+    <br/>
+    We reserve the right to restrict or terminate your access if misuse is discovered.
+  </p>
+  <p>Select an option below to login:</p>
+</div>
+<div class="container">
+  <a href="{{ url_for('oauth_authorize', provider='github') }}" class="btn btn-info btn-lg" role="button">GitHub</a>
+  <a href="{{ url_for('oauth_authorize', provider='gitlab') }}" class="btn btn-info btn-lg disabled" role="button">GitLab</a>
 </div>
 {% endblock %}
