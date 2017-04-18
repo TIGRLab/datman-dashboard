@@ -154,6 +154,7 @@ def add_session(session_name):
         session.site = site
         session.is_phantom = is_phantom
         session.is_repeated = False
+        session.repeat_count = 1
 
     else:
         session = query.first()
