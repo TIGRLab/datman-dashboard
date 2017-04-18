@@ -48,6 +48,7 @@ class User(UserMixin, db.Model):
     is_admin = db.Column(db.Boolean, default=False)
     has_phi = db.Column(db.Boolean, default=False)
     analysis_comments = db.relationship('ScanComment')
+    incidental_findings = db.relationship('IncidentalFinding')
 
     def get_studies(self):
         # returns the list of studies that a user has access to
@@ -203,6 +204,7 @@ class Session(db.Model):
     redcap_url = db.Column(db.String(1024))  # URL for the redcap server
     redcap_projectid = db.Column(db.Integer)  # ID for redcap Project
     redcap_instrument = db.Column(db.String(1024))  # name of the redcap form
+    incidental_findings = db.relationship('IncidentalFinding')
 
     def __repr__(self):
         return('<Session {} from Study {} at Site {}>'
@@ -233,6 +235,11 @@ class Session(db.Model):
 
     def scan_count(self):
         return len(self.scans)
+
+    @property
+    def incidental_finding(self):
+        return len(self.incidental_findings)
+
 
     @validates('cl_comment')
     def validate_comment(self, key, comment):
@@ -360,6 +367,7 @@ class Scan(db.Model):
 
         return sub_path
 
+
 class MetricValue(db.Model):
     __tablename__ = 'scanmetrics'
 
@@ -449,3 +457,16 @@ class ScanComment(db.Model):
     analysis = db.relationship('Analysis', back_populates="analysis_comments")
     excluded = db.Column(db.Boolean, default=False)
     comment = db.Column(db.String)
+
+
+class IncidentalFinding(db.Model):
+        __tablename__ = 'incidental_findings'
+
+        id = db.Column(db.Integer, primary_key=True)
+        session_id = db.Column(db.Integer, db.ForeignKey('sessions.id'),
+                               nullable=False)
+        session = db.relationship('Session',
+                                  back_populates="incidental_findings")
+        user_id = db.Column(db.Integer, db.ForeignKey('users.id'),
+                            nullable=False)
+        user = db.relationship('User', back_populates="incidental_findings")

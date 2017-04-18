@@ -7,7 +7,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from dashboard import app, db, lm
 from oauth import OAuthSignIn
 from .queries import query_metric_values_byid, query_metric_types, query_metric_values_byname
-from .models import Study, Site, Session, ScanType, Scan, User, ScanComment, Analysis
+from .models import Study, Site, Session, ScanType, Scan, User, ScanComment, Analysis, IncidentalFinding
 from .forms import SelectMetricsForm, StudyOverviewForm, SessionForm, ScanBlacklistForm, UserForm, ScanCommentForm, AnalysisForm
 from . import utils
 from . import redcap as REDCAP
@@ -225,15 +225,18 @@ def create_issue(session_id, issue_title="", issue_body=""):
 @app.route('/session')
 @app.route('/session/<int:session_id>', methods=['GET', 'POST'])
 @app.route('/session/<int:session_id>/<delete>', methods=['GET', 'POST'])
+@app.route('/session/<int:session_id>/<flag_finding>', methods=['GET', 'POST'])
 @login_required
-def session(session_id=None, delete=False):
+def session(session_id=None, delete=False, flag_finding=False):
     if session_id is None:
         return redirect('index')
 
     session = Session.query.get(session_id)
+
     if not current_user.has_study_access(session.study):
         flash('Not authorised')
         return redirect(url_for('index'))
+
     try:
         # Update open issue ID if necessary
         token = flask_session['active_token']
@@ -263,6 +266,22 @@ def session(session_id=None, delete=False):
                                     active_tab='qc'))
         except Exception:
             flash('Failed to delete session:{}'.format(session.name))
+
+    if flag_finding:
+        try:
+            incident = IncidentalFinding()
+            incident.session_id = session.id
+            incident.user_id = current_user.id
+
+            db.session.add(incident)
+            db.session.commit()
+            flash('Finding flagged.')
+            return redirect(url_for('session',
+                                    session_id=session.id))
+        except:
+            logger.error('Failed flagging finding for session:{}'
+                         .format(session.id))
+            flash('Failed flagging finding. Admins have been notified')
 
     studies = current_user.get_studies()
     form = SessionForm(obj=session)

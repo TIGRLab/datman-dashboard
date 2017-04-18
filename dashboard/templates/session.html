@@ -21,23 +21,37 @@
         </div>
         {% if current_user.is_admin %}
         <div class="row">
-          <button class="btn btn-primary btn" id="print_brain" style="">Print Brain</button>
+          <button class="btn btn-primary btn-block" id="print_brain" style="">Print Brain</button>
         </div>
         <div class="row">
-          <button class="btn btn-primary btn" id="delete_session">Delete Session</button>
+          <button class="btn btn-primary btn-block" id="delete_session">Delete Session</button>
         </div>
         {% endif %}
         <div class="row">
           {% if session.gh_issue %}
-            <button class="btn btn-primary btn" id="goto_issue">Go to open GitHub Issue</button>
+            <button class="btn btn-primary btn-block" id="goto_issue">Go to open GitHub Issue</button>
           {% else %}
-            <button class="btn btn-primary btn" id="create_issue">Create GitHub Issue</button>
+            <button class="btn btn-primary btn-block" id="create_issue">Create GitHub Issue</button>
           {% endif %}
         </div>
+        {% if not session.incidental_finding %}
+          <div class="row">
+            <button class="btn btn-primary btn-block" id="flag_incidental">Flag Incidental finding</button>
+          </div>
+        {% endif %}
       </span>
     </div>
   </div>
   </div>
+  {% if session.incidental_finding %}
+  <div class="row">
+    <div class="col-sm-12">
+      <span class="warning">
+        <h3>Incidental Finding Noted. <small>See project folder on T: drive for more infomation</small></h3>
+      </span>
+    </div>
+  </div>
+  {% endif %}
   <div class="row">
     <div class="col-sm-12">
       <h3>
@@ -151,6 +165,9 @@
   }
   url = "{{url_for('create_issue', session_id=session.id)}}/" + encodeURIComponent(issTitle) + '/' + encodeURIComponent(issBody)
   window.location.href = url;
+  })
+  $('#flag_incidental').bind('click', function(){
+    window.location.href = "{{url_for('session', session_id=session.id, flag_finding=True) }}";
   })
   </script>
 {% endblock %}
