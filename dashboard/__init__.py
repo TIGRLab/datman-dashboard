@@ -31,7 +31,7 @@ if not app.debug:
                                        10)
     file_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
     app.logger.setLevel(logging.DEBUG)
-    file_handler.setLevel(logging.INFO)
+    file_handler.setLevel(logging.DEBUG)
     mail_handler.setLevel(logging.ERROR)
     app.logger.addHandler(mail_handler)
     app.logger.addHandler(file_handler)
