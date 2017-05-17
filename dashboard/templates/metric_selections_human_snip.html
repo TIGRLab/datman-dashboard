@@ -31,7 +31,7 @@
         {% for scantype in study.scantypes %}
           {% if scantype.name.startswith('DTI') %}
             <label style="display:none" class="scantype_dti"> {{ scantype.name }}<input type="checkbox" aria-label="{{scantype.name}}" value="{{scantype.name}}" name="scantype" style="margin-top: 5px;"/></label>
-          {% elif scantype.name in ['IMI', 'RST', 'EMP', 'OBS', 'SPRL', 'VN-SPRL', 'MID', 'SID'] %}
+          {% elif scantype.name in ['IMI', 'RST', 'EMP', 'OBS', 'SPRL', 'VN-SPRL', 'MID', 'SID', 'NBK'] %}
             <label style="display:none" class="scantype_fmri"> {{ scantype.name }}<input type="checkbox" aria-label="{{scantype.name}}" value="{{scantype.name}}" name="scantype" style="margin-top: 5px;"/></label>
           {% endif %}
         {% endfor %}
