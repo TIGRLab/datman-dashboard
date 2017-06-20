@@ -38,7 +38,7 @@ if not app.debug:
     logserver_handler.setLevel(logging.DEBUG)
     mail_handler.setLevel(logging.ERROR)
     app.logger.addHandler(mail_handler)
-    app.logger.addHandler(file_handler)
+    # app.logger.addHandler(file_handler)
     app.logger.addHandler(logserver_handler)
     app.logger.info('Dashboard startup')
 else:
