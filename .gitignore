@@ -3,3 +3,4 @@ venv/
 *.sqlite
 *.log
 logs/
+dashboard.ini
