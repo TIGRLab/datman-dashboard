@@ -58,6 +58,9 @@ def load_user(id):
 
 
 def login_required(f):
+    """
+    Checks the requester has a valid authenitcation cookie
+    """
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not current_user.is_authenticated:
@@ -82,6 +85,9 @@ def logout():
 @app.route('/index')
 @login_required
 def index():
+    """
+    Main landin page
+    """
     # studies = db_session.query(Study).order_by(Study.nickname).all()
     studies = current_user.get_studies()
 
@@ -108,6 +114,9 @@ def scantypes():
 @app.route('/users')
 @login_required
 def users():
+    """
+    View that lists all users
+    """
     if not current_user.is_admin:
         flash('You are not authorised')
         return redirect(url_for('user'))
@@ -130,6 +139,9 @@ def users():
 @app.route('/user/<int:user_id>', methods=['GET', 'POST'])
 @login_required
 def user(user_id=None):
+    """
+    View for updating a users information
+    """
     form = UserForm()
 
     if form.validate_on_submit():
@@ -176,6 +188,10 @@ def user(user_id=None):
 @app.route('/session_by_name/<session_name>', methods=['GET'])
 @login_required
 def session_by_name(session_name=None):
+    """
+    Basically just a helper view, converts a session name to a sesssion_id
+    and returns the session view
+    """
     if session_name is None:
         return redirect('/index')
     # Strip any file extension or qc_ prefix
@@ -200,6 +216,9 @@ def session_by_name(session_name=None):
 @app.route('/create_issue/<int:session_id>/<issue_title>/<issue_body>', methods=['GET', 'POST'])
 @fresh_login_required
 def create_issue(session_id, issue_title="", issue_body=""):
+    """
+    Post a session issue to github, returns to the session view
+    """
     session = Session.query.get(session_id)
     if not current_user.has_study_access(session.study):
         flash("Not authorised")
@@ -226,8 +245,14 @@ def create_issue(session_id, issue_title="", issue_body=""):
 @app.route('/session/<int:session_id>', methods=['GET', 'POST'])
 @app.route('/session/<int:session_id>/delete/<delete>', methods=['GET', 'POST'])
 @app.route('/session/<int:session_id>/flag_finding/<flag_finding>', methods=['GET', 'POST'])
-@login_required
+@login_requiredelse:
 def session(session_id=None, delete=False, flag_finding=False):
+    """
+    Default view for a single session_id
+    If called as http://srv-dashboard/session/<session_id>/delete/True it will
+    delete the session from the database
+
+    """
     if session_id is None:
         return redirect('index')
 
@@ -239,11 +264,14 @@ def session(session_id=None, delete=False, flag_finding=False):
 
     try:
         # Update open issue ID if necessary
+        # this is necessary because GitHub may timeout a user without telling us
         token = flask_session['active_token']
     except:
         flash('It appears you\'ve been idle too long; please sign in again.')
         return redirect(url_for('login'))
+
     try:
+        # check to see if any issues have been posted on github for this session
         gh = Github(token)
         # Due to the way GitHub search API works, splitting session name into separate search terms will find a session
         # regardless of repeat number, and will not match other sessions with the same study/site
@@ -258,6 +286,9 @@ def session(session_id=None, delete=False, flag_finding=False):
 
     if delete:
         try:
+            if not current_user.is_admin:
+                flash('You dont have permission to do that')
+                raise Exception
             db.session.delete(session)
             db.session.commit()
             flash('Deleted session:{}'.format(session.name))
@@ -285,6 +316,10 @@ def session(session_id=None, delete=False, flag_finding=False):
 
     studies = current_user.get_studies()
     form = SessionForm(obj=session)
+
+    # This form deals with the checklist comments.
+    # Updating the checklist in the database causes checklist.csv to be updated
+    # see models.py
     scancomment_form = ScanCommentForm()
 
     if form.validate_on_submit():
@@ -314,6 +349,9 @@ def session(session_id=None, delete=False, flag_finding=False):
 @app.route('/redcap_redirect/<int:session_id>', methods=['GET'])
 @login_required
 def redcap_redirect(session_id):
+    """
+    Used to provide a link from the session page to a redcap session complete record\
+    """
     session = Session.query.get(session_id)
     redcap_url = '{}redcap_v6.11.4/DataEntry/index.php?pid={}&page={}&id={}'
     redcap_url = redcap_url.format(session.redcap_url,
@@ -326,24 +364,36 @@ def redcap_redirect(session_id):
 @app.route('/scan/<int:scan_id>', methods=['GET', 'POST'])
 @login_required
 def scan(scan_id=None):
+    """
+    Default view for a single scan
+    """
     if scan_id is None:
         flash('Invalid scan')
         return redirect(url_for('index'))
 
+    # Check the user has permission to see this study
     studies = current_user.get_studies()
     scan = Scan.query.get(scan_id)
     if not current_user.has_study_access(scan.session.study):
         flash('Not authorised')
         return redirect(url_for('index'))
 
+    # form for updating the study blacklist.csv on the filesystem
     bl_form = ScanBlacklistForm()
+    # form used for updating the analysis comments
     scancomment_form = ScanCommentForm()
 
     if not bl_form.is_submitted():
+        # this isn't an update so just populate the blacklist form with current values from the database
+        # these should be the same as in the filesystem
         bl_form.scan_id = scan_id
         bl_form.bl_comment.data = scan.bl_comment
 
     if bl_form.validate_on_submit():
+        # going to make an update to the blacklist
+        # update the scan object in the database with info from the form
+        # updating the databse object automatically syncronises blacklist.csv on the filesystem
+        #   see models.py
         scan.bl_comment = bl_form.bl_comment.data
         try:
             db.session.add(scan)
@@ -367,16 +417,24 @@ def scan(scan_id=None):
 @app.route('/study/<int:study_id>/<active_tab>', methods=['GET', 'POST'])
 @login_required
 def study(study_id=None, active_tab=None):
+    """
+    This is the main view for a single study.
+    The page is a tabulated view, I would have done this differently given
+    another chance.
+    """
+
     if study_id is None:
         return redirect('/index')
         #study_id = current_user.get_studies()[0].id
 
+    # get the study object from the database
     study = Study.query.get(study_id)
 
     if not current_user.has_study_access(study):
         flash('Not authorised')
         return redirect(url_for('index'))
 
+    # this is used to update the readme text file
     form = StudyOverviewForm()
 
     # load the study config
@@ -386,6 +444,7 @@ def study(study_id=None, active_tab=None):
     except KeyError:
         abort(500)
 
+    # Get the contents of the study README,md file fro the file system
     readme_path = os.path.join(cfg.get_study_base(), 'README.md')
 
     try:
@@ -419,6 +478,8 @@ def study(study_id=None, active_tab=None):
 
     form.readme_txt.data = data
     form.study_id.data = study_id
+
+    # get the list of metrics to be displayed in the graph pages from the study config
     display_metrics = app.config['DISPLAY_METRICS']
 
     return render_template('study.html',
@@ -433,19 +494,37 @@ def study(study_id=None, active_tab=None):
 @app.route('/person/<int:person_id>', methods=['GET'])
 @login_required
 def person(person_id=None):
+    """
+    Place holder, does nothing
+    """
     return redirect('/index')
 
 
 @app.route('/metricData', methods=['GET', 'POST'])
 @login_required
 def metricData():
+    """
+    This is a generic view for querying the database
+    It allows selection of any combination of metrics and returns the data
+    in csv format suitable for copy / pasting into a spreadsheet
+
+    The form is submitted on any change, this allows dynamic updating of the
+    selection boxes displayed in the html (i.e. is SPINS study is selected
+    the sites selector is filtered to only show sites relevent to SPINS).
+
+    We only actually query and return the data if the query_complete is defined
+    as true - this is done by client-side javascript.
+
+    A lot of this could have been done client side but I think we all prefer
+    writing python to javascript.
+    """
     form = SelectMetricsForm()
     data = None
     csv_data = None
-    # Need to add a query_complete flag to the form
 
     if form.query_complete.data == 'True':
         data = metricDataAsJson()
+        # convert the json object to csv format
         # Need the data field of the response object (data.data)
         temp_data = json.loads(data.data)["data"]
         if temp_data:
@@ -455,7 +534,7 @@ def metricData():
             for row in temp_data:
                 csvwriter.writerow(row.values())
 
-
+    # anything below here is for making the form boxes dynamic
     if any([form.study_id.data,
             form.site_id.data,
             form.scantype_id.data,
@@ -491,6 +570,7 @@ def metricData():
     scantype_vals = sorted(set(scantype_vals), key=lambda v: v[1])
     metrictype_vals = sorted(set(metrictype_vals), key=lambda v: v[1])
 
+    # this bit actually updates the valid selections on the form
     form.study_id.choices = study_vals
     form.site_id.choices = site_vals
     form.scantype_id.choices = scantype_vals
@@ -513,6 +593,36 @@ def _checkRequest(request, key):
 @app.route('/metricDataAsJson', methods=['Get', 'Post'])
 @login_required
 def metricDataAsJson(format='http'):
+    """
+    Query the database for metric database, handles both GET (generated by client side javascript for creating graphs)
+    and POST (generated by the metricData form view) requests
+
+    Can be called directly:
+       http://srv-dashboard.camhres.ca/metricDataAsJson
+    This will return all data in the database (probs not what you want).
+
+    Filters can be defined in the http request object
+        (http://flask.pocoo.org/docs/0.12/api/#incoming-request-data)
+        this is a global flask object that is automatically created whenever a URL is
+        requested.
+        e.g.:
+        http://srv-dashboard.camhres.ca/metricDataAsJson?studies=15&sessions=1739,1744&metrictypes=84
+        creates a request object
+            request.args = {studies: 15,
+                            sessions: [1739, 1744],
+                            metrictypes: 84}
+    If byname is defined (and evaluates True) in the request.args then filters
+       can be defined by name instead of by database id
+    e.g. http://srv-dashboard.camhres.ca/metricDataAsJson?byname=True&studies=ANDT&sessions=ANDT_CMH_101_01&metrictypes=modulename
+
+    Function works slightly differently if the request method is POST
+    (such as that generated by metricData())
+        In that case the field names are expected to be the primary keys from the database
+        as these are used to create the form.
+    """
+    # Define the mapping from GET field names to POST field names
+    # it's going to get replaced either by the requested values (if defined in the request object)
+    # or by None if not set as a filter
     fields = {'studies': 'study_id',
               'sites': 'site_id',
               'sessions': 'session_id',
@@ -530,7 +640,7 @@ def metricDataAsJson(format='http'):
     except KeyError:
         pass
 
-
+    # extract the values from the request object and populate
     for k, v in fields.iteritems():
         if request.method == 'POST':
             fields[k] = _checkRequest(request, v)
@@ -543,6 +653,7 @@ def metricDataAsJson(format='http'):
     # remove None values from the dict
     fields = dict((k, v) for k, v in fields.iteritems() if v)
 
+    # make the database query
     if byname:
         data = query_metric_values_byname(**fields)
     else:
@@ -555,9 +666,10 @@ def metricDataAsJson(format='http'):
 
         data = query_metric_values_byid(**fields)
 
+    # the database query returned a list of sqlachemy record objects.
+    # convert these into a standard list of dicts so we can jsonify it
     objects = []
-    for m in data:
-        metricValue = m
+    for metricValue in data:
         objects.append({'value':            metricValue.value,
                         'metrictype':       metricValue.metrictype.name,
                         'metrictype_id':    metricValue.metrictype_id,
@@ -575,8 +687,10 @@ def metricDataAsJson(format='http'):
                         'study_name':       metricValue.scan.session.study.name})
 
     if format == 'http':
+        # spit this out in a format suitable for client side processing
         return(jsonify({'data': objects}))
     else:
+        # return a pretty object for human readable
         return(json.dumps(objects, indent=4, separators=(',', ': ')))
 
 
@@ -584,6 +698,10 @@ def metricDataAsJson(format='http'):
 @app.route('/todo/<int:study_id>', methods=['GET'])
 @login_required
 def todo(study_id=None):
+    """
+    Runs the datman binary dm-qc-todo.py and returns the results
+    as a json object
+    """
     if study_id:
         study = Study.query.get(study_id)
         study_name = study.nickname
@@ -610,6 +728,10 @@ def todo(study_id=None):
 
 @app.route('/redcap', methods=['GET', 'POST'])
 def redcap():
+    """
+    Route used by the redcap ScanCompeted data callback.
+    Basically grabs the redcap record id and updates the database.
+    """
     logger.info('Recieved a query from redcap')
     if request.method == 'POST':
         logger.debug('Recieved keys:{} from REDcap.'.format(request.form.keys()))
