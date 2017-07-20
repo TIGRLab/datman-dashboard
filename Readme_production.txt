@@ -84,6 +84,17 @@ The codebase is expected to be located at `/archive/code/dashboard`.
 
 *Important:* Some secret information is required in the ansible controlled file ``/etc/uwsgi/apps-available/dashboard.ini`. These entries should not be committed to github. The relevant passwords are in passpack.
 
+#### Virtual env
+
+The dashboard webapp depends on a python virtual env. Once the repo has been cloned from github create the virtual env and install the requirements.
+```
+$ git clone git@github.com:TIGRLab/dashboard.git dashboard
+$ cd dashboard
+$ virtualenv -p /usr/bin/python2.7 venv
+$ source venv/bin/activate
+$ pip install -r requirements.txt
+```
+
 ### Web-app
 
 **GitHub:** https://github.com/TIGRLab/dashboard
