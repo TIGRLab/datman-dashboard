@@ -108,3 +108,6 @@ The app is written in python, using the Flask framework with SQLAlchemy.
 `dashboard/views.py` defines the _entry points_ (i.e. valid URLs for the app).
 
 HTML templates are in `dashboard/templates/`. Templates with `_snip.html` are embedded in other pages.
+
+The web-app interacts with the filesystem (checklist.csv, blacklist.csv), updates made through the web-app are automatically propogated to the filesystem before the update is made. If the filesystem cannot be updated the database update fails.
+Alterations made to the filesystem are propogated to the database by the nightly datman scripts.
