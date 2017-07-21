@@ -245,7 +245,7 @@ def create_issue(session_id, issue_title="", issue_body=""):
 @app.route('/session/<int:session_id>', methods=['GET', 'POST'])
 @app.route('/session/<int:session_id>/delete/<delete>', methods=['GET', 'POST'])
 @app.route('/session/<int:session_id>/flag_finding/<flag_finding>', methods=['GET', 'POST'])
-@login_requiredelse:
+@login_required
 def session(session_id=None, delete=False, flag_finding=False):
     """
     Default view for a single session_id
