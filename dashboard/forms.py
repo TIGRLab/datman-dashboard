@@ -1,3 +1,11 @@
+"""
+Web forms used in the flask app are defined here
+Forms are defined using the WTForms api (https://wtforms.readthedocs.io/en/latest/)
+    via Flask-WTForms extension.
+This allows us to create HTML forms in python without having to worry about
+    the html code.
+"""
+
 from flask import session
 from flask_wtf import FlaskForm
 from wtforms import SelectField, SelectMultipleField, HiddenField
@@ -5,7 +13,6 @@ from wtforms import TextAreaField, TextField, FormField, BooleanField
 from wtforms.validators import DataRequired
 from models import Study, Analysis
 from wtforms.csrf.session import SessionCSRF
-
 
 class SelectMetricsForm(FlaskForm):
     study_vals = []
