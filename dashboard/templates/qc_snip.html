@@ -1,4 +1,5 @@
 <h3>QC to-do:</h3>
+  <!-- this sesions contains the output of dm-qc-todo.py, see javascript below -->
   <div class="well well-lg camh" id="waiting">
     <img class='center-block' src='/static/images/ajax-loader.gif' alt="loading">
   </div>
@@ -6,6 +7,7 @@
   </div>
 
 <h3>Outstanding QC:</h3>
+<!-- This determines outstanding QC's from the database -->
 <span class="label label-info">
 Highlight indicates sessions where scans have been repeated.
 dm-qc-report.py should be manually re-run with --rewrite flag before these scans are qc'd</span>
@@ -91,6 +93,9 @@ Sessions where redcap records are present, but no scans exist.
     return html
   }
 
+  /*
+  This function runs dm-qc-todo.py on the study when the document is loaded.
+  */
   $.getJSON( "{{ url_for("todo", study_id=study.id)}}",
     function( data ) {
       if (data.hasOwnProperty('error')){
