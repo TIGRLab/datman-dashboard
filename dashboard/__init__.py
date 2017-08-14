@@ -3,6 +3,11 @@ from flask_sqlalchemy import SQLAlchemy
 from config import basedir, ADMINS, MAIL_SERVER, MAIL_PORT, MAIL_USERNAME, MAIL_PASSWORD, LOGSERVER
 from flask_login import LoginManager
 import os
+
+"""
+Main init script, creates the app object and sets up logging
+"""
+
 app = Flask(__name__)
 app.config.from_object('config')
 

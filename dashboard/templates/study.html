@@ -1,4 +1,18 @@
-<!-- Overview for a single study -->
+<!-- Overview for a single study
+The structure of this page is a bit organic, I'd do it differently in future.
+The page is rendered from the study() function in views.py
+
+The tab layout relies heavily on the bootstrap infrastructure,
+particularly toggleable tabs (http://getbootstrap.com/javascript/#tabs)
+
+Effectively there are two parts,
+1: a list of tab headings
+2: a series of html <div> elements
+
+Clicking on the tab heading toggles the visibility of the divs.
+Most of the html in the divs is extracted into a snippet file and rendered
+  using a {% include %} function
+ -->
 {% extends "base.html" %}
 {% include 'flash.html' %}
 {% block content %}
@@ -19,6 +33,7 @@
   </div>
   <div class="container">
     <ul class="nav nav-tabs">
+    <!-- THE LIST OF TAB HEADERS STARTS HERE -->
       <li role="presentation" class="dropdown">
         <a class="dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
           {{ study.nickname }} <span class="caret"></span>
@@ -32,7 +47,6 @@
           </li>
         {% endfor %}
       </ul>
-
       {% if active_tab %}
         <li><a data-toggle="tab" href="#overview">Overview</a></li>
       {% else %}
@@ -51,7 +65,8 @@
       <li><a data-toggle="tab" href="#phantoms">Phantoms</a></li>
       <li><a data-toggle="tab" href="#humans">Subjects</a></li>
     </ul>
-
+    <!-- THE LIST OF TAB HEADERS ENDS HERE -->
+    <!-- THE LIST OF CONTENT DIVS STARTS HERE -->
     <div class="tab-content">
       {% if active_tab %}
         <div id="overview" class="tab-pane fade in">
@@ -72,6 +87,7 @@
       {% else %}
         <div id="sessions" class="tab-pane fade in">
       {% endif %}
+      <!-- the following code could be extracted to a snippet file -->
     <br/>
         <table class="table table-condensed table-hover table-striped" id="tbl_sessions">
           <thead>
@@ -87,6 +103,7 @@
             {% endfor %}
         </tbody>
       </table>
+      <!-- end of potential snippet file -->
     </div><!--/session content-->
       <div id="phantoms" class="tab-pane fade in metrics">
         {% include 'metric_selections_phantom_snip.html' %}

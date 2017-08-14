@@ -1,3 +1,8 @@
+"""
+This code validates users using the OAuth protocol
+See https://blog.miguelgrinberg.com/post/oauth-authentication-with-flask for an overview.
+"""
+
 from config import OAUTH_CREDENTIALS
 from rauth import OAuth1Service, OAuth2Service
 from flask import url_for, request, redirect, session

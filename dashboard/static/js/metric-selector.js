@@ -45,13 +45,14 @@ function notOutlier(element){
   return ((element.value <= this[0] + this[1] * this[2]) && (element.value >= this[0] - this[1] * this[2]));
 };
 
+//Update plot without outliers (if specified in form).
 function noOutliersPlot(){
   var base_element = $(this).closest('.metrics')
   var params = getQueryParams(base_element)
   var base_url = "/metricDataAsJson"
   if(params){
     base_element.find('#loading_chart').show()
-
+    //Parse JSON as list of Javascript objects
     $.getJSON( base_url, params,
       function ( data ) {
         base_element.find('#loading_chart').hide()
@@ -63,12 +64,12 @@ function noOutliersPlot(){
           sum += entry.value;
         });
 
+        //Calculate mean and STD of metric values.
         var mean = sum / n;
         var sumsqdiff = 0;
         dat.forEach(function(entry){
           sumsqdiff += Math.pow(mean - entry.value, 2);
         });
-
         std = Math.sqrt(sumsqdiff / n);
 
         //Number of standard deviations to exclude (make this user selectable)
@@ -78,13 +79,16 @@ function noOutliersPlot(){
   }
 }
 
+
+//Function bound to clicking form elements (so plot is updated after changing each value).
 function updatePlot(){
   var base_element = $(this).closest('.metrics')
   var params = getQueryParams(base_element)
+  //Fetch data from database through "metricDataAsJson" view
   var base_url = "/metricDataAsJson"
   if(params){
     base_element.find('#loading_chart').show()
-
+    //Parse JSON as list of Javascript objects
     $.getJSON( base_url, params,
       function ( data ) {
         if (data['data'].length == 0){
@@ -94,6 +98,7 @@ function updatePlot(){
         }
         base_element.find('#loading_chart').hide()
         base_element.find('#remove_outliers').show()
+        //Draw plot with new data
         initPlot(base_element.find('#chart')[0], data['data']);
       });
   }

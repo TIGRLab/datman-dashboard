@@ -3,7 +3,13 @@ from dashboard.models import Study, Site, Session, Scan, ScanType, MetricType, M
 import numpy as np
 import random, datetime
 
-"""Populate the database with some sample data"""
+"""
+Populate the database with some sample data
+
+DEPRECATED: Used during development to put some random data in to the database.
+Real data exists now. Don't use
+
+"""
 
 def gen_random_date():
         oldest = 364 * 5

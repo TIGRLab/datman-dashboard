@@ -10,6 +10,17 @@ from config import SQLALCHEMY_MIGRATE_REPO
     Target structure is defined in app/models.py.
     Migration scripts are stored in the SQLALCHEMY_MIGRATE_REPO dir and can be
     applied using db_upgrade.py
+
+    CAUTION: This has not been tested on postgres, probably better to restore a backup
+
+    ###########################################
+    # Usage:
+    # $ source activate /archive/code/dashboard/venv/bin/activate
+    # $ module load /archive/code/datman_env.module
+    # $ module load /archive/code/dashboard.module
+    # $ ./db_migrate.py
+    #
+    ############################################
     """
 
 v = api.db_version(SQLALCHEMY_DATABASE_URI, SQLALCHEMY_MIGRATE_REPO)

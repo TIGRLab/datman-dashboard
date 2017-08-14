@@ -79,6 +79,9 @@ def get_todo(study=None, timeout=30):
 
 
 def get_qc_doc(session_name):
+    """
+    Returns the path to a sessions html qc doc
+    """
     global CFG
 
     try:

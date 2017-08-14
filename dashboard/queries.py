@@ -1,3 +1,6 @@
+"""
+Database queries used by the app
+"""
 from dashboard import db
 from .models import Study, Site, Session, Scan, MetricType, \
     MetricValue, ScanType  # noqa: F401

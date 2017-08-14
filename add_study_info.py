@@ -1,5 +1,15 @@
 #!venv/bin/python
-"""Add extra study information into the database."""
+"""
+Add extra study information into the database.
+Parses the datman config files for study information and updates
+    information in the database.
+
+usage:
+$ source activate /archive/code/dashboard/venv/bin/activate
+$ module load /archive/code/datman_env.module
+$ module load /archive/code/dashboard.module
+$ add_study_info.py
+"""
 
 from dashboard import db
 from dashboard.models import Study, Person, Site, ScanType
