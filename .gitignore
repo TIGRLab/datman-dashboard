@@ -4,3 +4,5 @@ venv/
 *.log
 logs/
 dashboard.ini
+dashboard.module
+dashboard_env/
