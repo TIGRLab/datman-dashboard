@@ -164,6 +164,16 @@ $ sudo apt-get update
 $ sudo apt-get install postgresql-9.5 postgresql-client-9.5 postgresql-contrib-9.5
 ```
 
+#### Configure postgres to accept tcp connections
+* Edit the file `/etc/postgresql/9.5/main/postgresql.conf` to include the line `listen_addresses = 'localhost'`
+* Restart postgresql
+  `sudo systemctl restart postgresql`
+* Edit the file `/etc/postgresql/9.5/main/pg_hba.conf` to include:
+```
+host all all <yourip> trust
+host dashboard_dev web_user <yourip> password
+```
+
 #### Create a user account
 ```
 $ sudo -u postgres createuser -s <your_username>
