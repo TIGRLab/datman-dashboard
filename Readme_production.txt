@@ -129,7 +129,7 @@ These instructions will create a development environment for the dashboard appli
   * click continue (or whatever)
   * You will need the generated __Client ID__ and __Client Secret__ in the next steps.
 
-4. `$ cp dashboard.module.template dashboard.module`
+4. `$ cp dashboard.module.template dashboard_dev.module`
 
 5. Edit dashboard.module to include your new information. Other secret information can be obtained from passpack.
 
@@ -141,7 +141,7 @@ These instructions will create a development environment for the dashboard appli
   * `$ module load /archive/code/datman/datman_env.module`
 
 8. Set the dashboard environment
-  * `$module load ./dashboard.module`
+  * `$module load ./dashboard_dev.module`
 
 9. Start the web application
   * `$ python ./run.py` or `$./srv_uwsgi.py`
@@ -155,3 +155,38 @@ This isn't needed if your on the kimel system. N.B. The production version of da
 1. `conda create --prefix ./dashboard_env --file create_conda.txt`
 2. `pip install rauth PyCap`
 3. `source activate dashboard_env/`
+
+### Creating your own database
+
+#### Install postgresql
+```
+$ sudo apt-get update
+$ sudo apt-get install postgresql-9.5 postgresql-client-9.5 postgresql-contrib-9.5
+```
+
+#### Create a user account
+```
+$ sudo -u postgres createuser -s <your_username>
+```
+
+#### Create an empty database
+```
+$ createdb -T template0 dashboard_dev
+```
+
+#### Create a backup of the production database
+_N.B. This command requires your user to have appropriate permissions on the prodution server. See __Grant Admin Rights__ above._
+```
+$ pg_dump -h srv-postgres -d dashboard > ~/dashboard_dump.out
+```
+
+#### Restore the backup from the production db into the new blank db
+```
+$ psql dashboard_dev -f ~/dashboard_dump.out
+```
+
+### Update dashboard.module
+Enter the new parameters into your local dashboard.module and reload
+```
+$ module load dashboard.module
+```
