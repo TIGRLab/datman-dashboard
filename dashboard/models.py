@@ -45,7 +45,13 @@ study_user_table = db.Table('study_users',
                                       db.ForeignKey('studies.id')),
                             db.Column('user_id', db.Integer,
                                       db.ForeignKey('users.id')))
-
+# session_scan_table = db.Table('session_scans',
+#                               db.Column('session_id', db.Integer,
+#                                         db.ForeignKey('sessions.id')),
+#                               db.Column('scan_id', db.Integer,
+#                                         db.ForeignKey('scans.id')),
+#                               db.Column('scan_name', db.String(128)),
+#                               db.Column('is_primary', db.Boolean, default=False))
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
@@ -199,8 +205,10 @@ class Session(db.Model):
     study = db.relationship('Study', back_populates='sessions')
     site_id = db.Column(db.Integer, db.ForeignKey('sites.id'), nullable=False)
     site = db.relationship('Site', back_populates='sessions')
-    scans = db.relationship('Scan', order_by="Scan.series_number",
-                            cascade="all, delete-orphan")
+    #scans = db.relationship('Scan', order_by="Scan.series_number",
+    #                        cascade="all, delete-orphan")
+    scans = db.relationship('Session_Scans',
+                            back_populates='session')
     is_phantom = db.Column(db.Boolean)
     is_repeated = db.Column(db.Boolean)
     repeat_count = db.Column(db.Integer)
@@ -315,9 +323,11 @@ class Scan(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(128), index=True, unique=True)
     description = db.Column(db.String(128))
-    session_id = db.Column(db.Integer, db.ForeignKey('sessions.id'),
-                           nullable=False)
-    session = db.relationship('Session', back_populates='scans')
+#   session_id = db.Column(db.Integer, db.ForeignKey('sessions.id'),
+#                          nullable=False)
+#   session = db.relationship('Session', back_populates='scans')
+
+    sessions = db.relationship('Session_Scans', back_populates='scan')
     scantype_id = db.Column(db.Integer, db.ForeignKey('scantypes.id'),
                             nullable=False)
     scantype = db.relationship('ScanType', back_populates="scans")
@@ -481,3 +491,23 @@ class IncidentalFinding(db.Model):
         user_id = db.Column(db.Integer, db.ForeignKey('users.id'),
                             nullable=False)
         user = db.relationship('User', back_populates="incidental_findings")
+
+class Session_Scans(db.Model):
+    """
+    This is a join table for the many-many relationship between scans and sessions.
+    It's done this way so we can put extra information such as a different scan name
+    and whether this relation shows the primary study for a scan.
+
+    Access through the ORM is simple, Session.scans and Scan.sessions
+    Using a join statement is a bit more complex
+    q = db.session.query(Scan)
+    q = q.join(Session_Scans, Scan.sessions)
+    q = q.join(Session, Session_Scans.session)
+    """
+    __tablename__ = 'session_scans'
+    session_id = db.Column(db.Integer, db.ForeignKey('sessions.id'), primary_key=True)
+    scan_id = db.Column(db.Integer, db.ForeignKey('scans.id'), primary_key=True)
+    scan_name = db.Column(db.String(128))
+    is_primary = db.Column(db.Boolean, default=False)
+    scan = db.relationship("Scan", back_populates="sessions")
+    session = db.relationship("Session", back_populates="scans")

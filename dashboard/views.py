@@ -670,6 +670,8 @@ def metricDataAsJson(format='http'):
     # convert these into a standard list of dicts so we can jsonify it
     objects = []
     for metricValue in data:
+        session = [session_link.session for session_link in metricValue.scan.sessions
+                   if session_link.is_primary][0]
         objects.append({'value':            metricValue.value,
                         'metrictype':       metricValue.metrictype.name,
                         'metrictype_id':    metricValue.metrictype_id,
@@ -678,13 +680,13 @@ def metricDataAsJson(format='http'):
                         'scan_description': metricValue.scan.description,
                         'scantype':         metricValue.scan.scantype.name,
                         'scantype_id':      metricValue.scan.scantype_id,
-                        'session_id':       metricValue.scan.session_id,
-                        'session_name':     metricValue.scan.session.name,
-                        #'session_date':     metricValue.scan.session.date,
-                        'site_id':          metricValue.scan.session.site_id,
-                        'site_name':        metricValue.scan.session.site.name,
-                        'study_id':         metricValue.scan.session.study_id,
-                        'study_name':       metricValue.scan.session.study.name})
+                        'session_id':       session.id,
+                        'session_name':     session.name,
+                        # 'session_date':     metricValue.scan.session.date,
+                        'site_id':          session.site_id,
+                        'site_name':        session.site.name,
+                        'study_id':         session.study_id,
+                        'study_name':       session.study.name})
 
     if format == 'http':
         # spit this out in a format suitable for client side processing
