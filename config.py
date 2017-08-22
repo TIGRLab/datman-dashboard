@@ -26,7 +26,7 @@ MAIL_PASSWORD = None
 LOGSERVER = '172.26.216.101'
 # administrator list
 ADMINS = ['tom@maladmin.com',
-          'dawson.overton@camh.ca',
+          'dawn.smith@camh.ca',
           'admins@tigrsrv.camhres.ca']
 
 
