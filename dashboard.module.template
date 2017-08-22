@@ -1,0 +1,15 @@
+#%Module1.0#####################################################################
+# note secret values are in passpack
+module-whatis   "adds datman, etc to your environment"
+
+setenv        OAUTH_SECRET_GITHUB  <from github>
+setenv	      OAUTH_CLIENT_GITHUB  <from github>
+setenv        OAUTH_SECRET_GITLAB  <from gitlab>
+setenv        OAUTH_CLIENT_GITLAB  <from gitlab>
+
+setenv	      POSTGRES_USER <in passpack>
+setenv        POSTGRES_PASS <in passpack>
+setenv	      POSTGRES_SRVR 172.26.216.68
+setenv        POSTGRES_DATABASE dashboard
+
+setenv        REDCAP_TOKEN <in passpack>

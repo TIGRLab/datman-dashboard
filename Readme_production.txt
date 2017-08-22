@@ -111,3 +111,92 @@ HTML templates are in `dashboard/templates/`. Templates with `_snip.html` are em
 
 The web-app interacts with the filesystem (checklist.csv, blacklist.csv), updates made through the web-app are automatically propogated to the filesystem before the update is made. If the filesystem cannot be updated the database update fails.
 Alterations made to the filesystem are propogated to the database by the nightly datman scripts.
+
+## Creating a development environment
+
+These instructions will create a development environment for the dashboard application.
+
+1. Fork this repository
+
+2. Clone your new fork
+
+3. Create a OAuth application on GitHub
+  * [GitHub instructions](https://developer.github.com/apps/building-integrations/setting-up-and-registering-oauth-apps/)
+  * `Settings` --> `Developer Settings` --> `OAuth applications`
+  * Click `Register a new application`
+  * Fill in the name, url, description (these are not important)
+  * Set the `Authorisation callback URL` to `http://<your computer name or ip>:5000/callback/github`
+  * click continue (or whatever)
+  * You will need the generated __Client ID__ and __Client Secret__ in the next steps.
+
+4. `$ cp dashboard.module.template dashboard_dev.module`
+
+5. Edit dashboard.module to include your new information. Other secret information can be obtained from passpack.
+
+6. Activate the correct condas environment
+  * `$ module load miniconda3`
+  * `$ source activate dashboard`
+
+7. Load the datman environment
+  * `$ module load /archive/code/datman/datman_env.module`
+
+8. Set the dashboard environment
+  * `$module load ./dashboard_dev.module`
+
+9. Start the web application
+  * `$ python ./run.py` or `$./srv_uwsgi.py`
+
+10. Enjoy
+
+
+### Creating your own conda env
+This isn't needed if your on the kimel system. N.B. The production version of dashboard still uses a venv, not a conda env. `requirements.txt` should be used if this needs recreating.
+
+1. `conda create --prefix ./dashboard_env --file create_conda.txt`
+2. `pip install rauth PyCap`
+3. `source activate dashboard_env/`
+
+### Creating your own database
+
+#### Install postgresql
+```
+$ sudo apt-get update
+$ sudo apt-get install postgresql-9.5 postgresql-client-9.5 postgresql-contrib-9.5
+```
+
+#### Configure postgres to accept tcp connections
+* Edit the file `/etc/postgresql/9.5/main/postgresql.conf` to include the line `listen_addresses = 'localhost'`
+* Restart postgresql
+  `sudo systemctl restart postgresql`
+* Edit the file `/etc/postgresql/9.5/main/pg_hba.conf` to include:
+```
+host all all <yourip> trust
+host dashboard_dev web_user <yourip> password
+```
+
+#### Create a user account
+```
+$ sudo -u postgres createuser -s <your_username>
+```
+
+#### Create an empty database
+```
+$ createdb -T template0 dashboard_dev
+```
+
+#### Create a backup of the production database
+_N.B. This command requires your user to have appropriate permissions on the prodution server. See __Grant Admin Rights__ above._
+```
+$ pg_dump -h srv-postgres -d dashboard > ~/dashboard_dump.out
+```
+
+#### Restore the backup from the production db into the new blank db
+```
+$ psql dashboard_dev -f ~/dashboard_dump.out
+```
+
+### Update dashboard.module
+Enter the new parameters into your local dashboard.module and reload
+```
+$ module load dashboard.module
+```
