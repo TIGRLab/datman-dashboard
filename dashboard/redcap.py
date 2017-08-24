@@ -112,8 +112,8 @@ class redcap_record(object):
                                    .format(self.session_name))
         else:
             db_session = db_session.first()
-            self.__set_study(db_session.study)
-            self.__set_site(db_session.site)
+            self.__set_study(db_session.study.nickname)
+            self.__set_site(db_session.site.name)
         #update the module globals
         self.db_session = db_session
 
