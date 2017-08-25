@@ -12,9 +12,11 @@ from dashboard import db
 import utils
 from hashlib import md5
 from sqlalchemy.orm import validates
+from sqlalchemy.schema import UniqueConstraint
 from flask_login import UserMixin
 import os
 import logging
+from flask import flash
 
 logger = logging.getLogger(__name__)
 
@@ -207,7 +209,7 @@ class Session(db.Model):
     site = db.relationship('Site', back_populates='sessions')
     #scans = db.relationship('Scan', order_by="Scan.series_number",
     #                        cascade="all, delete-orphan")
-    scans = db.relationship('Session_Scans',
+    scans = db.relationship('Session_Scan',
                             back_populates='session')
     is_phantom = db.Column(db.Boolean)
     is_repeated = db.Column(db.Boolean)
@@ -272,6 +274,28 @@ class Session(db.Model):
         self.last_repeat_qcd = self.repeat_count
         return comment
 
+    def delete(self):
+        """
+        Takes care of deleting a session.
+        If session scans are linked to other projects, also deletes those records.
+        """
+        for scan_link in self.scans:
+            if not scan_link.is_primary:
+                # just delete the link record
+                db.session.delete(scan_link)
+            else:
+                scan = scan_link.scan
+                linked_scans = Session_Scan.query.filter(Session_Scan.scan_id == scan_link.scan_id)
+                if linked_scans.count() > 1:
+                    flash('Scan is linked in other studies')
+                # first delete the scan, then the linking records
+                for link in linked_scans:
+                    db.session.delete(link)
+                db.session.delete(scan)
+        # finally delete the current session
+        db.session.delete(self)
+        db.session.commit()
+
 
 class ScanType(db.Model):
     __tablename__ = 'scantypes'
@@ -327,7 +351,7 @@ class Scan(db.Model):
 #                          nullable=False)
 #   session = db.relationship('Session', back_populates='scans')
 
-    sessions = db.relationship('Session_Scans', back_populates='scan')
+    sessions = db.relationship('Session_Scan', back_populates='scan')
     scantype_id = db.Column(db.Integer, db.ForeignKey('scantypes.id'),
                             nullable=False)
     scantype = db.relationship('ScanType', back_populates="scans")
@@ -366,11 +390,27 @@ class Scan(db.Model):
             return False
         return comment
 
+    def get_primary_session(self):
+        """
+        A scan object can have multiple sessions. On the file system
+        this is represented with symlinks. The true data should only be
+        stored in the study the scan was recorded under.
+        """
+        primary_session_link = Session_Scan.query.\
+            filter(Session_Scan.scan_id == self.id,
+                   Session_Scan.is_primary.is_(True))
+        if primary_session_link.count() < 1:
+            logger.error('Primary session not found for scan_id:{}. Check session_scan table.'
+                         .format(self.id))
+            return None
+        return primary_session_link.first().session
+
     def get_file_path(self):
-        nii_path = utils.get_study_folder(study=self.session.study.nickname,
+        session = self.get_primary_session()
+        nii_path = utils.get_study_folder(study=session.study.nickname,
                                           folder_type='nii')
         file_name = '_'.join([self.name, self.description]) + '.nii.gz'
-        path = os.path.join(nii_path, self.session.name, file_name)
+        path = os.path.join(nii_path, session.name, file_name)
         return(path)
 
     def get_hcp_path(self):
@@ -378,11 +418,12 @@ class Scan(db.Model):
         Returns the path to the scan hcp pipelines folder
         False if subject folder doesnt exists
         """
-        hcp_path = utils.get_study_folder(study=self.session.study.nickname,
+        session = self.get_primary_session()
+        hcp_path = utils.get_study_folder(study=session.study.nickname,
                                           folder_type='hcp')
         sub_path = os.path.join(hcp_path,
                                 'qc_MNIfsaverage32k',
-                                self.session.name)
+                                session.name)
         if not os.path.isdir(sub_path):
             return False
 
@@ -492,22 +533,29 @@ class IncidentalFinding(db.Model):
                             nullable=False)
         user = db.relationship('User', back_populates="incidental_findings")
 
-class Session_Scans(db.Model):
+class Session_Scan(db.Model):
     """
     This is a join table for the many-many relationship between scans and sessions.
     It's done this way so we can put extra information such as a different scan name
     and whether this relation shows the primary study for a scan.
 
     Access through the ORM is simple, Session.scans and Scan.sessions
+    Access to the actual scan is a bit more complex
+    for scanlink in session.scans:
+        scanlink.scan.name
+
     Using a join statement is a bit more complex
     q = db.session.query(Scan)
     q = q.join(Session_Scans, Scan.sessions)
     q = q.join(Session, Session_Scans.session)
     """
     __tablename__ = 'session_scans'
-    session_id = db.Column(db.Integer, db.ForeignKey('sessions.id'), primary_key=True)
-    scan_id = db.Column(db.Integer, db.ForeignKey('scans.id'), primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
+    session_id = db.Column(db.Integer, db.ForeignKey('sessions.id'))
+    scan_id = db.Column(db.Integer, db.ForeignKey('scans.id'))
     scan_name = db.Column(db.String(128))
     is_primary = db.Column(db.Boolean, default=False)
     scan = db.relationship("Scan", back_populates="sessions")
     session = db.relationship("Session", back_populates="scans")
+    # not a typo ",None" needed to enforce tuple structure
+    __table_args__ = (UniqueConstraint(session_id, scan_id, name="session_scan"),None)

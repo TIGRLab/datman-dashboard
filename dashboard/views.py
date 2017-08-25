@@ -7,7 +7,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from dashboard import app, db, lm
 from oauth import OAuthSignIn
 from .queries import query_metric_values_byid, query_metric_types, query_metric_values_byname
-from .models import Study, Site, Session, ScanType, Scan, User, ScanComment, Analysis, IncidentalFinding
+from .models import Study, Site, Session, ScanType, Scan, User, ScanComment, Analysis, IncidentalFinding, Session_Scan
 from .forms import SelectMetricsForm, StudyOverviewForm, SessionForm, ScanBlacklistForm, UserForm, ScanCommentForm, AnalysisForm
 from . import utils
 from . import redcap as REDCAP
@@ -286,11 +286,11 @@ def session(session_id=None, delete=False, flag_finding=False):
 
     if delete:
         try:
-            if not current_user.is_admin:
+            if current_user.is_admin:
+                session.delete()
+            else:
                 flash('You dont have permission to do that')
                 raise Exception
-            db.session.delete(session)
-            db.session.commit()
             flash('Deleted session:{}'.format(session.name))
             return redirect(url_for('study',
                                     study_id=session.study_id,
@@ -350,7 +350,7 @@ def session(session_id=None, delete=False, flag_finding=False):
 @login_required
 def redcap_redirect(session_id):
     """
-    Used to provide a link from the session page to a redcap session complete record\
+    Used to provide a link from the session page to a redcap session complete record
     """
     session = Session.query.get(session_id)
     redcap_url = '{}redcap_v6.11.4/DataEntry/index.php?pid={}&page={}&id={}'
@@ -361,20 +361,24 @@ def redcap_redirect(session_id):
     return(redirect(redcap_url))
 
 @app.route('/scan', methods=["GET"])
-@app.route('/scan/<int:scan_id>', methods=['GET', 'POST'])
+@app.route('/scan/<int:session_scan_id>', methods=['GET', 'POST'])
 @login_required
-def scan(scan_id=None):
+def scan(session_scan_id=None):
     """
     Default view for a single scan
+    This object actually takes an id from the session_scans table and uses
+    that to identify the scan and session
     """
-    if scan_id is None:
+    if session_scan_id is None:
         flash('Invalid scan')
         return redirect(url_for('index'))
 
     # Check the user has permission to see this study
     studies = current_user.get_studies()
-    scan = Scan.query.get(scan_id)
-    if not current_user.has_study_access(scan.session.study):
+    session_scan = Session_Scan.query.get(session_scan_id)
+    scan = session_scan.scan
+    session = session_scan.session
+    if not current_user.has_study_access(session.study):
         flash('Not authorised')
         return redirect(url_for('index'))
 
@@ -386,7 +390,7 @@ def scan(scan_id=None):
     if not bl_form.is_submitted():
         # this isn't an update so just populate the blacklist form with current values from the database
         # these should be the same as in the filesystem
-        bl_form.scan_id = scan_id
+        bl_form.scan_id = scan.id
         bl_form.bl_comment.data = scan.bl_comment
 
     if bl_form.validate_on_submit():
@@ -399,7 +403,7 @@ def scan(scan_id=None):
             db.session.add(scan)
             db.session.commit()
             flash("Blacklist updated")
-            return redirect(url_for('session', session_id=scan.session_id))
+            return redirect(url_for('session', session_id=session.id))
         except SQLAlchemyError as err:
             logger.error('Scan blacklist update failed:{}'.format(str(err)))
             flash('Update failed, admins have been notified, please try again')
@@ -408,6 +412,8 @@ def scan(scan_id=None):
     return render_template('scan.html',
                            studies=studies,
                            scan=scan,
+                           session=session,
+                           session_scan=session_scan,
                            blacklist_form=bl_form,
                            scancomment_form=scancomment_form)
 
@@ -813,18 +819,24 @@ def oauth_callback(provider):
     return redirect(url_for('index'))
 
 @app.route('/scan_comment', methods=['GET','POST'])
-@app.route('/scan_comment/<scan_id>', methods=['GET','POST'])
+@app.route('/scan_comment/<scan_link_id>', methods=['GET','POST'])
 @login_required
-def scan_comment(scan_id):
+def scan_comment(scan_link_id):
     """
     View for adding scan comments
+    Comments are specific to a scan and can be seen by all
+    studies linking to that scan.
+    scan_link_id is passed for security checking and to ensure we get the user
+    back to the right place.
+
     """
+    scan_link = Session_Scan.query.get(scan_link_id)
+    scan = scan_link.scan
+    session = scan_link.session
+
     form = ScanCommentForm()
     form.user_id = current_user.id
-    form.scan_id = scan_id
-
-    scan = Scan.query.get(scan_id)
-    session = scan.session
+    form.scan_id = scan.id
 
     if not current_user.has_study_access(session.study):
         flash('Not authorised')
@@ -833,7 +845,7 @@ def scan_comment(scan_id):
     if form.validate_on_submit():
         try:
             scancomment = ScanComment()
-            scancomment.scan_id = scan_id
+            scancomment.scan_id = scan.id
             scancomment.user_id = current_user.id
             scancomment.analysis_id = form.analyses.data
             scancomment.excluded = form.excluded.data
@@ -842,7 +854,8 @@ def scan_comment(scan_id):
             db.session.add(scancomment)
             db.session.commit()
             flash('Scan comment added')
-        except:
+        except Exception as e:
+            assert app.debug==False
             flash('Failed adding comment')
 
     return redirect(url_for('session', session_id=session.id))

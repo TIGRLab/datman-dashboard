@@ -3,7 +3,7 @@ Database queries used by the app
 """
 from dashboard import db
 from .models import Study, Site, Session, Scan, MetricType, \
-    MetricValue, ScanType, Session_Scans  # noqa: F401
+    MetricValue, ScanType, Session_Scan  # noqa: F401
 import logging
 import utils
 
@@ -43,8 +43,8 @@ def query_metric_values_byid(**kwargs):
     q = q.join(MetricType, MetricValue.metrictype)
     q = q.join(Scan, MetricValue.scan)
     q = q.join(ScanType, Scan.scantype)
-    q = q.join(Session_Scans, Scan.sessions)
-    q = q.join(Session, Session_Scans.session)
+    q = q.join(Session_Scan, Scan.sessions)
+    q = q.join(Session, Session_Scan.session)
     q = q.join(Site, Session.site)
     q = q.join(Study, Session.study)
     q = q.filter(Scan.bl_comment == None)
@@ -94,8 +94,8 @@ def query_metric_values_byname(**kwargs):
     q = q.join(MetricType, MetricValue.metrictype)
     q = q.join(Scan, MetricValue.scan)
     q = q.join(ScanType, Scan.scantype)
-    q = q.join(Session_Scans, Scan.sessions)
-    q = q.join(Session, Session_Scans.session)
+    q = q.join(Session_Scan, Scan.sessions)
+    q = q.join(Session, Session_Scan.session)
     q = q.join(Site, Session.site)
     q = q.join(Study, Session.study)
     q = q.filter(Scan.bl_comment == None)
