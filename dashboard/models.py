@@ -211,7 +211,7 @@ class Session(db.Model):
     redcap_record = db.Column(db.Integer)  # ID of the record in redcap
     redcap_entry_date = db.Column(db.Date)  # date of record entry in redcap
     redcap_user = db.Column(db.Integer)  # ID of the user who filled in the redcap record
-    redcap_comment = db.Column(db.String(1024))  # Redcap comment field
+    redcap_comment = db.Column(db.String(3072))  # Redcap comment field
     redcap_url = db.Column(db.String(1024))  # URL for the redcap server
     redcap_projectid = db.Column(db.Integer)  # ID for redcap Project
     redcap_instrument = db.Column(db.String(1024))  # name of the redcap form
