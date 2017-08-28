@@ -90,7 +90,7 @@ def get_qc_doc(session_name):
         logger.warning('Invalid session name:{}'.format(session_name))
         return None
 
-    qc_path = CFG.get_path('qc', study=i.study)
+    qc_path = CFG.get_path('qc', study=session_name)
     qc_file = 'qc_{}.html'.format(i.get_full_subjectid_with_timepoint())
     qc_full_path = os.path.join(qc_path, i.get_full_subjectid_with_timepoint(), qc_file)
 
@@ -122,7 +122,7 @@ def update_blacklist(scan_name, comment, blacklist_file=None, study_name=None):
         ident = ident[0]
         if not study_name:
             try:
-                study_name = CFG.map_xnat_archive_to_project(ident.study)
+                study_name = CFG.map_xnat_archive_to_project(ident.get_full_subjectid_with_timepoint())
             except KeyError:
                 logger.warning('scan name: {} not recoginzed'.format(scan_name))
                 return
@@ -197,7 +197,7 @@ def update_checklist(session_name, comment, checklist_file=None, study_name=None
 
         if not study_name:
             try:
-                study_name = CFG.map_xnat_archive_to_project(ident.study)
+                study_name = CFG.map_xnat_archive_to_project(session_name)
             except KeyError:
                 logger.warning('session name: {} not recoginzed'.format(session_name))
                 return

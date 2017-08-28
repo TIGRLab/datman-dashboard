@@ -91,7 +91,8 @@ class redcap_record(object):
             # going to create a new session record
 
             self.__set_site(ident.site)
-            self.__set_study(ident.study)
+            # Requires whole name because 'DTI' study id is overloaded
+            self.__set_study(str_session)
 
             db_session = Session()
             db_session.name = str_session

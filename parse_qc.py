@@ -127,7 +127,7 @@ def add_session(session_name):
         logger.error("{} is not named properly".format(session_name))
         return
 
-    study_name = config.map_xnat_archive_to_project(ident.study)
+    study_name = config.map_xnat_archive_to_project(session_name)
 
     q = Study.query.filter(Study.nickname == study_name)
     if q.count() < 1:
