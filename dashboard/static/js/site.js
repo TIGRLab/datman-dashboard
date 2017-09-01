@@ -34,10 +34,11 @@ $(".btn_add_scan_comments").on('click', function(){
   // setup the modal dialog with scan specific info
   var scan_id = $(this).data('scanid');
   var scan_name = $(this).data('scanname');
+  var session_scan_link_id = $(this).data('sessionscanid');
 
   // set the form target
   var root = location.protocol + '//' + location.host + '/';
-  var target_uri = root + 'scan_comment/' + scan_id;
+  var target_uri = root + 'scan_comment/' + session_scan_link_id;
 
   var el_title = $("#add_scan_comment_modal .modal-title");
   var scan_name = el_title.html() + ' - ' + scan_name;
