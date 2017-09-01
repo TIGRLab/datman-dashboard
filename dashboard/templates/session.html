@@ -118,7 +118,8 @@
         <th>Analysis Comments</th>
       </thead>
       <tbody>
-        {% for scan in session.scans %}
+        {% for scanlink in session.scans %}
+          {% set scan = scanlink.scan %}
           {% include('scan_snip.html') %}
         {% endfor %}
       </tbody>
