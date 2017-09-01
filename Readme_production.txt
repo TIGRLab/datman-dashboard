@@ -170,8 +170,8 @@ $ sudo apt-get install postgresql-9.5 postgresql-client-9.5 postgresql-contrib-9
   `sudo systemctl restart postgresql`
 * Edit the file `/etc/postgresql/9.5/main/pg_hba.conf` to include:
 ```
-host all all <yourip> trust
-host dashboard_dev web_user <yourip> password
+host all all <yourip>/32 trust
+host dashboard_dev web_user <yourip>/32 password
 ```
 
 #### Create a user account
