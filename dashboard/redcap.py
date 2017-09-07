@@ -162,7 +162,11 @@ class redcap_record(object):
             self.db_session.redcap_url = self.redcap_url
             self.db_session.redcap_entry_date = self.date
             self.db_session.redcap_user = self.rc_user
-            self.db_session.redcap_comment = self.comment
+            if self.db_session.redcap_comment:
+                self.db_session.redcap_comment = self.db_session.redcap_comment \
+                    + ':::' + self.comment
+            else:
+                self.db_session.redcap_comment = self.comment
             self.db_session.redcap_instrument = self.instrument
             self.db_session.redcap_projectid = self.project_id
             self.db_session.flush_changes()

@@ -9,11 +9,11 @@
     <div class="col-md-6">
       <h1>{{ scan.name }}</h1>
       <span class="lead"><strong>Session:</strong>
-        <a href="{{ url_for('session',session_id=scan.session.id) }}">
-          {{ scan.session.name }}
+        <a href="{{ url_for('session',session_id=session.id) }}">
+          {{ session.name }}
         </a>
       </span>
-      {% if scan.session.is_phantom %}
+      {% if session.is_phantom %}
         <p class="lead">Phantom</p>
       {% else %}
         <p class="lead">Human</p>
@@ -35,7 +35,7 @@
     </div>
     <div class="pull-right">
       <div class="nav btn-group">
-        <button type="button" class="btn btn-info btn_add_scan_blacklist" data-toggle="modal" data-scanid="{{ scan.id }}" data-scanname="{{ scan.name }}" data-toggle="modal" data-target="#add_scan_blacklist_modal">
+        <button type="button" class="btn btn-info btn_add_scan_blacklist" data-toggle="modal" data-scanid="{{ scan.id }}" data-scanname="{{ session_scan.name }}" data-toggle="modal" data-target="#add_scan_blacklist_modal">
           Add to Blacklist
         </button>
       </div>
@@ -52,7 +52,7 @@
     {% endif %}
     <div id="comments" class="tab-pane fade in">
       {% include 'scan_comments_snip.html' %}
-      <button type="button" class="btn btn-info btn_add_scan_comments" data-scanid="{{ scan.id }}" data-scanname="{{ scan.name }}" data-toggle="modal" data-target="#add_scan_comment_modal">
+      <button type="button" class="btn btn-info btn_add_scan_comments" data-scanid="{{ scan.id }}" data-scanname="{{ session_scan.name }}" data-toggle="modal" data-target="#add_scan_comment_modal">
         Add analysis comment
       </button>
     </div>
