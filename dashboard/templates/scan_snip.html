@@ -3,7 +3,7 @@
   <td class="scan_type"> {{ scanlink.scan.scantype.name }}</td>
   <td class="scan_repeat"> {{ scanlink.scan.repeat_number }} </td>
   <td class="scan_desc"> <a href="{{url_for('scan', session_scan_id=scanlink.id )}}">{{ scanlink.scan.description }}
-    {% if not scanlink.scan.is_primary %}
+    {% if not scanlink.is_primary %}
       <span class="bg-warning"><em><small> (linked)</small></em></span>
     {% endif %}
   </a> </td>
