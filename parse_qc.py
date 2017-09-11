@@ -196,12 +196,14 @@ def add_scan(session, filename):
     else:
         logger.info('Adding new scan with name{}:'.format(scan_name))
         scan = Scan()
+        scan.name = scan_name
+        scan.scantype = scantype
+        scan.series_number = series
+        scan.description = description
 
-    scan.name = scan_name
-    scan.session = session
-    scan.scantype = scantype
-    scan.series_number = series
-    scan.description = description
+        if ident.session:
+            scan.repeat_number = int(ident.session)
+
 
     logger.info('Checking blacklist')
     blacklist_name = '{}_{}'.format(scan_name, description)
