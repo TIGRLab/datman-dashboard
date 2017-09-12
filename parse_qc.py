@@ -28,7 +28,7 @@ import datman.config
 import datman.scanid
 from dashboard.docopt import docopt
 from dashboard import db
-from dashboard.models import Study, Session, Scan, MetricType, MetricValue
+from dashboard.models import Study, Session, Scan, MetricType, MetricValue, Session_Scan
 
 
 logger = logging.getLogger(__name__)
@@ -196,6 +196,8 @@ def add_scan(session, filename):
     else:
         logger.info('Adding new scan with name{}:'.format(scan_name))
         scan = Scan()
+        session_scan = Session_Scan()
+
         scan.name = scan_name
         scan.scantype = scantype
         scan.series_number = series
@@ -203,6 +205,21 @@ def add_scan(session, filename):
 
         if ident.session:
             scan.repeat_number = int(ident.session)
+
+        # Needed to set an ID for a new scan, so an entry into session_scans
+        # can be made
+        db.session.add(scan)
+        db.session.flush()
+
+        # Creates an entry in session_scans table for a new scan. Cannot tell
+        # from here whether it's a link or not, so for now it just uses the table
+        # default of is_primary='False'. This will need to be fixed with a
+        # (probably large) refactoring, which is advisable anyway since the script
+        # is duplicating a lot of code from datman/dashboard.py and is just
+        # generally kind of hack-y
+        session_scan.scan_id = scan.id
+        session_scan.session_id = session.id
+        session_scan.scan_name = scan_name
 
 
     logger.info('Checking blacklist')
