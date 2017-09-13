@@ -382,8 +382,7 @@ class Scan(db.Model):
         try:
             utils.update_blacklist('{}_{}'.format(self.name,
                                                   self.description),
-                                   comment,
-                                   study_name=self.session.study.nickname)
+                                   comment)
         except:
             logger.error('Failed updating blacklist for scan:{}'
                          .format(self.name))
