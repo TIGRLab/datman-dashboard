@@ -9,7 +9,7 @@ import os
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 WTF_CSRF_ENABLED = True
-SECRET_KEY = 'bet-you-cant-guess'
+SECRET_KEY = os.environ.get('FLASK_SECRET_KEY')
 #SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir,'dashboard.sqlite')
 SQLALCHEMY_DATABASE_URI = 'postgresql://{user}:{pwd}@{srvr}/{db}'.format(user=os.environ.get('POSTGRES_USER'),
                                                                                pwd=os.environ.get('POSTGRES_PASS'),
