@@ -408,9 +408,17 @@ class Scan(db.Model):
         session = self.get_primary_session()
         nii_path = utils.get_study_folder(study=session.study.nickname,
                                           folder_type='nii')
-        file_name = '_'.join([self.name, self.description]) + '.nii.gz'
+
+        # Hacky solution to account for the fact that we split PDT2s
+        if self.scantype.name == 'PDT2':
+            name = self.name.replace('_PDT2_', '_T2_')
+        else:
+            name = self.name
+
+        file_name = '_'.join([name, self.description]) + '.nii.gz'
         path = os.path.join(nii_path, session.name, file_name)
-        return(path)
+
+        return path
 
     def get_hcp_path(self):
         """
