@@ -258,6 +258,10 @@ def session(session_id=None, delete=False, flag_finding=False):
 
     session = Session.query.get(session_id)
 
+    if session is None:
+        return redirect('index')
+
+
     if not current_user.has_study_access(session.study):
         flash('Not authorised')
         return redirect(url_for('index'))
