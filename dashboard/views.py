@@ -20,7 +20,8 @@ import datetime
 import datman as dm
 import shutil
 import logging
-from github import Github
+import inspect
+from github import Github, GithubException
 
 from xml.sax.saxutils import escape
 
@@ -279,14 +280,16 @@ def session(session_id=None, delete=False, flag_finding=False):
         gh = Github(token)
         # Due to the way GitHub search API works, splitting session name into separate search terms will find a session
         # regardless of repeat number, and will not match other sessions with the same study/site
+
         open_issues = gh.search_issues("{} in:title repo:TIGRLab/admin state:open".format(str(session.name).replace("_"," ")))
         if open_issues.totalCount:
             session.gh_issue = open_issues[0].number
         else:
             session.gh_issue = None
         db.session.commit()
-    except:
-        flash("Error searching for session's GitHub issue.")
+    except Exception as e:
+        if not (isinstance(e, GithubException) and e.status==422):
+            flash("Error searching for session's GitHub issue.")
 
     if delete:
         try:
