@@ -1,5 +1,5 @@
 from functools import wraps
-from flask import render_template, flash, url_for, redirect, request, jsonify, abort, g
+from flask import render_template, flash, url_for, redirect, request, jsonify, abort, g, make_response, send_file
 from flask import session as flask_session
 from flask_login import login_user, logout_user, current_user, \
     login_required, fresh_login_required
@@ -534,11 +534,21 @@ def metricData():
         # Need the data field of the response object (data.data)
         temp_data = json.loads(data.data)["data"]
         if temp_data:
+
+
+            csvname = 'dashboard/output.csv'
+            w_file= open(csvname, 'w')
+            testwrite = csv.writer(w_file)
+
+
+
             csv_data = io.BytesIO()
             csvwriter = csv.writer(csv_data)
             csvwriter.writerow(temp_data[0].keys())
+            testwrite.writerow(temp_data[0].keys())
             for row in temp_data:
                 csvwriter.writerow(row.values())
+                testwrite.writerow(row.values())
 
     # anything below here is for making the form boxes dynamic
     if any([form.study_id.data,
@@ -549,6 +559,7 @@ def metricData():
                                        sites=form.site_id.data,
                                        scantypes=form.scantype_id.data,
                                        metrictypes=form.metrictype_id.data)
+
     else:
         form_vals = query_metric_types()
 
@@ -576,6 +587,12 @@ def metricData():
     scantype_vals = sorted(set(scantype_vals), key=lambda v: v[1])
     metrictype_vals = sorted(set(metrictype_vals), key=lambda v: v[1])
 
+    flask_session['study_name'] = study_vals
+    flask_session['site_name'] = site_vals
+    flask_session['scantypes_name'] = scantype_vals
+    flask_session['metrictypes_name'] = metrictype_vals
+
+
     # this bit actually updates the valid selections on the form
     form.study_id.choices = study_vals
     form.site_id.choices = site_vals
@@ -594,6 +611,17 @@ def _checkRequest(request, key):
         return(request.form.getlist(key))
     except KeyError:
         return(None)
+
+@app.route('/DownloadCSV')
+@login_required
+def downloadCSV():
+
+    output = make_response(send_file('output.csv', as_attachment=True))
+    output.headers["Content-Disposition"] = "attachment; filename=output.csv"
+    output.headers["Content-type"] = "text/csv"
+    output.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    output.headers['Pragma'] = 'no-cache'
+    return output
 
 
 @app.route('/metricDataAsJson', methods=['Get', 'Post'])
@@ -675,7 +703,12 @@ def metricDataAsJson(format='http'):
     # the database query returned a list of sqlachemy record objects.
     # convert these into a standard list of dicts so we can jsonify it
     objects = []
+
+
     for metricValue in data:
+
+        string_row = str(metricValue)
+
         session = [session_link.session for session_link in metricValue.scan.sessions
                    if session_link.is_primary][0]
         objects.append({'value':            metricValue.value,
