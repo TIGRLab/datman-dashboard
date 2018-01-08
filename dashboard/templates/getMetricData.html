@@ -52,10 +52,27 @@
     </div>
 
     <br/>
-    <div id='data' class="container">
-          {% for line in data %}
-          {{line}}<br/>
-          {% endfor %}
+    <div id="data" class="container">
+      <table border=1>
+      {% for line in data %}
+      <tr>
+        <td>{{line[0]}}</td>
+        <td>{{line[1]}}</td>
+        <td>{{line[2]}}</td>
+        <td>{{line[3]}}</td>
+        <td>{{line[4]}}</td>
+        <td>{{line[5]}}</td>
+        <td>{{line[6]}}</td>
+        <td>{{line[7]}}</td>
+        <td>{{line[8]}}</td>
+        <td>{{line[9]}}</td>
+        <td>{{line[10]}}</td>
+        <td>{{line[11]}}</td>
+        <td>{{line[12]}}</td>
+        <td>{{line[13]}}</td>
+      </tr>
+      {% endfor %}
+    </table>
     </div>
     <div id='chart'></div>
     <script async src="/static/js/plot.js" onload="initPlot()"></script>

@@ -527,6 +527,9 @@ def metricData():
     form = SelectMetricsForm()
     data = None
     csv_data = None
+    csvname = 'dashboard/output.csv'
+    w_file= open(csvname, 'w')
+
 
     if form.query_complete.data == 'True':
         data = metricDataAsJson()
@@ -536,11 +539,7 @@ def metricData():
         if temp_data:
 
 
-            csvname = 'dashboard/output.csv'
-            w_file= open(csvname, 'w')
             testwrite = csv.writer(w_file)
-
-
 
             csv_data = io.BytesIO()
             csvwriter = csv.writer(csv_data)
@@ -549,6 +548,8 @@ def metricData():
             for row in temp_data:
                 csvwriter.writerow(row.values())
                 testwrite.writerow(row.values())
+
+    w_file.close()
 
     # anything below here is for making the form boxes dynamic
     if any([form.study_id.data,
@@ -599,9 +600,13 @@ def metricData():
     form.scantype_id.choices = scantype_vals
     form.metrictype_id.choices = metrictype_vals
 
+    reader = csv.reader(open(csvname, 'r'))
+    csvList = [row for row in reader]
+    print reader
+
     if csv_data:
         csv_data.seek(0)
-        return render_template('getMetricData.html', form=form, data=csv_data.readlines())
+        return render_template('getMetricData.html', form=form, data=csvList)
     else:
         return render_template('getMetricData.html', form=form, data="")
 
