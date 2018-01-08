@@ -216,3 +216,20 @@ Enter the new parameters into your local dashboard.module and reload
 ```
 $ module load dashboard.module
 ```
+
+### Adding a new study
+For now, to add a new study to the dashboard you must manually insert some
+records into the database.
+
+1. If the PI of the study is not already in the table 'people', they must be added
+2. A record must be added to the table 'studies'
+3. Any sites unique to this study must be added to the 'sites'
+4. For each site in the study make a record in study_sites
+5. Add any unique series tags to scantypes
+6. For each scantype tag that may appear in this study's data, add a record to study_scantypes
+
+### Granting yourself access to the production database
+Make sure pidentd is installed on your machine. Then ssh into srv-postgres as
+a user with sudo powers and add a record for your own username to
+/etc/postgresql/9.5/main/pg_ident.conf above the last line (the one with the regex).
+You may need to restart the postgres daemon afterwards.
