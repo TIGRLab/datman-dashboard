@@ -602,7 +602,7 @@ def metricData():
 
     reader = csv.reader(open(csvname, 'r'))
     csvList = [row for row in reader]
-    print reader
+    print type(csvList)
 
     if csv_data:
         csv_data.seek(0)
