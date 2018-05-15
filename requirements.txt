@@ -1,3 +1,6 @@
+psycopg2==2.7.1
+PyCap==1.0.2
+future==0.16.0
 Flask==0.11.1
 Flask-Login==0.4.0
 Flask-SQLAlchemy==2.1

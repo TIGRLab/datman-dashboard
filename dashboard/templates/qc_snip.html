@@ -11,7 +11,7 @@ dm-qc-report.py should be manually re-run with --rewrite flag before these scans
             and session.scan_count() > 0 %}
         <tr><td>
           <a href={{ url_for('session', session_id=session.id) }}>
-            {% if session.is_repeated %}
+            {% if session.is_repeated and session.repeat_count < session.last_repeat_qc_generated %}
               <span class="label label-info">
                 {{ session.name }}
               </span>

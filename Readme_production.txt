@@ -19,7 +19,19 @@ Web server is NGINX with UWSGI.
 
 Server is **ansible** managed by role `/projects/admin/ansible-playbooks/roles/postgres`
 
-Access requires postgresql client installed, authentication defaults to host authentication. This means _system users_ are mapped to postgresql _Roles_.
+Access requires postgresql client installed, and pidentd must be installed.
+To configure authentication for a user an entry must be added to pg_ident.conf
+mapping their system user name to web_user. A 'catch all' entry must be present as
+well to allow users to access the database as themselves.
+
+So as an example, you could add the following to pg_ident.conf and the user
+dawn would have passwordless access to postgres as'dawn' and as 'web_user':
+
+```
+# MAPNAME       SYSTEM-USERNAME         PG-USERNAME
+default		      dawn                    web_user
+default         /(.*)                   \1
+```
 
 The **postgres** user (local machine) has SUPERUSER, by default other users have no access.
 
@@ -87,6 +99,9 @@ The codebase is expected to be located at `/archive/code/dashboard`.
 #### Virtual env
 
 The dashboard webapp depends on a python virtual env. Once the repo has been cloned from github create the virtual env and install the requirements.
+
+Note: if the cryptography python package fails to install, make sure you have libssl-dev installed
+
 ```
 $ git clone git@github.com:TIGRLab/dashboard.git dashboard
 $ cd dashboard
@@ -133,24 +148,25 @@ These instructions will create a development environment for the dashboard appli
 
 5. Edit dashboard.module to include your new information. Other secret information can be obtained from passpack.
 
-6. Activate the correct condas environment
-  * `$ module load miniconda3`
-  * `$ source activate dashboard`
-
-7. Load the datman environment
+6. Load the datman environment
   * `$ module load /archive/code/datman/datman_env.module`
 
-8. Set the dashboard environment
+7. Load the dashboard environment
   * `$module load ./dashboard_dev.module`
 
-9. Start the web application
+8. Create a virtual environment for the dashboard and activate it before running the server.
+`$ virtualenv -p /usr/bin/python2.7 venv
+ $ source venv/bin/activate
+ $ pip install -r requirements.txt`
+
+9. Start the web application. run.py will give you a debugger when errors arise, but srv_uwsgi is what the production dashboard runs.
   * `$ python ./run.py` or `$./srv_uwsgi.py`
 
 10. Enjoy
 
 
 ### Creating your own conda env
-This isn't needed if your on the kimel system. N.B. The production version of dashboard still uses a venv, not a conda env. `requirements.txt` should be used if this needs recreating.
+This isn't needed if you're on the kimel system. N.B. The production version of dashboard still uses a venv, not a conda env. `requirements.txt` should be used if this needs recreating.
 
 1. `conda create --prefix ./dashboard_env --file create_conda.txt`
 2. `pip install rauth PyCap`
