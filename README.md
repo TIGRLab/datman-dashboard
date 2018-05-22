@@ -76,9 +76,11 @@ As with the dashboard role (and anything managed by ansible), configuration
 changes should be made in ansible not directly to the server.
 
 #### Backups
-Currently we dump the entire database nightly at 12:30 am and store this at
-/mnt/backup on srv-postgres. We keep three weeks worth of backups. TIGRsrv is configured to copy the backups and store them at /mnt/backup/dashboard. So we
-should have two copies at all times.
+Ansible configures a cron job (`/etc/cron.d/dashboard_bkup`) that will dump the
+entire database nightly and store the result in `/mnt/backup` on srv-postgres.
+We currently keep three weeks worth of backups. TIGRsrv is configured to copy
+the backups and store them at `/mnt/backup/dashboard`. So we should have two
+copies at all times.
 
 
 
