@@ -1,15 +1,48 @@
 #%Module1.0#####################################################################
-# note secret values are in passpack
-module-whatis   "adds datman, etc to your environment"
+module-whatis   "Configures the QC dashboard environment"
 
-setenv        OAUTH_SECRET_GITHUB  <from github>
-setenv	      OAUTH_CLIENT_GITHUB  <from github>
-setenv        OAUTH_SECRET_GITLAB  <from gitlab>
-setenv        OAUTH_CLIENT_GITLAB  <from gitlab>
+# Provide OAuth details
+# Can delete either github or gitlab entries if you dont use it but 
+# you need at least one configured
+setenv		OAUTH_SECRET_GITHUB  	<from github>
+setenv		OAUTH_CLIENT_GITHUB  	<from github>
+setenv		OAUTH_SECRET_GITLAB  	<from gitlab>
+setenv		OAUTH_CLIENT_GITLAB  	<from gitlab>
 
-setenv	      POSTGRES_USER <in passpack>
-setenv        POSTGRES_PASS <in passpack>
-setenv	      POSTGRES_SRVR 172.26.216.68
-setenv        POSTGRES_DATABASE dashboard
 
-setenv        REDCAP_TOKEN <in passpack>
+# Provide a secret key for Flask
+# This can be whatever you want, but you should keep it secret and 
+# make it something not easily guessed since it's used to encrypt sessions
+setenv		FLASK_SECRET_KEY	<your secret key here>
+
+
+# Provide postgres info
+# You can change the postgres user or database name here, just make sure 
+# everything is configured correctly in postgres
+setenv		POSTGRES_USER 		web_user
+setenv		POSTGRES_PASS 		<Your password>
+setenv		POSTGRES_SRVR 		<your postgres server's IP>
+setenv		POSTGRES_DATABASE 	dashboard
+
+
+# Provide a redcap token to enable Scan Completed forms to be
+# pulled in. This part is optional.
+setenv		REDCAP_TOKEN 		<your token here>
+
+
+# Configure datman
+# The dashboard requires datman. You can install it whereever you like but
+# the site wide configuration file, site name, and the location of the code
+# must be provided
+setenv		DM_CONFIG		<path to your site config>
+setenv		DM_SYSTEM		<your system name>
+
+prepend-path 	PATH               	<path to datman/datman folder>
+prepend-path 	PATH               	<path to datman/bin folder>
+prepend-path	PYTHONPATH         	<path to datman/datman folder>
+
+
+# Add dashboard scripts to your path
+prepend-path 	PATH               	<path to dashboard here>
+prepend-path 	PYTHONPATH         	<path to dashboard here>
+
