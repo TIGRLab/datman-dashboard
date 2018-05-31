@@ -250,12 +250,7 @@ SystemSettings:
 ```
 
 #### Build from Scratch
-Currently this page has some advice on [setting up configuration files](https://github.com/TIGRLab/admin/wiki/data-organization-and-config-files).
-
-You may be able to get away with only setting up the 'SystemSettings' portion
-of the site config file (tigrlab_config.yml in the wiki) rather than filling in
-all sections. However, the code may complain about not having at least one
-project settings file configured or missing the 'ExportSettings'.
+[This page](https://github.com/TIGRLab/datman/wiki/Datman%27s-Configuration-Files) contains an overview of the datman configuration files, [this page](https://github.com/TIGRLab/datman/wiki/Site-Config) has detailed instructions for setting up a site config file and [this page](https://github.com/TIGRLab/datman/wiki/Study-Config) has detailed instructions for setting up study config files.
 
 ### Setting Up Your Shell Environment
 There are two main options for configuring your shell to run a development
