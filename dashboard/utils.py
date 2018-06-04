@@ -101,48 +101,56 @@ def get_qc_doc(session_name):
 
 def update_blacklist(scan_name, comment, blacklist_file=None, study_name=None):
     """
-    Searches for the blacklist file identified by scan_name
-    creates the file if it doesn't exist
-    Updates the file with the new comment (if it's different from the existing
-    comment).
-    Returns:
-    True on success, nothing otherwise
+    Searches for the blacklist file identified by scan_name and creates the file
+    if it doesn't exist. Updates the file with the new comment (if it's
+    different from the existing comment).
+
+    Set comment to 'None' or an empty string to remove an existing entry
+
+    Returns:    True on success, otherwise will raise an exception
+
     Arguments:
-        scan_name: full scan name, e.e. "SPN01_CMH_0044_01_01_EMP_11_AxEPI-EATask1"
-        comment: string
-        blacklist_file: overrides getting blacklist from scan name
+        scan_name:              full scan name minus the extension, e.g.
+                                "SPN01_CMH_0044_01_01_EMP_11_AxEPI-EATask1"
+        comment:                A string or None to delete an entry
+        blacklist_file:         The blacklist file to update. If unset, the scan
+                                name will be used to try to find the a file
+                                named 'blacklist.csv' in the study's metadata
+                                folder
     """
-    global CFG
+
     if not blacklist_file:
-        try:
-            ident = datman.scanid.parse_filename(scan_name)
-        except datman.scanid.ParseException:
-            logger.warning('Invalid scan_name:{}'.format(scan_name))
-            return
-        ident = ident[0]
         if not study_name:
             try:
-                study_name = CFG.map_xnat_archive_to_project(ident.get_full_subjectid_with_timepoint())
-            except KeyError:
-                logger.warning('scan name: {} not recoginzed'.format(scan_name))
-                return
-
-        blacklist = os.path.join(CFG.get_path('meta', study_name), 'blacklist.csv')
+                ident, _, _, _ = datman.scanid.parse_filename(scan_name)
+            except datman.scanid.ParseException:
+                raise datman.scanid.ParseException(
+                        'Invalid scan_name: {}'.format(scan_name))
+            try:
+                # If something goes wrong this could raise a variety of
+                # exceptions... just trapping and reporting all for now - Dawn
+                study_name = CFG.map_xnat_archive_to_project(
+                        ident.get_full_subjectid_with_timepoint())
+            except Exception as e:
+                raise type(e)("Could not identify study for scan name {}. "
+                        "Reason: {}".format(scan_name, e.message))
+        blacklist = os.path.join(CFG.get_path('meta', study_name),
+                'blacklist.csv')
     else:
         blacklist = blacklist_file
 
     if not os.path.isfile(blacklist):
-        logger.warning('Blacklist file:{} not found, creating'.format(blacklist))
+        logger.info('Blacklist file {} not found, creating'.format(blacklist))
 
     try:
         with open(blacklist, 'r') as cl_file:
             lines = cl_file.readlines()
     except IOError:
-        logger.warning('Failed to open blacklist file:{}'.format(blacklist))
+        logger.warning('Failed to open blacklist file: {}'.format(blacklist))
         lines = []
 
     target_idx = None
-    existing_comment = None
+    existing_comment = ""
     for idx, val in enumerate(lines):
         if not val.strip(): # deal with blank lines
             continue
@@ -156,21 +164,28 @@ def update_blacklist(scan_name, comment, blacklist_file=None, study_name=None):
                 existing_comment = ''
             break
 
-    if not target_idx:
+    if comment:
+        comment = comment.strip()
+        existing_comment = existing_comment.strip()
+
+        if not existing_comment == comment:
+            lines[target_idx] = '{}\t{}\n'.format(scan_name, comment)
+    else:
+        if target_idx is None:
+            # No comment to add, and no entry to delete
+            return True
+        # Delete entry
+        del lines[target_idx]
+
+    if target_idx is None:
+        # Only need to add a new line to the end of the file
         with open(blacklist, 'a+') as cl_file:
             cl_file.write('{}\t{}\n'.format(scan_name, comment))
         return True
-
-    # ensure to get rid of whitespace, trailing newlines etc
-    comment = comment.strip()
-    existing_comment = existing_comment.strip()
-
-    if not existing_comment == comment:
-        lines[target_idx] = '{}\t{}\n'.format(scan_name, comment)
-
+    else:
+        # Rewrite all lines to update the comment
         with open(blacklist, 'w+') as cl_file:
             cl_file.writelines(lines)
-
     return True
 
 

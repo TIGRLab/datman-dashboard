@@ -383,9 +383,9 @@ class Scan(db.Model):
             utils.update_blacklist('{}_{}'.format(self.name,
                                                   self.description),
                                    comment)
-        except:
-            logger.error('Failed updating blacklist for scan:{}'
-                         .format(self.name))
+        except Exception as e:
+            logger.error('Failed updating blacklist for scan: {}. '
+                    'Reason: {}'.format(self.name, e.message))
             return False
         return comment
 
