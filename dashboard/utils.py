@@ -99,13 +99,85 @@ def get_qc_doc(session_name):
     else:
         return None
 
+
+def get_study(datman_name):
+    """
+    Returns the name of the study for a datman style session name or scan name
+    """
+    if datman.scanid.is_scanid(datman_name):
+        try:
+            ident = datman.scanid.parse(datman_name)
+        except datman.scanid.ParseException:
+            raise datman.scanid.ParseException("Invalid datman ID: {}".format(
+                    datman_name))
+    else:
+        try:
+            ident, _, _, _ = datman.scanid.parse_filename(datman_name)
+        except datman.scanid.ParseException:
+            raise datman.scanid.ParseException("Invalid scan name: {}".format(
+                    datman_name))
+    try:
+        # If something goes wrong this could raise a variety of
+        # exceptions... just trapping and reporting all for now - Dawn
+        study = CFG.map_xnat_archive_to_project(
+                ident.get_full_subjectid_with_timepoint())
+    except Exception as e:
+        raise type(e)("Could not identify study for scan name {}. "
+                "Reason - {}".format(scan_name, e))
+    return study
+
+
+def find_metadata(default_name, user_file=None, study=None):
+    if user_file:
+        if not os.path.isfile(user_file):
+            logger.warning("File {} does not exist.".format(user_file))
+        found_file = user_file
+    else:
+        if not study:
+            raise RuntimeError("Can't locate metadata file {}. "
+                    "Study not given.".format(default_name))
+        found_file = os.path.join(CFG.get_path('meta', study), default_name)
+    return found_file
+
+
+def get_contents(file_name):
+    """
+    Try to read the contents of <file_name> or return an empty list if exception
+    occurs
+    """
+    try:
+        with open(file_name, 'r') as fh:
+            lines = fh.readlines()
+    except IOError as e:
+        logger.error('Failed to open file: {}. Reason - {}'.format(file_name,
+                e))
+        lines = []
+    return lines
+
+def get_metadata_entry(contents, match_str):
+    target_idx = None
+    existing_comment = None
+    for idx, val in enumerate(lines):
+        if not val.strip(): # deal with blank lines
+            continue
+        parts = val.split(None, 1)
+
+        if parts[0] == match_str:
+            target_idx = idx
+            try:
+                existing_comment = parts[1]
+            except IndexError:
+                existing_comment = ''
+            existing_comment = existing_comment.strip()
+            break
+
+    return target_idx, existing_comment
+
+
 def update_blacklist(scan_name, comment, blacklist_file=None, study_name=None):
     """
-    Searches for the blacklist file identified by scan_name and creates the file
-    if it doesn't exist. Updates the file with the new comment (if it's
-    different from the existing comment).
-
-    Set comment to 'None' or an empty string to remove an existing entry
+    Updates the blacklist file with a new entry or updates an existing entry.
+    Set comment to 'None' or an empty string to delete an existing entry.
 
     Returns:    True on success, otherwise will raise an exception
 
@@ -118,141 +190,60 @@ def update_blacklist(scan_name, comment, blacklist_file=None, study_name=None):
                                 named 'blacklist.csv' in the study's metadata
                                 folder
     """
+    if not study_name:
+        study_name = get_study(scan_name)
 
-    if not blacklist_file:
-        if not study_name:
-            try:
-                ident, _, _, _ = datman.scanid.parse_filename(scan_name)
-            except datman.scanid.ParseException:
-                raise datman.scanid.ParseException(
-                        'Invalid scan_name: {}'.format(scan_name))
-            try:
-                # If something goes wrong this could raise a variety of
-                # exceptions... just trapping and reporting all for now - Dawn
-                study_name = CFG.map_xnat_archive_to_project(
-                        ident.get_full_subjectid_with_timepoint())
-            except Exception as e:
-                raise type(e)("Could not identify study for scan name {}. "
-                        "Reason: {}".format(scan_name, e.message))
-        blacklist = os.path.join(CFG.get_path('meta', study_name),
-                'blacklist.csv')
-    else:
-        blacklist = blacklist_file
+    blacklist = find_metadata('blacklist.csv', user_file=blacklist_file,
+            study=study_name)
 
-    if not os.path.isfile(blacklist):
-        logger.info('Blacklist file {} not found, creating'.format(blacklist))
+    lines = get_contents(blacklist)
+    index, _ = get_metadata_entry(lines, scan_name)
 
-    try:
-        with open(blacklist, 'r') as cl_file:
-            lines = cl_file.readlines()
-    except IOError:
-        logger.warning('Failed to open blacklist file: {}'.format(blacklist))
-        lines = []
-
-    target_idx = None
-    existing_comment = ""
-    for idx, val in enumerate(lines):
-        if not val.strip(): # deal with blank lines
-            continue
-        parts = val.split(None, 1)
-        if scan_name == parts[0]:
-            target_idx = idx
-            try:
-                #  ensure to get rid of trailing newline
-                existing_comment = parts[1]
-            except (KeyError, IndexError):
-                existing_comment = ''
-            break
-
-    if comment:
-        comment = comment.strip()
-        existing_comment = existing_comment.strip()
-
-        if not existing_comment == comment:
-            lines[target_idx] = '{}\t{}\n'.format(scan_name, comment)
-    else:
-        if target_idx is None:
-            # No comment to add, and no entry to delete
-            return True
-        # Delete entry
-        del lines[target_idx]
-
-    if target_idx is None:
-        # Only need to add a new line to the end of the file
+    if index is None and comment:
+        ## Add a new blacklist entry to end of the list
         with open(blacklist, 'a+') as cl_file:
             cl_file.write('{}\t{}\n'.format(scan_name, comment))
         return True
+
+    # Otherwise, either update a comment or delete existing entry if
+    # comment wasnt given
+    if comment:
+        lines[index] = '{}\t{}\n'.format(scan_name, comment)
     else:
-        # Rewrite all lines to update the comment
-        with open(blacklist, 'w+') as cl_file:
-            cl_file.writelines(lines)
+        del lines[index]
+
+    # Rewrite whole file to make the update
+    with open(blacklist, 'w+') as cl_file:
+        cl_file.writelines(lines)
+
     return True
 
 
 def update_checklist(session_name, comment, checklist_file=None, study_name=None):
     """
-    Searches for the checklist file identified by session_name
-    creates the file if it doesn't exist
-    Updates the file with the new comment (if it's different from the existing
-    comment).
-    Returns:
-    True on success, nothing otherwise
+    Adds a new comment to the checklist file or updates an existing entry.
+
+    Returns: True on success, nothing otherwise
+
     Arguments:
         session_name: full session name, e.e. "SPN01_CMH_0001_01"
         comment: string
         checklist_file: if None then checklist is identified from session_name
     """
-    global CFG
-    if not checklist_file:
-        try:
-            ident = datman.scanid.parse(session_name)
-        except datman.scanid.ParseException:
-            logger.warning('Invalid session name:{}'.format(session_name))
-            return
+    if not study_name:
+        study_name = get_study(session_name)
 
-        if not study_name:
-            try:
-                study_name = CFG.map_xnat_archive_to_project(session_name)
-            except KeyError:
-                logger.warning('session name: {} not recoginzed'.format(session_name))
-                return
+    checklist = find_metadata('checklist.csv', user_file=checklist_file,
+            study=study_name)
 
-        checklist = os.path.join(CFG.get_path('meta', study_name), 'checklist.csv')
-    else:
-        checklist = checklist_file
+    lines = get_contents(checklist)
+    index, existing_comment = get_metadata_entry(lines,
+            "qc_{}.html".format(session_name))
 
-    if not os.path.isfile(checklist):
-        logger.warning('Checklist file:{} not found, creating'.format(checklist))
-    try:
-        with open(checklist, 'r') as cl_file:
-            lines = cl_file.readlines()
-    except IOError:
-        logger.warning('Failed to open checklist file:{}'.format(checklist))
-        lines = []
-
-    target_idx = None
-    found = False
-    existing_comment = None
-    for idx, val in enumerate(lines):
-        if not val.strip(): # deal with blank lines
-            continue
-        parts = val.split(None, 1)
-
-        scan_id = parts[0].split('.')[0]
-        if scan_id == 'qc_{}'.format(session_name):
-            found = True
-            target_idx = idx
-            try:
-                #  ensure to get rid of trailing newline
-                existing_comment = parts[1]
-            except (KeyError, IndexError):
-                existing_comment = ''
-            break
-
-    if not found:
-        logger.warning('Entry:{} not found in checklist:{}, adding.'
+    if index is None:
+        logger.warning('Entry {} not found in checklist file {}, adding.'
                        .format(session_name, checklist))
-        logger.info('Running as user:{}'.format(os.getuid()))
+        logger.info('Running as user: {}'.format(os.getuid()))
         with open(checklist, 'a+') as cl_file:
             cl_file.write('qc_{}.html {}\n'.format(session_name, comment))
         return True
@@ -262,9 +253,9 @@ def update_checklist(session_name, comment, checklist_file=None, study_name=None
     existing_comment = existing_comment.strip()
     if not existing_comment == comment:
         lines[target_idx] = 'qc_{}.html {}\n'.format(session_name, comment)
-
         with open(checklist, 'w+') as cl_file:
             cl_file.writelines(lines)
+
 
     return True
 
