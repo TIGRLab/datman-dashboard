@@ -12,8 +12,11 @@
             <div class="form-group">
               <label for="scancomment_analysis">{{ blacklist_form.bl_comment.label }}</label>
               {{ blacklist_form.bl_comment }}
+              <div>
+              {{ blacklist_form.submit(class_="btn btn-default") }}
+              {{ blacklist_form.delete(class_="btn btn-default") }}
+              </div>
             </div>
-            <button type="submit" class="btn btn-default">Submit</button>
           </form>
         </div>
       </div>

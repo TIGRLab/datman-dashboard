@@ -405,7 +405,11 @@ def scan(session_scan_id=None):
         # update the scan object in the database with info from the form
         # updating the databse object automatically syncronises blacklist.csv on the filesystem
         #   see models.py
-        scan.bl_comment = bl_form.bl_comment.data
+        if bl_form.delete.data:
+            scan.bl_comment = None
+        else:
+            scan.bl_comment = bl_form.bl_comment.data
+        
         try:
             db.session.add(scan)
             db.session.commit()

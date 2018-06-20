@@ -123,7 +123,7 @@ def get_study(datman_name):
                 ident.get_full_subjectid_with_timepoint())
     except Exception as e:
         raise type(e)("Could not identify study for scan name {}. "
-                "Reason - {}".format(scan_name, e))
+                "Reason - {}".format(datman_name, e))
     return study
 
 
@@ -156,8 +156,8 @@ def get_contents(file_name):
 
 def get_metadata_entry(contents, match_str):
     target_idx = None
-    existing_comment = None
-    for idx, val in enumerate(lines):
+    existing_comment = ""
+    for idx, val in enumerate(contents):
         if not val.strip(): # deal with blank lines
             continue
         parts = val.split(None, 1)
@@ -174,7 +174,7 @@ def get_metadata_entry(contents, match_str):
     return target_idx, existing_comment
 
 
-def update_blacklist(scan_name, comment, blacklist_file=None, study_name=None):
+def update_blacklist(scan_name, comment=None, blacklist_file=None, study_name=None):
     """
     Updates the blacklist file with a new entry or updates an existing entry.
     Set comment to 'None' or an empty string to delete an existing entry.
@@ -230,6 +230,8 @@ def update_checklist(session_name, comment, checklist_file=None, study_name=None
         comment: string
         checklist_file: if None then checklist is identified from session_name
     """
+    qc_page_name = "qc_{}.html".format(session_name)
+
     if not study_name:
         study_name = get_study(session_name)
 
@@ -237,15 +239,14 @@ def update_checklist(session_name, comment, checklist_file=None, study_name=None
             study=study_name)
 
     lines = get_contents(checklist)
-    index, existing_comment = get_metadata_entry(lines,
-            "qc_{}.html".format(session_name))
+    index, existing_comment = get_metadata_entry(lines, qc_page_name)
 
     if index is None:
         logger.warning('Entry {} not found in checklist file {}, adding.'
                        .format(session_name, checklist))
         logger.info('Running as user: {}'.format(os.getuid()))
         with open(checklist, 'a+') as cl_file:
-            cl_file.write('qc_{}.html {}\n'.format(session_name, comment))
+            cl_file.write('{} {}\n'.format(qc_page_name, comment))
         return True
 
     # ensure to get rid of whitespace, trailing newlines etc
