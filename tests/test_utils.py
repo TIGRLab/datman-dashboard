@@ -204,6 +204,22 @@ class TestUpdateBlacklist(unittest.TestCase):
 
         blacklist_mock().write.assert_called_once_with(new_line)
 
+    def test_deleting_scan_not_in_blacklist_does_nothing(self, mock_get_contents,
+            mock_find_metadata):
+        # Clicking delete multiple times very quickly was causing an
+        # exception when 'del lines[None]' tried to run after the first time
+        existing_contents = ["some_scan\ttrunacted series\n"]
+
+        mock_find_metadata.return_value = self.blacklist_file
+        mock_get_contents.return_value = existing_contents
+
+        blacklist_mock = mock_open()
+        with patch("__builtin__.open", blacklist_mock):
+            utils.update_blacklist(self.scan_name, None, study_name=self.study)
+
+        assert blacklist_mock().write.call_count == 0
+        assert blacklist_mock().writelines.call_count == 0
+
     def test_removes_entry_when_None_or_empty_string_given_as_comment(self,
             mock_get_contents, mock_find_metadata):
 
