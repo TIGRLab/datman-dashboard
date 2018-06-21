@@ -217,6 +217,9 @@ class TestUpdateBlacklist(unittest.TestCase):
         with patch("__builtin__.open", blacklist_mock):
             utils.update_blacklist(self.scan_name, None, study_name=self.study)
 
+        assert blacklist_mock().write.call_count == 0
+        assert blacklist_mock().writelines.call_count == 0
+
     def test_removes_entry_when_None_or_empty_string_given_as_comment(self,
             mock_get_contents, mock_find_metadata):
 
