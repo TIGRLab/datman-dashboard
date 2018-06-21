@@ -253,7 +253,7 @@ def update_checklist(session_name, comment, checklist_file=None, study_name=None
     comment = comment.strip()
     existing_comment = existing_comment.strip()
     if not existing_comment == comment:
-        lines[target_idx] = 'qc_{}.html {}\n'.format(session_name, comment)
+        lines[index] = 'qc_{}.html {}\n'.format(session_name, comment)
         with open(checklist, 'w+') as cl_file:
             cl_file.writelines(lines)
 
