@@ -205,6 +205,10 @@ def update_blacklist(scan_name, comment=None, blacklist_file=None, study_name=No
             cl_file.write('{}\t{}\n'.format(scan_name, comment))
         return True
 
+    if index is None:
+        # No entry found and no comment to add, exit early and do nothing.
+        return True
+
     # Otherwise, either update a comment or delete existing entry if
     # comment wasnt given
     if comment:
