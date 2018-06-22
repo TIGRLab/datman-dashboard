@@ -409,7 +409,7 @@ def scan(session_scan_id=None):
             scan.bl_comment = None
         else:
             scan.bl_comment = bl_form.bl_comment.data
-        
+
         try:
             db.session.add(scan)
             db.session.commit()
@@ -461,7 +461,7 @@ def study(study_id=None, active_tab=None):
     except KeyError:
         abort(500)
 
-    # Get the contents of the study README,md file fro the file system
+    # Get the contents of the study README.md file from the file system
     readme_path = os.path.join(cfg.get_study_base(), 'README.md')
 
     try:
@@ -478,16 +478,17 @@ def study(study_id=None, active_tab=None):
         # also strip blank lines at the start and end as these are
         # automatically stripped when the form is submitted
         if not form.readme_txt.data.strip() == data.strip():
-            # form has been updated so make a backup anf write back to file
-            timestamp = datetime.datetime.now().strftime('%Y%m%d%H%m')
-            base, ext = os.path.splitext(readme_path)
-            backup_file = base + '_' + timestamp + ext
-            try:
-                shutil.copyfile(readme_path, backup_file)
-            except (IOError, os.error, shutil.Error), why:
-                logger.error('Failed to backup readme for study {} with excuse {}'
-                             .format(study.nickname, why))
-                abort(500)
+            if os.path.exists(readme_path):
+                # form has been updated so make a backup and write back to file
+                timestamp = datetime.datetime.now().strftime('%Y%m%d%H%m')
+                base, ext = os.path.splitext(readme_path)
+                backup_file = base + '_' + timestamp + ext
+                try:
+                    shutil.copyfile(readme_path, backup_file)
+                except (IOError, os.error, shutil.Error), why:
+                    logger.error('Failed to backup readme for study {} with excuse {}'
+                                 .format(study.nickname, why))
+                    abort(500)
 
             with codecs.open(readme_path, encoding='utf-8', mode='w') as myfile:
                 myfile.write(form.readme_txt.data)
