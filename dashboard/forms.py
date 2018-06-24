@@ -8,7 +8,7 @@ This allows us to create HTML forms in python without having to worry about
 
 from flask import session
 from flask_wtf import FlaskForm
-from wtforms import SelectField, SelectMultipleField, HiddenField
+from wtforms import SelectField, SelectMultipleField, HiddenField, SubmitField
 from wtforms import TextAreaField, TextField, FormField, BooleanField
 from wtforms.validators import DataRequired
 from models import Study, Analysis
@@ -42,10 +42,11 @@ class StudyOverviewForm(FlaskForm):
 
 class ScanBlacklistForm(FlaskForm):
     scan_id = HiddenField(id="scan_id")
-    bl_comment = TextField(u'Blacklist_comment',
+    bl_comment = TextField(u'Enter the reason for blacklisting: ',
                            id="bl_comment",
                            validators=[DataRequired()])
-
+    submit = SubmitField('Submit')
+    delete = SubmitField('Delete Entry')
 
 class SessionForm(FlaskForm):
     cl_comment = TextField(u'Checklist_comment',

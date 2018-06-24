@@ -375,17 +375,18 @@ class Scan(db.Model):
     @validates('bl_comment')
     def validate_comment(self, key, comment):
         """
-        check the comment isn't empty and that the blacklist.csv can be updated
+        Updates the blacklist.csv file. Empty comments should only be found
+        if a 'delete' button is pressed, since it will delete an existing
+        entry from the file.
         """
-        assert comment, 'Comment not provided for scan:{}'.format(self.name)
 
         try:
             utils.update_blacklist('{}_{}'.format(self.name,
                                                   self.description),
                                    comment)
-        except:
-            logger.error('Failed updating blacklist for scan:{}'
-                         .format(self.name))
+        except Exception as e:
+            logger.error('Failed updating blacklist for scan: {}. '
+                    'Reason: {}'.format(self.name, e.message))
             return False
         return comment
 
