@@ -201,7 +201,7 @@ class Session(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(256))
-    date = db.Column(db.DateTime)
+    date = db.Column(db.Date)
     study_id = db.Column(db.Integer, db.ForeignKey('studies.id'),
                          nullable=False)
     study = db.relationship('Study', back_populates='sessions')
@@ -218,11 +218,12 @@ class Session(db.Model):
     last_repeat_qcd = db.Column(db.Integer)
     cl_comment = db.Column(db.String(1024))
     gh_issue = db.Column(db.Integer)
-    redcap_record = db.Column(db.Integer)  # ID of the record in redcap
+    redcap_record = db.Column(db.String(256))  # ID of the record in redcap
     redcap_entry_date = db.Column(db.Date)  # date of record entry in redcap
     redcap_user = db.Column(db.Integer)  # ID of the user who filled in the redcap record
     redcap_comment = db.Column(db.String(3072))  # Redcap comment field
     redcap_url = db.Column(db.String(1024))  # URL for the redcap server
+    redcap_version = db.Column(db.String(10))  # Redcap version number
     redcap_projectid = db.Column(db.Integer)  # ID for redcap Project
     redcap_instrument = db.Column(db.String(1024))  # name of the redcap form
     incidental_findings = db.relationship('IncidentalFinding')
