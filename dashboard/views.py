@@ -360,8 +360,9 @@ def redcap_redirect(session_id):
     Used to provide a link from the session page to a redcap session complete record
     """
     session = Session.query.get(session_id)
-    redcap_url = '{}redcap_v6.11.4/DataEntry/index.php?pid={}&page={}&id={}'
+    redcap_url = '{}redcap_v{}/DataEntry/index.php?pid={}&page={}&id={}'
     redcap_url = redcap_url.format(session.redcap_url,
+                                   session.redcap_version,
                                    session.redcap_projectid,
                                    session.redcap_instrument,
                                    session.redcap_record)
