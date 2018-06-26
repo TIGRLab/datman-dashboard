@@ -1,15 +1,19 @@
 from __future__ import absolute_import
 
-from config import REDCAP_TOKEN
+import re
+import logging
+
+import requests
 import redcap as REDCAP
+
+import datman.scanid
+
+from config import REDCAP_TOKEN
 from .models import Session, Study, Site
 from . import utils
-from urlparse import urlparse
-import logging
-import datman.scanid
-import requests
 
 logger = logging.getLogger(__name__)
+
 
 class redcap_exception(Exception):
     """Generic error for recap interface"""
@@ -22,8 +26,9 @@ class redcap_record(object):
     """
 
     redcap_url = None
+    redcap_version = None
     record_id = None
-    study = None
+    project_id = None
     date = None
     comment = None
     session_name = None
@@ -39,6 +44,8 @@ class redcap_record(object):
     def create_from_request(self, request):
         try:
             self.redcap_url = request.form['redcap_url']
+            self.redcap_version = re.search('redcap_v(.*)\/index',
+                                            request.form['project_url']).group(1)
             self.record_id = request.form['record']
             self.instrument = request.form['instrument']
             self.project_id = request.form['project_id']
@@ -114,9 +121,8 @@ class redcap_record(object):
             db_session = db_session.first()
             self.__set_study(db_session.study.nickname)
             self.__set_site(db_session.site.name)
-        #update the module globals
+        # update the module globals
         self.db_session = db_session
-
 
     def __set_site(self, site):
         """
@@ -160,6 +166,7 @@ class redcap_record(object):
         try:
             self.db_session.redcap_record = self.record_id
             self.db_session.redcap_url = self.redcap_url
+            self.db_session.redcap_version = self.redcap_version
             self.db_session.redcap_entry_date = self.date
             self.db_session.redcap_user = self.rc_user
             if self.db_session.redcap_comment:
