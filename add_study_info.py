@@ -1,4 +1,4 @@
-#!venv/bin/python
+#!/usr/bin/env python
 """
 Add extra study information into the database.
 Parses the datman config files for study information and updates
