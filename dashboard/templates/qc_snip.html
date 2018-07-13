@@ -27,12 +27,10 @@ dm-qc-report.py should be manually re-run with --rewrite flag before these scans
 
 <h3>Missing Redcap:</h3>
 Sessions where redcap records are missing.
-<span class="label label-info">Limited to CAMH sessions.</span>
 <div class="container" id="qc_outstanding">
   <table>
     {% for session in study.sessions %}
-      {% if session.site.name=='CMH'
-            and not session.is_phantom
+      {% if not session.is_phantom
             and session.redcap_record == '' %}
         <tr><td>
           <a href={{ url_for('session', session_id=session.id) }}>
@@ -46,12 +44,10 @@ Sessions where redcap records are missing.
 
 <h3>Missing Imaging:</h3>
 Sessions where redcap records are present, but no scans exist.
-<span class="label label-info">Limited to CAMH sessions.</span>
 <div class="container" id="qc_outstanding">
   <table>
     {% for session in study.sessions %}
-      {% if session.site.name=='CMH'
-            and session.redcap_record
+      {% if session.redcap_record
             and session.scan_count() == 0 %}
         <tr><td>
           <a href={{ url_for('session', session_id=session.id) }}>
