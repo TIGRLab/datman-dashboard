@@ -32,6 +32,15 @@ as screen size shrinks*/
 }
 
 /*Change navbar color scheme to CAMH purple*/
+#find_session {
+  background-color: #6E298D;
+  color: #ffffff;
+}
+
+#find_session:hover {
+  background-color: #5b2374;
+}
+
 .navbar-default {
   background-color: #6E298D;
   border-color: #6E298D;
@@ -49,6 +58,10 @@ as screen size shrinks*/
 .navbar-default .navbar-brand:hover,
 .navbar-default .navbar-brand:focus {
   color: #ffffff;
+}
+
+.navbar-default .navbar-nav > li:hover {
+  background-color: #5b2374;
 }
 
 .navbar-default .navbar-nav > li > .dropdown-menu {
