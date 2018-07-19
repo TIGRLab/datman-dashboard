@@ -1,11 +1,12 @@
 body {
   /*Add padding so the footer doesnt overlap the content*/
   padding-bottom: 70px;
+  color: #383838;
 }
 
 thead {
-  color: #FFFFFF;
-  background-color: #6E298D;
+  color: #F8F8F8;
+  background-color: #00A39B;
   font-size: 1.6rem;
   font-weight: 700;
 }
@@ -35,6 +36,23 @@ table-striped */
   background-color: #e6e6e6;
 }
 
+/* Restrict brand image size */
+.navbar-brand img {
+  height: 100%;
+}
+
+/* Improve jumbotron styling */
+.jumbotron {
+  color: #383838;
+  text-transform: capitalize;
+}
+
+.jumbotron h1 {
+  color: #1E1E1E;
+  font-weight: 700;
+  text-shadow: 1px 3px rgba(0,0,0,0.3);
+}
+
 /*Make the navbar collapse earlier so it doesnt become two overlapping columns
 as screen size shrinks*/
 @media (min-width: 768px) and (max-width: 991px) {
@@ -58,7 +76,7 @@ as screen size shrinks*/
 /*Change navbar color scheme to CAMH purple*/
 #find_session {
   background-color: #6E298D;
-  color: #ffffff;
+  color: #F8F8F8;
 }
 
 #find_session:hover {
@@ -68,20 +86,20 @@ as screen size shrinks*/
 .navbar-default {
   background-color: #6E298D;
   border-color: #6E298D;
-  color: #ffffff;
+  color: #F8F8F8;
 }
 
 .navbar-default .navbar-text {
-  color: #ffffff;
+  color: #F8F8F8;
 }
 
 .navbar-default .navbar-brand {
-  color: #ffffff;
+  color: #F8F8F8;
 }
 
 .navbar-default .navbar-brand:hover,
 .navbar-default .navbar-brand:focus {
-  color: #ffffff;
+  color: #F8F8F8;
 }
 
 .navbar-default .navbar-nav > li:hover {
@@ -92,21 +110,21 @@ as screen size shrinks*/
   background-color: #6e298d;
 }
 .navbar-default .navbar-nav > li > .dropdown-menu > li > a {
-  color: #ffffff;
+  color: #F8F8F8;
 }
 .navbar-default .navbar-nav > li > .dropdown-menu > li > a:hover,
 .navbar-default .navbar-nav > li > .dropdown-menu > li > a:focus {
-  color: #ffffff;
+  color: #F8F8F8;
   background-color: #5b2374;
 }
 
 .navbar-default .navbar-nav > li > a {
-  color: #ffffff;
+  color: #F8F8F8;
 }
 
 .navbar-default .navbar-nav > li > a:hover,
 .navbar-default .navbar-nav > li > a:focus {
-  color: #ffffff;
+  color: #F8F8F8;
 }
 
 .navbar-default .navbar-nav > li > .dropdown-menu > li.divider {
@@ -115,19 +133,19 @@ as screen size shrinks*/
 .navbar-default .navbar-nav .open .dropdown-menu > .active > a,
 .navbar-default .navbar-nav .open .dropdown-menu > .active > a:hover,
 .navbar-default .navbar-nav .open .dropdown-menu > .active > a:focus {
-  color: #ffffff;
+  color: #F8F8F8;
   background-color: #5b2374;
 }
 .navbar-default .navbar-nav > .active > a,
 .navbar-default .navbar-nav > .active > a:hover,
 .navbar-default .navbar-nav > .active > a:focus {
-  color: #ffffff;
+  color: #F8F8F8;
   background-color: #5b2374;
 }
 .navbar-default .navbar-nav > .open > a,
 .navbar-default .navbar-nav > .open > a:hover,
 .navbar-default .navbar-nav > .open > a:focus {
-  color: #ffffff;
+  color: #F8F8F8;
   background-color: #5b2374;
 }
 .navbar-default .navbar-toggle {
@@ -138,31 +156,31 @@ as screen size shrinks*/
   background-color: #5b2374;
 }
 .navbar-default .navbar-toggle .icon-bar {
-  background-color: #ffffff;
+  background-color: #F8F8F8;
 }
 .navbar-default .navbar-collapse,
 .navbar-default .navbar-form {
-  border-color: #ffffff;
+  border-color: #F8F8F8;
 }
 .navbar-default .navbar-link {
-  color: #ffffff;
+  color: #F8F8F8;
 }
 .navbar-default .navbar-link:hover {
-  color: #ffffff;
+  color: #F8F8F8;
 }
 
 @media (max-width: 767px) {
   .navbar-default .navbar-nav .open .dropdown-menu > li > a {
-    color: #ffffff;
+    color: #F8F8F8;
   }
   .navbar-default .navbar-nav .open .dropdown-menu > li > a:hover,
   .navbar-default .navbar-nav .open .dropdown-menu > li > a:focus {
-    color: #ffffff;
+    color: #F8F8F8;
   }
   .navbar-default .navbar-nav .open .dropdown-menu > .active > a,
   .navbar-default .navbar-nav .open .dropdown-menu > .active > a:hover,
   .navbar-default .navbar-nav .open .dropdown-menu > .active > a:focus {
-    color: #ffffff;
+    color: #F8F8F8;
     background-color: #5b2374;
   }
 }
