@@ -3,32 +3,31 @@
 
 {% block content %}
   {% include 'flash.html' %}
-  <div class="bd-pageheader jumbotron">
-    <h1>Kimel Lab QC Monitor</h1>
-      <p class="lead"> Monitoring {{ session_count }} sessions for {{ study_count }} studies.</p>
-    </h1>
-  </div>
-  <div>
-    {% if studies|count > 0 %}
-    <h3>Select a study below:</h3>
-    <table class="table-striped">
-      <th>
+    <div id="home-body">
+      <div class="jumbotron">
+        <h1>Kimel Lab QC Monitor</h1>
+          <p class="lead"> Monitoring {{ session_count }} sessions for {{ study_count }} studies.</p>
+        </h1>
+      </div>
+      {% if studies|count > 0 %}
+      <table class="table-striped center">
+        <th>
+          <tr>
+            <td>Nickname</td>
+            <td>Study name</td>
+            <td># of sessions</td>
+          </tr>
+        </th>
+        {% for study in studies %}
         <tr>
-          <td>Nickname</td>
-          <td>Study name</td>
-          <td># of sessions</td>
+          <td><a href="{{ url_for('study', study_id=study.id) }}"> {{ study.nickname }}</a></td>
+          <td><a href="{{ url_for('study', study_id=study.id) }}"> {{ study.name }}</a></td>
+          <td><center>{{study.sessions|count}}</center></td>
         </tr>
-      </th>
-      {% for study in studies %}
-      <tr>
-        <td><a href="{{ url_for('study', study_id=study.id) }}"> {{ study.nickname }}</a></td>
-        <td><a href="{{ url_for('study', study_id=study.id) }}"> {{ study.name }}</a></td>
-        <td><center>{{study.sessions|count}}</center></td>
-      </tr>
-      {% endfor %}
-    </table>
-    {% else %}
-    <h3>You do not have access to any studies. Please contact an administrator to receive access.</h3>
-    {% endif %}
-  </div>
+        {% endfor %}
+      </table>
+      {% else %}
+      <h3>You do not have access to any studies. Please contact an administrator to receive access.</h3>
+      {% endif %}
+    </div>
 {% endblock %}
