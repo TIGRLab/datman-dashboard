@@ -3,6 +3,13 @@ body {
   padding-bottom: 70px;
 }
 
+thead {
+  color: #FFFFFF;
+  background-color: #6E298D;
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
 #copyright {
   padding: 15px 10px;
 }
@@ -21,6 +28,12 @@ body {
 /**********************************************
 * Bootstrap customizations below
 ***********************************************/
+
+/* Change table hover color so it can be used in conjunction with
+table-striped */
+.table-hover tbody tr:hover td, .table-hover tbody tr:hover th {
+  background-color: #e6e6e6;
+}
 
 /*Make the navbar collapse earlier so it doesnt become two overlapping columns
 as screen size shrinks*/
