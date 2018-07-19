@@ -2,20 +2,6 @@
 
 {% block content %}
   {% include 'flash.html' %}
-    <script type=text/javascript>
-      // bind the submit event to the form elements
-      $(function() {
-        $("[name=select_metrics]").find("select").bind('change', function(){
-          $(this).closest("form").submit();
-        })
-      });
-      //catch the update button even and use it to update the hidden field to True
-      $(function(){
-        $("input[type=submit]").bind('click', function(){
-          $(this).closest("form").find("input[name=query_complete]").val('True');
-        })
-      });
-    </script>
     <div class="bd-pageheader jumbotron">
         <h1>Sites</h1>
     </div>
@@ -44,6 +30,7 @@
 
             <div class="controls row">
               <input class="btn btn-primary" type="submit" value="Update">
+               <button type="button" onclick="downloadCSVFile()" class="btn btn-primary" >Download CSV</button>
             </div>
           </div>
 
@@ -51,12 +38,62 @@
     </div>
 
     <br/>
-    <div id='data' class="container">
-          {% for line in data %}
-          {{line}}<br/>
-          {% endfor %}
+    <div id="data">
+      <table class="table table-striped" border=1>
+      {% for line in data %}
+      <tr>
+        <td>{{line[0]}}</td>
+        <td>{{line[1]}}</td>
+        <td>{{line[2]}}</td>
+        <td>{{line[3]}}</td>
+        <td>{{line[4]}}</td>
+        <td>{{line[5]}}</td>
+        <td>{{line[6]}}</td>
+        <td>{{line[7]}}</td>
+        <td>{{line[8]}}</td>
+        <td>{{line[9]}}</td>
+        <td>{{line[10]}}</td>
+        <td>{{line[11]}}</td>
+        <td>{{line[12]}}</td>
+        <td>{{line[13]}}</td>
+      </tr>
+      {% endfor %}
+    </table>
     </div>
     <div id='chart'></div>
     <script async src="/static/js/plot.js" onload="initPlot()"></script>
+    <script type=text/javascript>
+      // bind the submit event to the form elements
+      $(function() {
+        $("[name=select_metrics]").find("select").bind('change', function(){
+          $(this).closest("form").submit();
+        })
+      });
+      //catch the update button even and use it to update the hidden field to True
+      $(function(){
+        $("input[type=submit]").bind('click', function(){
+          $(this).closest("form").find("input[name=query_complete]").val('True');
+        })
+      });
+
+      function downloadCSVFile() {
+        const rows = {{ data|tojson }};
+        let csvContent = "data:text/csv;charset=utf-8,";
+        rows.forEach(function(rowArray) {
+          splitRow = rowArray.toString()
+          splitRow = splitRow.replace("#n", "num")
+          csvContent += splitRow + "\r\n";
+        });
+
+        var encodedUri = encodeURI(csvContent);
+
+        var link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "output.csv");
+        document.body.appendChild(link);
+
+        link.click();
+              }
+      </script>
 
 {% endblock %}
