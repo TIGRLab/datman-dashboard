@@ -103,6 +103,11 @@ table-striped */
   text-shadow: 1px 3px 1px rgba(0,0,0,0.3);
 }
 
+/* Get rid of padding on the ends of the header */
+.navbar-collapse {
+  padding: 0px;
+}
+
 /*Make the navbar collapse earlier so it doesnt become two overlapping columns
 as screen size shrinks*/
 @media (min-width: 768px) and (max-width: 1120px) {
