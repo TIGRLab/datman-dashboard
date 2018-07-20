@@ -1,112 +1,241 @@
-/*
-inline styles for local site
-*/
-@link-color:       @brand-primary;
-@link-hover-color: darken(@link-color, 15%);
-
-a {
-  color: @link-color;
-  text-decoration: none;
-
-  &:hover {
-    color: @link-hover-color;
-    text-decoration: underline;
-  }
-}
-
-.nomargin{
-    margin-top:0px;
-    margin-bottom:0px;
-    margin-right:0px;
-    margin-left:0px;
-}
-
-
-.bd-pageheader {
-  padding: 2rem 15px;
-  margin-bottom: 1.5rem;
-  color: #FFFFFF;
-  text-align: center;
-  background-color: #6E298D;
-}
-
-.bd-pageheader .container {
-  position: relative;
-}
-
-.camh {
-  background-color: #6E298D
-}
-
-.scantype_dti{
-  display: none;
-}
-
-.scantype_fmri{
-  display: none;
-}
-
-.centered img {
-  display: block;
-  margin: auto;
-  width: 40%;
-}
-
-.bd-pageheader h1 {
-  font-size: 4rem;
-  font-weight: normal;
-  color: #fff;
-}
-
-.bd-pageheader p {
-  margin-bottom: 0;
-  font-size: 1.25rem;
-  font-weight: 300;
-}
-
-@media (min-width: 544px) {
-  .bd-pageheader {
-    padding-top: 2rem;
-    padding-bottom: 3.5rem;
-    margin-bottom: 3rem;
-    text-align: left;
-  }
-  .bd-pageheader .carbonad {
-    margin: 2rem 0 0 !important;
-  }
-}
-
-@media (min-width: 768px) {
-  .bd-pageheader h1 {
-    font-size: 4rem;
-  }
-  .bd-pageheader p {
-    font-size: 1.5rem;
-  }
-}
-
-@media (min-width: 992px) {
-  .bd-pageheader h1,
-  .bd-pageheader p {
-    margin-right: 380px;
-  }
-  .bd-pageheader .carbonad {
-    position: absolute;
-    top: 0;
-    right: .75rem;
-    margin: 0 !important;
-  }
-}
-
-.control-label{
-  font-weight: bold;fg
-}
-
 body {
-  padding-bottom: 200px;
+  /*Add padding so the footer doesnt overlap the content*/
+  padding-bottom: 70px;
+  color: #383838;
 }
-@media (max-width: 980px){
-  body{
-    padding-bottom: 0;
+
+thead {
+  color: #F8F8F8;
+  background-color: #00A39B;
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+#copyright {
+  padding: 15px 10px;
+}
+
+#home-body {
+  width: 70%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+#find_session_text {
+  width: 350px !important;
+}
+
+.center {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Style badge on 'new-qc' labels */
+.new-qc {
+  background-color: #00A39B;
+  float: right;
+  width: 80px;
+  height: 100%;
+  text-align: left;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.new-qc .badge {
+  background-color: #F8F8F8;
+  color: #00A39B;
+  width: 35px;
+}
+
+/* Set up clickable rows and 'buttons' to indicate the table can be clicked */
+.clickable-row {
+  cursor: pointer;
+}
+
+.click-me {
+  background: #00A39B;
+  color: #F8F8F8;
+  height: 100%;
+  padding: 0px;
+  text-align: right;
+}
+
+.table-hover tbody tr:hover .click-me {
+  background: #1E1E1E;
+}
+
+/* Make sure icons in the header have a standard amount of space around them */
+.header-icon {
+  margin: 0px 3px;
+}
+
+/* Remove outline around selected links + buttons */
+a:active, a:focus {
+  outline: 0;
+  border: none;
+  -moz-outline-style: none;
+}
+
+/**********************************************
+* Bootstrap customizations below
+***********************************************/
+
+/* Change table hover color so it can be used in conjunction with
+table-striped */
+.table-hover tbody tr:hover td, .table-hover tbody tr:hover th {
+  background-color: #e6e6e6;
+}
+
+/* Restrict brand image size */
+.navbar-brand img {
+  height: 100%;
+}
+
+/* Improve jumbotron styling */
+.jumbotron {
+  color: #383838;
+  text-transform: capitalize;
+}
+
+.jumbotron h1 {
+  color: #1E1E1E;
+  font-weight: 700;
+  text-shadow: 1px 3px 1px rgba(0,0,0,0.3);
+}
+
+/* Get rid of padding on the ends of the header */
+.navbar-collapse {
+  padding: 0px;
+}
+
+/*Make the navbar collapse earlier so it doesnt become two overlapping columns
+as screen size shrinks*/
+@media (min-width: 768px) and (max-width: 1120px) {
+  .navbar-collapse.collapse {
+    display: none !important;
+  }
+
+  .navbar-collapse.collapse.in {
+    display: block !important;
+  }
+
+  .navbar-header .collapse, .navbar-toggle {
+    display: block !important;
+  }
+
+  .navbar-header {
+    float: none;
+  }
+}
+
+/*Change navbar color scheme to CAMH purple*/
+#find_session {
+  background-color: #6E298D;
+  color: #F8F8F8;
+}
+
+#find_session:hover {
+  background-color: #5b2374;
+}
+
+.navbar-default {
+  background-color: #6E298D;
+  border-color: #6E298D;
+  color: #F8F8F8;
+}
+
+.navbar-default .navbar-text {
+  color: #F8F8F8;
+}
+
+.navbar-default .navbar-brand {
+  color: #F8F8F8;
+}
+
+.navbar-default .navbar-brand:hover,
+.navbar-default .navbar-brand:focus {
+  color: #F8F8F8;
+}
+
+.navbar-default .navbar-nav > li:hover {
+  background-color: #5b2374;
+}
+
+.navbar-default .navbar-nav > li > .dropdown-menu {
+  background-color: #6e298d;
+}
+.navbar-default .navbar-nav > li > .dropdown-menu > li > a {
+  color: #F8F8F8;
+}
+.navbar-default .navbar-nav > li > .dropdown-menu > li > a:hover,
+.navbar-default .navbar-nav > li > .dropdown-menu > li > a:focus {
+  color: #F8F8F8;
+  background-color: #5b2374;
+}
+
+.navbar-default .navbar-nav > li > a {
+  color: #F8F8F8;
+}
+
+.navbar-default .navbar-nav > li > a:hover,
+.navbar-default .navbar-nav > li > a:focus {
+  color: #F8F8F8;
+}
+
+.navbar-default .navbar-nav > li > .dropdown-menu > li.divider {
+  background-color: #5b2374;
+}
+.navbar-default .navbar-nav .open .dropdown-menu > .active > a,
+.navbar-default .navbar-nav .open .dropdown-menu > .active > a:hover,
+.navbar-default .navbar-nav .open .dropdown-menu > .active > a:focus {
+  color: #F8F8F8;
+  background-color: #5b2374;
+}
+.navbar-default .navbar-nav > .active > a,
+.navbar-default .navbar-nav > .active > a:hover,
+.navbar-default .navbar-nav > .active > a:focus {
+  color: #F8F8F8;
+  background-color: #5b2374;
+}
+.navbar-default .navbar-nav > .open > a,
+.navbar-default .navbar-nav > .open > a:hover,
+.navbar-default .navbar-nav > .open > a:focus {
+  color: #F8F8F8;
+  background-color: #5b2374;
+}
+.navbar-default .navbar-toggle {
+  border-color: #5b2374;
+}
+.navbar-default .navbar-toggle:hover,
+.navbar-default .navbar-toggle:focus {
+  background-color: #5b2374;
+}
+.navbar-default .navbar-toggle .icon-bar {
+  background-color: #F8F8F8;
+}
+.navbar-default .navbar-collapse,
+.navbar-default .navbar-form {
+  border-color: #F8F8F8;
+}
+.navbar-default .navbar-link {
+  color: #F8F8F8;
+}
+.navbar-default .navbar-link:hover {
+  color: #F8F8F8;
+}
+
+@media (max-width: 767px) {
+  .navbar-default .navbar-nav .open .dropdown-menu > li > a {
+    color: #F8F8F8;
+  }
+  .navbar-default .navbar-nav .open .dropdown-menu > li > a:hover,
+  .navbar-default .navbar-nav .open .dropdown-menu > li > a:focus {
+    color: #F8F8F8;
+  }
+  .navbar-default .navbar-nav .open .dropdown-menu > .active > a,
+  .navbar-default .navbar-nav .open .dropdown-menu > .active > a:hover,
+  .navbar-default .navbar-nav .open .dropdown-menu > .active > a:focus {
+    color: #F8F8F8;
+    background-color: #5b2374;
   }
 }
