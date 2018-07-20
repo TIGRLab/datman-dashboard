@@ -1,12 +1,23 @@
+:root {
+  --light-text: #F8F8F8;      /* Slightly off white */
+  --dark-text: #383838;       /* Slightly gray black */
+  --dark-background: #58595B; /* Dark gray from CAMH's black palette */
+  --theme-main: #6E298D;      /* CAMH purple */
+  --theme-dark: #5B2374;      /* Darker purple for highlight on hover etc. */
+  --theme-light: #904B9C;     /* Lighter purple from CAMH palette */
+  --alt-theme-main: #00A39B;  /* CAMH teal */
+  --alt-theme-light: #7DCBD5; /* Lighter teal from CAMH palette */
+}
+
 body {
   /*Add padding so the footer doesnt overlap the content*/
   padding-bottom: 70px;
-  color: #383838;
+  color: var(--dark-text);
 }
 
 thead {
-  color: #F8F8F8;
-  background-color: #00A39B;
+  color: var(--light-text);
+  background-color: var(--alt-theme-main);
   font-size: 1.6rem;
   font-weight: 700;
 }
@@ -32,7 +43,7 @@ thead {
 
 /* Style badge on 'new-qc' labels */
 .new-qc {
-  background-color: #00A39B;
+  background-color: var(--alt-theme-main);
   float: right;
   width: 80px;
   height: 100%;
@@ -42,8 +53,8 @@ thead {
 }
 
 .new-qc .badge {
-  background-color: #F8F8F8;
-  color: #00A39B;
+  background-color: var(--light-text);
+  color: var(--alt-theme-main);
   width: 35px;
 }
 
@@ -53,15 +64,15 @@ thead {
 }
 
 .click-me {
-  background: #7dcbd5;
-  color: #F8F8F8;
+  background: var(--alt-theme-light);
+  color: var(--light-text);
   height: 100%;
   padding: 0px;
   text-align: right;
 }
 
 .table-hover tbody tr:hover .click-me {
-  background: #00A39B;
+  background: var(--alt-theme-main);
 }
 
 /* Make sure icons in the header have a standard amount of space around them */
@@ -93,15 +104,13 @@ table-striped */
 
 /* Improve jumbotron styling */
 .jumbotron {
-  /* color: #383838; */
-  color: #F8F8F8;
-  background-color: #58595b;
+  color: var(--light-text);
+  background-color: var(--dark-background);
   text-transform: capitalize;
 }
 
 .jumbotron h1 {
-  /* color: #1E1E1E; */
-  color: #F8F8F8;
+  color: var(--light-text);
   font-weight: 700;
   text-shadow: 1px 3px 1px rgba(0,0,0,0.3);
 }
@@ -133,112 +142,112 @@ as screen size shrinks*/
 
 /*Change navbar color scheme to CAMH purple*/
 #find_session {
-  background-color: #6E298D;
-  color: #F8F8F8;
+  background-color: var(--theme-main);
+  color: var(--light-text);
 }
 
 #find_session:hover {
-  background-color: #5b2374;
+  background-color: var(--theme-dark);
 }
 
 .navbar-default {
-  background-color: #6E298D;
-  border-color: #6E298D;
-  color: #F8F8F8;
+  background-color: var(--theme-main);
+  border-color: var(--theme-main);
+  color: var(--light-text);
 }
 
 .navbar-default .navbar-text {
-  color: #F8F8F8;
+  color: var(--light-text);
 }
 
 .navbar-default .navbar-brand {
-  color: #F8F8F8;
+  color: var(--light-text);
 }
 
 .navbar-default .navbar-brand:hover,
 .navbar-default .navbar-brand:focus {
-  color: #F8F8F8;
+  color: var(--light-text);
 }
 
 .navbar-default .navbar-nav > li:hover {
-  background-color: #5b2374;
+  background-color: var(--theme-dark);
 }
 
 .navbar-default .navbar-nav > li > .dropdown-menu {
-  background-color: #6e298d;
+  background-color: var(--theme-main);
 }
 .navbar-default .navbar-nav > li > .dropdown-menu > li > a {
-  color: #F8F8F8;
+  color: var(--light-text);
 }
 .navbar-default .navbar-nav > li > .dropdown-menu > li > a:hover,
 .navbar-default .navbar-nav > li > .dropdown-menu > li > a:focus {
-  color: #F8F8F8;
-  background-color: #5b2374;
+  color: var(--light-text);
+  background-color: var(--theme-dark);
 }
 
 .navbar-default .navbar-nav > li > a {
-  color: #F8F8F8;
+  color: var(--light-text);
 }
 
 .navbar-default .navbar-nav > li > a:hover,
 .navbar-default .navbar-nav > li > a:focus {
-  color: #F8F8F8;
+  color: var(--light-text);
 }
 
 .navbar-default .navbar-nav > li > .dropdown-menu > li.divider {
-  background-color: #5b2374;
+  background-color: var(--theme-dark);
 }
 .navbar-default .navbar-nav .open .dropdown-menu > .active > a,
 .navbar-default .navbar-nav .open .dropdown-menu > .active > a:hover,
 .navbar-default .navbar-nav .open .dropdown-menu > .active > a:focus {
-  color: #F8F8F8;
-  background-color: #5b2374;
+  color: var(--light-text);
+  background-color: var(--theme-dark);
 }
 .navbar-default .navbar-nav > .active > a,
 .navbar-default .navbar-nav > .active > a:hover,
 .navbar-default .navbar-nav > .active > a:focus {
-  color: #F8F8F8;
-  background-color: #5b2374;
+  color: var(--light-text);
+  background-color: var(--theme-dark);
 }
 .navbar-default .navbar-nav > .open > a,
 .navbar-default .navbar-nav > .open > a:hover,
 .navbar-default .navbar-nav > .open > a:focus {
-  color: #F8F8F8;
-  background-color: #5b2374;
+  color: var(--light-text);
+  background-color: var(--theme-dark);
 }
 .navbar-default .navbar-toggle {
-  border-color: #5b2374;
+  border-color: var(--theme-dark);
 }
 .navbar-default .navbar-toggle:hover,
 .navbar-default .navbar-toggle:focus {
-  background-color: #5b2374;
+  background-color: var(--theme-dark);
 }
 .navbar-default .navbar-toggle .icon-bar {
-  background-color: #F8F8F8;
+  background-color: var(--light-text);
 }
 .navbar-default .navbar-collapse,
 .navbar-default .navbar-form {
-  border-color: #F8F8F8;
+  border-color: var(--light-text);
 }
 .navbar-default .navbar-link {
-  color: #F8F8F8;
+  color: var(--light-text);
 }
 .navbar-default .navbar-link:hover {
-  color: #F8F8F8;
+  color: var(--light-text);
 }
 
 @media (max-width: 767px) {
   .navbar-default .navbar-nav .open .dropdown-menu > li > a {
-    color: #F8F8F8;
+    color: var(--light-text);
   }
   .navbar-default .navbar-nav .open .dropdown-menu > li > a:hover,
   .navbar-default .navbar-nav .open .dropdown-menu > li > a:focus {
-    color: #F8F8F8;
+    color: var(--light-text);
   }
   .navbar-default .navbar-nav .open .dropdown-menu > .active > a,
   .navbar-default .navbar-nav .open .dropdown-menu > .active > a:hover,
   .navbar-default .navbar-nav .open .dropdown-menu > .active > a:focus {
-    color: #F8F8F8;
-    background-color: #5b2374;
+    color: var(--light-text);
+    background-color: var(--theme-dark);
   }
 }
