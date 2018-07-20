@@ -93,14 +93,28 @@ table-striped */
 
 /* Improve jumbotron styling */
 .jumbotron {
-  color: #383838;
+  /* color: #383838; */
+  color: #F8F8F8;
+  background-color: #6E298D;
   text-transform: capitalize;
 }
 
 .jumbotron h1 {
-  color: #1E1E1E;
+  /* color: #1E1E1E; */
+  color: #F8F8F8;
   font-weight: 700;
   text-shadow: 1px 3px 1px rgba(0,0,0,0.3);
+}
+
+#jumbo-logo {
+  width: 100px;
+  height: 100px;
+  float: right;
+}
+
+#jumbo-logo img {
+  max-width: 100%;
+  max-height: 100%;
 }
 
 /* Get rid of padding on the ends of the header */

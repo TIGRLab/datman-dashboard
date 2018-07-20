@@ -5,9 +5,10 @@
   {% include 'flash.html' %}
     <div id="home-body">
       <div class="jumbotron">
-        <h1>Kimel Lab QC Monitor</h1>
+        <h1>Kimel TIGR Lab MR Quality Control</h1>
           <p class="lead"> Monitoring {{ session_count }} Sessions for {{ study_count }} Studies.</p>
         </h1>
+        <span id="jumbo-logo"><img alt="Brand" src="/static/images/camh_logo_white.png"></span>
       </div>
       {% if studies|count > 0 %}
       <table class="table table-striped table-hover">
