@@ -14,16 +14,24 @@
         <thead>
           <tr>
             <td>Nickname</td>
+            <td></td>
             <td>Study Name</td>
-            <td># of Sessions</td>
+            <td align="right"># of Sessions</td>
           </tr>
         </thead>
         <tbody>
           {% for study in studies %}
-          <tr>
-            <td><a href="{{ url_for('study', study_id=study.id) }}"> {{ study.nickname }}</a></td>
-            <td><a href="{{ url_for('study', study_id=study.id) }}"> {{ study.name }}</a></td>
-            <td><center>{{study.sessions|count}}</center></td>
+          <tr class="clickable-row" data-href="{{ url_for('study', study_id=study.id) }}">
+            <td> {{ study.nickname }} </td>
+            <td>
+              {% if study.new_sessions() %}
+                <span class="label label-primary new-qc">New
+                  <span class="badge">{{ study.new_sessions() }}</span>
+                </span>
+              {% endif %}
+            </td>
+            <td>{{ study.name }}</a></td>
+            <td align="right">{{ study.sessions|count }}</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -32,4 +40,10 @@
       <h3>You do not have access to any studies. Please contact an administrator to receive access.</h3>
       {% endif %}
     </div>
+    <script>
+      $('.clickable-row').on("click", function(e) {
+        e.stopPropagation();
+        document.location = $(this).attr('data-href');
+      });
+    </script>
 {% endblock %}

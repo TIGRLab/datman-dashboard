@@ -182,6 +182,15 @@ class Study(db.Model):
 
         return(len(sessions))
 
+    def new_sessions(self):
+        new = 0
+        for session in self.sessions:
+            if (not session.is_current_qcd() and
+                    not session.is_phantom and
+                    session.scan_count() > 0):
+                new += 1
+        return new
+
 
 class Site(db.Model):
     __tablename__ = 'sites'

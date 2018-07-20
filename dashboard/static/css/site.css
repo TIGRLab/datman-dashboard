@@ -26,6 +26,27 @@ thead {
   margin-right: auto;
 }
 
+/* Style badge on 'new-qc' labels */
+.new-qc {
+  background-color: #00A39B;
+  float: right;
+  width: 80px;
+  height: 100%;
+  text-align: left;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.new-qc .badge {
+  background-color: #F8F8F8;
+  color: #00A39B;
+  width: 35px;
+}
+
+.clickable-row {
+  cursor: pointer;
+}
+
 /* Remove outline around selected links + buttons */
 a:active, a:focus {
   outline: 0;
@@ -57,7 +78,7 @@ table-striped */
 .jumbotron h1 {
   color: #1E1E1E;
   font-weight: 700;
-  text-shadow: 1px 3px rgba(0,0,0,0.3);
+  text-shadow: 1px 3px 1px rgba(0,0,0,0.3);
 }
 
 /*Make the navbar collapse earlier so it doesnt become two overlapping columns
