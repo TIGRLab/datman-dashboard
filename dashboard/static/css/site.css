@@ -1,3 +1,4 @@
+/* Colors are defined here! */
 :root {
   --light-text: #F8F8F8;      /* Slightly off white */
   --dark-text: #383838;       /* Slightly gray black */
@@ -105,11 +106,15 @@ table-striped */
 /* Improve jumbotron styling */
 .jumbotron {
   color: var(--light-text);
-  background-color: var(--dark-background);
+  background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('/static/images/jumbotron-bg.png');
+  background-repeat: no-repeat;
+  background-size: 100%;
+  background-position: left center;
   text-transform: capitalize;
 }
 
 .jumbotron h1 {
+  font-size: 42px;
   color: var(--light-text);
   font-weight: 700;
   text-shadow: 1px 3px 1px rgba(0,0,0,0.3);
