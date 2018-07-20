@@ -21,6 +21,10 @@ thead {
   margin-right: auto;
 }
 
+#find_session_text {
+  width: 350px !important;
+}
+
 .center {
   margin-left: auto;
   margin-right: auto;
@@ -43,8 +47,26 @@ thead {
   width: 35px;
 }
 
+/* Set up clickable rows and 'buttons' to indicate the table can be clicked */
 .clickable-row {
   cursor: pointer;
+}
+
+.click-me {
+  background: #00A39B;
+  color: #F8F8F8;
+  height: 100%;
+  padding: 0px;
+  text-align: right;
+}
+
+.table-hover tbody tr:hover .click-me {
+  background: #1E1E1E;
+}
+
+/* Make sure icons in the header have a standard amount of space around them */
+.header-icon {
+  margin: 0px 3px;
 }
 
 /* Remove outline around selected links + buttons */
@@ -83,7 +105,7 @@ table-striped */
 
 /*Make the navbar collapse earlier so it doesnt become two overlapping columns
 as screen size shrinks*/
-@media (min-width: 768px) and (max-width: 991px) {
+@media (min-width: 768px) and (max-width: 1120px) {
   .navbar-collapse.collapse {
     display: none !important;
   }

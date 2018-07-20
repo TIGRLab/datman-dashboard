@@ -14,9 +14,12 @@
         <thead>
           <tr>
             <td>Nickname</td>
+            <!-- This empty column is for the 'new QC' labels  -->
             <td></td>
             <td>Study Name</td>
             <td align="right"># of Sessions</td>
+            <!-- This empty column is for the 'View More' indicator so they know rows are clickable  -->
+            <td></td>
           </tr>
         </thead>
         <tbody>
@@ -32,6 +35,9 @@
             </td>
             <td>{{ study.name }}</a></td>
             <td align="right">{{ study.sessions|count }}</td>
+            <td class="click-me">
+              <span> View More <span class="glyphicon glyphicon-menu-right"></span></span>
+            </td>
           </tr>
           {% endfor %}
         </tbody>
