@@ -26,6 +26,13 @@ thead {
   margin-right: auto;
 }
 
+/* Remove outline around selected links + buttons */
+a:active, a:focus {
+  outline: 0;
+  border: none;
+  -moz-outline-style: none;
+}
+
 /**********************************************
 * Bootstrap customizations below
 ***********************************************/
