@@ -53,7 +53,7 @@ thead {
 }
 
 .click-me {
-  background: #00A39B;
+  background: #7dcbd5;
   color: #F8F8F8;
   height: 100%;
   padding: 0px;
@@ -61,7 +61,7 @@ thead {
 }
 
 .table-hover tbody tr:hover .click-me {
-  background: #1E1E1E;
+  background: #00A39B;
 }
 
 /* Make sure icons in the header have a standard amount of space around them */
@@ -95,7 +95,7 @@ table-striped */
 .jumbotron {
   /* color: #383838; */
   color: #F8F8F8;
-  background-color: #6E298D;
+  background-color: #58595b;
   text-transform: capitalize;
 }
 
@@ -104,17 +104,6 @@ table-striped */
   color: #F8F8F8;
   font-weight: 700;
   text-shadow: 1px 3px 1px rgba(0,0,0,0.3);
-}
-
-#jumbo-logo {
-  width: 100px;
-  height: 100px;
-  float: right;
-}
-
-#jumbo-logo img {
-  max-width: 100%;
-  max-height: 100%;
 }
 
 /* Get rid of padding on the ends of the header */
