@@ -107,9 +107,9 @@ table-striped */
 .jumbotron {
   color: var(--light-text);
   background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('/static/images/jumbotron-bg.png');
-  background-repeat: no-repeat;
-  background-size: 100%;
   background-position: left center;
+  background-size: cover;
+  background-repeat: no-repeat;
   text-transform: capitalize;
 }
 
