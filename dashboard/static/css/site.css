@@ -2,7 +2,6 @@
 :root {
   --light-text: #F8F8F8;      /* Slightly off white */
   --dark-text: #383838;       /* Slightly gray black */
-  --dark-background: #58595B; /* Dark gray from CAMH's black palette */
   --theme-main: #6E298D;      /* CAMH purple */
   --theme-dark: #5B2374;      /* Darker purple for highlight on hover etc. */
   --theme-light: #904B9C;     /* Lighter purple from CAMH palette */
@@ -123,7 +122,6 @@ a:active, a:focus {
   font-family: 'Glyphicons Halflings';
   content: "\e114";     /* Chevron down */
   float: right;
-  color: var(--light-text);
 }
 
 .panel-heading.collapsed .chevron-toggle:after {
@@ -313,4 +311,8 @@ as screen size shrinks */
 
 .panel-primary {
   border-color: var(--theme-main);
+}
+
+.panel-primary > .panel-heading:hover {
+  background-color: var(--theme-dark);
 }
