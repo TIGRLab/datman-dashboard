@@ -146,8 +146,8 @@ table-striped */
   padding: 0px;
 }
 
-/*Make the navbar collapse earlier so it doesnt become two overlapping columns
-as screen size shrinks*/
+/* Make the navbar collapse earlier so it doesnt become two overlapping columns
+as screen size shrinks */
 @media (min-width: 768px) and (max-width: 1120px) {
   .navbar-collapse.collapse {
     display: none !important;
@@ -166,7 +166,7 @@ as screen size shrinks*/
   }
 }
 
-/*Change navbar color scheme to CAMH purple*/
+/* Color scheme of navbar and tables to match CAMH scheme */
 #find_session {
   background-color: var(--theme-main);
   color: var(--light-text);
