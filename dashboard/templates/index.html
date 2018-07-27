@@ -46,10 +46,4 @@
       <h3>You do not have access to any studies. Please contact an administrator to receive access.</h3>
       {% endif %}
     </div>
-    <script>
-      $('.clickable-row').on("click", function(e) {
-        e.stopPropagation();
-        document.location = $(this).attr('data-href');
-      });
-    </script>
 {% endblock %}

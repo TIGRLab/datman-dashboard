@@ -31,6 +31,11 @@ Most of the html in the divs is extracted into a snippet file and rendered
         </p>
     </div>
 
+    {% set pending_qc = study.outstanding_issues() %}
+    {% if pending_qc|count %}
+      {% include 'qc_snip.html' %}
+    {% endif %}
+
     <div role="navigation">
       <!-- THE LIST OF TAB HEADERS STARTS HERE -->
       <ul class="nav nav-tabs">
@@ -66,7 +71,6 @@ Most of the html in the divs is extracted into a snippet file and rendered
     <div class="tab-content">
       <!-- TAB CONTENT BEGINS HERE -->
       <div class="tab-pane active" id="overview">
-        {% include 'qc_snip.html' %}
         {% include 'study_overview_snip.html' %}
       </div>
       <div class="tab-pane" id="sessions">

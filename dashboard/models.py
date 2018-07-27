@@ -183,14 +183,32 @@ class Study(db.Model):
         return(len(sessions))
 
     def new_sessions(self):
+        """
+        Returns a count of all sessions that are ready for review and sign off
+        """
         new = 0
         for session in self.sessions:
-            if (not session.is_current_qcd() and
-                    not session.is_phantom and
-                    session.scan_count() > 0):
+            if (not session.is_current_qcd() and session.scan_count() > 0):
                 new += 1
         return new
 
+    def outstanding_issues(self):
+        """
+        Returns a list of sessions with outstanding QC issues. This includes:
+            1. Sessions that need sign off still
+            2. Sessions missing a redcap record (where one is expected)
+            3. Sessions with a redcap record but no imaging
+            4. Sessions with a new repeat session that need their QC page
+               regenerated (these also need sign off)
+        """
+        session_list = []
+        for session in self.sessions:
+            if (not session.is_current_qcd() or
+                    session.needs_rewrite() or
+                    session.needs_redcap_survey() or
+                    session.needs_scans()):
+                session_list.append(session)
+        return session_list
 
 class Site(db.Model):
     __tablename__ = 'sites'
@@ -244,7 +262,11 @@ class Session(db.Model):
                        self.site.name))
 
     def is_qcd(self):
-        """checks if session has (ever) been quality checked"""
+        """
+        Checks if session has (ever) been quality checked. Repeats that have
+        never been reviewed will not be picked up by this one. See
+        'is_current_qcd()' for an answer that takes repeats into account
+        """
         if self.cl_comment:
             return True
 
@@ -252,8 +274,33 @@ class Session(db.Model):
         """
         checks if the most recent repeat of a session has been quality checked
         """
-        if self.last_repeat_qcd == self.repeat_count:
-            return True
+        if not self.is_phantom:
+            return self.last_repeat_qcd == self.repeat_count
+        return True
+
+    def needs_rewrite(self):
+        """
+        Returns True if the QC page needs to be updated due to a new repeat session
+        """
+        if not self.is_current_qcd() and self.is_repeated:
+            return self.repeat_count > self.last_repeat_qc_generated
+        return False
+
+    def needs_redcap_survey(self):
+        """
+        Checks if a redcap survey is missing. Should be updated later to take
+        into account that some sites for some studies dont expect a redcap survey
+        """
+        if not self.is_phantom:
+            return not self.redcap_record
+        return False
+
+    def needs_scans(self):
+        """
+        Checks if a redcap record exists but no scan data. i.e. we havent received
+        data that we know we're expecting.
+        """
+        return self.redcap_record and self.scan_count() == 0
 
     def get_qc_doc(self):
         """Return the absolute path to the session qc doc if it exists"""

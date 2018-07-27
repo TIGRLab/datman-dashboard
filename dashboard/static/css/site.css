@@ -103,6 +103,22 @@ a:active, a:focus {
 * Bootstrap customizations below
 ***********************************************/
 
+/* Add a chevron toggle for panels */
+.panel-heading {
+  cursor: pointer;
+}
+
+.chevron-toggle:after {
+  font-family: 'Glyphicons Halflings';
+  content: "\e114";     /* Chevron down */
+  float: right;
+  color: var(--light-text);
+}
+
+.panel-heading.collapsed .chevron-toggle:after {
+  content: "\e113";       /* Chevron up */
+}
+
 /* Remove top border of tables without a head */
 .table > tbody > tr:first-child > td {
   border: none;

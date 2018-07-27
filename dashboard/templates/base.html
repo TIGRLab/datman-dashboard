@@ -127,5 +127,14 @@
     <script src="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.js"></script>
     <script src="/static/js/plot.js"></script>
 
+    <!-- Allows an entire table row to be made clickable with the '.clickable-row'
+    class and data-href target -->
+    <script>
+      $('.clickable-row').on("click", function(e) {
+        e.stopPropagation();
+        document.location = $(this).attr('data-href');
+      });
+    </script>
+
   </body>
 </html>
