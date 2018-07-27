@@ -87,6 +87,11 @@ thead {
   background: var(--alt-theme-main);
 }
 
+.qc-warnings {
+  display: inline-block;
+  min-width: 100px;
+}
+
 /* Make sure icons in the header have a standard amount of space around them */
 .header-icon {
   margin: 0px 3px;
