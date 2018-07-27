@@ -103,6 +103,16 @@ a:active, a:focus {
 * Bootstrap customizations below
 ***********************************************/
 
+/* Remove top border of tables without a head */
+.table > tbody > tr:first-child > td {
+  border: none;
+}
+
+/* Ensure top border exists on tables with a header */
+.table > thead + tbody > tr:first-child > td {
+  border-top: 1px solid #ddd;
+}
+
 /* Change table hover color so it can be used in conjunction with
 table-striped */
 .table-hover tbody tr:hover td, .table-hover tbody tr:hover th {
