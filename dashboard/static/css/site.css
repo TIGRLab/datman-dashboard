@@ -37,6 +37,12 @@ thead {
   width: 350px !important;
 }
 
+#qc-panel {
+  width: 60%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .scrollable-menu {
   height: auto;
   max-height: 200px;
@@ -46,6 +52,11 @@ thead {
 .study-menu {
   /* Make study list menu same width as dropdown button */
   min-width: 100%;
+}
+
+.qc-warnings {
+  display: inline-block;
+  min-width: 100px;
 }
 
 .center {
@@ -85,11 +96,6 @@ thead {
 
 .table-hover tbody tr:hover .click-me {
   background: var(--alt-theme-main);
-}
-
-.qc-warnings {
-  display: inline-block;
-  min-width: 100px;
 }
 
 /* Make sure icons in the header have a standard amount of space around them */
@@ -187,7 +193,7 @@ as screen size shrinks */
   }
 }
 
-/* Color scheme of navbar and tables to match CAMH scheme */
+/* Color scheme of navbar, tables and panel-primary to match CAMH scheme */
 #find_session {
   background-color: var(--theme-main);
   color: var(--light-text);
@@ -297,4 +303,14 @@ as screen size shrinks */
     color: var(--light-text);
     background-color: var(--theme-dark);
   }
+}
+
+.panel-primary > .panel-heading {
+  color: var(--light-text);
+  background-color: var(--theme-main);
+  border-color: var(--theme-main);
+}
+
+.panel-primary {
+  border-color: var(--theme-main);
 }
