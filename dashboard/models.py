@@ -25,11 +25,6 @@ These following lines define many - many links between tables.
 i.e. a study can have many sites and a site can be part of many studies.
 This type of definition requires a _linking_ table in SQL.
 """
-study_site_table = db.Table('study_site',
-                            db.Column('study_id', db.Integer,
-                                      db.ForeignKey('studies.id')),
-                            db.Column('site_id', db.Integer,
-                                      db.ForeignKey('sites.id')))
 
 study_scantype_table = db.Table('study_scantypes',
                                 db.Column('study_id', db.Integer,
@@ -138,8 +133,7 @@ class Study(db.Model):
     name = db.Column(db.String(64))
     scantypes = db.relationship('ScanType', secondary=study_scantype_table,
                                 back_populates='studies')
-    sites = db.relationship('Site', secondary=study_site_table,
-                            back_populates='studies')
+    sites = db.relationship("StudySite", back_populates="study")
     sessions = db.relationship('Session')
     description = db.Column(db.String(1024))
     fullname = db.Column(db.String(1024))
@@ -215,8 +209,7 @@ class Site(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), index=True, unique=True)
-    studies = db.relationship('Study', secondary=study_site_table,
-                              back_populates='sites')
+    studies = db.relationship("StudySite", back_populates="site")
     sessions = db.relationship('Session')
 
     def __repr__(self):
@@ -291,7 +284,7 @@ class Session(db.Model):
         Checks if a redcap survey is missing. Should be updated later to take
         into account that some sites for some studies dont expect a redcap survey
         """
-        if not self.is_phantom:
+        if not self.is_phantom and self.redcap_expected():
             return not self.redcap_record
         return False
 
@@ -301,6 +294,17 @@ class Session(db.Model):
         data that we know we're expecting.
         """
         return self.redcap_record and self.scan_count() == 0
+
+    def redcap_expected(self):
+        # Get list of studies that this site is associated with
+        site_studies = self.site.studies
+        cur_study = [study for study in site_studies if study.study_id == self.study_id]
+        if not cur_study:
+            # Error in database records, so report and return False
+            logger.error("Record for site {} and study {} doesnt exist in "
+                    "study_site table".format(self.site_id, self.study_id))
+            return False
+        return cur_study[0].uses_redcap
 
     def get_qc_doc(self):
         """Return the absolute path to the session qc doc if it exists"""
@@ -624,3 +628,15 @@ class Session_Scan(db.Model):
     session = db.relationship("Session", back_populates="scans")
     # not a typo ",None" needed to enforce tuple structure
     __table_args__ = (UniqueConstraint(session_id, scan_id, name="session_scan"),None)
+
+class StudySite(db.Model):
+    __tablename__ = "study_site"
+
+    # These arent actually primary keys, but are valid candidate keys to uniquely identify a row.
+    # Primary key must be specified for SQLAlchemy to map to the database. - Dawn
+    study_id = db.Column('study_id', db.Integer, db.ForeignKey('studies.id'), primary_key=True)
+    site_id = db.Column('site_id', db.Integer, db.ForeignKey('sites.id'), primary_key=True)
+    uses_redcap = db.Column('uses_redcap', db.Boolean, default=False)
+
+    site = db.relationship("Site", back_populates="studies")
+    study = db.relationship("Study", back_populates="sites")
