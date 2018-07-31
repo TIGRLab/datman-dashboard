@@ -360,12 +360,21 @@ def redcap_redirect(session_id):
     Used to provide a link from the session page to a redcap session complete record
     """
     session = Session.query.get(session_id)
-    redcap_url = '{}redcap_v{}/DataEntry/index.php?pid={}&page={}&id={}'
-    redcap_url = redcap_url.format(session.redcap_url,
-                                   session.redcap_version,
-                                   session.redcap_projectid,
-                                   session.redcap_instrument,
-                                   session.redcap_record)
+    if session.redcap_eventid:
+        redcap_url = '{}redcap_v{}/DataEntry/index.php?pid={}&id={}&event_id={}&page={}'
+        redcap_url = redcap_url.format(session.redcap_url,
+                                       session.redcap_version,
+                                       session.redcap_projectid,
+                                       session.redcap_record,
+                                       session.redcap_eventid
+                                       session.redcap_instrument)
+    else:
+        redcap_url = '{}redcap_v{}/DataEntry/index.php?pid={}&id={}&page={}'
+        redcap_url = redcap_url.format(session.redcap_url,
+                                       session.redcap_version,
+                                       session.redcap_projectid,
+                                       session.redcap_record,
+                                       session.redcap_instrument)
     return(redirect(redcap_url))
 
 @app.route('/scan', methods=["GET"])
