@@ -58,6 +58,24 @@
     </div>
   </div>
 
+  <br>
+
+  <form id="qc-comment" class="form-horizontal" action="" method="post" name="session_qc">
+    <div class="form-group" style="width: 100%;">
+      <div class="col-xs-2">
+        <h4>QC Comment</h4>
+      </div>
+      <div class="col-xs-9">
+        {{ form.hidden_tag() }}
+        {{ form.cl_comment(class_="form-control") }}
+      </div>
+      <div class="col-xs-1">
+        <input class="btn btn-primary" type="submit" value="Update" id="btn_update">
+      </div>
+    </div>
+  </form>
+
+
   <div class="row">
     <h3>
       <div class="col-sm-2">
