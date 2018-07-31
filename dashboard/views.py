@@ -366,7 +366,7 @@ def redcap_redirect(session_id):
                                        session.redcap_version,
                                        session.redcap_projectid,
                                        session.redcap_record,
-                                       session.redcap_eventid
+                                       session.redcap_eventid,
                                        session.redcap_instrument)
     else:
         redcap_url = '{}redcap_v{}/DataEntry/index.php?pid={}&id={}&page={}'
