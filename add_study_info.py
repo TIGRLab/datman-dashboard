@@ -1,4 +1,4 @@
-#!venv/bin/python
+#!/usr/bin/env python
 """
 Add extra study information into the database.
 Parses the datman config files for study information and updates
@@ -46,7 +46,7 @@ def main():
         contact_name = cfg.get_if_exists('study', ['PrimaryContact'])
         #Get the primary contact information
         if not contact_name:
-            logger.warning('Contact not set for study:{}.format(key)')
+            logger.warning('Contact not set for study:{}'.format(key))
         else:
             if Person.query.filter(Person.name == contact_name).count():
                 logger.debug('Getting person:{} from database'
