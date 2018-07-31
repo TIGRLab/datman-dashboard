@@ -42,20 +42,18 @@ thead {
   margin-right: auto;
 }
 
-/* Set the width of the QC Comment form itself relative to body container */
+/* Styling for the session page 'QC Comment' text area */
 #qc-comment {
-  width: 80%;
+  width: 100%;
+  padding-bottom: 5px;
+  margin-bottom: 10px;
+  resize: none;
+  border: 1px solid #D3D3D3;
 }
 
-/* Set the styling for the actual checklist comment text input */
-/*#cl_comment {
-  padding-right: 0px;
-  margin-left: 10px;
-  width: 70%;
-}*/
-
-.form-group > .well {
-  margin-bottom: 10px;
+.center {
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .session-menu {
@@ -78,13 +76,9 @@ thead {
   min-width: 100px;
 }
 
-.qc-warning-panel {
+.session-info {
   width: 80%;
-}
-
-.center {
-  margin-left: auto;
-  margin-right: auto;
+  margin: 20px 20px 20px 0px;
 }
 
 /* Style badge on 'new-qc' labels */

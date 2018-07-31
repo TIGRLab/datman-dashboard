@@ -53,57 +53,37 @@
     </div>
   </div>
 
-  <br>
+  <div class="session-info">
+    {% set doc_path = session.get_qc_doc() %}
+    {% if session.incidental_finding or session.needs_redcap_survey() or not doc_path %}
+      {% include 'session_warnings_snip.html' %}
+    {% endif %}
 
-  {% set doc_path = session.get_qc_doc() %}
-  {% if session.incidental_finding or session.needs_redcap_survey() or not doc_path %}
-    {% include 'session_warnings_snip.html' %}
-  {% endif %}
+    <form id="comment-form" class="form-inline" action="" method="post" name="session_qc">
+      <div class="form-group" style="width: 100%;">
 
-  <form id="qc-comment" class="form-inline" action="" method="post" name="session_qc">
-    <div class="form-group" style="width: 100%;">
-      <h4 style="display: inline-block">QC Comment</h4>
-      {% if session.is_qcd() %}
-        <div class="well" id="qc_comment">{{ session.cl_comment }}</div>
-      {% else %}
-        <div class="well" id="qc_comment">N/A - Participant not yet reviewed</div>
-      {% endif %}
-      <button class="pull-right btn btn-primary" id="edit_qc">
-        <span class="session-menu">Edit</span>
-        <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>
-      </button>
-    </div>
-  </form>
+        <h4>QC Comment</h4>
+
+        {% if session.is_qcd() %}
+          {% set initial_text = session.cl_comment %}
+        {% else %}
+          {% set initial_text = "N/A - Participant not yet reviewed" %}
+        {% endif %}
 
 
-  <div class="row">
-    <h3>
-      <div class="col-sm-2">
-        QC Comment:
-      </div>
-      <div class="col-sm-1">
-        <button type="button" class="btn btn-default" aria-label="Edit QC" id="edit_qc">
-          <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>
+
+        <textarea id="qc-comment" maxlength="1024">{{ initial_text }}</textarea>
+        <div class="pull-left" id="char-count"></div>
+
+        <button type="button" class="pull-right btn btn-primary" id="edit-qc">
+          <span class='session-menu'>Save</span>
+          <span class='glyphicon glyphicon-floppy-disk'></span>
         </button>
+
       </div>
-      <div class="col-sm-9 text-left">
-        <span class="collapse in text-left" id="qc_comment"><small>
-          {% if session.is_qcd() %}
-              {{ session.cl_comment }}
-          {% else %}
-              Not checked
-          {% endif %}
-        </small></span>
-        <span class="collapse" id="qc_form">
-          <form action="" method="post" name="session_qc">
-            {{ form.hidden_tag() }}
-            {{ form.cl_comment(width='100%') }}
-            <input type="submit" value="Update" id="btn_update">
-          </form>
-        </span>
-      </div>
-    </h3>
+    </form>
   </div>
+
   <div class="row">
     <table class="ui table">
       <thead>
@@ -124,52 +104,21 @@
   </div>
 </div>
 
-<script type="text/javascript">
-$('#edit_qc').bind('click', function(){
-  $('#qc_comment').collapse('toggle');
-  $('#qc_form').collapse('toggle');
-})
+<!-- Autosize version 4.0.2: Automatically adjusts textarea height as input is given. -->
+<!-- source: http://www.jacklmoore.com/autosize/ -->
+<script src="/static/js/autosize.min.js"></script>
 
-$("#print_brain").bind('click', function(){
-  alert('Coming soon!');
+<script type="text/javascript">
+
+autosize($('#qc-comment'));
+
+// Character counter for the comment text area
+$('#qc-comment').on('input', function() {
+  // Not hard-coded in case max length in database / form changes
+  var length = $(this)[0].maxLength;
+  var curLength = $(this).val().length;
+  $('#char-count').text(Math.max(0, length - curLength) + ' / ' + length);
 });
 
-$('.btn_blacklist').bind('click', function(){
-  window.location.href = "{{url_for('scan')}}/" + $(this).attr('value')
-})
-$('#delete_session').bind('click', function(){
-  window.location.href = "{{url_for('session',session_id=session.id, delete=True)}}";
-})
-$('#goto_issue').bind('click', function(){
-  window.location.href = "https://github.com/TIGRLab/admin/issues/{{session.gh_issue}}"
-})
-$('#create_issue').bind('click', function(){
-   /*ECMA6 import syntax that doesn't work on most browsers...probably better to move this to server
-  import Issue from "github-api";
-
-  var iss = new Issue("TIGRLab/admin",
-    {
-      //Removed token
-    token: ""
-  });
-  Issue.createIssue({
-    title: issTitle,
-    body: issDetails
-  });
- */
-var issTitle = prompt("Please enter a title for the issue:", "{{ session.name }}");
-if (issTitle === null) {
-  return;
-}
-var issBody = prompt("Please enter issue details:", "");
-if (issBody === null) {
-  return;
-}
-url = "{{url_for('create_issue', session_id=session.id)}}/" + encodeURIComponent(issTitle) + '/' + encodeURIComponent(issBody)
-window.location.href = url;
-})
-$('#flag_incidental').bind('click', function(){
-  window.location.href = "{{url_for('session', session_id=session.id, flag_finding=True) }}";
-})
 </script>
 {% endblock %}

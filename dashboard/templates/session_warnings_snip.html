@@ -8,21 +8,21 @@
       <div>
         <h4 style="display: inline-block;">
           <span class="label label-danger"><span class="glyphicon glyphicon-exclamation-sign"></span> Incidental Finding Noted: </span>
-        </h4> See project folder on T: drive for more infomation
+        </h4> See project folder on "T:" drive for more infomation
       </div>
     {% endif %}
     {% if not doc_path %}
       <div>
         <h4 style="display: inline-block;">
           <span class="label label-warning"><span class="glyphicon glyphicon-info-sign"></span> No QC Doc available: </span>
-        </h4> If more than three days have passed since scan data was discovered please create a github Issue.
+        </h4> If more than three days have passed since scan data was discovered please create a GitHub issue.
       </div>
     {% endif %}
     {% if session.needs_redcap_survey() %}
       <div>
         <h4 style="display: inline-block;">
           <span class="label label-warning"><span class="glyphicon glyphicon-info-sign"></span> No REDCap record available: </span>
-        </h4> A REDCap survey is expected for this site and study but no data has been found.
+        </h4> A REDCap survey is expected for this site and study but no data have been found.
       </div>
     {% endif %}
   </div>
