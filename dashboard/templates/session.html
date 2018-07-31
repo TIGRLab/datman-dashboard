@@ -8,75 +8,56 @@
 <div class="container">
 
   <div class="bd-pageheader jumbotron">
-    <div class="row">
-      <div class="col-md-10">
-        <h1>{{ session.name }}</h1>
-        {% if session.is_phantom %}
-          <p class="lead">Phantom</p>
-        {% endif %}
-      </div>
-      <div class="col-md-2">
-        {% if current_user.is_admin %}
-          <div class="row">
-            <button class="btn btn-primary btn-block" id="print_brain">Print Brain</button>
-          </div>
-          <div class="row">
-            <button class="btn btn-primary btn-block" id="delete_session">Delete Session</button>
-          </div>
-        {% endif %}
-          <div class="row">
-            {% if session.gh_issue %}
-              <button class="btn btn-primary btn-block" id="goto_issue" style="white-space: normal;">View GitHub Issue</button>
-            {% else %}
-              <button class="btn btn-primary btn-block" id="create_issue" style="white-space: normal;">Create GitHub Issue</button>
-            {% endif %}
-          </div>
-          {% if not session.incidental_finding %}
-            <div class="row">
-              <button class="btn btn-primary btn-block" id="flag_incidental" style="white-space: normal;">Flag Incidental finding</button>
-            </div>
-          {% endif %}
-      </div>
-    </div>
+    <h1>{{ session.name }}</h1>
+    {% if session.is_phantom %}
+      <p class="lead">Phantom</p>
+    {% endif %}
   </div>
 
-
-  {% if session.incidental_finding %}
-  <div class="row">
-    <div class="col-sm-12">
-      <span class="warning">
-        <h3>Incidental Finding Noted. <small>See project folder on T: drive for more infomation</small></h3>
-      </span>
-    </div>
-  </div>
+  {% set doc_path = session.get_qc_doc() %}
+  {% if session.incidental_finding or session.needs_redcap_survey() or not doc_path %}
+    {% include 'session_warnings_snip.html' %}
   {% endif %}
-  <div class="row">
-    <div class="col-sm-12">
-      <h3>
-        {% if session.get_qc_doc() %}
-        QC Doc:
-          <a href="{{ session.get_qc_doc() }}" target='#'>{{ session.name }}</a>
-        {% else %}
-          <span class="label label-warning">No QC Doc available</span>
-        {% endif %}
-      </h3>
+
+  <div role="navigation">
+    <div class="btn-group" role="group">
+      <a class="btn btn-primary" href="{{ url_for('study', study_id=session.study_id) }}">
+        <span class="glyphicon glyphicon-arrow-left"></span>
+        <span class="session-menu">Return to {{ session.study.nickname }}</span>
+      </a>
+    </div>
+
+    <div class="btn-group-vertical pull-right" role="group">
+      {% if current_user.is_admin %}
+        <a class="button btn btn-primary" id="print_brain">
+          <span class="pull-right glyphicon glyphicon-print"></span>
+          <span class="session-menu">Print Brain</span>
+        </a>
+        <a class="button btn btn-primary" id="delete_session">
+          <span class="pull-right glyphicon glyphicon-trash"></span>
+          <span class="session-menu">Delete Session</span>
+        </a>
+      {% endif %}
+      {% if session.gh_issue %}
+        <a class="button btn btn-primary" id="goto_issue">
+          <span class="pull-right glyphicon glyphicon-arrow-right"></span>
+          <span class="session-menu">Go to GitHub Issue</span>
+        </a>
+      {% else %}
+        <a class="button btn btn-primary" id="create_issue">
+          <span class="pull-right glyphicon glyphicon-edit"></span>
+          <span class="session-menu">Create GitHub Issue</span>
+        </a>
+      {% endif %}
+      {% if not session.incidental_finding %}
+        <a class="button btn btn-primary" id="flag_incidental">
+          <span class="pull-right glyphicon glyphicon-flag"></span>
+          <span class="session-menu">Flag Incidental Finding</span>
+        </a>
+      {% endif %}
     </div>
   </div>
-  <div class="row">
-    <div class="col-sm-12">
-      <h3>
-        {% if session.redcap_url %}
-          Redcap comment:
-          <small>
-            {{ session.redcap_comment }}
-            <a href="{{ url_for('redcap_redirect', session_id=session.id) }}">link</a>
-          </small>
-        {% else %}
-          <span class="label label-warning">No Redcap record available</span>
-        {% endif %}
-      </h3>
-    </div>
-  </div>
+
   <div class="row">
     <h3>
       <div class="col-sm-2">
@@ -123,58 +104,54 @@
       </tbody>
     </table>
   </div>
-  <script type="text/javascript">
-  $("#print_brain").bind('click', function(){
-    alert('Coming soon!');
-  });
-  $('#edit_qc').bind('click', function(){
-    $('#qc_comment').collapse('toggle');
-    $('#qc_form').collapse('toggle');
-  })
-  $('.btn_blacklist').bind('click', function(){
-    window.location.href = "{{url_for('scan')}}/" + $(this).attr('value')
-  })
-  $('#delete_session').bind('click', function(){
-    window.location.href = "{{url_for('session',session_id=session.id, delete=True)}}";
-  })
-  $('#goto_issue').bind('click', function(){
-    window.location.href = "https://github.com/TIGRLab/admin/issues/{{session.gh_issue}}"
-  })
-  $('#create_issue').bind('click', function(){
-     /*ECMA6 import syntax that doesn't work on most browsers...probably better to move this to server
-    import Issue from "github-api";
-
-    var iss = new Issue("TIGRLab/admin",
-      {
-        //Removed token
-      token: ""
-    });
-    Issue.createIssue({
-      title: issTitle,
-      body: issDetails
-    });
-   */
-  var issTitle = prompt("Please enter a title for the issue:", "{{ session.name }}");
-  if (issTitle === null) {
-    return;
-  }
-  var issBody = prompt("Please enter issue details:", "");
-  if (issBody === null) {
-    return;
-  }
-  url = "{{url_for('create_issue', session_id=session.id)}}/" + encodeURIComponent(issTitle) + '/' + encodeURIComponent(issBody)
-  window.location.href = url;
-  })
-  $('#flag_incidental').bind('click', function(){
-    window.location.href = "{{url_for('session', session_id=session.id, flag_finding=True) }}";
-  })
-  </script>
-
-
-
-
-
-
-
 </div>
+
+<script type="text/javascript">
+$('#edit_qc').bind('click', function(){
+  $('#qc_comment').collapse('toggle');
+  $('#qc_form').collapse('toggle');
+})
+
+$("#print_brain").bind('click', function(){
+  alert('Coming soon!');
+});
+
+$('.btn_blacklist').bind('click', function(){
+  window.location.href = "{{url_for('scan')}}/" + $(this).attr('value')
+})
+$('#delete_session').bind('click', function(){
+  window.location.href = "{{url_for('session',session_id=session.id, delete=True)}}";
+})
+$('#goto_issue').bind('click', function(){
+  window.location.href = "https://github.com/TIGRLab/admin/issues/{{session.gh_issue}}"
+})
+$('#create_issue').bind('click', function(){
+   /*ECMA6 import syntax that doesn't work on most browsers...probably better to move this to server
+  import Issue from "github-api";
+
+  var iss = new Issue("TIGRLab/admin",
+    {
+      //Removed token
+    token: ""
+  });
+  Issue.createIssue({
+    title: issTitle,
+    body: issDetails
+  });
+ */
+var issTitle = prompt("Please enter a title for the issue:", "{{ session.name }}");
+if (issTitle === null) {
+  return;
+}
+var issBody = prompt("Please enter issue details:", "");
+if (issBody === null) {
+  return;
+}
+url = "{{url_for('create_issue', session_id=session.id)}}/" + encodeURIComponent(issTitle) + '/' + encodeURIComponent(issBody)
+window.location.href = url;
+})
+$('#flag_incidental').bind('click', function(){
+  window.location.href = "{{url_for('session', session_id=session.id, flag_finding=True) }}";
+})
+</script>
 {% endblock %}

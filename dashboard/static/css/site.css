@@ -42,6 +42,10 @@ thead {
   margin-right: auto;
 }
 
+.session-menu {
+  padding: 5px;
+}
+
 .scrollable-menu {
   height: auto;
   max-height: 200px;
