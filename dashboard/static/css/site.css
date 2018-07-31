@@ -42,8 +42,20 @@ thead {
   margin-right: auto;
 }
 
+/* Set the width of the QC Comment form itself relative to body container */
 #qc-comment {
   width: 80%;
+}
+
+/* Set the styling for the actual checklist comment text input */
+/*#cl_comment {
+  padding-right: 0px;
+  margin-left: 10px;
+  width: 70%;
+}*/
+
+.form-group > .well {
+  margin-bottom: 10px;
 }
 
 .session-menu {
@@ -64,6 +76,10 @@ thead {
 .qc-warnings {
   display: inline-block;
   min-width: 100px;
+}
+
+.qc-warning-panel {
+  width: 80%;
 }
 
 .center {
