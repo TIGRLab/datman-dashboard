@@ -63,8 +63,16 @@ thead {
   margin-left: 0px;
 }
 
+#papayaContainer0 {
+  margin-top: 30px !important;
+}
+
 .well {
   margin-bottom: 10px;
+}
+
+.tab-content {
+  margin-top: 20px;
 }
 
 .subject-warning-panel {

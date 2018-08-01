@@ -1,5 +1,8 @@
 {% if not scan.scantype.name in ['T1','T2'] %}
-  <span class="bg-warning">Only the first volume can be viewed for <i>time-series or DTI</i> type data.</span>
+  <h4>
+    <span class="label label-warning"><span class="glyphicon glyphicon-exclamation-sign"></span> Warning!</span>
+    Only the first volume can be viewed for <i>time-series or DTI</i> type data.
+  </h4>
 {% endif %}
 
 <script type="text/javascript">
@@ -9,6 +12,5 @@
     params["mainView"] = 'coronal';
     params["interpolation"] = true;
 </script>
-<div class="container">
-  <div class="papaya" data-params="params"></div>
-</div>
+
+<div class="papaya" data-params="params"></div>
