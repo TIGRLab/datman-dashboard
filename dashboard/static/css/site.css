@@ -43,7 +43,7 @@ thead {
 }
 
 /* Styling for the session page 'QC Comment' text area */
-#qc-comment {
+#cl_comment {
   width: 100%;
   padding-bottom: 5px;
   margin-bottom: 10px;

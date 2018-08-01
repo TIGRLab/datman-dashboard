@@ -61,25 +61,15 @@
 
     <form id="comment-form" class="form-inline" action="" method="post" name="session_qc">
       <div class="form-group" style="width: 100%;">
-
         <h4>QC Comment</h4>
-
-        {% if session.is_qcd() %}
-          {% set initial_text = session.cl_comment %}
-        {% else %}
-          {% set initial_text = "N/A - Participant not yet reviewed" %}
-        {% endif %}
-
-
-
-        <textarea id="qc-comment" maxlength="1024">{{ initial_text }}</textarea>
+        {{ form.hidden_tag() }}
+        <!-- cl_comment is a textarea with id 'cl_comment'. Max length for the database field is 1024 characters -->
+        {{ form.cl_comment(maxlength="1024", placeholder="N/A - participant not yet reviewed.") }}
         <div class="pull-left" id="char-count"></div>
-
-        <button type="button" class="pull-right btn btn-primary" id="edit-qc">
+        <button class="pull-right btn btn-primary" id="edit-qc">
           <span class='session-menu'>Save</span>
           <span class='glyphicon glyphicon-floppy-disk'></span>
         </button>
-
       </div>
     </form>
   </div>
@@ -104,16 +94,16 @@
   </div>
 </div>
 
-<!-- Autosize version 4.0.2: Automatically adjusts textarea height as input is given. -->
+<!-- Autosize version 4.0.2: Automatically adjusts textarea height as input is added/deleted. -->
 <!-- source: http://www.jacklmoore.com/autosize/ -->
 <script src="/static/js/autosize.min.js"></script>
 
 <script type="text/javascript">
 
-autosize($('#qc-comment'));
+autosize($('#cl_comment'));
 
 // Character counter for the comment text area
-$('#qc-comment').on('input', function() {
+$('#cl_comment').on('input', function() {
   // Not hard-coded in case max length in database / form changes
   var length = $(this)[0].maxLength;
   var curLength = $(this).val().length;
