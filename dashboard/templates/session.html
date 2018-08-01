@@ -35,7 +35,7 @@
       {% endif %}
       {% if session.gh_issue %}
         <a class="button btn btn-primary" id="goto_issue">
-          <span class="pull-right glyphicon glyphicon-arrow-right"></span>
+          <span class="pull-right glyphicon glyphicon-share-alt"></span>
           <span class="session-menu">Go to GitHub Issue</span>
         </a>
       {% else %}
@@ -59,6 +59,18 @@
       {% include 'session_warnings_snip.html' %}
     {% endif %}
 
+    {% if session.redcap_url %}
+      <div class="redcap-survey">
+        <h4>REDCap comment</h4>
+        <div class="well">
+          {{ session.redcap_comment }}
+        </div>
+        <a href="{{ url_for('redcap_redirect', session_id=session.id) }}" class="pull-right btn btn-primary">
+          <span class="session-menu">View Survey </span><span class="glyphicon glyphicon-share-alt"></span>
+        </a>
+      </div>
+    {% endif %}
+
     <form id="comment-form" class="form-inline" action="" method="post" name="session_qc">
       <div class="form-group" style="width: 100%;">
         <h4>QC Comment</h4>
@@ -73,6 +85,13 @@
       </div>
     </form>
   </div>
+
+  {% if doc_path %}
+    <a href="{{ doc_path }}" class="btn btn-primary" id="doc-page">
+      <span class="session-menu">View HTML page</span>
+      <span class="glyphicon glyphicon-share-alt"></span>
+    </a>
+  {% endif %}
 
   <div class="row">
     <table class="ui table">
@@ -100,6 +119,7 @@
 
 <script type="text/javascript">
 
+// Turn on autosize plugin for cl_comment field
 autosize($('#cl_comment'));
 
 // Character counter for the comment text area
@@ -109,6 +129,39 @@ $('#cl_comment').on('input', function() {
   var curLength = $(this).val().length;
   $('#char-count').text(Math.max(0, length - curLength) + ' / ' + length);
 });
+
+// session menu button logic begins here
+$("#print_brain").bind('click', function(){
+  alert('"Coming soon!" - Us, 2+ years ago.');
+});
+
+$('.btn_blacklist').bind('click', function(){
+  window.location.href = "{{url_for('scan')}}/" + $(this).attr('value')
+})
+
+$('#delete_session').bind('click', function(){
+  window.location.href = "{{url_for('session',session_id=session.id, delete=True)}}";
+})
+
+$('#goto_issue').bind('click', function(){
+  window.location.href = "https://github.com/TIGRLab/admin/issues/{{session.gh_issue}}"
+})
+
+$('#create_issue').bind('click', function(){
+var issTitle = prompt("Please enter a title for the issue:", "{{ session.name }}");
+if (issTitle === null) {
+  return;
+}
+var issBody = prompt("Please enter issue details:", "");
+if (issBody === null) {
+  return;
+}
+url = "{{url_for('create_issue', session_id=session.id)}}/" + encodeURIComponent(issTitle) + '/' + encodeURIComponent(issBody)
+window.location.href = url;
+})
+$('#flag_incidental').bind('click', function(){
+  window.location.href = "{{url_for('session', session_id=session.id, flag_finding=True) }}";
+})
 
 </script>
 {% endblock %}

@@ -1,9 +1,9 @@
 <!-- Generates the panel of session-specific QC warnings -->
-<div class="panel panel-danger qc-warning-panel">
-  <div class="panel-heading" data-toggle="collapse" data-target="#qcwarnings">
+<div class="panel panel-danger subject-warning-panel">
+  <div class="panel-heading" data-toggle="collapse" data-target="#subjectwarnings">
     <h3 class="panel-title chevron-toggle"><span class="glyphicon glyphicon-warning-sign"></span> Warnings</h3>
   </div>
-  <div class="panel-body collapse in" id="qcwarnings">
+  <div class="panel-body collapse in" id="subjectwarnings">
     {% if session.incidental_finding %}
       <div>
         <h4 style="display: inline-block;">

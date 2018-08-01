@@ -42,6 +42,13 @@ thead {
   margin-right: auto;
 }
 
+/* Make the qc panel body scrollable if the list is too long */
+#qclist {
+  height: auto;
+  max-height: 300px;
+  overflow-x: hidden;
+}
+
 /* Styling for the session page 'QC Comment' text area */
 #cl_comment {
   width: 100%;
@@ -49,6 +56,14 @@ thead {
   margin-bottom: 10px;
   resize: none;
   border: 1px solid #D3D3D3;
+}
+
+#doc-page {
+  margin: 10px;
+}
+
+.subject-warning-panel {
+  margin-bottom: 30px;
 }
 
 .center {
