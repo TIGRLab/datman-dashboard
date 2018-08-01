@@ -7,7 +7,7 @@
 {% include("add_scan_comment_modal.html") %}
 <div class="container">
 
-  <div class="bd-pageheader jumbotron">
+  <div class="jumbotron">
     <h1>{{ session.name }}</h1>
     {% if session.is_phantom %}
       <p class="lead">Phantom</p>
@@ -63,7 +63,11 @@
       <div id="redcap-survey">
         <h4>REDCap comment</h4>
         <div class="well">
-          {{ session.redcap_comment }}
+          {% if session.redcap_comment %}
+            {{ session.redcap_comment }}
+          {% else %}
+            N / A - Empty comment field
+          {% endif %}
         </div>
         <a href="{{ url_for('redcap_redirect', session_id=session.id) }}" class="pull-right btn btn-primary">
           <span class="session-menu">View Survey </span><span class="glyphicon glyphicon-share-alt"></span>
@@ -88,7 +92,7 @@
 
   {% if doc_path %}
     <a href="{{ doc_path }}" class="btn btn-primary" id="doc-page">
-      <span class="session-menu">View HTML page</span>
+      <span class="session-menu">View QC page</span>
       <span class="glyphicon glyphicon-share-alt"></span>
     </a>
   {% endif %}
