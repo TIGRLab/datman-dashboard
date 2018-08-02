@@ -15,7 +15,7 @@ SQLALCHEMY_DATABASE_URI = 'postgresql://{user}:{pwd}@{srvr}/{db}'.format(user=os
                                                                                pwd=os.environ.get('POSTGRES_PASS'),
                                                                                srvr=os.environ.get('POSTGRES_SRVR'),
                                                                                db=os.environ.get('POSTGRES_DATABASE'))
-SQLALCHEMY_MIGRATE_REPO = os.path.join(basedir, 'db_repository')
+SQLALCHEMY_MIGRATE_REPO = os.path.join(basedir, 'migrations')
 SQLALCHEMY_TRACK_MODIFICATIONS = True #This should be turned off after development
 
 # mail server settings

@@ -21,6 +21,6 @@ read text
 if [ "$text" = "Yes" ];
 then
   rm dashboard.sqlite
-  rm -R db_repository
+  rm -R migrations
   python db_create.py
 fi
