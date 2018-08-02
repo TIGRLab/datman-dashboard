@@ -18,7 +18,7 @@
     <div class="btn-group" role="group">
       <a class="btn btn-primary" href="{{ url_for('study', study_id=session.study_id) }}">
         <span class="glyphicon glyphicon-arrow-left"></span>
-        <span class="session-menu">Return to {{ session.study.nickname }}</span>
+        <span class="button-text">Return to {{ session.study.nickname }}</span>
       </a>
     </div>
 
@@ -26,28 +26,28 @@
       {% if current_user.is_admin %}
         <a class="button btn btn-primary" id="print_brain">
           <span class="pull-right glyphicon glyphicon-print"></span>
-          <span class="session-menu">Print Brain</span>
+          <span class="button-text">Print Brain</span>
         </a>
         <a class="button btn btn-primary" id="delete_session">
           <span class="pull-right glyphicon glyphicon-trash"></span>
-          <span class="session-menu">Delete Session</span>
+          <span class="button-text">Delete Session</span>
         </a>
       {% endif %}
       {% if session.gh_issue %}
         <a class="button btn btn-primary" id="goto_issue">
           <span class="pull-right glyphicon glyphicon-share-alt"></span>
-          <span class="session-menu">Go to GitHub Issue</span>
+          <span class="button-text">Go to GitHub Issue</span>
         </a>
       {% else %}
         <a class="button btn btn-primary" id="create_issue">
           <span class="pull-right glyphicon glyphicon-edit"></span>
-          <span class="session-menu">Create GitHub Issue</span>
+          <span class="button-text">Create GitHub Issue</span>
         </a>
       {% endif %}
       {% if not session.incidental_finding %}
         <a class="button btn btn-primary" id="flag_incidental">
           <span class="pull-right glyphicon glyphicon-flag"></span>
-          <span class="session-menu">Flag Incidental Finding</span>
+          <span class="button-text">Flag Incidental Finding</span>
         </a>
       {% endif %}
     </div>
@@ -66,24 +66,24 @@
           {% if session.redcap_comment %}
             {{ session.redcap_comment }}
           {% else %}
-            N / A - Empty comment field
+            N/A - Survey comment field is empty
           {% endif %}
         </div>
         <a href="{{ url_for('redcap_redirect', session_id=session.id) }}" class="pull-right btn btn-primary">
-          <span class="session-menu">View Survey </span><span class="glyphicon glyphicon-share-alt"></span>
+          <span class="button-text">View Survey </span><span class="glyphicon glyphicon-share-alt"></span>
         </a>
       </div>
     {% endif %}
 
     <form id="comment-form" class="form-inline" action="" method="post" name="session_qc">
       <div class="form-group" style="width: 100%;">
-        <h4>QC Comment</h4>
+        <h4>QC Reviewer Comment</h4>
         {{ form.hidden_tag() }}
         <!-- cl_comment is a textarea with id 'cl_comment'. Max length for the database field is 1024 characters -->
-        {{ form.cl_comment(maxlength="1024", placeholder="N/A - participant not yet reviewed.") }}
+        {{ form.cl_comment(maxlength="1024", placeholder="Participant not yet reviewed. Add comment here") }}
         <div class="pull-left" id="char-count"></div>
         <button class="pull-right btn btn-primary" id="edit-qc">
-          <span class='session-menu'>Save</span>
+          <span class='button-text'>Save</span>
           <span class='glyphicon glyphicon-floppy-disk'></span>
         </button>
       </div>
@@ -92,7 +92,7 @@
 
   {% if doc_path %}
     <a href="{{ doc_path }}" class="btn btn-primary" id="doc-page">
-      <span class="session-menu">View QC page</span>
+      <span class="button-text">View QC page</span>
       <span class="glyphicon glyphicon-share-alt"></span>
     </a>
   {% endif %}
@@ -102,10 +102,10 @@
       <thead>
         <th>Series</th>
         <th>Tag</th>
-        <th>Repeat number</th>
+        <th>Repeat</th>
         <th>Description</th>
-        <th>Blacklisted</th>
-        <th>Analysis Comments</th>
+        <th>Blacklist Comment</th>
+        <th>Analysis Comment</th>
       </thead>
       <tbody>
         {% for scanlink in session.scans %}

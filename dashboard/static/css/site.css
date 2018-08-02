@@ -63,8 +63,15 @@ thead {
   margin-left: 0px;
 }
 
-#papayaContainer0 {
-  margin-top: 30px !important;
+#viewer-container {
+  /* Needs extra space for the buttons that appear above the papaya viewer */
+  padding-top: 30px;
+  padding-bottom: 10px;
+  margin: 5px 0px;
+}
+
+#scan-nav {
+  padding: 20px 0px;
 }
 
 .well {
@@ -84,7 +91,8 @@ thead {
   margin-right: auto;
 }
 
-.session-menu {
+/* Add a bit of styling around text in buttons with glyphicons  */
+.button-text {
   padding: 5px;
 }
 
@@ -146,13 +154,6 @@ thead {
 /* Make sure icons in the header have a standard amount of space around them */
 .header-icon {
   margin: 0px 3px;
-}
-
-/* Remove outline around selected links + buttons */
-a:active, a:focus {
-  outline: 0;
-  border: none;
-  -moz-outline-style: none;
 }
 
 /**********************************************

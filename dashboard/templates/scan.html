@@ -18,12 +18,16 @@
     </p>
   </div>
 
-  <div role="navigation">
+  <a href="{{ url_for('session',session_id=session.id) }}" class="btn btn-primary">
+    <span class="glyphicon glyphicon-arrow-left"></span>
+    <span class="button-text">Return to Session</span>
+  </a>
+
+  <div id="scan-nav" role="navigation">
     <ul class="nav nav-tabs">
       <li class="active"><a data-toggle="tab" href="#viewer">Viewer</a></li>
-      {% if scan.scantype.name == 'T1' %}
-        <li><a data-toggle="tab" href="#hcp">HCP QC</a></li>
-      {% endif %}
+      <!-- The 'HCP QC' tab used to be here, but it doesnt seemed to have ever
+      worked that well (if at all) and should probably be moved anyway - Dawn  -->
       <li><a data-toggle="tab" href="#comments">Comments</a></li>
     </ul>
   </div>
@@ -35,19 +39,13 @@
       </button>
       {% include 'scan_viewer.html' %}
     </div>
-    {% if scan.scantype == 'T1' %}
-      <div id="hcp" class="tab-pane fade in">
-        {% include 'hcp_qc.html' %}
-      </div>
-    {% endif %}
     <div id="comments" class="tab-pane fade in">
       {% include 'scan_comments_snip.html' %}
-      <button type="button" class="btn btn-info btn_add_scan_comments" data-scanid="{{ scan.id }}" data-scanname="{{ session_scan.name }}" data-toggle="modal" data-target="#add_scan_comment_modal">
+      <button type="button" class="pull-right btn btn-primary btn_add_scan_comments" data-scanid="{{ scan.id }}" data-scanname="{{ session_scan.name }}" data-toggle="modal" data-target="#add_scan_comment_modal">
         Add analysis comment
       </button>
     </div>
   </div>
-
 </div>
 
 <link rel="stylesheet" type="text/css" href="/static/css/papaya.css" />

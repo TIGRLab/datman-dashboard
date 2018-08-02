@@ -1,4 +1,4 @@
-<div id="qc-panel" class="panel panel-primary">
+<div id="qc-panel" class="panel panel-danger">
   <div class="panel-heading" data-toggle="collapse" data-target="#qclist">
     <h3 class="panel-title chevron-toggle">Outstanding QC</h3>
   </div>
@@ -14,7 +14,7 @@
               {% endif %}
               <!-- Add label for 'missing redcap' if required -->
               {% if session.needs_redcap_survey() %}
-                <span class="label qc-warnings label-primary" title="Participant does not have a REDCap survey even though this scan site collects them">Missing REDCap</span>
+                <span class="label qc-warnings label-info" title="Participant does not have a REDCap survey even though this scan site collects them">Missing REDCap</span>
               {% endif %}
               <!-- Add label for 'missing imaging' if required -->
               {% if session.needs_scans() %}
