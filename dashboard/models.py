@@ -341,19 +341,22 @@ class Session(db.Model):
         If session scans are linked to other projects, also deletes those records.
         """
         for scan_link in self.scans:
+            scan = scan_link.scan
+
+            # Delete the link between session and scans first
             if not scan_link.is_primary:
-                # just delete the link record
                 db.session.delete(scan_link)
             else:
-                scan = scan_link.scan
                 linked_scans = Session_Scan.query.filter(Session_Scan.scan_id == scan_link.scan_id)
                 if linked_scans.count() > 1:
                     flash('Scan is linked in other studies')
-                # first delete the scan, then the linking records
+                # Delete all the linking records
                 for link in linked_scans:
                     db.session.delete(link)
-                db.session.delete(scan)
-        # finally delete the current session
+
+        # Delete the scan record
+        db.session.delete(scan)
+        # Delete the session record
         db.session.delete(self)
         db.session.commit()
 
