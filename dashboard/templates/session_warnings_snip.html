@@ -1,0 +1,29 @@
+<!-- Generates the panel of session-specific QC warnings -->
+<div class="panel panel-danger subject-warning-panel">
+  <div class="panel-heading" data-toggle="collapse" data-target="#subjectwarnings">
+    <h3 class="panel-title chevron-toggle"><span class="glyphicon glyphicon-warning-sign"></span> Warnings</h3>
+  </div>
+  <div class="panel-body collapse in" id="subjectwarnings">
+    {% if session.incidental_finding %}
+      <div>
+        <h4 style="display: inline-block;">
+          <span class="label label-danger"><span class="glyphicon glyphicon-exclamation-sign"></span> Incidental Finding Noted: </span>
+        </h4> See project folder on "T:" drive for more infomation
+      </div>
+    {% endif %}
+    {% if not doc_path %}
+      <div>
+        <h4 style="display: inline-block;">
+          <span class="label label-warning"><span class="glyphicon glyphicon-info-sign"></span> No QC Doc available: </span>
+        </h4> If more than three days have passed since scan data was discovered please create a GitHub issue.
+      </div>
+    {% endif %}
+    {% if session.needs_redcap_survey() %}
+      <div>
+        <h4 style="display: inline-block;">
+          <span class="label label-warning"><span class="glyphicon glyphicon-info-sign"></span> No REDCap record available: </span>
+        </h4> A REDCap survey is expected for this site and study but no data have been found.
+      </div>
+    {% endif %}
+  </div>
+</div>
