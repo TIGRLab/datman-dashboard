@@ -1,7 +1,7 @@
 <!-- Code snippet for the overview tab on the study page -->
 <br>
 
-<div class="panel panel-info" title="Study Details retrieved from the 'dataset_description.json' file">
+<div class="panel panel-primary" title="Study Details retrieved from the 'dataset_description.json' file">
   <div class="panel-heading" data-toggle="collapse" data-target="#studyInfo">
     <h3 class="panel-title chevron-toggle">Study Details</h3>
   </div>
@@ -12,20 +12,23 @@
   </div>
 </div>
 
-<div class="panel panel-info" title="Updates the README file stored with the study data">
+<div class="panel panel-primary" title="Updates the README file stored with the study data">
   <div class="panel-heading" data-toggle="collapse" data-target="#studyReadme">
     <h3 class="panel-title chevron-toggle">Study README</h3>
   </div>
   <div class="panel-body collapse in" id="studyReadme">
-    <button type="button" class="btn btn-default" aria-label="Edit readme" id="edit_readme">
-      <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span> Edit
-    </button>
+    <div class="clearfix" style="margin-bottom: 5px;">
+      <button type="button" class="pull-right btn btn-primary" aria-label="Edit readme" id="edit_readme">
+        <span class="button-text">Edit</span>
+        <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>
+      </button>
+    </div>
 
-    <form action="" method="post" name="readme">
+    <form action="" method="post" name="readme" id="readme">
       {{ form.hidden_tag() }}
       {{ form.readme_txt }}
-      <input type="submit" value="Update" id="btn_update">
     </form>
+
   </div>
 </div>
 
@@ -37,20 +40,18 @@ $(function(){
                                   autosave: {enabled: false}});
   simplemde.togglePreview();
   $(".editor-toolbar").hide();
-  $("#btn_update").hide();
 
   $("#edit_readme").click(function(){
+    var save_html = "<span class='button-text'>Save</span><span class='glyphicon glyphicon-floppy-disk'></span>";
+
     if (simplemde.isPreviewActive()){
       //currently in preview mode, lets open for editing
       simplemde.togglePreview();
       $(".editor-toolbar").show();
-      $("#btn_update").show();
+      $(this).html(save_html);
     } else {
-      //currently in edit mode, lets switch to preview
-      simplemde.togglePreview();
-      $(".editor-toolbar").hide();
-      $("#btn_update").hide();
-  }
+      document.getElementById("readme").submit();
+    }
   });
 });
 </script>
