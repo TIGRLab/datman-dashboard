@@ -313,7 +313,7 @@ export DM_SYSTEM=YOUR-SYSTEM-NAME-HERE
 # Add datman to your paths
 export PATH=<path to datman/datman folder>:$PATH
 export PATH=<path to datman/bin folder>:$PATH
-export PYTHONPATH=<path to datman/datman folder>:$PYTHONPATH
+export PYTHONPATH=<path to datman folder>:$PYTHONPATH
 # Add dashboard scripts to your paths
 export PATH=<path to dashboard here>:$PATH
 export PYTHONPATH=<path to dashboard here>:$PYTHONPATH
