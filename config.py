@@ -24,12 +24,13 @@ MAIL_PORT = 25
 MAIL_USERNAME = None
 MAIL_PASSWORD = None
 
-LOGSERVER = '172.26.216.101'
 # administrator list
-ADMINS = ['dawn.smith@camh.ca',
-          'michael.joseph@camh.ca',
-          'admins@tigrsrv.camhres.ca']
+try:
+    ADMINS = os.environ.get("ADMINS").split(",")
+except AttributeError:
+    ADMINS = ""
 
+LOGSERVER = '172.26.216.101'
 
 OPENID_PROVIDERS = [
     {'name': 'GitHub',
