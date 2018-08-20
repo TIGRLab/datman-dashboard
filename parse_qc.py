@@ -140,8 +140,8 @@ def add_session(session_name):
         logger.error('Site:{} not valid for Study:{}, skipping.'
                      .format(ident.site, study.nickname))
         return
-    else:
-        site = site[0]
+
+    site = site[0].site
 
     session_name = ident.get_full_subjectid_with_timepoint()
     query = Session.query.filter(Session.name == session_name)
