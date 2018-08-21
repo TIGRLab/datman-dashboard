@@ -7,640 +7,252 @@ The @validates decorator ensures this is run before the checklist comment
     field can be updated in the database. This is what ensures the filesystem
     checklist.csv is in sync with the database.
 """
+import logging
 
 from dashboard import db
-import utils
-from hashlib import md5
-from sqlalchemy.orm import validates
-from sqlalchemy.schema import UniqueConstraint
-from flask_login import UserMixin
-import os
-import logging
-from flask import flash
+from sqlalchemy.schema import UniqueConstraint, ForeignKeyConstraint
+
 
 logger = logging.getLogger(__name__)
 
-"""
-These following lines define many - many links between tables.
-i.e. a study can have many sites and a site can be part of many studies.
-This type of definition requires a _linking_ table in SQL.
-"""
+################################################################################
+# Plain entities
 
-study_scantype_table = db.Table('study_scantypes',
-                                db.Column('study_id', db.Integer,
-                                          db.ForeignKey('studies.id')),
-                                db.Column('scantype_id', db.Integer,
-                                          db.ForeignKey('scantypes.id')))
-
-study_people_table = db.Table('study_people',
-                              db.Column('study_id', db.Integer,
-                                        db.ForeignKey('studies.id')),
-                              db.Column('person_id', db.Integer,
-                                        db.ForeignKey('people.id')))
-study_user_table = db.Table('study_users',
-                            db.Column('study_id', db.Integer,
-                                      db.ForeignKey('studies.id')),
-                            db.Column('user_id', db.Integer,
-                                      db.ForeignKey('users.id')))
-# session_scan_table = db.Table('session_scans',
-#                               db.Column('session_id', db.Integer,
-#                                         db.ForeignKey('sessions.id')),
-#                               db.Column('scan_id', db.Integer,
-#                                         db.ForeignKey('scans.id')),
-#                               db.Column('scan_name', db.String(128)),
-#                               db.Column('is_primary', db.Boolean, default=False))
-
-class User(UserMixin, db.Model):
+class User(db.Model):
     __tablename__ = 'users'
 
-    id = db.Column(db.Integer, primary_key=True)
-    realname = db.Column(db.String(64))
-    username = db.Column(db.String(64), index=True)
-    email = db.Column(db.String(120), index=True)
-    studies = db.relationship('Study', secondary=study_user_table,
-                              back_populates='users')
-    is_admin = db.Column(db.Boolean, default=False)
-    has_phi = db.Column(db.Boolean, default=False)
-    analysis_comments = db.relationship('ScanComment')
-    incidental_findings = db.relationship('IncidentalFinding')
+    id = db.Column('id', db.Integer, primary_key=True)
+    first_name = db.Column('first_name', db.String(64), nullable=False)
+    last_name = db.Column('last_name', db.String(64), nullable=False)
+    email = db.Column('email', db.String(256))
+    position = db.Column('position', db.String(64))
+    institution = db.Column('institution', db.String(128))
+    phone1 = db.Column('phone1', db.String(20))
+    phone2 = db.Column('phone2', db.String(20))
+    github_name = db.Column('github_username', db.String(64))
+    gitlab_name = db.Column('gitlab_username', db.String(64))
+    is_staff = db.Column('kimel_staff', db.Boolean, default=False)
+    account_active = db.Column('account_active', db.Boolean, default=False)
 
-    def get_studies(self):
-        # returns the list of studies that a user has access to
-        if self.is_admin:
-            studies = Study.query.order_by(Study.nickname).all()
-        else:
-            studies = self.studies
-        return(studies)
+    studies = db.relationship('StudyUser', back_populates='user')
 
-    def has_study_access(self, study):
-        if not isinstance(study, Study):
-            # see is we can get by id
-            study = Study.query.get(study)
-            if not study:
-                study = Study.query.filter_by(nickname=study)
+    def __init__(self, first, last, email=None, position=None, institution=None,
+            phone1=None, phone2=None, github_name=None, gitlab_name=None,
+            is_staff=False, account_active=False):
+        self.first_name = first
+        self.last_name = last
+        self.email = email
+        self.position = position
+        self.institution = institution
+        self.phone1 = phone1
+        self.phone2 = phone2
+        self.github_name = github_name
+        self.gitlab_name = gitlab_name
+        self.is_staff = is_staff
+        self.account_active = account_active
 
-        if self.is_admin or study in self.studies:
-            return True
-        else:
-            return
-
-    @staticmethod
-    def make_unique_nickname(nickname):
-        if User.query.filter_by(username=nickname).first() is None:
-            return nickname
-        version = 2
-        while True:
-            new_nickname = nickname + str(version)
-            if User.query.filter_by(username=new_nickname).first() is None:
-                break
-            version += 1
-        return new_nickname
-
-    @property
-    def is_authenticated(self):
-        return True
-
-    @property
-    def is_active(self):
-        return True
-
-    @property
-    def is_anonymous(self):
-        return True
-
-    def get_id(self):
-        try:
-            return unicode(self.id)  # python 2
-        except:
-            return str(self.id)  # python 3
-
-    def avatar(self, size):
-        if self.email:
-            return 'http://www.gravatar.com/avatar/{}?d=mm&s={}'.format(
-                md5(self.email.encode('utf-8')).hexdigest(),
-                size)
-        else:
-            return 'http://www.gravatar.com/avatar/{}?d=mm&s={}'.format(
-                md5('this isnt here').hexdigest(),
-                size)
-
+    def __repr__(self):
+        return "<User {}: {} {}>".format(self.id, self.first_name,
+                self.last_name)
 
 class Study(db.Model):
     __tablename__ = 'studies'
 
-    id = db.Column(db.Integer, primary_key=True)
-    nickname = db.Column(db.String(12), index=True, unique=True)
-    name = db.Column(db.String(64))
-    scantypes = db.relationship('ScanType', secondary=study_scantype_table,
-                                back_populates='studies')
-    sites = db.relationship("StudySite", back_populates="study")
-    sessions = db.relationship('Session')
-    description = db.Column(db.String(1024))
-    fullname = db.Column(db.String(1024))
-    primary_contact_id = db.Column(db.Integer, db.ForeignKey('people.id'))
-    primary_contact = db.relationship('Person')
-    users = db.relationship('User', secondary=study_user_table,
-                            back_populates='studies')
+    id = db.Column('id', db.String(32), primary_key=True)
+    code = db.Column('study_code', db.String(32))
+    full_name = db.Column('name', db.String(1024))
+    description = db.Column('description', db.Text)
+
+    users = db.relationship('StudyUser', back_populates='study')
+
+    def __init__(self, study_id, code=None, full_name=None, description=None):
+        self.id = study_id
+        self.code = code
+        self.full_name = full_name
+        self.description = description
 
     def __repr__(self):
-        return ('<Study {}>'.format(self.nickname))
-
-    def get_valid_metric_names(self):
-        """return a list of metric names with duplicates removed"""
-        valid_fmri_scantypes = ['IMI', 'RST', 'EMP', 'OBS', 'SPRL', 'VN-SPRL']
-        names = []
-        for scantype in self.scantypes:
-            for metrictype in scantype.metrictypes:
-                if scantype.name.startswith('DTI'):
-                    names.append(('DTI', metrictype.name))
-                elif scantype.name in valid_fmri_scantypes:
-                    names.append(('FMRI', metrictype.name))
-                elif scantype.name == 'T1':
-                    names.append(('T1', metrictype.name))
-
-        names = sorted(set(names))
-        return(names)
-
-    def session_count(self, type=None):
-        if type.lower() == 'human':
-            sessions = [session for session
-                        in self.sessions
-                        if not session.is_phantom]
-        elif type.lower() == 'phantom':
-            sessions = [session for session
-                        in self.sessions
-                        if session.is_phantom]
-        else:
-            sessions = [session for session
-                        in self.sessions]
-
-        return(len(sessions))
-
-    def new_sessions(self):
-        """
-        Returns a count of all sessions that are ready for review and sign off
-        """
-        new = 0
-        for session in self.sessions:
-            if (not session.is_current_qcd() and session.scan_count() > 0):
-                new += 1
-        return new
-
-    def outstanding_issues(self):
-        """
-        Returns a list of sessions with outstanding QC issues. This includes:
-            1. Sessions that need sign off still
-            2. Sessions missing a redcap record (where one is expected)
-            3. Sessions with a redcap record but no imaging
-            4. Sessions with a new repeat session that need their QC page
-               regenerated (these also need sign off)
-        """
-        session_list = []
-        for session in self.sessions:
-            if (not session.is_current_qcd() or
-                    session.needs_rewrite() or
-                    session.needs_redcap_survey() or
-                    session.needs_scans()):
-                session_list.append(session)
-        return session_list
-
-class Site(db.Model):
-    __tablename__ = 'sites'
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(64), index=True, unique=True)
-    studies = db.relationship("StudySite", back_populates="site")
-    sessions = db.relationship('Session')
-
-    def __repr__(self):
-        return ('<Site {}>'.format(self.name))
-
-
-class Session(db.Model):
-    __tablename__ = 'sessions'
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(256))
-    date = db.Column(db.Date)
-    study_id = db.Column(db.Integer, db.ForeignKey('studies.id'),
-                         nullable=False)
-    study = db.relationship('Study', back_populates='sessions')
-    site_id = db.Column(db.Integer, db.ForeignKey('sites.id'), nullable=False)
-    site = db.relationship('Site', back_populates='sessions')
-    #scans = db.relationship('Scan', order_by="Scan.series_number",
-    #                        cascade="all, delete-orphan")
-    scans = db.relationship('Session_Scan',
-                            back_populates='session')
-    is_phantom = db.Column(db.Boolean)
-    is_repeated = db.Column(db.Boolean)
-    repeat_count = db.Column(db.Integer)
-    last_repeat_qc_generated = db.Column(db.Integer, default=1)
-    last_repeat_qcd = db.Column(db.Integer)
-    cl_comment = db.Column(db.String(1024))
-    gh_issue = db.Column(db.Integer)
-    redcap_record = db.Column(db.String(256))  # ID of the record in redcap
-    redcap_entry_date = db.Column(db.Date)  # date of record entry in redcap
-    redcap_eventid = db.Column(db.Integer)  # integer mapping of redcap event name
-    redcap_user = db.Column(db.Integer)  # ID of the user who filled in the redcap record
-    redcap_comment = db.Column(db.String(3072))  # Redcap comment field
-    redcap_url = db.Column(db.String(1024))  # URL for the redcap server
-    redcap_version = db.Column(db.String(10))  # Redcap version number
-    redcap_projectid = db.Column(db.Integer)  # ID for redcap Project
-    redcap_instrument = db.Column(db.String(1024))  # name of the redcap form
-    incidental_findings = db.relationship('IncidentalFinding')
-
-    def __repr__(self):
-        return('<Session {} from Study {} at Site {}>'
-               .format(self.name,
-                       self.study.nickname,
-                       self.site.name))
-
-    def is_qcd(self):
-        """
-        Checks if session has (ever) been quality checked. Repeats that have
-        never been reviewed will not be picked up by this one. See
-        'is_current_qcd()' for an answer that takes repeats into account
-        """
-        if self.cl_comment:
-            return True
-
-    def is_current_qcd(self):
-        """
-        checks if the most recent repeat of a session has been quality checked
-        """
-        if not self.is_phantom:
-            return self.last_repeat_qcd == self.repeat_count
-        return True
-
-    def needs_rewrite(self):
-        """
-        Returns True if the QC page needs to be updated due to a new repeat session
-        """
-        if not self.is_current_qcd() and self.is_repeated:
-            return self.repeat_count > self.last_repeat_qc_generated
-        return False
-
-    def needs_redcap_survey(self):
-        """
-        Checks if a redcap survey is missing. Should be updated later to take
-        into account that some sites for some studies dont expect a redcap survey
-        """
-        if not self.is_phantom and self.redcap_expected():
-            return not self.redcap_record
-        return False
-
-    def needs_scans(self):
-        """
-        Checks if a redcap record exists but no scan data. i.e. we havent received
-        data that we know we're expecting.
-        """
-        return self.redcap_record and self.scan_count() == 0
-
-    def redcap_expected(self):
-        # Get list of studies that this site is associated with
-        site_studies = self.site.studies
-        cur_study = [study for study in site_studies if study.study_id == self.study_id]
-        if not cur_study:
-            # Error in database records, so report and return False
-            logger.error("Record for site {} and study {} doesnt exist in "
-                    "study_site table".format(self.site_id, self.study_id))
-            return False
-        return cur_study[0].uses_redcap
-
-    def get_qc_doc(self):
-        """Return the absolute path to the session qc doc if it exists"""
-        return(utils.get_qc_doc(str(self.name)))
-
-    def flush_changes(self):
-        """Flush changes to the object back to the database"""
-        db.session.add(self)
-        db.session.commit()
-
-    def scan_count(self):
-        return len(self.scans)
-
-    @property
-    def incidental_finding(self):
-        return len(self.incidental_findings)
-
-
-    @validates('cl_comment')
-    def validate_comment(self, key, comment):
-        """
-        check the comment isn't empty and that the checklist.csv can be updated
-        """
-        assert comment
-        assert utils.update_checklist(self.name,
-                                      comment,
-                                      study_name=self.study.nickname)
-        self.last_repeat_qcd = self.repeat_count
-        return comment
-
-    def delete(self):
-        """
-        Takes care of deleting a session.
-        If session scans are linked to other projects, also deletes those records.
-        """
-        for scan_link in self.scans:
-            scan = scan_link.scan
-
-            # Delete the link between session and scans first
-            if not scan_link.is_primary:
-                db.session.delete(scan_link)
-            else:
-                linked_scans = Session_Scan.query.filter(Session_Scan.scan_id == scan_link.scan_id)
-                if linked_scans.count() > 1:
-                    flash('Scan is linked in other studies')
-                # Delete all the linking records
-                for link in linked_scans:
-                    db.session.delete(link)
-
-        # Delete the scan record
-        db.session.delete(scan)
-        # Delete the session record
-        db.session.delete(self)
-        db.session.commit()
-
-
-class ScanType(db.Model):
-    __tablename__ = 'scantypes'
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(64), index=True, unique=True)
-    metrictypes = db.relationship('MetricType', back_populates="scantype")
-    scans = db.relationship("Scan", back_populates='scantype')
-    studies = db.relationship("Study", secondary=study_scantype_table,
-                              back_populates="scantypes")
-
-    def __repr__(self):
-        return('<ScanType {}>'.format(self.name))
-
-
-class MetricType(db.Model):
-    __tablename__ = 'metrictypes'
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(12))
-    scantype_id = db.Column(db.Integer, db.ForeignKey('scantypes.id'),
-                            nullable=False)
-    scantype = db.relationship('ScanType', back_populates='metrictypes')
-    metricvalues = db.relationship('MetricValue')
-
-    db.UniqueConstraint('name', 'scantype_id')
-
-    def __repr__(self):
-        return('<MetricType {}>'.format(self.name))
-
-
-class Person(db.Model):
-    __tablename__ = 'people'
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(64))
-    role = db.Column(db.String(64))
-    email = db.Column(db.String(255))
-    phone1 = db.Column(db.String(20))
-    phone2 = db.Column(db.String(20))
-
-    def __repr__(self):
-        return('<Contact {}>'.format(self.name))
+        return "<Study {}>".format(self.id)
 
 
 class Scan(db.Model):
     __tablename__ = 'scans'
 
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(128), index=True, unique=True)
-    description = db.Column(db.String(128))
-#   session_id = db.Column(db.Integer, db.ForeignKey('sessions.id'),
-#                          nullable=False)
-#   session = db.relationship('Session', back_populates='scans')
+    id = db.Column('id', db.Integer, primary_key=True)
+    name = db.Column('name', db.String(128), nullable=False)
+    timepoint = db.Column('timepoint', db.String(64), nullable=False)
+    repeat = db.Column('session', db.Integer, nullable=False)
+    series = db.Column('series', db.Integer, nullable=False)
+    tag = db.Column('tag', db.String(64), db.ForeignKey('scantypes.tag'),
+            nullable=False)
+    description = db.Column('description', db.String(128))
+    # If a scan is a link, this will hold the id of the scan the link points to
+    source_id = db.Column('source_data', db.Integer, db.ForeignKey(id))
 
-    sessions = db.relationship('Session_Scan', back_populates='scan')
-    scantype_id = db.Column(db.Integer, db.ForeignKey('scantypes.id'),
-                            nullable=False)
-    scantype = db.relationship('ScanType', back_populates="scans")
-    metricvalues = db.relationship('MetricValue', cascade="all, delete-orphan")
-    bl_comment = db.Column(db.String(1024))
-    series_number = db.Column(db.Integer, nullable=False)
-    repeat_number = db.Column(db.Integer)
-    analysis_comments = db.relationship('ScanComment')
+    # If a scan has any links pointing to it, this will hold a list of the
+    # IDs for these scans
+    other_ids = db.relationship("Scan")
+
+    __table_args__ = (ForeignKeyConstraint(['timepoint', 'session'],
+            ['sessions.name', 'sessions.num']),
+            UniqueConstraint(timepoint, repeat, series))
+
+    def __init__(self, name, timepoint, repeat, series, tag, description=None,
+            source_id=None):
+        self.name = name
+        self.timepoint = timepoint
+        self.repeat = repeat
+        self.series = series
+        self.tag = tag
+        self.description = description
+        self.source_id = source_id
 
     def __repr__(self):
-        return('<Scan {}>'.format(self.name))
-
-    def is_blacklisted(self):
-        if self.bl_comment:
-            return True
-
-    @property
-    def comment_count(self):
-        return len(self.analysis_comments)
-
-    @validates('bl_comment')
-    def validate_comment(self, key, comment):
-        """
-        Updates the blacklist.csv file. Empty comments should only be found
-        if a 'delete' button is pressed, since it will delete an existing
-        entry from the file.
-        """
-
-        try:
-            utils.update_blacklist('{}_{}'.format(self.name,
-                                                  self.description),
-                                   comment)
-        except Exception as e:
-            logger.error('Failed updating blacklist for scan: {}. '
-                    'Reason: {}'.format(self.name, e.message))
-            return False
-        return comment
-
-    def get_primary_session(self):
-        """
-        A scan object can have multiple sessions. On the file system
-        this is represented with symlinks. The true data should only be
-        stored in the study the scan was recorded under.
-        """
-        primary_session_link = Session_Scan.query.\
-            filter(Session_Scan.scan_id == self.id,
-                   Session_Scan.is_primary.is_(True))
-        if primary_session_link.count() < 1:
-            logger.error('Primary session not found for scan_id:{}. Check session_scan table.'
-                         .format(self.id))
-            return None
-        return primary_session_link.first().session
-
-    def get_file_path(self):
-        session = self.get_primary_session()
-        nii_path = utils.get_study_folder(study=session.study.nickname,
-                                          folder_type='nii')
-
-        # Hacky solution to account for the fact that we split PDT2s
-        if self.scantype.name == 'PDT2':
-            name = self.name.replace('_PDT2_', '_T2_')
+        if self.source_id:
+            repr = "<Scan {}: {} link to scan {}>".format(self.id, self.name,
+                    self.source_id)
         else:
-            name = self.name
-
-        file_name = '_'.join([name, self.description]) + '.nii.gz'
-        path = os.path.join(nii_path, session.name, file_name)
-
-        return path
-
-    def get_hcp_path(self):
-        """
-        Returns the path to the scan hcp pipelines folder
-        False if subject folder doesnt exists
-        """
-        session = self.get_primary_session()
-        hcp_path = utils.get_study_folder(study=session.study.nickname,
-                                          folder_type='hcp')
-        sub_path = os.path.join(hcp_path,
-                                'qc_MNIfsaverage32k',
-                                session.name)
-        if not os.path.isdir(sub_path):
-            return False
-
-        return sub_path
+            repr = "<Scan {}: {}>".format(self.id, self.name)
+        return repr
 
 
-class MetricValue(db.Model):
-    __tablename__ = 'scanmetrics'
+class Site(db.Model):
+    __tablename__ = 'sites'
 
-    id = db.Column(db.Integer, primary_key=True)
-    _value = db.Column('value', db.String)
-    scan_id = db.Column(db.Integer, db.ForeignKey('scans.id'), nullable=False)
-    scan = db.relationship('Scan', back_populates="metricvalues")
-    metrictype_id = db.Column(db.Integer, db.ForeignKey('metrictypes.id'))
-    metrictype = db.relationship('MetricType', back_populates="metricvalues")
+    name = db.Column('name', db.String(64), primary_key=True)
+    description = db.Column('description', db.Text)
 
-    @property
-    def value(self):
-        """Returns the value field from the database.
-        The value is stored as a string.
-        If the value contains '::' character this will convert it to a list,
-        otherwise it will attempt to cast to Float.
-        Failing that the value is returned as a string.
-        """
-        if self._value is None:
-            return(None)
-        value = self._value.split('::')
-        try:
-            value = [float(v) for v in value]
-        except ValueError:
-            return(''.join(value))
-        if len(value) == 1:
-            return(value[0])
-        else:
-            return(value)
-
-    @value.setter
-    def value(self, value, delimiter=None):
-        """Stores the value in the database as a string.
-        If the delimiter is specified any characters matching delimiter are
-        replaced with '::' for storage.
-
-        Keyword arguments:
-        [delimiter] -- optional character string that is replaced by '::' for
-            database storage.
-        """
-        if delimiter is not None:
-            try:
-                value = value.replace(delimiter, '::')
-            except AttributeError:
-                pass
-        self._value = str(value)
+    def __init__(self, site_name, description=None):
+        self.name = site_name
+        self.description = description
 
     def __repr__(self):
-        return('<Scan {}: Metric {}: Value {}>'.format(self.scan.name,
-                                                       self.metrictype.name,
-                                                       self.value))
+        return "<Site {}>".format(self.name)
 
 
-class Analysis(db.Model):
-    __tablename__ = 'analyses'
+class RedcapRecord(db.Model):
+    __tablename__ = 'redcap_records'
 
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String, nullable=False)
-    description = db.Column(db.String, nullable=False)
-    software = db.Column(db.String)
-    analysis_comments = db.relationship('ScanComment')
+    id = db.Column('id', db.Integer, primary_key=True)
+    record = db.Column('record', db.String(256), nullable=False)
+    project = db.Column('project_id', db.Integer, nullable=False)
+    url = db.Column('url', db.String(1024), nullable=False)
+    instrument = db.Column('instrument', db.String(1024))
+    date = db.Column('entry_date', db.Date)
+    user = db.Column('redcap_user', db.Integer)
+    comment = db.Column('comment', db.Text)
+    redcap_version = db.Column('redcap_version', db.String(10), default='7.4.2')
+    event_id = db.Column('event_id', db.Integer)
 
-    def get_users(self):
-        """
-        Returns a list of unique user objects who have posted comments
-        on this analysis.
-        """
-        user_ids = [comment.user_id for comment in self.analysis_comments]
-        user_ids = set(user_ids)
-        users = [User.query.get(uid) for uid in user_ids]
-        return users
+    __table_args__ = (UniqueConstraint(record, project, url),)
+
+    def __init__(self, record, project, url):
+        self.record = record
+        self.project = project
+        self.url = url
 
     def __repr__(self):
-        return('<Analysis:{} {}>'.format(self.id, self.name))
+        return "<RedcapRecord {}: record {} project {} url {}>".format(self.id,
+                self.record, self.project, self.url)
 
 
-class ScanComment(db.Model):
-    __tablename__ = 'scan_comments'
+# class Analysis(db.Model):
+#     __tablename__ = 'analyses'
+#
+#     id = db.Column(db.Integer, primary_key=True)
+#     name = db.Column(db.String(60), nullable=False)
+#     description = db.Column(db.String(4096), nullable=False)
+#     software = db.Column(db.String(4096))
+#
+#     analysis_comments = db.relationship('ScanComment')
+#
+#     def get_users(self):
+#         """
+#         Returns a list of unique user objects who have posted comments
+#         on this analysis.
+#         """
+#         user_ids = [comment.user_id for comment in self.analysis_comments]
+#         user_ids = set(user_ids)
+#         users = [User.query.get(uid) for uid in user_ids]
+#         return users
+#
+#     def __repr__(self):
+#         return('<Analysis {}: {}>'.format(self.id, self.name))
 
-    id = db.Column(db.Integer, primary_key=True)
-    scan_id = db.Column(db.Integer, db.ForeignKey('scans.id'), nullable=False)
-    scan = db.relationship('Scan', back_populates="analysis_comments")
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    user = db.relationship('User', back_populates="analysis_comments")
-    analysis_id = db.Column(db.Integer, db.ForeignKey('analyses.id'),
-                            nullable=False)
-    analysis = db.relationship('Analysis', back_populates="analysis_comments")
-    excluded = db.Column(db.Boolean, default=False)
-    comment = db.Column(db.String)
 
+################################################################################
+# Linking tables (i.e. basic many to many relationships)
 
-class IncidentalFinding(db.Model):
-        __tablename__ = 'incidental_findings'
+study_scantype_table = db.Table('study_scantypes',
+        db.Column('study', db.Integer, db.ForeignKey('studies.id')),
+        db.Column('scantype', db.Integer, db.ForeignKey('scantypes.tag')))
 
-        id = db.Column(db.Integer, primary_key=True)
-        session_id = db.Column(db.Integer, db.ForeignKey('sessions.id'),
-                               nullable=False)
-        session = db.relationship('Session',
-                                  back_populates="incidental_findings")
-        user_id = db.Column(db.Integer, db.ForeignKey('users.id'),
-                            nullable=False)
-        user = db.relationship('User', back_populates="incidental_findings")
+################################################################################
+# Association Objects (i.e. many to many relationships with their own
+# attributes/columns for each relationship).
 
-class Session_Scan(db.Model):
-    """
-    This is a join table for the many-many relationship between scans and sessions.
-    It's done this way so we can put extra information such as a different scan name
-    and whether this relation shows the primary study for a scan.
+class StudyUser(db.Model):
+    __tablename__ = 'study_users'
 
-    Access through the ORM is simple, Session.scans and Scan.sessions
-    Access to the actual scan is a bit more complex
-    for scanlink in session.scans:
-        scanlink.scan.name
+    study_id = db.Column('study_id', db.String(32), db.ForeignKey('studies.id'),
+            nullable=False, primary_key=True)
+    user_id = db.Column('user_id', db.Integer, db.ForeignKey('users.id'),
+            nullable=False, primary_key=True)
+    phi_access = db.Column('phi_access', db.Boolean, default=False)
+    is_admin = db.Column('is_admin', db.Boolean, default=False)
+    primary_contact = db.Column('primary_contact', db.Boolean, default=False)
+    staff_contact = db.Column('staff_contact', db.Boolean, default=False)
+    does_qc = db.Column('does_qc', db.Boolean, default=False)
 
-    Using a join statement is a bit more complex
-    q = db.session.query(Scan)
-    q = q.join(Session_Scans, Scan.sessions)
-    q = q.join(Session, Session_Scans.session)
-    """
-    __tablename__ = 'session_scans'
-    id = db.Column(db.Integer, primary_key=True)
-    session_id = db.Column(db.Integer, db.ForeignKey('sessions.id'))
-    scan_id = db.Column(db.Integer, db.ForeignKey('scans.id'))
-    scan_name = db.Column(db.String(128))
-    is_primary = db.Column(db.Boolean, default=False)
-    scan = db.relationship("Scan", back_populates="sessions")
-    session = db.relationship("Session", back_populates="scans")
-    # not a typo ",None" needed to enforce tuple structure
-    __table_args__ = (UniqueConstraint(session_id, scan_id, name="session_scan"),None)
+    study = db.relationship('Study', back_populates='users')
+    user = db.relationship('User', back_populates='studies')
 
-class StudySite(db.Model):
-    __tablename__ = "study_site"
+    def __init__(self, study_id, user_id, phi=False, admin=False,
+            is_primary_contact=False, is_staff_contact=False, does_qc=False):
+        self.study_id = study_id
+        self.user_id = user_id
+        self.phi_access = phi
+        self.is_admin = admin
+        self.primary_contact = is_primary_contact
+        self.staff_contact = is_staff_contact
+        self.does_qc = does_qc
 
-    # These arent actually primary keys, but are valid candidate keys to uniquely identify a row.
-    # Primary key must be specified for SQLAlchemy to map to the database. - Dawn
-    study_id = db.Column('study_id', db.Integer, db.ForeignKey('studies.id'), primary_key=True)
-    site_id = db.Column('site_id', db.Integer, db.ForeignKey('sites.id'), primary_key=True)
-    uses_redcap = db.Column('uses_redcap', db.Boolean, default=False)
+    def __repr__(self):
+        return "<StudyUser Study: {} User: {}>".format(self.study_id,
+                self.user_id)
 
-    site = db.relationship("Site", back_populates="studies")
-    study = db.relationship("Study", back_populates="sites")
+# class ScanComment(db.Model):
+#     __tablename__ = 'scan_comments'
+#
+#     id = db.Column(db.Integer, primary_key=True)
+#     # scan_id = db.Column(db.Integer, db.ForeignKey('scans.id'), nullable=False)
+#     # user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+#     analysis_id = db.Column(db.Integer, db.ForeignKey('analyses.id'),
+#             nullable=False)
+#     excluded = db.Column(db.Boolean, default=False)
+#     comment = db.Column(db.String(4096))
+#
+#     scan = db.relationship('Scan', back_populates="analysis_comments")
+#     analysis = db.relationship('Analysis', back_populates="analysis_comments")
+#     user = db.relationship('User', back_populates="analysis_comments")
+#
+#     def __repr__(self):
+#         return "<ScanComment {}: Analysis {} comment on scan {} by user {}>".format(
+#                 self.id, self.analysis_id, self.scan_id, self.user_id)
+
+# class IncidentalFinding(db.Model):
+#     __tablename__ = 'incidental_findings'
+#
+#     id = db.Column(db.Integer, primary_key=True)
+#     user_id = db.Column(db.Integer, db.ForeignKey('users.id'),
+#             nullable=False)
+#     session_id = db.Column(db.String(64), db.ForeignKey('sessions.id'),
+#             nullable=False)
+#
+#     session = db.relationship('Session',
+#             back_populates="incidental_findings")
+#     user = db.relationship('User', back_populates="incidental_findings")
+#
+#     def __repr__(self):
+#         return "<IncidentalFinding {} for Session {} found by User {}>".format(
+#                 self.id, self.session_id, self.user_id)
