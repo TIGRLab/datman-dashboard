@@ -55,6 +55,7 @@ class User(db.Model):
         return "<User {}: {} {}>".format(self.id, self.first_name,
                 self.last_name)
 
+
 class Study(db.Model):
     __tablename__ = 'studies'
 
@@ -73,6 +74,69 @@ class Study(db.Model):
 
     def __repr__(self):
         return "<Study {}>".format(self.id)
+
+
+class Site(db.Model):
+    __tablename__ = 'sites'
+
+    name = db.Column('name', db.String(64), primary_key=True)
+    description = db.Column('description', db.Text)
+
+    def __init__(self, site_name, description=None):
+        self.name = site_name
+        self.description = description
+
+    def __repr__(self):
+        return "<Site {}>".format(self.name)
+
+
+class Timepoint(db.Model):
+    __tablename__ = 'timepoints'
+
+    id = db.Column('id', db.String(64), primary_key=True)
+    site = db.Column('site', db.String(64), db.ForeignKey('sites.name'),
+            nullable=False)
+    is_phantom = db.Column('is_phantom', db.Boolean, nullable=False, default=False)
+    github_issue = db.Column('github_issue', db.Integer)
+    gitlab_issue = db.Column('gitlab_issue', db.Integer)
+
+    def __init__(self, t_id, site, is_phantom=False, github_issue=None,
+            gitlab_issue=None):
+        self.id = t_id
+        self.site = site
+        self.is_phantom = is_phantom
+        self.github_issue = github_issue
+        self.gitlab_issue = gitlab_issue
+
+    def __repr__(self):
+        return "<Timepoint {}>".format(self.id)
+
+
+class Session(db.Model):
+    __tablename__ = 'sessions'
+
+    name = db.Column('name', db.String(64), db.ForeignKey('timepoints.id'),
+            primary_key=True)
+    num = db.Column('num', db.Integer, primary_key=True)
+    date = db.Column('date', db.DateTime)
+    signed_off = db.Column('signed_off', db.Boolean, default=False)
+    reviewer = db.Column('reviewer', db.Integer, db.ForeignKey('users.id'))
+    review_date = db.Column('review_date', db.DateTime(timezone=True))
+    redcap_record = db.Column('redcap_record', db.Integer,
+            db.ForeignKey('redcap_records.id'))
+
+    def __init__(self, name, num, date=None, signed_off=False, reviewer=None,
+            review_date=None, redcap_record=None):
+        self.name = name
+        self.num = num
+        self.date = date
+        self.signed_off = signed_off
+        self.reviewer = reviewer
+        self.review_date = review_date
+        self.redcap_record = redcap_record
+
+    def __repr__(self):
+        return "<Session {}, {}>".format(self.name, self.num)
 
 
 class Scan(db.Model):
@@ -116,18 +180,33 @@ class Scan(db.Model):
         return repr
 
 
-class Site(db.Model):
-    __tablename__ = 'sites'
+class Scantype(db.Model):
+    __tablename__ = 'scantypes'
 
-    name = db.Column('name', db.String(64), primary_key=True)
-    description = db.Column('description', db.Text)
+    tag = db.Column('tag', db.String(64), primary_key=True)
 
-    def __init__(self, site_name, description=None):
-        self.name = site_name
-        self.description = description
+    def __init__(self, tag):
+        self.tag = tag
 
     def __repr__(self):
-        return "<Site {}>".format(self.name)
+        return "<Scantype {}>".format(self.tag)
+
+
+# class MetricType(db.Model):
+#     __tablename__ = 'metrictypes'
+#
+#     id = db.Column('id', db.Integer, primary_key=True)
+#     name = db.Column('name', db.String(64))
+#     scantype = db.Column('scantype', db.String(64), db.ForeignKey('scantypes.tag'),
+#             nullable=False)
+#
+#     scantype = db.relationship('ScanType', back_populates='metrictypes')
+#     metricvalues = db.relationship('MetricValue')
+#
+#     db.UniqueConstraint('name', 'scantype_id')
+#
+#     def __repr__(self):
+#         return('<MetricType {}>'.format(self.name))
 
 
 class RedcapRecord(db.Model):
