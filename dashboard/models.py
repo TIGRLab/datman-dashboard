@@ -348,10 +348,9 @@ class Scan(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(128), index=True, unique=True)
     description = db.Column(db.String(128))
-#   session_id = db.Column(db.Integer, db.ForeignKey('sessions.id'),
-#                          nullable=False)
-#   session = db.relationship('Session', back_populates='scans')
-
+    # session_id = db.Column(db.Integer, db.ForeignKey('sessions.id'),
+    #                          nullable=False)
+    # session = db.relationship('Session', back_populates='scans')
     sessions = db.relationship('Session_Scan', back_populates='scan')
     scantype_id = db.Column(db.Integer, db.ForeignKey('scantypes.id'),
                             nullable=False)

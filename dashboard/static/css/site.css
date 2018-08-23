@@ -102,6 +102,8 @@ a {
   font-weight: bold;fg
 }
 
+
+
 body {
   padding-bottom: 200px;
 }
@@ -109,4 +111,9 @@ body {
   body{
     padding-bottom: 0;
   }
+}
+
+.hide-dropdown{
+  position: absolute;
+  display: none;
 }
