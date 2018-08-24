@@ -8,9 +8,11 @@ The @validates decorator ensures this is run before the checklist comment
     checklist.csv is in sync with the database.
 """
 import logging
+import datetime
+
+from sqlalchemy.schema import UniqueConstraint, ForeignKeyConstraint
 
 from dashboard import db
-from sqlalchemy.schema import UniqueConstraint, ForeignKeyConstraint
 
 
 logger = logging.getLogger(__name__)
@@ -53,6 +55,11 @@ class User(db.Model):
     account_active = db.Column('account_active', db.Boolean, default=False)
 
     studies = db.relationship('StudyUser', back_populates='user')
+    incidental_findings = db.relationship('IncidentalFinding')
+    blacklist_comments = db.relationship('ScanBlacklist')
+    timepoint_comments = db.relationship('TimepointComment')
+    analysis_comments = db.relationship('AnalysisComment')
+    sessions_reviewed = db.relationship('Session')
 
     def __init__(self, first, last, email=None, position=None, institution=None,
             phone1=None, phone2=None, github_name=None, gitlab_name=None,
@@ -106,6 +113,7 @@ class Site(db.Model):
     description = db.Column('description', db.Text)
 
     studies = db.relationship('StudySite', back_populates='site')
+    timepoints = db.relationship('Timepoint')
 
     def __init__(self, site_name, description=None):
         self.name = site_name
@@ -119,11 +127,17 @@ class Timepoint(db.Model):
     __tablename__ = 'timepoints'
 
     id = db.Column('id', db.String(64), primary_key=True)
-    site = db.Column('site', db.String(64), db.ForeignKey('sites.name'),
+    site_id = db.Column('site', db.String(64), db.ForeignKey('sites.name'),
             nullable=False)
-    is_phantom = db.Column('is_phantom', db.Boolean, nullable=False, default=False)
+    is_phantom = db.Column('is_phantom', db.Boolean, nullable=False,
+            default=False)
     github_issue = db.Column('github_issue', db.Integer)
     gitlab_issue = db.Column('gitlab_issue', db.Integer)
+
+    site = db.relationship('Site', uselist=False, back_populates='timepoints')
+    sessions = db.relationship('Session')
+    comments = db.relationship('TimepointComment')
+    incidental_findings = db.relationship('IncidentalFinding')
 
     def __init__(self, t_id, site, is_phantom=False, github_issue=None,
             gitlab_issue=None):
@@ -145,12 +159,19 @@ class Session(db.Model):
     num = db.Column('num', db.Integer, primary_key=True)
     date = db.Column('date', db.DateTime)
     signed_off = db.Column('signed_off', db.Boolean, default=False)
-    reviewer = db.Column('reviewer', db.Integer, db.ForeignKey('users.id'))
+    reviewer_id = db.Column('reviewer', db.Integer, db.ForeignKey('users.id'))
     review_date = db.Column('review_date', db.DateTime(timezone=True))
-    redcap_record = db.Column('redcap_record', db.Integer,
+    redcap_record_id = db.Column('redcap_record', db.Integer,
             db.ForeignKey('redcap_records.id'))
 
+    timepoint = db.relationship('Timepoint', uselist=False,
+            back_populates='sessions')
+    scans = db.relationship('Scan')
     studies = db.relationship('Study', secondary=study_sessions_table,
+            back_populates='sessions')
+    reviewer = db.relationship('User', uselist=False,
+            back_populates='sessions_reviewed')
+    redcap_record = db.relationship('RedcapRecord', uselist=False,
             back_populates='sessions')
 
     def __init__(self, name, num, date=None, signed_off=False, reviewer=None,
@@ -184,6 +205,10 @@ class Scan(db.Model):
     # If a scan has any links pointing to it, this will hold a list of the
     # IDs for these scans
     other_ids = db.relationship("Scan")
+    session = db.relationship('Session', uselist=False, back_populates='scans')
+    scantype = db.relationship('Scantype', uselist=False, back_populates='scans')
+    analysis_comments = db.relationship("AnalysisComment")
+    metric_values = db.relationship('MetricValue', cascade="all, delete-orphan")
 
     __table_args__ = (ForeignKeyConstraint(['timepoint', 'session'],
             ['sessions.name', 'sessions.num']),
@@ -213,8 +238,10 @@ class Scantype(db.Model):
 
     tag = db.Column('tag', db.String(64), primary_key=True)
 
+    scans = db.relationship('Scan', back_populates='scantype')
     studies = db.relationship('Study', secondary=study_scantype_table,
             back_populates='scantypes')
+    metrictypes = db.relationship('Metrictype', back_populates='scantype')
 
     def __init__(self, tag):
         self.tag = tag
@@ -227,20 +254,24 @@ class TimepointComment(db.Model):
     __tablename__ = 'timepoint_comments'
 
     id = db.Column('id', db.Integer, primary_key=True)
-    # This is NOT a foreign key to the 'Timepoints' table so that comments dont
-    # need to be deleted when a timepoint is (i.e. can re-link them if a timepoint
-    # is regenerated)
-    timepoint_id = db.Column('timepoint', db.String(64), nullable=False)
+    timepoint_id = db.Column('timepoint', db.String(64),
+            db.ForeignKey('timepoints.id'), nullable=False)
     user_id = db.Column('user_id', db.Integer, db.ForeignKey('users.id'),
             nullable=False)
-    timestamp = db.Column('comment_date', db.DateTime(timezone=True), nullable=False)
+    timestamp = db.Column('comment_date', db.DateTime(timezone=True),
+            nullable=False)
     comment = db.Column('comment', db.Text, nullable=False)
 
-    def __init__(self, timepoint_id, user_id, timestamp, comment):
+    user = db.relationship('User', uselist=False,
+            back_populates='timepoint_comments')
+    timepoint = db.relationship('Timepoint', uselist=False,
+            back_populates='comments')
+
+    def __init__(self, timepoint_id, user_id, comment):
         self.timepoint_id = timepoint_id
         self.user_id = user_id
-        self.timestamp = timestamp
         self.comment = comment
+        self.timestamp = datetime.datetime.now()
 
     def __repr__(self):
         return "<TimepointComment for {} by user {}>".format(self.timepoint_id,
@@ -260,13 +291,16 @@ class ScanBlacklist(db.Model):
             nullable=False)
     comment = db.Column('comment', db.Text, nullable=False)
 
+    user = db.relationship('User', uselist=False,
+            back_populates='blacklist_comments')
+
     __table_args__ = (UniqueConstraint(scan_name),)
 
-    def __init__(self, scan_name, user_id, timestamp, comment):
+    def __init__(self, scan_name, user_id, comment):
         self.scan_name = scan_name
         self.user_id = user_id
-        self.timestamp = timestamp
         self.comment = comment
+        self.timestamp = datetime.datetime.now()
 
     def __repr__(self):
         return "<ScanBlacklist for {} by user {}>".format(self.scan_name,
@@ -287,6 +321,8 @@ class RedcapRecord(db.Model):
     redcap_version = db.Column('redcap_version', db.String(10), default='7.4.2')
     event_id = db.Column('event_id', db.Integer)
 
+    sessions = db.relationship('Session', back_populates='redcap_record')
+
     __table_args__ = (UniqueConstraint(record, project, url),)
 
     def __init__(self, record, project, url):
@@ -299,45 +335,32 @@ class RedcapRecord(db.Model):
                 self.record, self.project, self.url)
 
 
-# class Analysis(db.Model):
-#     __tablename__ = 'analyses'
-#
-#     id = db.Column(db.Integer, primary_key=True)
-#     name = db.Column(db.String(60), nullable=False)
-#     description = db.Column(db.String(4096), nullable=False)
-#     software = db.Column(db.String(4096))
-#
-#     analysis_comments = db.relationship('ScanComment')
-#
-#     def get_users(self):
-#         """
-#         Returns a list of unique user objects who have posted comments
-#         on this analysis.
-#         """
-#         user_ids = [comment.user_id for comment in self.analysis_comments]
-#         user_ids = set(user_ids)
-#         users = [User.query.get(uid) for uid in user_ids]
-#         return users
-#
-#     def __repr__(self):
-#         return('<Analysis {}: {}>'.format(self.id, self.name))
+class Analysis(db.Model):
+    __tablename__ = 'analyses'
 
-# class MetricType(db.Model):
-#     __tablename__ = 'metrictypes'
-#
-#     id = db.Column('id', db.Integer, primary_key=True)
-#     name = db.Column('name', db.String(64), nullable=False)
-#     scantype = db.Column('scantype', db.String(64), db.ForeignKey('scantypes.tag'),
-#             nullable=False)
-#
-#     # scantype = db.relationship('ScanType', back_populates='metrictypes')
-#     # metricvalues = db.relationship('MetricValue')
-#
-#     ## ????????
-#     # db.UniqueConstraint('name', 'scantype_id')
-#
-#     def __repr__(self):
-#         return('<MetricType {}>'.format(self.name))
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(60), nullable=False)
+    description = db.Column(db.String(4096), nullable=False)
+    software = db.Column(db.String(4096))
+
+    analysis_comments = db.relationship('AnalysisComment')
+
+    def __repr__(self):
+        return('<Analysis {}: {}>'.format(self.id, self.name))
+
+class Metrictype(db.Model):
+    __tablename__ = 'metrictypes'
+
+    id = db.Column('id', db.Integer, primary_key=True)
+    name = db.Column('name', db.String(64), nullable=False)
+    scantype_id = db.Column('scantype', db.String(64),
+            db.ForeignKey('scantypes.tag'), nullable=False)
+
+    scantype = db.relationship('Scantype', back_populates='metrictypes')
+    metric_values = db.relationship('MetricValue')
+
+    def __repr__(self):
+        return('<MetricType {}>'.format(self.name))
 
 
 ################################################################################
@@ -371,7 +394,7 @@ class StudyUser(db.Model):
         self.does_qc = does_qc
 
     def __repr__(self):
-        return "<StudyUser Study: {} User: {}>".format(self.study_id,
+        return "<StudyUser {} User: {}>".format(self.study_id,
                 self.user_id)
 
 
@@ -395,38 +418,95 @@ class StudySite(db.Model):
     def __repr__(self):
         return "<StudySite {} - {}>".format(self.study_id, self.site_id)
 
-# class ScanComment(db.Model):
-#     __tablename__ = 'scan_comments'
-#
-#     id = db.Column(db.Integer, primary_key=True)
-#     # scan_id = db.Column(db.Integer, db.ForeignKey('scans.id'), nullable=False)
-#     # user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-#     analysis_id = db.Column(db.Integer, db.ForeignKey('analyses.id'),
-#             nullable=False)
-#     excluded = db.Column(db.Boolean, default=False)
-#     comment = db.Column(db.String(4096))
-#
-#     scan = db.relationship('Scan', back_populates="analysis_comments")
-#     analysis = db.relationship('Analysis', back_populates="analysis_comments")
-#     user = db.relationship('User', back_populates="analysis_comments")
-#
-#     def __repr__(self):
-#         return "<ScanComment {}: Analysis {} comment on scan {} by user {}>".format(
-#                 self.id, self.analysis_id, self.scan_id, self.user_id)
+class AnalysisComment(db.Model):
+    __tablename__ = 'analysis_comments'
 
-# class IncidentalFinding(db.Model):
-#     __tablename__ = 'incidental_findings'
-#
-#     id = db.Column(db.Integer, primary_key=True)
-#     user_id = db.Column(db.Integer, db.ForeignKey('users.id'),
-#             nullable=False)
-#     session_id = db.Column(db.String(64), db.ForeignKey('sessions.id'),
-#             nullable=False)
-#
-#     session = db.relationship('Session',
-#             back_populates="incidental_findings")
-#     user = db.relationship('User', back_populates="incidental_findings")
-#
-#     def __repr__(self):
-#         return "<IncidentalFinding {} for Session {} found by User {}>".format(
-#                 self.id, self.session_id, self.user_id)
+    id = db.Column(db.Integer, primary_key=True)
+    scan_id = db.Column(db.Integer, db.ForeignKey('scans.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    analysis_id = db.Column(db.Integer, db.ForeignKey('analyses.id'),
+            nullable=False)
+    excluded = db.Column(db.Boolean, default=False)
+    comment = db.Column(db.String(4096), nullable=False)
+
+    scan = db.relationship('Scan', uselist=False,
+            back_populates="analysis_comments")
+    analysis = db.relationship('Analysis', uselist=False,
+            back_populates="analysis_comments")
+    user = db.relationship('User', uselist=False,
+            back_populates="analysis_comments")
+
+    def __repr__(self):
+        return "<ScanComment {}: Analysis {} comment on scan {} by user {}>".format(
+                self.id, self.analysis_id, self.scan_id, self.user_id)
+
+class IncidentalFinding(db.Model):
+    __tablename__ = 'incidental_findings'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'),
+            nullable=False)
+    timepoint_id = db.Column(db.String(64), db.ForeignKey('timepoints.id'),
+            nullable=False)
+    description = db.Column(db.Text)
+
+    session = db.relationship('Timepoint', uselist=False,
+            back_populates="incidental_findings")
+    user = db.relationship('User', uselist=False,
+            back_populates="incidental_findings")
+
+    def __repr__(self):
+        return "<IncidentalFinding {} for {} found by User {}>".format(
+                self.id, self.timepoint_id, self.user_id)
+
+class MetricValue(db.Model):
+    __tablename__ = 'scan_metrics'
+
+    id = db.Column(db.Integer, primary_key=True)
+    scan_id = db.Column(db.Integer, db.ForeignKey('scans.id'), nullable=False)
+    metrictype_id = db.Column(db.Integer, db.ForeignKey('metrictypes.id'),
+            nullable=False)
+    _value = db.Column('value', db.Text)
+
+    scan = db.relationship('Scan', back_populates="metric_values")
+    metrictype = db.relationship('Metrictype', back_populates="metric_values")
+
+    @property
+    def value(self):
+        """Returns the value field from the database.
+        The value is stored as a string.
+        If the value contains '::' character this will convert it to a list,
+        otherwise it will attempt to cast to Float.
+        Failing that the value is returned as a string.
+        """
+        if self._value is None:
+            return(None)
+        value = self._value.split('::')
+        try:
+            value = [float(v) for v in value]
+        except ValueError:
+            return(''.join(value))
+        if len(value) == 1:
+            return(value[0])
+        else:
+            return(value)
+
+    @value.setter
+    def value(self, value, delimiter=None):
+        """Stores the value in the database as a string.
+        If the delimiter is specified any characters matching delimiter are
+        replaced with '::' for storage.
+        Keyword arguments:
+        [delimiter] -- optional character string that is replaced by '::' for
+            database storage.
+        """
+        if delimiter is not None:
+            try:
+                value = value.replace(delimiter, '::')
+            except AttributeError:
+                pass
+        self._value = str(value)
+
+    def __repr__(self):
+        return('<Scan {}: Metric {}: Value {}>'.format(self.scan.name,
+                self.metrictype.name, self.value))
