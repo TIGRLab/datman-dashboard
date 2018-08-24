@@ -2,8 +2,8 @@
 Database queries used by the app
 """
 from dashboard import db
-from .models import Study, Site, Session, Scan, MetricType, \
-    MetricValue, ScanType, Session_Scan  # noqa: F401
+from .models import Study, Site, Session, Scan, Metrictype, \
+    MetricValue, Scantype  # noqa: F401
 import logging
 import utils
 
