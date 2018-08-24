@@ -16,6 +16,24 @@ from sqlalchemy.schema import UniqueConstraint, ForeignKeyConstraint
 logger = logging.getLogger(__name__)
 
 ################################################################################
+# Association tables (i.e. basic many to many relationships)
+
+study_scantype_table = db.Table('study_scantypes',
+        db.Column('study', db.String(32), db.ForeignKey('studies.id'),
+                nullable=False),
+        db.Column('scantype', db.String(64), db.ForeignKey('scantypes.tag'),
+                nullable=False))
+
+study_sessions_table = db.Table('study_sessions',
+        db.Column('study', db.String(32), db.ForeignKey('studies.id'),
+                nullable=False),
+        db.Column('timepoint', db.String(64), nullable=False),
+        db.Column('session', db.Integer, nullable=False),
+        ForeignKeyConstraint(('timepoint', 'session'),
+                ('sessions.name', 'sessions.num')),
+        UniqueConstraint('study', 'timepoint', 'session'))
+
+################################################################################
 # Plain entities
 
 class User(db.Model):
@@ -65,6 +83,11 @@ class Study(db.Model):
     description = db.Column('description', db.Text)
 
     users = db.relationship('StudyUser', back_populates='study')
+    sites = db.relationship('StudySite', back_populates='study')
+    sessions = db.relationship('Session', secondary=study_sessions_table,
+            back_populates='studies')
+    scantypes = db.relationship('Scantype', secondary=study_scantype_table,
+            back_populates='studies')
 
     def __init__(self, study_id, code=None, full_name=None, description=None):
         self.id = study_id
@@ -81,6 +104,8 @@ class Site(db.Model):
 
     name = db.Column('name', db.String(64), primary_key=True)
     description = db.Column('description', db.Text)
+
+    studies = db.relationship('StudySite', back_populates='site')
 
     def __init__(self, site_name, description=None):
         self.name = site_name
@@ -124,6 +149,9 @@ class Session(db.Model):
     review_date = db.Column('review_date', db.DateTime(timezone=True))
     redcap_record = db.Column('redcap_record', db.Integer,
             db.ForeignKey('redcap_records.id'))
+
+    studies = db.relationship('Study', secondary=study_sessions_table,
+            back_populates='sessions')
 
     def __init__(self, name, num, date=None, signed_off=False, reviewer=None,
             review_date=None, redcap_record=None):
@@ -185,6 +213,9 @@ class Scantype(db.Model):
 
     tag = db.Column('tag', db.String(64), primary_key=True)
 
+    studies = db.relationship('Study', secondary=study_scantype_table,
+            back_populates='scantypes')
+
     def __init__(self, tag):
         self.tag = tag
 
@@ -192,21 +223,54 @@ class Scantype(db.Model):
         return "<Scantype {}>".format(self.tag)
 
 
-# class MetricType(db.Model):
-#     __tablename__ = 'metrictypes'
-#
-#     id = db.Column('id', db.Integer, primary_key=True)
-#     name = db.Column('name', db.String(64))
-#     scantype = db.Column('scantype', db.String(64), db.ForeignKey('scantypes.tag'),
-#             nullable=False)
-#
-#     scantype = db.relationship('ScanType', back_populates='metrictypes')
-#     metricvalues = db.relationship('MetricValue')
-#
-#     db.UniqueConstraint('name', 'scantype_id')
-#
-#     def __repr__(self):
-#         return('<MetricType {}>'.format(self.name))
+class TimepointComment(db.Model):
+    __tablename__ = 'timepoint_comments'
+
+    id = db.Column('id', db.Integer, primary_key=True)
+    # This is NOT a foreign key to the 'Timepoints' table so that comments dont
+    # need to be deleted when a timepoint is (i.e. can re-link them if a timepoint
+    # is regenerated)
+    timepoint_id = db.Column('timepoint', db.String(64), nullable=False)
+    user_id = db.Column('user_id', db.Integer, db.ForeignKey('users.id'),
+            nullable=False)
+    timestamp = db.Column('comment_date', db.DateTime(timezone=True), nullable=False)
+    comment = db.Column('comment', db.Text, nullable=False)
+
+    def __init__(self, timepoint_id, user_id, timestamp, comment):
+        self.timepoint_id = timepoint_id
+        self.user_id = user_id
+        self.timestamp = timestamp
+        self.comment = comment
+
+    def __repr__(self):
+        return "<TimepointComment for {} by user {}>".format(self.timepoint_id,
+                self.user_id)
+
+
+class ScanBlacklist(db.Model):
+    __tablename__ = 'scan_blacklist'
+
+    id = db.Column('id', db.Integer, primary_key=True)
+    # Not a foreign key so blacklist entries can be retained even if a scan is
+    # deleted temporarily
+    scan_name = db.Column('scan_name', db.String(128), nullable=False)
+    user_id = db.Column('user_id', db.Integer, db.ForeignKey('users.id'),
+            nullable=False)
+    timestamp = db.Column('date_added', db.DateTime(timezone=True),
+            nullable=False)
+    comment = db.Column('comment', db.Text, nullable=False)
+
+    __table_args__ = (UniqueConstraint(scan_name),)
+
+    def __init__(self, scan_name, user_id, timestamp, comment):
+        self.scan_name = scan_name
+        self.user_id = user_id
+        self.timestamp = timestamp
+        self.comment = comment
+
+    def __repr__(self):
+        return "<ScanBlacklist for {} by user {}>".format(self.scan_name,
+                self.user_id)
 
 
 class RedcapRecord(db.Model):
@@ -258,17 +322,27 @@ class RedcapRecord(db.Model):
 #     def __repr__(self):
 #         return('<Analysis {}: {}>'.format(self.id, self.name))
 
+# class MetricType(db.Model):
+#     __tablename__ = 'metrictypes'
+#
+#     id = db.Column('id', db.Integer, primary_key=True)
+#     name = db.Column('name', db.String(64), nullable=False)
+#     scantype = db.Column('scantype', db.String(64), db.ForeignKey('scantypes.tag'),
+#             nullable=False)
+#
+#     # scantype = db.relationship('ScanType', back_populates='metrictypes')
+#     # metricvalues = db.relationship('MetricValue')
+#
+#     ## ????????
+#     # db.UniqueConstraint('name', 'scantype_id')
+#
+#     def __repr__(self):
+#         return('<MetricType {}>'.format(self.name))
+
 
 ################################################################################
-# Linking tables (i.e. basic many to many relationships)
-
-study_scantype_table = db.Table('study_scantypes',
-        db.Column('study', db.Integer, db.ForeignKey('studies.id')),
-        db.Column('scantype', db.Integer, db.ForeignKey('scantypes.tag')))
-
-################################################################################
-# Association Objects (i.e. many to many relationships with their own
-# attributes/columns for each relationship).
+# Association Objects (i.e. many to many relationships with attributes/columns
+# of their own).
 
 class StudyUser(db.Model):
     __tablename__ = 'study_users'
@@ -299,6 +373,27 @@ class StudyUser(db.Model):
     def __repr__(self):
         return "<StudyUser Study: {} User: {}>".format(self.study_id,
                 self.user_id)
+
+
+class StudySite(db.Model):
+    __tablename__ = 'study_site'
+
+    study_id = db.Column('study', db.String(32), db.ForeignKey('studies.id'),
+            primary_key=True)
+    site_id = db.Column('site', db.String(64), db.ForeignKey('sites.name'),
+            primary_key=True)
+    uses_redcap = db.Column('uses_redcap', db.Boolean, default=False)
+
+    site = db.relationship('Site', back_populates='studies')
+    study = db.relationship('Study', back_populates='sites')
+
+    def __init__(self, study_id, site_id, uses_redcap=False):
+        self.study_id = study_id
+        self.site_id = site_id
+        self.uses_redcap = uses_redcap
+
+    def __repr__(self):
+        return "<StudySite {} - {}>".format(self.study_id, self.site_id)
 
 # class ScanComment(db.Model):
 #     __tablename__ = 'scan_comments'
