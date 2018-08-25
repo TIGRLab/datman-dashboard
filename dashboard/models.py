@@ -10,6 +10,7 @@ The @validates decorator ensures this is run before the checklist comment
 import logging
 import datetime
 
+from flask_login import UserMixin
 from sqlalchemy.schema import UniqueConstraint, ForeignKeyConstraint
 
 from dashboard import db
@@ -38,7 +39,7 @@ study_sessions_table = db.Table('study_sessions',
 ################################################################################
 # Plain entities
 
-class User(db.Model):
+class User(UserMixin, db.Model):
     __tablename__ = 'users'
 
     id = db.Column('id', db.Integer, primary_key=True)
@@ -76,6 +77,13 @@ class User(db.Model):
         self.is_staff = is_staff
         self.account_active = account_active
 
+    def get_studies(self):
+        if self.is_staff:
+            studies = Study.query.all()
+        else:
+            studies = [study_user.study for study_user in self.studies]
+        return studies
+
     def __repr__(self):
         return "<User {}: {} {}>".format(self.id, self.first_name,
                 self.last_name)
@@ -101,6 +109,11 @@ class Study(db.Model):
         self.code = code
         self.full_name = full_name
         self.description = description
+
+    def new_sessions(self):
+        need_qc = [session for session in self.sessions
+                if not session.timepoint.is_phantom and not session.signed_off]
+        return len(need_qc)
 
     def __repr__(self):
         return "<Study {}>".format(self.id)

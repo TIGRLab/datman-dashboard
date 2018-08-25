@@ -7,7 +7,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from dashboard import app, db, lm
 from oauth import OAuthSignIn
 from .queries import query_metric_values_byid, query_metric_types, query_metric_values_byname
-from .models import Study, Site, Session, ScanType, Scan, User, ScanComment, Analysis, IncidentalFinding, Session_Scan
+from .models import Study, Site, Session, Scantype, Scan, User, AnalysisComment, Analysis, IncidentalFinding
 from .forms import SelectMetricsForm, StudyOverviewForm, SessionForm, ScanBlacklistForm, UserForm, ScanCommentForm, AnalysisForm
 from . import utils
 from . import redcap as REDCAP
@@ -55,7 +55,7 @@ def handle_invalid_usage(error):
 
 @lm.user_loader
 def load_user(id):
-    return User.query.get(id)
+    return User.query.get(int(id))
 
 
 def login_required(f):
@@ -87,9 +87,8 @@ def logout():
 @login_required
 def index():
     """
-    Main landin page
+    Main landing page
     """
-    # studies = db_session.query(Study).order_by(Study.nickname).all()
     studies = current_user.get_studies()
 
     session_count = Session.query.count()
@@ -440,8 +439,8 @@ def scan(session_scan_id=None):
 
 
 @app.route('/study')
-@app.route('/study/<int:study_id>', methods=['GET', 'POST'])
-@app.route('/study/<int:study_id>/<active_tab>', methods=['GET', 'POST'])
+@app.route('/study/<string:study_id>', methods=['GET', 'POST'])
+@app.route('/study/<string:study_id>/<active_tab>', methods=['GET', 'POST'])
 @login_required
 def study(study_id=None, active_tab=None):
     """
@@ -853,28 +852,32 @@ def oauth_callback(provider):
     if not current_user.is_anonymous:
         return redirect(url_for('index'))
     oauth = OAuthSignIn.get_provider(provider)
-    access_token, github_user = oauth.callback()
+    access_token, user_info = oauth.callback()
 
     if access_token is None:
         flash('Authentication failed.')
         return redirect(url_for('login'))
 
     if provider == 'github':
-        username = github_user['login']
+        username = user_info['login']
+        user = User.query.filter_by(github_name=username).first()
     elif provider == 'gitlab':
-        username = github_user['username']
+        username = user_info['username']
+        user = User.query.filter_by(gitlab_name=username).first()
 
-    user = User.query.filter_by(username=username).first()
     if not user:
-        username = User.make_unique_nickname(username)
-        user = User(username=username,
-                    realname=github_user['name'],
-                    email=github_user['email'])
-        db.session.add(user)
-        db.session.commit()
+        # Temp. disabled. Need to update account creation process to avoid empty name / email fields
+        redirect(404)
+        # username = User.make_unique_nickname(username)
+        # user = User(username=username,
+        #             realname=github_user['name'],
+        #             email=github_user['email'])
+        # db.session.add(user)
+        # db.session.commit()
 
     login_user(user, remember=True)
-    flask_session['active_token'] = access_token
+    # Not sure why this was done manually so commenting out for now
+    # flask_session['active_token'] = access_token
     return redirect(url_for('index'))
 
 @app.route('/scan_comment', methods=['GET','POST'])

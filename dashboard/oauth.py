@@ -4,7 +4,7 @@ See https://blog.miguelgrinberg.com/post/oauth-authentication-with-flask for an 
 """
 
 from config import OAUTH_CREDENTIALS
-from rauth import OAuth1Service, OAuth2Service
+from rauth import OAuth2Service
 from flask import url_for, request, redirect, session
 import string
 import random
@@ -59,10 +59,10 @@ class GithubSignIn(OAuthSignIn):
                                            string.digits):
         """Generates a random string"""
         rnd = ''.join(random.SystemRandom().choice(chars) for _ in range(size))
-        self.str_rnd = rnd
+        return rnd
 
     def authorize(self):
-        self.random_string()
+        self.str_rnd = self.random_string()
         return redirect(self.service.get_authorize_url(
             scope='user public_repo',
             state=self.str_rnd)
@@ -71,16 +71,23 @@ class GithubSignIn(OAuthSignIn):
     def callback(self):
         if 'code' not in request.args:
             return None, None
-        # if not request.args.get('state') == self.str_rnd:
-        #     return None, None
+
+        try:
+            returned_state = request.args['state']
+        except:
+            returned_state = None
+        if not returned_state == self.str_rnd:
+            return None, None
+
         oauth_session = self.service.get_auth_session(
             data={'code': request.args['code'],
                   'grant_type': 'authorization_code',
                   'redirect_uri': self.get_callback_url()
                   })
-        #me = oauth_session.get('').json()
+
         access_token = oauth_session.access_token
         user = oauth_session.get('https://api.github.com/user').json()
+
         return(access_token, user)
 
 

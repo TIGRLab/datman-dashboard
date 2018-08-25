@@ -25,7 +25,7 @@
         <tbody>
           {% for study in studies %}
           <tr class="clickable-row" data-href="{{ url_for('study', study_id=study.id) }}">
-            <td> {{ study.nickname }} </td>
+            <td> {{ study.id }} </td>
             <td>
               {% if study.new_sessions() %}
                 <span class="label label-primary new-qc">New
@@ -33,7 +33,7 @@
                 </span>
               {% endif %}
             </td>
-            <td>{{ study.name }}</a></td>
+            <td>{{ study.full_name }}</a></td>
             <td align="right">{{ study.sessions|count }}</td>
             <td class="click-me">
               <span> View More <span class="glyphicon glyphicon-menu-right"></span></span>

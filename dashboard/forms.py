@@ -64,7 +64,7 @@ class UserForm(FlaskForm):
     def __init__(self, *args, **kwargs):
         FlaskForm.__init__(self, *args, **kwargs)
         studies = Study.query.all()
-        study_choices = [(str(study.id), study.nickname) for study in studies]
+        study_choices = [(str(study.id), study.full_name) for study in studies]
         self.studies.choices = study_choices
 
 
