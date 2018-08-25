@@ -60,7 +60,7 @@ def load_user(id):
 
 def login_required(f):
     """
-    Checks the requester has a valid authenitcation cookie
+    Checks the requester has a valid authentication cookie
     """
     @wraps(f)
     def decorated_function(*args, **kwargs):
