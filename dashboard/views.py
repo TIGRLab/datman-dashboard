@@ -73,6 +73,10 @@ def login_required(f):
 @app.before_request
 def before_request():
     if current_user.is_authenticated:
+        if not current_user.is_active:
+            logout_user()
+            flash('Your account is disabled. Please contact an administrator.')
+            return
         db.session.add(current_user)
         db.session.commit()
 
@@ -877,7 +881,7 @@ def oauth_callback(provider):
 
     login_user(user, remember=True)
     # Not sure why this was done manually so commenting out for now
-    # flask_session['active_token'] = access_token
+    flask_session['active_token'] = access_token
     return redirect(url_for('index'))
 
 @app.route('/scan_comment', methods=['GET','POST'])

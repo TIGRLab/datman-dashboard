@@ -53,7 +53,7 @@ class User(UserMixin, db.Model):
     github_name = db.Column('github_username', db.String(64))
     gitlab_name = db.Column('gitlab_username', db.String(64))
     is_staff = db.Column('kimel_staff', db.Boolean, default=False)
-    account_active = db.Column('account_active', db.Boolean, default=False)
+    is_active = db.Column('account_active', db.Boolean, default=False)
 
     studies = db.relationship('StudyUser', back_populates='user')
     incidental_findings = db.relationship('IncidentalFinding')
