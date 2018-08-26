@@ -11,7 +11,11 @@
   </thead>
   <tbody>
     {% for session in study.sessions %}
-      {% include 'sessions_snip.html' %}
+      <!-- We only show pages for each timepoint (so repeat sessions will show up on 
+      the same page and dont need to be listed separately) -->
+      {% if session.num == 1 %}
+        {% include 'sessions_snip.html' %}
+      {% endif %}
     {% endfor %}
   </tbody>
 </table>

@@ -47,7 +47,7 @@ Most of the html in the divs is extracted into a snippet file and rendered
             {% for study in current_user.get_studies() %}
               <li>
                 <a href="{{ url_for('study', study_id=study.id) }}">
-                  {{ study.nickname }}
+                  {{ study.id }}
                 </a>
               </li>
             {% endfor %}

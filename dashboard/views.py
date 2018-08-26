@@ -1,14 +1,18 @@
 from functools import wraps
-from flask import render_template, flash, url_for, redirect, request, jsonify, abort, g, make_response, send_file
+from flask import render_template, flash, url_for, redirect, request, jsonify, \
+        abort, g, make_response, send_file
 from flask import session as flask_session
 from flask_login import login_user, logout_user, current_user, \
     login_required, fresh_login_required
 from sqlalchemy.exc import SQLAlchemyError
 from dashboard import app, db, lm
 from oauth import OAuthSignIn
-from .queries import query_metric_values_byid, query_metric_types, query_metric_values_byname
-from .models import Study, Site, Session, Scantype, Scan, User, AnalysisComment, Analysis, IncidentalFinding
-from .forms import SelectMetricsForm, StudyOverviewForm, SessionForm, ScanBlacklistForm, UserForm, ScanCommentForm, AnalysisForm
+from .queries import query_metric_values_byid, query_metric_types, \
+        query_metric_values_byname
+from .models import Study, Site, Session, Scantype, Scan, User, \
+        Timepoint, AnalysisComment, Analysis, IncidentalFinding
+from .forms import SelectMetricsForm, StudyOverviewForm, SessionForm, \
+        ScanBlacklistForm, UserForm, ScanCommentForm, AnalysisForm
 from . import utils
 from . import redcap as REDCAP
 import json
@@ -95,12 +99,12 @@ def index():
     """
     studies = current_user.get_studies()
 
-    session_count = Session.query.count()
+    timepoint_count = Timepoint.query.count()
     study_count = Study.query.count()
     site_count = Site.query.count()
     return render_template('index.html',
                            studies=studies,
-                           session_count=session_count,
+                           timepoint_count=timepoint_count,
                            study_count=study_count,
                            site_count=site_count)
 
@@ -216,8 +220,8 @@ def session_by_name(session_name=None):
     return redirect(url_for('session', session_id=session.id))
 
 
-@app.route('/create_issue/<int:session_id>', methods=['GET', 'POST'])
-@app.route('/create_issue/<int:session_id>/<issue_title>/<issue_body>', methods=['GET', 'POST'])
+@app.route('/create_issue/<string:session_id>', methods=['GET', 'POST'])
+@app.route('/create_issue/<string:session_id>/<issue_title>/<issue_body>', methods=['GET', 'POST'])
 @fresh_login_required
 def create_issue(session_id, issue_title="", issue_body=""):
     """
@@ -246,9 +250,9 @@ def create_issue(session_id, issue_title="", issue_body=""):
 
 
 @app.route('/session')
-@app.route('/session/<int:session_id>', methods=['GET', 'POST'])
-@app.route('/session/<int:session_id>/delete/<delete>', methods=['GET', 'POST'])
-@app.route('/session/<int:session_id>/flag_finding/<flag_finding>', methods=['GET', 'POST'])
+@app.route('/session/<string:session_id>', methods=['GET', 'POST'])
+@app.route('/session/<string:session_id>/delete/<delete>', methods=['GET', 'POST'])
+@app.route('/session/<string:session_id>/flag_finding/<flag_finding>', methods=['GET', 'POST'])
 @login_required
 def session(session_id=None, delete=False, flag_finding=False):
     """
@@ -455,12 +459,8 @@ def study(study_id=None, active_tab=None):
 
     if study_id is None:
         return redirect('/index')
-        #study_id = current_user.get_studies()[0].id
 
-    # get the study object from the database
-    study = Study.query.get(study_id)
-
-    if not current_user.has_study_access(study):
+    if not current_user.has_study_access(study_id):
         flash('Not authorised')
         return redirect(url_for('index'))
 
@@ -470,7 +470,7 @@ def study(study_id=None, active_tab=None):
     # load the study config
     cfg = dm.config.config()
     try:
-        cfg.set_study(study.nickname)
+        cfg.set_study(study_id)
     except KeyError:
         abort(500)
 
@@ -500,7 +500,7 @@ def study(study_id=None, active_tab=None):
                     shutil.copyfile(readme_path, backup_file)
                 except (IOError, os.error, shutil.Error), why:
                     logger.error('Failed to backup readme for study {} with excuse {}'
-                                 .format(study.nickname, why))
+                                 .format(study_id, why))
                     abort(500)
 
             with codecs.open(readme_path, encoding='utf-8', mode='w') as myfile:
@@ -512,6 +512,9 @@ def study(study_id=None, active_tab=None):
 
     # get the list of metrics to be displayed in the graph pages from the study config
     display_metrics = app.config['DISPLAY_METRICS']
+
+    # get the study object from the database
+    study = Study.query.get(study_id)
 
     return render_template('study.html',
                            metricnames=study.get_valid_metric_names(),

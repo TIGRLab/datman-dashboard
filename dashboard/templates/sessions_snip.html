@@ -1,18 +1,18 @@
 <tr>
   <td>
-    <a href={{ url_for('session', session_id=session.id) }}>
+    <a href={{ url_for('session', session_id=session.name) }}>
       {{ session.name }}
     </a>
   </td>
   <td>
-    {% if session.is_qcd() %}
+    {% if session.timepoint.is_qcd() %}
     <span class="glyphicon glyphicon-ok"/>
     {% else %}
     <span class="glyphicon glyphicon-edit"/>
     {% endif %}
   </td>
   <td>
-    {% if session.is_phantom %}
+    {% if session.timepoint.is_phantom %}
     <span class="glyphicon glyphicon-ok"/>
     {% else %}
     <span class="glyphicon glyphicon-edit"/>

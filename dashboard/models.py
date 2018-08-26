@@ -84,6 +84,13 @@ class User(UserMixin, db.Model):
             studies = [study_user.study for study_user in self.studies]
         return studies
 
+    def has_study_access(self, study):
+        if self.is_staff:
+            return True
+        if isinstance(study, Study):
+            study = Study.id
+        return study in [su.study_id for su in self.studies]
+
     def __repr__(self):
         return "<User {}: {} {}>".format(self.id, self.first_name,
                 self.last_name)
@@ -94,7 +101,7 @@ class Study(db.Model):
 
     id = db.Column('id', db.String(32), primary_key=True)
     code = db.Column('study_code', db.String(32))
-    full_name = db.Column('name', db.String(1024))
+    name = db.Column('name', db.String(1024))
     description = db.Column('description', db.Text)
 
     users = db.relationship('StudyUser', back_populates='study')
@@ -114,6 +121,63 @@ class Study(db.Model):
         need_qc = [session for session in self.sessions
                 if not session.timepoint.is_phantom and not session.signed_off]
         return len(need_qc)
+
+    def get_valid_metric_names(self):
+        """
+        Return a list of metric names with duplicates removed.
+
+        TODO: This entire method needs to be updated to be less hard-coded. We
+        should get the 'type' of scan from our config file 'qc_type' field
+        instead (and store it in the database). For now I just got it
+        working with the new schema - Dawn
+        """
+        valid_fmri_scantypes = ['IMI', 'RST', 'EMP', 'OBS', 'SPRL', 'VN-SPRL']
+        names = []
+        for scantype in self.scantypes:
+            for metrictype in scantype.metrictypes:
+                if scantype.tag.startswith('DTI'):
+                    names.append(('DTI', metrictype.name))
+                elif scantype.tag in valid_fmri_scantypes:
+                    names.append(('FMRI', metrictype.name))
+                elif scantype.tag == 'T1':
+                    names.append(('T1', metrictype.name))
+
+        names = sorted(set(names))
+        return(names)
+
+    def session_count(self, type=''):
+        if type.lower() == 'human':
+            sessions = [sess for sess in self.sessions
+                    if not sess.timepoint.is_phantom]
+        elif type.lower() == 'phantom':
+            sessions = [sess for sess in self.sessions
+                    if sess.timepoint.is_phantom]
+        else:
+            sessions = self.sessions
+        return len(sessions)
+
+    def outstanding_issues(self):
+        session_list = []
+        for session in self.sessions:
+            if (not session.is_qcd() or
+                    self.needs_redcap_survey(session) or
+                    session.expecting_scans()):
+                session_list.append(session)
+        return session_list
+
+    def get_primary_contacts(self):
+        contacts = [study_user.user for study_user in self.users
+                if study_user.primary_contact]
+        return contacts
+
+    def needs_redcap_survey(self, session):
+        if session.timepoint.is_phantom:
+            return False
+        cur_site = [study_site for study_site in self.sites
+                if study_site.site_id == session.timepoint.site_id][0]
+        if cur_site.uses_redcap:
+            return not session.redcap_record_id
+        return False
 
     def __repr__(self):
         return "<Study {}>".format(self.id)
@@ -160,6 +224,11 @@ class Timepoint(db.Model):
         self.github_issue = github_issue
         self.gitlab_issue = gitlab_issue
 
+    def is_qcd(self):
+        if self.is_phantom:
+            return True
+        return all(sess.is_qcd() for sess in self.sessions)
+
     def __repr__(self):
         return "<Timepoint {}>".format(self.id)
 
@@ -196,6 +265,14 @@ class Session(db.Model):
         self.reviewer = reviewer
         self.review_date = review_date
         self.redcap_record = redcap_record
+
+    def is_qcd(self):
+        if self.timepoint.is_phantom:
+            return True
+        return self.signed_off
+
+    def expecting_scans(self):
+        return (self.redcap_record and not self.scans)
 
     def __repr__(self):
         return "<Session {}, {}>".format(self.name, self.num)

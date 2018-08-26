@@ -6,9 +6,9 @@
     <h3 class="panel-title chevron-toggle">Study Details</h3>
   </div>
   <div class="panel-body collapse in" id="studyInfo">
-    {% if study.primary_contact %}
-      <div>Primary Investigator: {{ study.primary_contact.name }}</div>
-    {% endif %}
+    {% for contact in study.get_primary_contacts() %}
+      <div>Primary Investigator: {{ contact.first_name }} {{ contact.last_name }}</div>
+    {% endfor %}
   </div>
 </div>
 

@@ -1,4 +1,4 @@
-<div style="display:none" id='study_name'>{{ study.nickname }}</div>
+<div style="display:none" id='study_name'>{{ study.id }}</div>
 <div style="display:none" id='phantoms'>0</div>
 </br>
 <div class="row">
@@ -10,7 +10,7 @@
       <h4>
       Select sites:
       {% for site in study.sites %}
-        <label>{{ site.name }} <input type="checkbox" aria-label="{{site.name}}" value="{{site.name}}" name="site"/></label>
+        <label>{{ site.site_id }} <input type="checkbox" aria-label="{{site.site_id}}" value="{{site.site_id}}" name="site"/></label>
       {% endfor %}
     </h4>
   </div>
@@ -29,11 +29,12 @@
     <div class="btn-group col-md-3" role="group" aria-label="scan tags" id="scantypeselector">Select scan subtype:</br>
         <span class="text-left">
         {% for scantype in study.scantypes %}
-          {% if scantype.name.startswith('DTI') %}
-            <label style="display:none" class="scantype_dti"> {{ scantype.name }}<input type="checkbox" aria-label="{{scantype.name}}" value="{{scantype.name}}" name="scantype" style="margin-top: 5px;"/></label>
-          {% elif scantype.name in ['IMI', 'RST', 'EMP', 'OBS', 'SPRL', 'VN-SPRL', 'MID', 'SID', 'NBK'] %}
-            <label style="display:none" class="scantype_fmri"> {{ scantype.name }}<input type="checkbox" aria-label="{{scantype.name}}" value="{{scantype.name}}" name="scantype" style="margin-top: 5px;"/></label>
+          {% if scantype.tag.startswith('DTI') %}
+            {% set class = 'scantype_dti' %}
+          {% elif scantype.tag in ['IMI', 'RST', 'EMP', 'OBS', 'SPRL', 'VN-SPRL', 'MID', 'SID', 'NBK'] %}
+            {% set class = 'scantype_fmri' %}
           {% endif %}
+          <label style="display:none" class="{{ class }}"> {{ scantype.tag }}<input type="checkbox" aria-label="{{scantype.name}}" value="{{scantype.name}}" name="scantype" style="margin-top: 5px;"/></label>
         {% endfor %}
       </span>
     </div>

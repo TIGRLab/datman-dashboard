@@ -6,7 +6,7 @@
     <div id="home-body">
       <div class="jumbotron">
         <h1>Kimel TIGR Lab MR Quality Control</h1>
-          <p class="lead"> Monitoring {{ session_count }} Sessions for {{ study_count }} Studies.</p>
+          <p class="lead"> Monitoring {{ timepoint_count }} Sessions for {{ study_count }} Studies.</p>
         </h1>
       </div>
       {% if studies|count > 0 %}
@@ -33,7 +33,7 @@
                 </span>
               {% endif %}
             </td>
-            <td>{{ study.full_name }}</a></td>
+            <td>{{ study.name }}</a></td>
             <td align="right">{{ study.sessions|count }}</td>
             <td class="click-me">
               <span> View More <span class="glyphicon glyphicon-menu-right"></span></span>
