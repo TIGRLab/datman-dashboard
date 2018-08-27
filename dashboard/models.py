@@ -186,7 +186,7 @@ class Study(db.Model):
 class Site(db.Model):
     __tablename__ = 'sites'
 
-    name = db.Column('name', db.String(64), primary_key=True)
+    name = db.Column('name', db.String(32), primary_key=True)
     description = db.Column('description', db.Text)
 
     studies = db.relationship('StudySite', back_populates='site')
@@ -203,13 +203,15 @@ class Site(db.Model):
 class Timepoint(db.Model):
     __tablename__ = 'timepoints'
 
-    id = db.Column('id', db.String(64), primary_key=True)
-    site_id = db.Column('site', db.String(64), db.ForeignKey('sites.name'),
+    name = db.Column('name', db.String(64), primary_key=True)
+    site_id = db.Column('site', db.String(32), db.ForeignKey('sites.name'),
             nullable=False)
     is_phantom = db.Column('is_phantom', db.Boolean, nullable=False,
             default=False)
     github_issue = db.Column('github_issue', db.Integer)
     gitlab_issue = db.Column('gitlab_issue', db.Integer)
+    last_qc_repeat_generated =  db.Column('last_qc_generated', db.Integer,
+            nullable=False, default=1)
 
     site = db.relationship('Site', uselist=False, back_populates='timepoints')
     sessions = db.relationship('Session')
@@ -236,7 +238,7 @@ class Timepoint(db.Model):
 class Session(db.Model):
     __tablename__ = 'sessions'
 
-    name = db.Column('name', db.String(64), db.ForeignKey('timepoints.id'),
+    name = db.Column('name', db.String(64), db.ForeignKey('timepoints.name'),
             primary_key=True)
     num = db.Column('num', db.Integer, primary_key=True)
     date = db.Column('date', db.DateTime)
@@ -345,10 +347,10 @@ class TimepointComment(db.Model):
 
     id = db.Column('id', db.Integer, primary_key=True)
     timepoint_id = db.Column('timepoint', db.String(64),
-            db.ForeignKey('timepoints.id'), nullable=False)
+            db.ForeignKey('timepoints.name'), nullable=False)
     user_id = db.Column('user_id', db.Integer, db.ForeignKey('users.id'),
             nullable=False)
-    timestamp = db.Column('comment_date', db.DateTime(timezone=True),
+    timestamp = db.Column('comment_timestamp', db.DateTime(timezone=True),
             nullable=False)
     comment = db.Column('comment', db.Text, nullable=False)
 
@@ -377,7 +379,7 @@ class ScanBlacklist(db.Model):
     scan_name = db.Column('scan_name', db.String(128), nullable=False)
     user_id = db.Column('user_id', db.Integer, db.ForeignKey('users.id'),
             nullable=False)
-    timestamp = db.Column('date_added', db.DateTime(timezone=True),
+    timestamp = db.Column('comment_timestamp', db.DateTime(timezone=True),
             nullable=False)
     comment = db.Column('comment', db.Text, nullable=False)
 
@@ -493,7 +495,7 @@ class StudySite(db.Model):
 
     study_id = db.Column('study', db.String(32), db.ForeignKey('studies.id'),
             primary_key=True)
-    site_id = db.Column('site', db.String(64), db.ForeignKey('sites.name'),
+    site_id = db.Column('site', db.String(32), db.ForeignKey('sites.name'),
             primary_key=True)
     uses_redcap = db.Column('uses_redcap', db.Boolean, default=False)
 
@@ -536,7 +538,7 @@ class IncidentalFinding(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'),
             nullable=False)
-    timepoint_id = db.Column(db.String(64), db.ForeignKey('timepoints.id'),
+    timepoint_id = db.Column(db.String(64), db.ForeignKey('timepoints.name'),
             nullable=False)
     description = db.Column(db.Text)
 
