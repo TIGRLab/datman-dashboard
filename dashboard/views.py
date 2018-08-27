@@ -153,16 +153,17 @@ def user(user_id=None):
     form = UserForm()
 
     if form.validate_on_submit():
-        if form.user_id.data == current_user.id or current_user.is_admin:
+        if form.user_id.data == current_user.id or current_user.is_staff:
             user = User.query.get(form.user_id.data)
-            user.realname = form.realname.data
-            if current_user.is_admin:
+            user.first_name = form.first_name.data
+            user.last_name = form.last_name.data
+            # if current_user.is_admin:
                 # only admins can update this info
-                user.is_admin = form.is_admin.data
-                user.has_phi = form.has_phi.data
-                for study_id in form.studies.data:
-                    study = Study.query.get(int(study_id))
-                    user.studies.append(study)
+                # user.is_admin = form.is_admin.data
+                # user.has_phi = form.has_phi.data
+                # for study_id in form.studies.data:
+                #     study = Study.query.get(int(study_id))
+                #     user.studies.append(study)
             db.session.add(user)
             db.session.commit()
             flash('User profile updated')
@@ -170,27 +171,26 @@ def user(user_id=None):
         else:
             flash('You are not authorised to update this')
             return(redirect(url_for('user')))
+
+    if user_id and current_user.is_staff:
+        user = User.query.get(user_id)
     else:
-        if user_id and current_user.is_admin:
-            user = User.query.get(user_id)
-        else:
-            user = current_user
+        user = current_user
 
-        user_studyids = [study.id for study in user.studies]
+    form.user_id.data = user.id
+    form.first_name.data = user.first_name
+    form.last_name.data = user.last_name
+    # form.is_admin.data = user.is_admin
+    # form.has_phi.data = user.has_phi
+    form.studies.data = [study.id for study in user.get_studies()]
 
-        form.user_id.data = user.id
-        form.realname.data = user.realname
-        form.is_admin.data = user.is_admin
-        form.has_phi.data = user.has_phi
-        form.studies.data = user_studyids
-        if not current_user.is_admin:
-            # disable some fields
-            form.is_admin(disabled=True)
-            form.has_phi(disabled=True)
-            form.studies(disabled=True)
-    return render_template('user.html',
-                           user=user,
-                           form=form)
+    # if not current_user.is_admin:
+    #     # disable some fields
+    #     form.is_admin(disabled=True)
+    #     form.has_phi(disabled=True)
+    #     form.studies(disabled=True)
+
+    return render_template('user.html', user=user, form=form)
 
 @app.route('/session_by_name')
 @app.route('/session_by_name/<session_name>', methods=['GET'])

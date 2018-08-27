@@ -1,17 +1,14 @@
   {{ form.hidden_tag() }}
   {{ form.user_id }}
   <div class="form-group">
-    <label for="realname">Name:</label>
-    {{ form.realname }}
+    {{ form.first_name.label }}
+    {{ form.first_name }}
+    <br>
+    {{ form.last_name.label }}
+    {{ form.last_name }}
   </div>
   <div class="form-group">
-    <label for="is_admin">Admin:
-    {{ form.is_admin }}</label>
-    <label for="has_phi">Access PHI:
-    {{ form.has_phi }}</label>
-  </div>
-  <div class="form-group">
-    <label for="studies">Studies:</label>
-      {{ form.studies }}
+    {{ form.studies.label }}<br>
+    {{ form.studies }}
   </div>
   <button type="Submit" class="btn btn-default">Update</button>

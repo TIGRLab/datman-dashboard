@@ -10,7 +10,7 @@ from flask import session
 from flask_wtf import FlaskForm
 from wtforms import SelectField, SelectMultipleField, HiddenField, SubmitField
 from wtforms import TextAreaField, TextField, FormField, BooleanField
-from wtforms.validators import DataRequired
+from wtforms.validators import DataRequired, Email
 from models import Study, Analysis
 from wtforms.csrf.session import SessionCSRF
 
@@ -55,17 +55,26 @@ class SessionForm(FlaskForm):
 
 class UserForm(FlaskForm):
     user_id = HiddenField()
-    realname = TextField(u'realname',
+    first_name = TextField(u'First Name: ',
                          validators=[DataRequired()])
-    is_admin = BooleanField(u'is_admin', default=False)
-    has_phi = BooleanField(u'has_phi', default=False)
-    studies = SelectMultipleField(u'studies')
+    last_name = TextField(u'Last Name: ',
+                         validators=[DataRequired()])
+    # email = TextField(u'Email', validators=[DataRequired(), Email()])
+    # position = TextField(u'Position')
+    # institution = TextField(u'Institution')
+    # phone1 = TextField(u'Phone Number')
+    # phone2 = TextField(u'Alt. Phone Number')
+    # github_name = TextField(u'GitHub Username')
+    # gitlab_name = TextField(u'GitLab Username')
+    # is_staff = BooleanField(u'Kimel Staff', default=False)
+    # is_active = BooleanField(u'Active Account', default=False)
+    # has_phi = BooleanField(u'PHI Access', default=False)
+    studies = SelectMultipleField(u'Studies')
 
     def __init__(self, *args, **kwargs):
         FlaskForm.__init__(self, *args, **kwargs)
         studies = Study.query.all()
-        study_choices = [(str(study.id), study.full_name) for study in studies]
-        self.studies.choices = study_choices
+        self.studies.choices = [(study.id, study.name) for study in studies]
 
 
 class AnalysisForm(FlaskForm):

@@ -2,7 +2,7 @@
 {% include 'flash.html' %}
 {% block content %}
   <div class="jumbotron">
-    <h1>{{ user.realname }}</h1>
+    <h1>{{ user.first_name }} {{ user.last_name }}</h1>
   </div>
   <div class="container">
     <form action="{{ url_for('user')}}" method="post" name="profile">
