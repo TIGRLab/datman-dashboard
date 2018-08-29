@@ -8,8 +8,10 @@ This allows us to create HTML forms in python without having to worry about
 
 from flask import session
 from flask_wtf import FlaskForm
-from wtforms import SelectField, SelectMultipleField, HiddenField, SubmitField
-from wtforms import TextAreaField, TextField, FormField, BooleanField
+from wtforms import SelectField, SelectMultipleField, HiddenField, SubmitField, \
+        TextAreaField, TextField, FormField, BooleanField, widgets, FieldList, \
+        RadioField
+from wtforms.compat import iteritems
 from wtforms.validators import DataRequired, Email
 from models import Study, Analysis
 from wtforms.csrf.session import SessionCSRF
@@ -52,30 +54,99 @@ class SessionForm(FlaskForm):
     cl_comment = TextAreaField(u'Checklist_comment',
                            validators=[DataRequired()])
 
+# class MultiCheckboxField(SelectMultipleField):
+#     widget = widgets.ListWidget(prefix_label=False)
+#     option_widget = widgets.CheckboxInput()
+
+# class StudySelectionForm(FlaskForm):
+#     # studies = MultiCheckboxField(u'Study Access')
+#
+#
+#     def __init__(self, *args, **kwargs):
+#         FlaskForm.__init__(self, *args, **kwargs)
+#         studies = Study.query.all()
+#         study_choices = [(study.id, study.id) for study in studies]
+#         self.studies.choices = sorted(study_choices)
+
+# class BooleanSubField(BooleanField):
+#     """
+#     Work around for the fact that BooleanFields in a FormField list get
+#     set to 'True' regardless of what default you specify, as
+#     explained here: https://github.com/wtforms/wtforms/issues/308
+#     """
+#     def process_data(self, value):
+#         if isinstance(value, BooleanField):
+#             self.data = value.data
+#         else:
+#             self.data = bool(value)
+#
+# class StudyPermissionsForm(FlaskForm):
+#     study_id = TextField('Study: ', render_kw={'readonly': True})
+#     user_id = HiddenField()
+#     enabled = BooleanSubField('Access enabled')
+#     phi_access = BooleanSubField('PHI Access: ')
+#     is_admin = BooleanSubField('Admin Access (can delete data + comments): ')
+#     primary_contact = BooleanSubField('Primary Contact (usually the PI): ')
+#     kimel_contact = BooleanSubField('Kimel Contact (i.e. staff member(s) in ' +
+#         'charge of handling this study): ')
+#     study_RA = BooleanSubField('Study RA: ')
+#     does_qc = BooleanSubField('Does QC: ')
+
+class PermissionRadioField(RadioField):
+
+    def __init__(self, *args, **kwargs):
+        super(PermissionRadioField, self).__init__(**kwargs)
+        self.coerce = bool
+        self.choices = [(False, 'Disabled'), (True, 'Enabled')]
+        self.default = False
+
+class StudyPermissionsForm(FlaskForm):
+    study_id = HiddenField()
+    user_id = HiddenField()
+    phi_access = PermissionRadioField('PHI Access: ')
+    is_admin = PermissionRadioField('Admin Access (can delete data + comments): ')
+    primary_contact = PermissionRadioField('Primary Contact (usually the PI): ')
+    kimel_contact = PermissionRadioField('Kimel Contact (i.e. staff member(s) in ' +
+        'charge of handling this study): ')
+    study_RA = PermissionRadioField('Study RA: ')
+    does_qc = PermissionRadioField('Does QC: ')
 
 class UserForm(FlaskForm):
-    user_id = HiddenField()
+    id = HiddenField()
     first_name = TextField(u'First Name: ',
                          validators=[DataRequired()])
     last_name = TextField(u'Last Name: ',
                          validators=[DataRequired()])
-    # email = TextField(u'Email', validators=[DataRequired(), Email()])
-    # position = TextField(u'Position')
-    # institution = TextField(u'Institution')
-    # phone1 = TextField(u'Phone Number')
-    # phone2 = TextField(u'Alt. Phone Number')
-    # github_name = TextField(u'GitHub Username')
-    # gitlab_name = TextField(u'GitLab Username')
-    # is_staff = BooleanField(u'Kimel Staff', default=False)
-    # is_active = BooleanField(u'Active Account', default=False)
-    # has_phi = BooleanField(u'PHI Access', default=False)
-    studies = SelectMultipleField(u'Studies')
+    email = TextField(u'Email: ')
+    position = TextField(u'Position: ')
+    institution = TextField(u'Institution: ')
+    phone1 = TextField(u'Phone Number: ')
+    phone2 = TextField(u'Alt. Phone Number: ')
+    github_name = TextField(u'GitHub Username: ')
+    gitlab_name = TextField(u'GitLab Username: ')
 
-    def __init__(self, *args, **kwargs):
-        FlaskForm.__init__(self, *args, **kwargs)
-        studies = Study.query.all()
-        self.studies.choices = [(study.id, study.name) for study in studies]
+class UserAdminForm(UserForm):
+    is_staff = BooleanField(u'Dashboard Admin: ')
+    is_active = BooleanField(u'Active Account: ')
+    studies = FieldList(FormField(StudyPermissionsForm))
 
+    # def __init__(self, *args, **kwargs):
+    #     FlaskForm.__init__(self, *args, **kwargs)
+    #     user = User.query.get(17)
+    #     user_studies = user.studies
+    #     for record in user_studies:
+    #         permissions = StudyPermissionsForm(obj=record)
+    #         self.studies.append_entry(permissions)
+
+    # def populate_obj(self, obj):
+    #     for study in obj.studies:
+    #         permissions = StudyPermissionsForm(obj=study)
+    #         self.studies.append_entry(permissions)
+    #     UserForm.populate_obj(self, obj)
+        # for name, field in iteritems(self._fields):
+        #     if name == 'studies':
+        #         continue
+        #     field.populate_obj(obj, name)
 
 class AnalysisForm(FlaskForm):
     name = TextField(u'Brief name',

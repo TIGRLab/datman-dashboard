@@ -1,14 +1,81 @@
   {{ form.hidden_tag() }}
-  {{ form.user_id }}
-  <div class="form-group">
-    {{ form.first_name.label }}
-    {{ form.first_name }}
-    <br>
-    {{ form.last_name.label }}
-    {{ form.last_name }}
+  <div class="panel panel-primary" title="Basic user demographic information">
+    <div class="panel-heading" data-toggle="collapse" data-target="#userInfo">
+      <h3 class="panel-title chevron-toggle">User Details</h3>
+    </div>
+    <div class="panel-body collapse in" id="userInfo">
+      {{ form.first_name.label }} {{ form.first_name() }}<br>
+      {{ form.last_name.label }} {{ form.last_name() }}<br>
+      {{ form.email.label }} {{ form.email() }}<br>
+      {{ form.position.label }} {{ form.position() }}<br>
+      {{ form.institution.label }} {{ form.institution() }}<br>
+      {{ form.phone1.label }} {{ form.phone1() }}<br>
+      {{ form.phone2.label }} {{ form.phone2() }}<br>
+      {{ form.github_name.label }} {{ form.github_name() }}<br>
+      {{ form.gitlab_name.label }} {{ form.gitlab_name() }}<br>
+    </div>
   </div>
-  <div class="form-group">
-    {{ form.studies.label }}<br>
-    {{ form.studies }}
-  </div>
-  <button type="Submit" class="btn btn-default">Update</button>
+
+  {% if current_user.is_staff %}
+    <div class="panel panel-primary" title="User permissions and access settings (Admin Only)">
+      <div class="panel-heading" data-toggle="collapse" data-target="#userPermissions">
+        <h3 class="panel-title chevron-toggle">User Permissions (Admin View)</h3>
+      </div>
+      <div class="panel-body collapse in" id="userPermissions">
+        {{ form.is_active.label }} {{ form.is_active() }}
+        {{ form.is_staff.label }} {{ form.is_staff() }}
+        <br>
+        <table>
+          <tr>
+            <th>Study</th>
+            <th>Setting</th>
+            <th>Disabled</th>
+            <th>Enabled</th>
+          </tr>
+          <!-- Iterate over settings form for each Study this user has access to
+          and then iterate over the radio choices to align them on one row
+          (otherwise they print as a list) -->
+          {% for study_form in form.studies %}
+            <tr>
+              <td rowspan="6">{{ study_form.hidden_tag() }}{{ study_form.study_id.data }}</td>
+              <td>{{ study_form.phi_access.label }}</td>
+              {% for subfield in study_form.phi_access %}
+                <td>{{ subfield }}</td>
+              {% endfor %}
+            </tr>
+            <tr>
+              <td>{{ study_form.is_admin.label }}</td>
+              {% for subfield in study_form.is_admin %}
+                <td>{{ subfield }}</td>
+              {% endfor %}
+            </tr>
+            <tr>
+              <td>{{ study_form.primary_contact.label }}</td>
+              {% for subfield in study_form.primary_contact %}
+                <td>{{ subfield }}</td>
+              {% endfor %}
+            </tr>
+            <tr>
+              <td>{{ study_form.kimel_contact.label }}</td>
+              {% for subfield in study_form.kimel_contact %}
+                <td>{{ subfield }}</td>
+              {% endfor %}
+            </tr>
+            <tr>
+              <td>{{ study_form.study_RA.label }}</td>
+              {% for subfield in study_form.study_RA %}
+                <td>{{ subfield }}</td>
+              {% endfor %}
+            </tr>
+            <tr>
+              <td>{{ study_form.does_qc.label }}</td>
+              {% for subfield in study_form.does_qc %}
+                <td>{{ subfield }}</td>
+              {% endfor %}
+            </tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+  {% endif %}
+  <button type="Submit" class="btn btn-primary">Update</button>

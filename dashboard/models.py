@@ -78,6 +78,9 @@ class User(UserMixin, db.Model):
         self.account_active = account_active
 
     def get_studies(self):
+        """
+        Get a list of Study objects that this user has access to.
+        """
         if self.is_staff:
             studies = Study.query.all()
         else:
@@ -85,6 +88,9 @@ class User(UserMixin, db.Model):
         return studies
 
     def has_study_access(self, study):
+        """
+        Check if user has access to a specific study.
+        """
         if self.is_staff:
             return True
         if isinstance(study, Study):
@@ -469,20 +475,23 @@ class StudyUser(db.Model):
     phi_access = db.Column('phi_access', db.Boolean, default=False)
     is_admin = db.Column('is_admin', db.Boolean, default=False)
     primary_contact = db.Column('primary_contact', db.Boolean, default=False)
-    staff_contact = db.Column('staff_contact', db.Boolean, default=False)
+    kimel_contact = db.Column('kimel_contact', db.Boolean, default=False)
+    study_RA = db.Column('study_ra', db.Boolean, default=False)
     does_qc = db.Column('does_qc', db.Boolean, default=False)
 
     study = db.relationship('Study', back_populates='users')
     user = db.relationship('User', back_populates='studies')
 
     def __init__(self, study_id, user_id, phi=False, admin=False,
-            is_primary_contact=False, is_staff_contact=False, does_qc=False):
+            is_primary_contact=False, is_kimel_contact=False, is_study_RA=False,
+            does_qc=False):
         self.study_id = study_id
         self.user_id = user_id
         self.phi_access = phi
         self.is_admin = admin
         self.primary_contact = is_primary_contact
-        self.staff_contact = is_staff_contact
+        self.kimel_contact = is_kimel_contact
+        self.study_RA = is_study_RA
         self.does_qc = does_qc
 
     def __repr__(self):
