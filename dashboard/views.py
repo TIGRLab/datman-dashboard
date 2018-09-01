@@ -1,33 +1,35 @@
 from functools import wraps
-from flask import render_template, flash, url_for, redirect, request, jsonify, \
-        abort, g, make_response, send_file
-from flask import session as flask_session
-from flask_login import login_user, logout_user, current_user, \
-    login_required, fresh_login_required
-from sqlalchemy.exc import SQLAlchemyError
-from dashboard import app, db, lm
-from oauth import OAuthSignIn
-from .queries import query_metric_values_byid, query_metric_types, \
-        query_metric_values_byname
-from .models import Study, Site, Session, Scantype, Scan, User, \
-        Timepoint, AnalysisComment, Analysis, IncidentalFinding
-from .forms import SelectMetricsForm, StudyOverviewForm, SessionForm, \
-        ScanBlacklistForm, UserForm, ScanCommentForm, AnalysisForm
-from . import utils
-from . import redcap as REDCAP
 import json
 import csv
 import io
 import os
 import codecs
 import datetime
-import datman as dm
 import shutil
 import logging
-import inspect
+from xml.sax.saxutils import escape
+
+from flask import render_template, flash, url_for, redirect, request, jsonify, \
+        abort, g, make_response, send_file
+from flask import session as flask_session
+from flask_login import login_user, logout_user, current_user, \
+    login_required, fresh_login_required
+from sqlalchemy.exc import SQLAlchemyError
+from oauth import OAuthSignIn
 from github import Github, GithubException
 
-from xml.sax.saxutils import escape
+import datman as dm
+from dashboard import app, db, lm
+from . import utils
+from . import redcap as REDCAP
+from .queries import query_metric_values_byid, query_metric_types, \
+        query_metric_values_byname
+from .models import Study, Site, Session, Scantype, Scan, User, \
+        Timepoint, AnalysisComment, Analysis, IncidentalFinding, StudyUser
+from .forms import SelectMetricsForm, StudyOverviewForm, SessionForm, \
+        ScanBlacklistForm, UserForm, ScanCommentForm, AnalysisForm, \
+        UserAdminForm
+from .view_utils import get_user_form, report_form_errors
 
 logger = logging.getLogger(__name__)
 logger.info('Loading views')
@@ -148,47 +150,61 @@ def users():
 @login_required
 def user(user_id=None):
     """
-    View for updating a users information
+    View for updating a user's information
     """
-    form = UserForm()
 
-    if form.validate_on_submit():
-        if form.user_id.data == current_user.id or current_user.is_staff:
-            user = User.query.get(form.user_id.data)
-            user.first_name = form.first_name.data
-            user.last_name = form.last_name.data
-            # if current_user.is_admin:
-                # only admins can update this info
-                # user.is_admin = form.is_admin.data
-                # user.has_phi = form.has_phi.data
-                # for study_id in form.studies.data:
-                #     study = Study.query.get(int(study_id))
-                #     user.studies.append(study)
-            db.session.add(user)
-            db.session.commit()
-            flash('User profile updated')
-            return(redirect(url_for('user', user_id=user_id)))
-        else:
-            flash('You are not authorised to update this')
-            return(redirect(url_for('user')))
+    if user_id and user_id != current_user.id and not current_user.dashboard_admin:
+        flash("You are not authorized to view other user settings")
+        return redirect(url_for('user'))
 
-    if user_id and current_user.is_staff:
+    if user_id:
         user = User.query.get(user_id)
     else:
         user = current_user
 
-    form.user_id.data = user.id
-    form.first_name.data = user.first_name
-    form.last_name.data = user.last_name
-    # form.is_admin.data = user.is_admin
-    # form.has_phi.data = user.has_phi
-    form.studies.data = [study.id for study in user.get_studies()]
+    form = get_user_form(user, current_user)
 
-    # if not current_user.is_admin:
-    #     # disable some fields
-    #     form.is_admin(disabled=True)
-    #     form.has_phi(disabled=True)
-    #     form.studies(disabled=True)
+    if form.validate_on_submit():
+        submitted_id = form.id.data
+
+        if submitted_id != current_user.id and not current_user.dashboard_admin:
+            # This if statement is needed to catch malicious users who update
+            # the user_id submitted with the form to modify other user settings
+            flash("You are not authorized to update other users' settings.")
+            return redirect(url_for('user'))
+
+        updated_user = User.query.get(submitted_id)
+
+        if form.update_access.data:
+            # Give user access to new study
+            for study in form.add_access.data:
+                record = StudyUser(study, updated_user.id)
+                updated_user.studies.append(record)
+        elif form.revoke_all_access.data:
+            # Revoke access to all enabled studies
+            for study_user_record in updated_user.studies:
+                db.session.delete(study_user_record)
+        else:
+            # Update user info
+            form.populate_obj(updated_user)
+
+        # Revoke user's access to a single study if a 'remove access' was pushed
+        for study_form in form.studies:
+            if not study_form.revoke_access.data:
+                continue
+            for study_user_record in updated_user.studies:
+                if study_user_record.study_id == study_form.study_id.data:
+                    db.session.delete(study_user_record)
+            # Only one can be pushed at a time, so exit as soon as it's deleted
+            break
+
+        db.session.add(updated_user)
+        db.session.commit()
+
+        flash("User profile updated.")
+        return redirect(url_for('user', user_id=submitted_id))
+
+    report_form_errors(form)
 
     return render_template('user.html', user=user, form=form)
 

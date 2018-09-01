@@ -92,24 +92,7 @@ class SessionForm(FlaskForm):
 #     study_RA = BooleanSubField('Study RA: ')
 #     does_qc = BooleanSubField('Does QC: ')
 
-class PermissionRadioField(RadioField):
 
-    def __init__(self, *args, **kwargs):
-        super(PermissionRadioField, self).__init__(**kwargs)
-        self.coerce = bool
-        self.choices = [(False, 'Disabled'), (True, 'Enabled')]
-        self.default = False
-
-class StudyPermissionsForm(FlaskForm):
-    study_id = HiddenField()
-    user_id = HiddenField()
-    phi_access = PermissionRadioField('PHI Access: ')
-    is_admin = PermissionRadioField('Admin Access (can delete data + comments): ')
-    primary_contact = PermissionRadioField('Primary Contact (usually the PI): ')
-    kimel_contact = PermissionRadioField('Kimel Contact (i.e. staff member(s) in ' +
-        'charge of handling this study): ')
-    study_RA = PermissionRadioField('Study RA: ')
-    does_qc = PermissionRadioField('Does QC: ')
 
 class UserForm(FlaskForm):
     id = HiddenField()
@@ -124,16 +107,39 @@ class UserForm(FlaskForm):
     phone2 = TextField(u'Alt. Phone Number: ')
     github_name = TextField(u'GitHub Username: ')
     gitlab_name = TextField(u'GitLab Username: ')
+    update = SubmitField(label='Update')
+
+class PermissionRadioField(RadioField):
+
+    def __init__(self, *args, **kwargs):
+        super(PermissionRadioField, self).__init__(**kwargs)
+        self.choices = [(u'False', 'Disabled'), (u'True', 'Enabled')]
+        self.default = u'False'
+
+class StudyPermissionsForm(FlaskForm):
+    study_id = HiddenField()
+    user_id = HiddenField()
+    phi_access = PermissionRadioField('PHI Access: ')
+    is_admin = PermissionRadioField('Admin Access (can delete data + comments): ')
+    primary_contact = PermissionRadioField('Primary Contact (usually the PI): ')
+    kimel_contact = PermissionRadioField('Kimel Contact (i.e. staff member(s) in ' +
+        'charge of handling this study): ')
+    study_RA = PermissionRadioField('Study RA: ')
+    does_qc = PermissionRadioField('Does QC: ')
+    revoke_access = SubmitField(label='Remove Access')
 
 class UserAdminForm(UserForm):
-    is_staff = BooleanField(u'Dashboard Admin: ')
+    dashboard_admin = BooleanField(u'Dashboard Admin: ')
     is_active = BooleanField(u'Active Account: ')
     studies = FieldList(FormField(StudyPermissionsForm))
+    add_access = SelectMultipleField('Give Access to Studies: ')
+    update_access = SubmitField(label='Give Access')
+    revoke_all_access = SubmitField(label='Remove All')
+
 
     # def __init__(self, *args, **kwargs):
     #     FlaskForm.__init__(self, *args, **kwargs)
-    #     user = User.query.get(17)
-    #     user_studies = user.studies
+    #     user_studies = obj.studies
     #     for record in user_studies:
     #         permissions = StudyPermissionsForm(obj=record)
     #         self.studies.append_entry(permissions)

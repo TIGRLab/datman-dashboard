@@ -16,14 +16,16 @@
     </div>
   </div>
 
-  {% if current_user.is_staff %}
+  {% if current_user.dashboard_admin %}
     <div class="panel panel-primary" title="User permissions and access settings (Admin Only)">
       <div class="panel-heading" data-toggle="collapse" data-target="#userPermissions">
         <h3 class="panel-title chevron-toggle">User Permissions (Admin View)</h3>
       </div>
       <div class="panel-body collapse in" id="userPermissions">
         {{ form.is_active.label }} {{ form.is_active() }}
-        {{ form.is_staff.label }} {{ form.is_staff() }}
+        {{ form.dashboard_admin.label }} {{ form.dashboard_admin() }}
+        <br>
+        {{ form.add_access.label }}{{ form.add_access }}{{ form.update_access(class_='btn btn-primary') }}
         <br>
         <table>
           <tr>
@@ -31,6 +33,7 @@
             <th>Setting</th>
             <th>Disabled</th>
             <th>Enabled</th>
+            <th></th>
           </tr>
           <!-- Iterate over settings form for each Study this user has access to
           and then iterate over the radio choices to align them on one row
@@ -42,6 +45,7 @@
               {% for subfield in study_form.phi_access %}
                 <td>{{ subfield }}</td>
               {% endfor %}
+              <td rowspan="6">{{ study_form.revoke_access(class_='btn btn-danger') }}</td>
             </tr>
             <tr>
               <td>{{ study_form.is_admin.label }}</td>
@@ -75,7 +79,9 @@
             </tr>
           {% endfor %}
         </table>
+        {{ form.revoke_all_access(class_='btn btn-danger')}}
       </div>
     </div>
   {% endif %}
-  <button type="Submit" class="btn btn-primary">Update</button>
+
+  {{ form.update(class_='btn btn-primary') }}

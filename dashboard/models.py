@@ -52,7 +52,7 @@ class User(UserMixin, db.Model):
     phone2 = db.Column('phone2', db.String(20))
     github_name = db.Column('github_username', db.String(64))
     gitlab_name = db.Column('gitlab_username', db.String(64))
-    is_staff = db.Column('kimel_staff', db.Boolean, default=False)
+    dashboard_admin = db.Column('dashboard_admin', db.Boolean, default=False)
     is_active = db.Column('account_active', db.Boolean, default=False)
 
     studies = db.relationship('StudyUser', back_populates='user')
@@ -64,7 +64,7 @@ class User(UserMixin, db.Model):
 
     def __init__(self, first, last, email=None, position=None, institution=None,
             phone1=None, phone2=None, github_name=None, gitlab_name=None,
-            is_staff=False, account_active=False):
+            dashboard_admin=False, account_active=False):
         self.first_name = first
         self.last_name = last
         self.email = email
@@ -74,14 +74,14 @@ class User(UserMixin, db.Model):
         self.phone2 = phone2
         self.github_name = github_name
         self.gitlab_name = gitlab_name
-        self.is_staff = is_staff
+        self.dashboard_admin = dashboard_admin
         self.account_active = account_active
 
     def get_studies(self):
         """
         Get a list of Study objects that this user has access to.
         """
-        if self.is_staff:
+        if self.dashboard_admin:
             studies = Study.query.all()
         else:
             studies = [study_user.study for study_user in self.studies]
@@ -91,7 +91,7 @@ class User(UserMixin, db.Model):
         """
         Check if user has access to a specific study.
         """
-        if self.is_staff:
+        if self.dashboard_admin:
             return True
         if isinstance(study, Study):
             study = Study.id
