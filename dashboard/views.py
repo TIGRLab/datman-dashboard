@@ -1,4 +1,3 @@
-from functools import wraps
 import json
 import csv
 import io
@@ -7,13 +6,14 @@ import codecs
 import datetime
 import shutil
 import logging
+from functools import wraps
 from xml.sax.saxutils import escape
 
+from flask import session as flask_session
 from flask import render_template, flash, url_for, redirect, request, jsonify, \
         abort, g, make_response, send_file
-from flask import session as flask_session
 from flask_login import login_user, logout_user, current_user, \
-    login_required, fresh_login_required
+        login_required, fresh_login_required
 from sqlalchemy.exc import SQLAlchemyError
 from oauth import OAuthSignIn
 from github import Github, GithubException
@@ -195,7 +195,7 @@ def user(user_id=None):
             for study_user_record in updated_user.studies:
                 if study_user_record.study_id == study_form.study_id.data:
                     db.session.delete(study_user_record)
-            # Only one can be pushed at a time, so exit as soon as it's deleted
+            # Only one can be pushed at a time, so exit once the match is deleted
             break
 
         db.session.add(updated_user)
@@ -265,30 +265,31 @@ def create_issue(session_id, issue_title="", issue_body=""):
     return(redirect(url_for('session', session_id=session.id)))
 
 
-@app.route('/session')
-@app.route('/session/<string:session_id>', methods=['GET', 'POST'])
-@app.route('/session/<string:session_id>/delete/<delete>', methods=['GET', 'POST'])
-@app.route('/session/<string:session_id>/flag_finding/<flag_finding>', methods=['GET', 'POST'])
+@app.route('/timepoint')
+@app.route('/timepoint/<string:timepoint_id>', methods=['GET', 'POST'])
+@app.route('/timepoint/<string:timepoint_id>/delete/<delete>', methods=['GET', 'POST'])
+@app.route('/timepoint/<string:timepoint_id>/flag_finding/<flag_finding>', methods=['GET', 'POST'])
 @login_required
-def session(session_id=None, delete=False, flag_finding=False):
+def timepoint(timepoint_id=None, delete=False, flag_finding=False):
     """
-    Default view for a single session_id
-    If called as http://srv-dashboard/session/<session_id>/delete/True it will
-    delete the session from the database
+    Default view for a single timepoint
+    If called as http://srv-dashboard/timepoint/<timepoint_id>/delete/True it will
+    delete the timepoint and its sessions from the database
 
     """
-    if session_id is None:
+    if timepoint_id is None:
         return redirect('index')
 
-    session = Session.query.get(session_id)
+    timepoint = Timepoint.query.get(timepoint_id)
 
-    if session is None:
+    if timepoint is None:
+        flash("Timepoint {} does not exist".format(timepoint_id))
         return redirect('index')
 
 
-    if not current_user.has_study_access(session.study):
-        flash('Not authorised')
-        return redirect(url_for('index'))
+    if not current_user.has_study_access(timepoint.study):
+        flash('Not authorised to view {}'.format(timepoint.study))
+        return redirect('index')
 
     try:
         # Update open issue ID if necessary
@@ -298,75 +299,75 @@ def session(session_id=None, delete=False, flag_finding=False):
         flash('It appears you\'ve been idle too long; please sign in again.')
         return redirect(url_for('login'))
 
-    try:
-        # check to see if any issues have been posted on github for this session
-        gh = Github(token)
-        # Due to the way GitHub search API works, splitting session name into separate search terms will find a session
-        # regardless of repeat number, and will not match other sessions with the same study/site
-
-        open_issues = gh.search_issues("{} in:title repo:TIGRLab/admin state:open".format(str(session.name).replace("_"," ")))
-        if open_issues.totalCount:
-            session.gh_issue = open_issues[0].number
-        else:
-            session.gh_issue = None
-        db.session.commit()
-    except Exception as e:
-        if not (isinstance(e, GithubException) and e.status==422):
-            flash("Error searching for session's GitHub issue.")
-
-    if delete:
-        try:
-            if current_user.is_admin:
-                session.delete()
-            else:
-                flash('You dont have permission to do that')
-                raise Exception
-            flash('Deleted session:{}'.format(session.name))
-            return redirect(url_for('study',
-                                    study_id=session.study_id,
-                                    active_tab='qc'))
-        except Exception:
-            flash('Failed to delete session:{}'.format(session.name))
-
-    if flag_finding:
-        try:
-            incident = IncidentalFinding()
-            incident.session_id = session.id
-            incident.user_id = current_user.id
-
-            db.session.add(incident)
-            db.session.commit()
-            flash('Finding flagged.')
-            return redirect(url_for('session',
-                                    session_id=session.id))
-        except:
-            logger.error('Failed flagging finding for session:{}'
-                         .format(session.id))
-            flash('Failed flagging finding. Admins have been notified')
-
-    studies = current_user.get_studies()
-    form = SessionForm(obj=session)
-
-    # This form deals with the checklist comments.
-    # Updating the checklist in the database causes checklist.csv to be updated
-    # see models.py
-    scancomment_form = ScanCommentForm()
-
-    if form.validate_on_submit():
-        # form has been submitted
-        session.cl_comment = form.cl_comment.data
-        try:
-            db.session.add(session)
-            db.session.commit()
-            flash('Session updated')
-            return redirect(url_for('study',
-                                    study_id=session.study_id,
-                                    active_tab='qc'))
-
-        except SQLAlchemyError as err:
-            logger.error('Session update failed:{}'.format(str(err)))
-            flash('Update failed, admins have been notified, please try again')
-        form.populate_obj(session)
+    # try:
+    #     # check to see if any issues have been posted on github for this session
+    #     gh = Github(token)
+    #     # Due to the way GitHub search API works, splitting session name into separate search terms will find a session
+    #     # regardless of repeat number, and will not match other sessions with the same study/site
+    #
+    #     open_issues = gh.search_issues("{} in:title repo:TIGRLab/admin state:open".format(str(session.name).replace("_"," ")))
+    #     if open_issues.totalCount:
+    #         session.gh_issue = open_issues[0].number
+    #     else:
+    #         session.gh_issue = None
+    #     db.session.commit()
+    # except Exception as e:
+    #     if not (isinstance(e, GithubException) and e.status==422):
+    #         flash("Error searching for session's GitHub issue.")
+    #
+    # if delete:
+    #     try:
+    #         if current_user.is_admin:
+    #             session.delete()
+    #         else:
+    #             flash('You dont have permission to do that')
+    #             raise Exception
+    #         flash('Deleted session:{}'.format(session.name))
+    #         return redirect(url_for('study',
+    #                                 study_id=session.study_id,
+    #                                 active_tab='qc'))
+    #     except Exception:
+    #         flash('Failed to delete session:{}'.format(session.name))
+    #
+    # if flag_finding:
+    #     try:
+    #         incident = IncidentalFinding()
+    #         incident.session_id = session.id
+    #         incident.user_id = current_user.id
+    #
+    #         db.session.add(incident)
+    #         db.session.commit()
+    #         flash('Finding flagged.')
+    #         return redirect(url_for('session',
+    #                                 session_id=session.id))
+    #     except:
+    #         logger.error('Failed flagging finding for session:{}'
+    #                      .format(session.id))
+    #         flash('Failed flagging finding. Admins have been notified')
+    #
+    # studies = current_user.get_studies()
+    # form = SessionForm(obj=session)
+    #
+    # # This form deals with the checklist comments.
+    # # Updating the checklist in the database causes checklist.csv to be updated
+    # # see models.py
+    # scancomment_form = ScanCommentForm()
+    #
+    # if form.validate_on_submit():
+    #     # form has been submitted
+    #     session.cl_comment = form.cl_comment.data
+    #     try:
+    #         db.session.add(session)
+    #         db.session.commit()
+    #         flash('Session updated')
+    #         return redirect(url_for('study',
+    #                                 study_id=session.study_id,
+    #                                 active_tab='qc'))
+    #
+    #     except SQLAlchemyError as err:
+    #         logger.error('Session update failed:{}'.format(str(err)))
+    #         flash('Update failed, admins have been notified, please try again')
+    #     form.populate_obj(session)
 
     return render_template('session.html',
                            studies=studies,

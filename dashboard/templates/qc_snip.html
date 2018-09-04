@@ -5,7 +5,7 @@
   <div class="panel-body collapse in" id="qclist">
     <table class="table table-striped table-hover table-condensed">
       {% for session in pending_qc %}
-          <tr class="clickable-row" data-href="{{ url_for('session', session_id=session.id) }}">
+          <tr class="clickable-row" data-href="{{ url_for('timepoint', timepoint_id=session.id) }}">
             <td>{{ session.name }}</td>
             <td>
               <!-- Add label for 'missing redcap' if required -->

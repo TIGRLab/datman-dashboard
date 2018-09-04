@@ -25,16 +25,13 @@ Most of the html in the divs is extracted into a snippet file and rendered
       {% endif %}
         <p class="lead">
           <ul class="list-inline">
-            <li>Human: <span class="badge">{{study.session_count('human')}}</span></li>
-            <li>Phantom: <span class="badge">{{study.session_count('phantom')}}</span></li>
+            <li>Human: <span class="badge">{{study.num_timepoints('human')}}</span></li>
+            <li>Phantom: <span class="badge">{{study.num_timepoints('phantom')}}</span></li>
           </ul>
         </p>
     </div>
 
-    {% set pending_qc = study.outstanding_issues() %}
-    {% if pending_qc|count %}
-      {% include 'qc_snip.html' %}
-    {% endif %}
+
 
     <div role="navigation">
       <!-- THE LIST OF TAB HEADERS STARTS HERE -->
@@ -74,7 +71,7 @@ Most of the html in the divs is extracted into a snippet file and rendered
         {% include 'study_overview_snip.html' %}
       </div>
       <div class="tab-pane" id="sessions">
-        {% include 'session_list_snip.html' %}
+        {% include 'timepoint_list_snip.html' %}
       </div>
       <div class="tab-pane" id="phantoms">
         {% include 'metric_selections_phantom_snip.html' %}

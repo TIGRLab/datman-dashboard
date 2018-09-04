@@ -1,5 +1,5 @@
 <!-- Code snippet for session list table on study page  -->
-<br/>
+<br>
 
 <table class="table table-condensed table-hover table-striped" id="tbl_sessions">
   <thead>
@@ -10,12 +10,8 @@
     </tr>
   </thead>
   <tbody>
-    {% for session in study.sessions %}
-      <!-- We only show pages for each timepoint (so repeat sessions will show up on 
-      the same page and dont need to be listed separately) -->
-      {% if session.num == 1 %}
-        {% include 'sessions_snip.html' %}
-      {% endif %}
+    {% for timepoint in study.timepoints %}
+      {% include 'timepoints_snip.html' %}
     {% endfor %}
   </tbody>
 </table>

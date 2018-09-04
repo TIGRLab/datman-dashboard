@@ -27,14 +27,12 @@ study_scantype_table = db.Table('study_scantypes',
         db.Column('scantype', db.String(64), db.ForeignKey('scantypes.tag'),
                 nullable=False))
 
-study_sessions_table = db.Table('study_sessions',
+study_timepoints_table = db.Table('study_timepoints',
         db.Column('study', db.String(32), db.ForeignKey('studies.id'),
                 nullable=False),
-        db.Column('timepoint', db.String(64), nullable=False),
-        db.Column('session', db.Integer, nullable=False),
-        ForeignKeyConstraint(('timepoint', 'session'),
-                ('sessions.name', 'sessions.num')),
-        UniqueConstraint('study', 'timepoint', 'session'))
+        db.Column('timepoint', db.String(64), db.ForeignKey('timepoints.name'),
+                nullable=False),
+        UniqueConstraint('study', 'timepoint'))
 
 ################################################################################
 # Plain entities
@@ -55,7 +53,8 @@ class User(UserMixin, db.Model):
     dashboard_admin = db.Column('dashboard_admin', db.Boolean, default=False)
     is_active = db.Column('account_active', db.Boolean, default=False)
 
-    studies = db.relationship('StudyUser', back_populates='user')
+    studies = db.relationship('StudyUser', back_populates='user',
+            order_by='StudyUser.study_id')
     incidental_findings = db.relationship('IncidentalFinding')
     blacklist_comments = db.relationship('ScanBlacklist')
     timepoint_comments = db.relationship('TimepointComment')
@@ -82,7 +81,7 @@ class User(UserMixin, db.Model):
         Get a list of Study objects that this user has access to.
         """
         if self.dashboard_admin:
-            studies = Study.query.all()
+            studies = Study.query.order_by(Study.id).all()
         else:
             studies = [study_user.study for study_user in self.studies]
         return studies
@@ -112,8 +111,8 @@ class Study(db.Model):
 
     users = db.relationship('StudyUser', back_populates='study')
     sites = db.relationship('StudySite', back_populates='study')
-    sessions = db.relationship('Session', secondary=study_sessions_table,
-            back_populates='studies')
+    timepoints = db.relationship('Timepoint', secondary=study_timepoints_table,
+            back_populates='studies', lazy='dynamic')
     scantypes = db.relationship('Scantype', secondary=study_scantype_table,
             back_populates='studies')
 
@@ -124,9 +123,12 @@ class Study(db.Model):
         self.description = description
 
     def new_sessions(self):
-        need_qc = [session for session in self.sessions
-                if not session.timepoint.is_phantom and not session.signed_off]
-        return len(need_qc)
+        # Doing this 'manually' to prevent SQLAlchemy from sending one query per
+        # timepoint per study
+        num_new = self.timepoints.filter(Timepoint.is_phantom == False) \
+                .filter(Timepoint.name == Session.name) \
+                .filter(Session.signed_off == False).count()
+        return num_new
 
     def get_valid_metric_names(self):
         """
@@ -151,39 +153,40 @@ class Study(db.Model):
         names = sorted(set(names))
         return(names)
 
-    def session_count(self, type=''):
+    def num_timepoints(self, type=''):
         if type.lower() == 'human':
-            sessions = [sess for sess in self.sessions
-                    if not sess.timepoint.is_phantom]
+            sessions = [timepoint for timepoint in self.timepoints
+                    if not timepoint.is_phantom]
         elif type.lower() == 'phantom':
-            sessions = [sess for sess in self.sessions
-                    if sess.timepoint.is_phantom]
+            sessions = [timepoint for timepoint in self.timepoints
+                    if timepoint.is_phantom]
         else:
-            sessions = self.sessions
+            sessions = self.timepoints
         return len(sessions)
-
-    def outstanding_issues(self):
-        session_list = []
-        for session in self.sessions:
-            if (not session.is_qcd() or
-                    self.needs_redcap_survey(session) or
-                    session.expecting_scans()):
-                session_list.append(session)
-        return session_list
+    #
+    # def outstanding_issues(self):
+    #     timepoint_list = []
+    #     for timepoint in self.timepoints:
+    #         for session in timepoint.sessions:
+    #             if (not session.is_qcd() or
+    #                     self.needs_redcap_survey(timepoint) or
+    #                     session.expecting_scans()):
+    #                 session_list.append(session)
+    #     return session_list
+    #
+    # def needs_redcap_survey(self, timepoint):
+    #     if timepoint.is_phantom:
+    #         return False
+    #     cur_site = [study_site for study_site in self.sites
+    #             if study_site.site_id == timepoint.site_id][0]
+    #     if cur_site.uses_redcap:
+    #         return not session.redcap_record_id
+    #     return False
 
     def get_primary_contacts(self):
         contacts = [study_user.user for study_user in self.users
                 if study_user.primary_contact]
         return contacts
-
-    def needs_redcap_survey(self, session):
-        if session.timepoint.is_phantom:
-            return False
-        cur_site = [study_site for study_site in self.sites
-                if study_site.site_id == session.timepoint.site_id][0]
-        if cur_site.uses_redcap:
-            return not session.redcap_record_id
-        return False
 
     def __repr__(self):
         return "<Study {}>".format(self.id)
@@ -220,13 +223,15 @@ class Timepoint(db.Model):
             nullable=False, default=1)
 
     site = db.relationship('Site', uselist=False, back_populates='timepoints')
+    studies = db.relationship('Study', secondary=study_timepoints_table,
+            back_populates='timepoints')
     sessions = db.relationship('Session')
     comments = db.relationship('TimepointComment')
     incidental_findings = db.relationship('IncidentalFinding')
 
-    def __init__(self, t_id, site, is_phantom=False, github_issue=None,
+    def __init__(self, name, site, is_phantom=False, github_issue=None,
             gitlab_issue=None):
-        self.id = t_id
+        self.name = name
         self.site = site
         self.is_phantom = is_phantom
         self.github_issue = github_issue
@@ -238,7 +243,7 @@ class Timepoint(db.Model):
         return all(sess.is_qcd() for sess in self.sessions)
 
     def __repr__(self):
-        return "<Timepoint {}>".format(self.id)
+        return "<Timepoint {}>".format(self.name)
 
 
 class Session(db.Model):
@@ -257,8 +262,6 @@ class Session(db.Model):
     timepoint = db.relationship('Timepoint', uselist=False,
             back_populates='sessions')
     scans = db.relationship('Scan')
-    studies = db.relationship('Study', secondary=study_sessions_table,
-            back_populates='sessions')
     reviewer = db.relationship('User', uselist=False,
             back_populates='sessions_reviewed')
     redcap_record = db.relationship('RedcapRecord', uselist=False,
