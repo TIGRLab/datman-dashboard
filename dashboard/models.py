@@ -12,6 +12,7 @@ import datetime
 
 from flask_login import UserMixin
 from sqlalchemy.schema import UniqueConstraint, ForeignKeyConstraint
+from sqlalchemy import and_, exists
 
 from dashboard import db
 
@@ -33,6 +34,13 @@ study_timepoints_table = db.Table('study_timepoints',
         db.Column('timepoint', db.String(64), db.ForeignKey('timepoints.name'),
                 nullable=False),
         UniqueConstraint('study', 'timepoint'))
+
+session_redcap_table = db.Table('session_redcap', db.Model.metadata,
+        db.Column('name', db.String(64), nullable=False),
+        db.Column('num', db.Integer, nullable=False),
+        db.Column('record_id', db.Integer, db.ForeignKey('redcap_records.id')),
+        db.ForeignKeyConstraint(['name', 'num'],
+                ['sessions.name', 'sessions.num']))
 
 ################################################################################
 # Plain entities
@@ -122,13 +130,101 @@ class Study(db.Model):
         self.full_name = full_name
         self.description = description
 
-    def new_sessions(self):
+    def get_new_sessions(self):
         # Doing this 'manually' to prevent SQLAlchemy from sending one query per
         # timepoint per study
-        num_new = self.timepoints.filter(Timepoint.is_phantom == False) \
-                .filter(Timepoint.name == Session.name) \
-                .filter(Session.signed_off == False).count()
-        return num_new
+        return self.timepoints.filter(Timepoint.is_phantom == False) \
+                .filter(Session.name == Timepoint.name) \
+                .filter(Session.signed_off == False)
+
+    def num_timepoints(self, type=''):
+        if type.lower() == 'human':
+            timepoints = [timepoint for timepoint in self.timepoints
+                    if not timepoint.is_phantom]
+        elif type.lower() == 'phantom':
+            timepoints = [timepoint for timepoint in self.timepoints
+                    if timepoint.is_phantom]
+        else:
+            timepoints = self.timepoints
+        return len(timepoints)
+
+    def outstanding_issues(self):
+        missing_redcap = self.get_missing_redcap()
+        new_sessions = self.get_new_sessions()
+        missing_scans = self.get_missing_scans()
+
+        # issue_list = {}
+        # return session_list
+
+    def get_sessions_using_redcap(self):
+        """
+        Returns a query that will find all sessions in the current study that
+        expect a redcap survey (whether or not we've already received one for them)
+
+        Doing this manually rather than letting SQLAlchemy handle it behind
+        the scenes because it was firing off one query per session every time a
+        study page loaded. So it's way uglier, but way faster. Sorry :(
+        """
+        uses_redcap = db.session.query(Session, session_redcap_table) \
+                .outerjoin(session_redcap_table) \
+                .join(Timepoint) \
+                .join(study_timepoints_table,
+                        and_(study_timepoints_table.c.timepoint == Timepoint.name,
+                        study_timepoints_table.c.study == self.id)) \
+                .join(StudySite,
+                        and_(StudySite.site_id == Timepoint.site_id,
+                        StudySite.study_id == study_timepoints_table.c.study)) \
+                .filter(Timepoint.is_phantom == False) \
+                .filter(StudySite.uses_redcap == True)
+
+        return uses_redcap
+
+    def get_missing_redcap(self):
+        """
+        Returns a list of all non-phantoms for the current study
+        that are expecting a redcap survey but dont yet have one.
+        """
+        uses_redcap = self.get_sessions_using_redcap()
+        sessions = uses_redcap.filter(session_redcap_table.c.record_id == None) \
+                .from_self(Session.name, Session.num)
+        return sessions.all()
+
+    def get_missing_scans(self):
+        """
+        Returns a list of session names + repeat numbers for sessions in this
+        study that have a scan completed survey but no scan data yet.
+        """
+        uses_redcap = self.get_sessions_using_redcap()
+        sessions = uses_redcap.filter(session_redcap_table.c.record_id != None) \
+                .filter(~exists().where(and_(Scan.timepoint == Session.name,
+                        Scan.repeat == Session.num))) \
+                .from_self(Session.name, Session.num)
+        return sessions.all()
+
+    #
+    #     # session_list = []
+    #     # for timepoint in self.timepoints:
+    #     #     for session in timepoint.sessions:
+    #     #         if (not session.is_qcd() or
+    #     #                 self.needs_redcap_survey(session) or
+    #     #                 session.expecting_scans()):
+    #     #             session_list.append(session)
+    #     # return session_list
+    #
+    # def get_missing_redcap(self):
+    #     missing_redcap = self.timepoints.filter(Timepoint.is_phantom == False) \
+    #             .filter(Timepoint.site == self.studies.site_id) \
+    #             .filter()
+
+
+    # def needs_redcap_survey(self, session):
+    #     if session.timepoint.is_phantom:
+    #         return False
+    #     cur_site = [study_site for study_site in self.sites
+    #             if study_site.site_id == session.timepoint.site_id][0]
+    #     if cur_site.uses_redcap:
+    #         return not session.redcap_record_id
+    #     return False
 
     def get_valid_metric_names(self):
         """
@@ -152,36 +248,6 @@ class Study(db.Model):
 
         names = sorted(set(names))
         return(names)
-
-    def num_timepoints(self, type=''):
-        if type.lower() == 'human':
-            sessions = [timepoint for timepoint in self.timepoints
-                    if not timepoint.is_phantom]
-        elif type.lower() == 'phantom':
-            sessions = [timepoint for timepoint in self.timepoints
-                    if timepoint.is_phantom]
-        else:
-            sessions = self.timepoints
-        return len(sessions)
-    #
-    # def outstanding_issues(self):
-    #     timepoint_list = []
-    #     for timepoint in self.timepoints:
-    #         for session in timepoint.sessions:
-    #             if (not session.is_qcd() or
-    #                     self.needs_redcap_survey(timepoint) or
-    #                     session.expecting_scans()):
-    #                 session_list.append(session)
-    #     return session_list
-    #
-    # def needs_redcap_survey(self, timepoint):
-    #     if timepoint.is_phantom:
-    #         return False
-    #     cur_site = [study_site for study_site in self.sites
-    #             if study_site.site_id == timepoint.site_id][0]
-    #     if cur_site.uses_redcap:
-    #         return not session.redcap_record_id
-    #     return False
 
     def get_primary_contacts(self):
         contacts = [study_user.user for study_user in self.users
@@ -225,7 +291,7 @@ class Timepoint(db.Model):
     site = db.relationship('Site', uselist=False, back_populates='timepoints')
     studies = db.relationship('Study', secondary=study_timepoints_table,
             back_populates='timepoints')
-    sessions = db.relationship('Session')
+    sessions = db.relationship('Session', lazy='joined')
     comments = db.relationship('TimepointComment')
     incidental_findings = db.relationship('IncidentalFinding')
 
@@ -256,16 +322,16 @@ class Session(db.Model):
     signed_off = db.Column('signed_off', db.Boolean, default=False)
     reviewer_id = db.Column('reviewer', db.Integer, db.ForeignKey('users.id'))
     review_date = db.Column('review_date', db.DateTime(timezone=True))
-    redcap_record_id = db.Column('redcap_record', db.Integer,
-            db.ForeignKey('redcap_records.id'))
 
+
+    redcap_record = db.relationship('RedcapRecord',
+            secondary=session_redcap_table, back_populates='sessions',
+            uselist=False)
     timepoint = db.relationship('Timepoint', uselist=False,
             back_populates='sessions')
     scans = db.relationship('Scan')
     reviewer = db.relationship('User', uselist=False,
             back_populates='sessions_reviewed')
-    redcap_record = db.relationship('RedcapRecord', uselist=False,
-            back_populates='sessions')
 
     def __init__(self, name, num, date=None, signed_off=False, reviewer=None,
             review_date=None, redcap_record=None):
@@ -422,14 +488,16 @@ class RedcapRecord(db.Model):
     redcap_version = db.Column('redcap_version', db.String(10), default='7.4.2')
     event_id = db.Column('event_id', db.Integer)
 
-    sessions = db.relationship('Session', back_populates='redcap_record')
+    sessions = db.relationship('Session', secondary=session_redcap_table,
+            back_populates='redcap_record')
 
-    __table_args__ = (UniqueConstraint(record, project, url),)
+    __table_args__ = (UniqueConstraint(record, project, url, event_id),)
 
-    def __init__(self, record, project, url):
+    def __init__(self, record, project, url, event_id=None):
         self.record = record
         self.project = project
         self.url = url
+        self.event_id = event_id
 
     def __repr__(self):
         return "<RedcapRecord {}: record {} project {} url {}>".format(self.id,
@@ -503,7 +571,7 @@ class StudyUser(db.Model):
 
 
 class StudySite(db.Model):
-    __tablename__ = 'study_site'
+    __tablename__ = 'study_sites'
 
     study_id = db.Column('study', db.String(32), db.ForeignKey('studies.id'),
             primary_key=True)

@@ -11,7 +11,27 @@
   </thead>
   <tbody>
     {% for timepoint in study.timepoints %}
-      {% include 'timepoints_snip.html' %}
+      <tr>
+        <td>
+          <a href={{ url_for('timepoint', timepoint_id=timepoint.name) }}>
+            {{ timepoint.name }}
+          </a>
+        </td>
+        <td>
+          {% if timepoint.is_qcd() %}
+          <span class="glyphicon glyphicon-ok"/>
+          {% else %}
+          <span class="glyphicon glyphicon-edit"/>
+          {% endif %}
+        </td>
+        <td>
+          {% if timepoint.is_phantom %}
+          <span class="glyphicon glyphicon-ok"/>
+          {% else %}
+          <span class="glyphicon glyphicon-edit"/>
+          {% endif %}
+        </td>
+      </tr>
     {% endfor %}
   </tbody>
 </table>

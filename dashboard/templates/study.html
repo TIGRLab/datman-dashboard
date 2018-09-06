@@ -31,6 +31,10 @@ Most of the html in the divs is extracted into a snippet file and rendered
         </p>
     </div>
 
+    {% set pending_qc = study.outstanding_issues() %}
+    {% if pending_qc|count %}
+      {% include 'qc_snip.html' %}
+    {% endif %}
 
 
     <div role="navigation">
