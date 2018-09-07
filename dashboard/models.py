@@ -133,9 +133,12 @@ class Study(db.Model):
     def get_new_sessions(self):
         # Doing this 'manually' to prevent SQLAlchemy from sending one query per
         # timepoint per study
-        return self.timepoints.filter(Timepoint.is_phantom == False) \
-                .filter(Session.name == Timepoint.name) \
-                .filter(Session.signed_off == False)
+        new = db.session.query(Session).filter(Session.signed_off == False) \
+                .join(Timepoint).filter(Timepoint.is_phantom == False) \
+                .join(study_timepoints_table,
+                        and_(study_timepoints_table.c.timepoint == Timepoint.name,
+                        study_timepoints_table.c.study == self.id))
+        return new
 
     def num_timepoints(self, type=''):
         if type.lower() == 'human':
@@ -149,12 +152,30 @@ class Study(db.Model):
         return len(timepoints)
 
     def outstanding_issues(self):
+        # use from_self to get a tuple of Session.name, Session.num like from
+        # the other queries
+        new_sessions = self.get_new_sessions().from_self(Session.name,
+                Session.num).all()
         missing_redcap = self.get_missing_redcap()
-        new_sessions = self.get_new_sessions()
         missing_scans = self.get_missing_scans()
 
-        # issue_list = {}
-        # return session_list
+        new_label = '<span class="label label-primary new-badge">' + \
+                '<span class="badge">New</span></span>'
+        redcap_label = '<span class="label qc-warnings label-info" ' + \
+                'title="Participant does not have a REDCap survey even ' + \
+                'though this scan site collects them">Missing REDCap</span>'
+        scans_label = '<span class="label qc-warnings label-warning" ' + \
+                'title="Participant exists in REDCap but does not have ' + \
+                'scans">Missing Scans</span>'
+
+        issues = {}
+        for session in new_sessions:
+            issues.setdefault(session, []).append(new_label)
+        for session in missing_redcap:
+            issues.setdefault(session, []).append(redcap_label)
+        for session in missing_scans:
+            issues.setdefault(session, []).append(scans_label)
+        return issues
 
     def get_sessions_using_redcap(self):
         """

@@ -5,17 +5,14 @@
   <div class="panel-body collapse in" id="qclist">
     <table class="table table-striped table-hover table-condensed">
       {% for session in pending_qc %}
-          <tr class="clickable-row" data-href="{{ url_for('timepoint', timepoint_id=session.id) }}">
-            <td>{{ session[0] }}</td>
+        <!-- 'session' is a tuple (Session.name, Session.num) -->
+        {% set timepoint = session[0] %}
+          <tr class="clickable-row" data-href="{{ url_for('timepoint', timepoint_id=timepoint) }}">
+            <td>{{ timepoint }}</td>
             <td>
-              <!-- Add label for 'missing redcap' if required -->
-              {% if study.needs_redcap_survey(session) %}
-                <span class="label qc-warnings label-info" title="Participant does not have a REDCap survey even though this scan site collects them">Missing REDCap</span>
-              {% endif %}
-              <!-- Add label for 'missing imaging' if required -->
-              {% if session.expecting_scans() %}
-                <span class="label qc-warnings label-warning" title="Participant exists in REDCap but does not have scans">Missing Scans</span>
-              {% endif %}
+              {% for label in pending_qc[session] %}
+                {{ label|safe }}
+              {% endfor %}
             </td>
           </tr>
       {% endfor %}
