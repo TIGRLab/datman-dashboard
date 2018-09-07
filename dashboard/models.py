@@ -12,7 +12,7 @@ import datetime
 
 from flask_login import UserMixin
 from sqlalchemy.schema import UniqueConstraint, ForeignKeyConstraint
-from sqlalchemy import and_, exists
+from sqlalchemy import and_, exists, func
 
 from dashboard import db
 
@@ -130,16 +130,6 @@ class Study(db.Model):
         self.full_name = full_name
         self.description = description
 
-    def get_new_sessions(self):
-        # Doing this 'manually' to prevent SQLAlchemy from sending one query per
-        # timepoint per study
-        new = db.session.query(Session).filter(Session.signed_off == False) \
-                .join(Timepoint).filter(Timepoint.is_phantom == False) \
-                .join(study_timepoints_table,
-                        and_(study_timepoints_table.c.timepoint == Timepoint.name,
-                        study_timepoints_table.c.study == self.id))
-        return new
-
     def num_timepoints(self, type=''):
         if type.lower() == 'human':
             timepoints = [timepoint for timepoint in self.timepoints
@@ -156,31 +146,59 @@ class Study(db.Model):
         # the other queries
         new_sessions = self.get_new_sessions().from_self(Session.name,
                 Session.num).all()
+        need_rewrite = self.needs_rewrite()
         missing_redcap = self.get_missing_redcap()
         missing_scans = self.get_missing_scans()
 
-        new_label = '<span class="label label-primary new-badge">' + \
-                '<span class="badge">New</span></span>'
-        redcap_label = '<span class="label qc-warnings label-info" ' + \
-                'title="Participant does not have a REDCap survey even ' + \
-                'though this scan site collects them">Missing REDCap</span>'
-        scans_label = '<span class="label qc-warnings label-warning" ' + \
-                'title="Participant exists in REDCap but does not have ' + \
-                'scans">Missing Scans</span>'
+        new_label = '<td class="col-xs-2"><span class="fa-layers fa-fw" ' + \
+                'style="font-size: 38px;"><i class="fas ' + \
+                'fa-certificate" style="color: tomato"></i>' + \
+                '<span class="fa-layers-text fa-inverse" ' + \
+                'data-fa-transform="shrink-11.5 rotate--30" ' + \
+                'style="font-weight:900">NEW</span></span></td>'
+        rewrite_label = '<td class="col-xs-2"><span class="label ' + \
+                'qc-warnings label-danger" title="Repeat session not on QC ' + \
+                'page. Regenerate page by running dm_qc_report.py with the ' + \
+                '--rewrite flag">Needs Rewrite</span></td>'
+        scans_label = '<td class="col-xs-2"><span class="label qc-warnings ' + \
+                'label-warning" title="Participant exists in REDCap but ' + \
+                'does not have scans">Missing Scans</span></td>'
+        redcap_label = '<td class="col-xs-2"><span class="label ' + \
+                'qc-warnings label-info" title="Participant ' + \
+                'does not have a REDCap survey even though this scan ' + \
+                'site collects them">Missing REDCap</span></td>'
+
 
         issues = {}
+        # Using default_row[:] in setdefault() to make sure each row has its
+        # own copy of the list
+        default_row = ['<td></td>'] * 4
         for session in new_sessions:
-            issues.setdefault(session, []).append(new_label)
-        for session in missing_redcap:
-            issues.setdefault(session, []).append(redcap_label)
+            issues.setdefault(session, default_row[:])[0] = new_label
+        for session in need_rewrite:
+            issues.setdefault(session, default_row[:])[1] = rewrite_label
         for session in missing_scans:
-            issues.setdefault(session, []).append(scans_label)
+            issues.setdefault(session, default_row[:])[2] = scans_label
+        for session in missing_redcap:
+            issues.setdefault(session, default_row[:])[3] = redcap_label
+
         return issues
+
+    def get_new_sessions(self):
+        # Doing this 'manually' to prevent SQLAlchemy from sending one query per
+        # timepoint per study
+        new = db.session.query(Session).filter(Session.signed_off == False) \
+                .join(Timepoint).filter(Timepoint.is_phantom == False) \
+                .join(study_timepoints_table,
+                        and_(study_timepoints_table.c.timepoint == Timepoint.name,
+                        study_timepoints_table.c.study == self.id))
+        return new
 
     def get_sessions_using_redcap(self):
         """
         Returns a query that will find all sessions in the current study that
-        expect a redcap survey (whether or not we've already received one for them)
+        expect a redcap survey (whether or not we've already received one for
+        them)
 
         Doing this manually rather than letting SQLAlchemy handle it behind
         the scenes because it was firing off one query per session every time a
@@ -206,7 +224,7 @@ class Study(db.Model):
         that are expecting a redcap survey but dont yet have one.
         """
         uses_redcap = self.get_sessions_using_redcap()
-        sessions = uses_redcap.filter(session_redcap_table.c.record_id == None) \
+        sessions = uses_redcap.filter(session_redcap_table.c.record_id == None)\
                 .from_self(Session.name, Session.num)
         return sessions.all()
 
@@ -216,36 +234,35 @@ class Study(db.Model):
         study that have a scan completed survey but no scan data yet.
         """
         uses_redcap = self.get_sessions_using_redcap()
-        sessions = uses_redcap.filter(session_redcap_table.c.record_id != None) \
+        sessions = uses_redcap.filter(session_redcap_table.c.record_id != None)\
                 .filter(~exists().where(and_(Scan.timepoint == Session.name,
                         Scan.repeat == Session.num))) \
                 .from_self(Session.name, Session.num)
         return sessions.all()
 
-    #
-    #     # session_list = []
-    #     # for timepoint in self.timepoints:
-    #     #     for session in timepoint.sessions:
-    #     #         if (not session.is_qcd() or
-    #     #                 self.needs_redcap_survey(session) or
-    #     #                 session.expecting_scans()):
-    #     #             session_list.append(session)
-    #     # return session_list
-    #
-    # def get_missing_redcap(self):
-    #     missing_redcap = self.timepoints.filter(Timepoint.is_phantom == False) \
-    #             .filter(Timepoint.site == self.studies.site_id) \
-    #             .filter()
+    def needs_rewrite(self):
+        """
+        Return a list of (Session.name, Session.num) that aren't on their
+        timepoint's QC page (i.e. sessions that require the timepoint static
+        pages to be rewritten).
+        """
+        repeated = db.session.query(Session.name,
+                        func.count(Session.name).label('num')) \
+                .join(Timepoint) \
+                .group_by(Session.name) \
+                .having(func.count(Session.name) > 1).subquery()
 
+        need_rewrite = db.session.query(Session) \
+                .join(Timepoint) \
+                .join(study_timepoints_table,
+                        and_(study_timepoints_table.c.timepoint == Timepoint.name,
+                        study_timepoints_table.c.study == self.id)) \
+                .join(repeated) \
+                .filter(Timepoint.last_qc_repeat_generated < repeated.c.num) \
+                .filter(Session.num > Timepoint.last_qc_repeat_generated) \
+                .from_self(Session.name, Session.num)
 
-    # def needs_redcap_survey(self, session):
-    #     if session.timepoint.is_phantom:
-    #         return False
-    #     cur_site = [study_site for study_site in self.sites
-    #             if study_site.site_id == session.timepoint.site_id][0]
-    #     if cur_site.uses_redcap:
-    #         return not session.redcap_record_id
-    #     return False
+        return need_rewrite.all()
 
     def get_valid_metric_names(self):
         """
@@ -306,6 +323,7 @@ class Timepoint(db.Model):
             default=False)
     github_issue = db.Column('github_issue', db.Integer)
     gitlab_issue = db.Column('gitlab_issue', db.Integer)
+    # This column should be removed when the static QC pages are made obsolete
     last_qc_repeat_generated =  db.Column('last_qc_generated', db.Integer,
             nullable=False, default=1)
 
