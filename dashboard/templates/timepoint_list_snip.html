@@ -13,7 +13,7 @@
     {% for timepoint in study.timepoints %}
       <tr>
         <td>
-          <a href={{ url_for('timepoint', timepoint_id=timepoint.name) }}>
+          <a href={{ url_for('timepoint', study_id=study.id, timepoint_id=timepoint.name) }}>
             {{ timepoint.name }}
           </a>
         </td>

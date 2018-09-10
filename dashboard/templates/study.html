@@ -45,7 +45,7 @@ Most of the html in the divs is extracted into a snippet file and rendered
             {% for session in pending_qc %}
               <!-- 'session' is a tuple (Session.name, Session.num) -->
               {% set timepoint = session[0] %}
-                <tr class="clickable-row" data-href="{{ url_for('timepoint', timepoint_id=timepoint) }}">
+                <tr class="clickable-row" data-href="{{ url_for('timepoint', study_id=study.id, timepoint_id=timepoint) }}">
                   <td class="col-xs-2">{{ timepoint }}</td>
                     {% for column in pending_qc[session] %}
                       {{ column|safe }}

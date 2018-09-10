@@ -8,11 +8,11 @@ The @validates decorator ensures this is run before the checklist comment
     checklist.csv is in sync with the database.
 """
 import logging
-import datetime
 
 from flask_login import UserMixin
-from sqlalchemy.schema import UniqueConstraint, ForeignKeyConstraint
 from sqlalchemy import and_, exists, func
+from sqlalchemy.schema import UniqueConstraint, ForeignKeyConstraint
+from sqlalchemy.orm.collections import attribute_mapped_collection
 
 from dashboard import db
 
@@ -62,7 +62,8 @@ class User(UserMixin, db.Model):
     is_active = db.Column('account_active', db.Boolean, default=False)
 
     studies = db.relationship('StudyUser', back_populates='user',
-            order_by='StudyUser.study_id')
+            order_by='StudyUser.study_id',
+            collection_class=attribute_mapped_collection('study_id'))
     incidental_findings = db.relationship('IncidentalFinding')
     blacklist_comments = db.relationship('ScanBlacklist')
     timepoint_comments = db.relationship('TimepointComment')
@@ -91,18 +92,38 @@ class User(UserMixin, db.Model):
         if self.dashboard_admin:
             studies = Study.query.order_by(Study.id).all()
         else:
-            studies = [study_user.study for study_user in self.studies]
+            studies = self.studies.keys()
         return studies
 
     def has_study_access(self, study):
         """
-        Check if user has access to a specific study.
+        Check if user has access to a specific study, or any study in a list.
+        This function can take a string (representing a study ID), a Study
+        object or a list of strings/Study objects.
+
+        Note that if a list of studies is given only one must match a study the
+        user has permission to access for 'true' to be returned.
         """
         if self.dashboard_admin:
             return True
         if isinstance(study, Study):
-            study = Study.id
-        return study in [su.study_id for su in self.studies]
+            study = study.id
+        try:
+            self.studies[study]
+        except KeyError:
+            return False
+        return True
+
+    def is_study_admin(self, study):
+        if self.dashboard_admin:
+            return True
+        if isinstance(study, Study):
+            study = study.id
+        try:
+            permissions = self.studies[study]
+        except KeyError:
+            return False
+        return permissions.is_admin
 
     def __repr__(self):
         return "<User {}: {} {}>".format(self.id, self.first_name,
@@ -168,10 +189,9 @@ class Study(db.Model):
                 'does not have a REDCap survey even though this scan ' + \
                 'site collects them">Missing REDCap</span></td>'
 
-
         issues = {}
         # Using default_row[:] in setdefault() to make sure each row has its
-        # own copy of the list
+        # own copy of the default row
         default_row = ['<td></td>'] * 4
         for session in new_sessions:
             issues.setdefault(session, default_row[:])[0] = new_label
@@ -224,19 +244,22 @@ class Study(db.Model):
         that are expecting a redcap survey but dont yet have one.
         """
         uses_redcap = self.get_sessions_using_redcap()
-        sessions = uses_redcap.filter(session_redcap_table.c.record_id == None)\
+        sessions = uses_redcap.filter(session_redcap_table.c.name == None)\
                 .from_self(Session.name, Session.num)
         return sessions.all()
 
     def get_missing_scans(self):
         """
         Returns a list of session names + repeat numbers for sessions in this
-        study that have a scan completed survey but no scan data yet.
+        study that have a scan completed survey but no scan data yet. Excludes
+        session IDs that have explicitly been marked as never expecting data
         """
         uses_redcap = self.get_sessions_using_redcap()
         sessions = uses_redcap.filter(session_redcap_table.c.record_id != None)\
                 .filter(~exists().where(and_(Scan.timepoint == Session.name,
                         Scan.repeat == Session.num))) \
+                .filter(~exists().where(and_(Session.name == EmptySession.name,
+                        Session.num == EmptySession.num))) \
                 .from_self(Session.name, Session.num)
         return sessions.all()
 
@@ -329,7 +352,8 @@ class Timepoint(db.Model):
 
     site = db.relationship('Site', uselist=False, back_populates='timepoints')
     studies = db.relationship('Study', secondary=study_timepoints_table,
-            back_populates='timepoints')
+            back_populates='timepoints',
+            collection_class=attribute_mapped_collection('id'))
     sessions = db.relationship('Session', lazy='joined')
     comments = db.relationship('TimepointComment')
     incidental_findings = db.relationship('IncidentalFinding')
@@ -341,6 +365,19 @@ class Timepoint(db.Model):
         self.is_phantom = is_phantom
         self.github_issue = github_issue
         self.gitlab_issue = gitlab_issue
+
+    def belongs_to(self, study):
+        """
+        Returns true if the data in this Timepoint is considered part of the
+        given study
+        """
+        if isinstance(study, Study):
+            study = study.id
+        try:
+            self.studies[study]
+        except KeyError:
+            return False
+        return True
 
     def is_qcd(self):
         if self.is_phantom:
@@ -387,12 +424,40 @@ class Session(db.Model):
             return True
         return self.signed_off
 
-    def expecting_scans(self):
-        return (self.redcap_record and not self.scans)
+    # def expecting_scans(self):
+    #     return (self.redcap_record and not self.scans)
 
     def __repr__(self):
         return "<Session {}, {}>".format(self.name, self.num)
 
+class EmptySession(db.Model):
+    """
+    This table exists solely so QCers can dismiss errors about empty sessions
+    and comment on any follow up they've performed.
+    """
+    __tablename__ = 'empty_sessions'
+
+    name = db.Column('name', db.String(64), primary_key=True, nullable=False)
+    num = db.Column('num', db.Integer, primary_key=True, nullable=False)
+    comment = db.Column('comment', db.Text, nullable=False)
+    timestamp = db.Column('date_added', db.DateTime(timezone=True),
+            nullable=False)
+    user_id = db.Column('user', db.Integer, db.ForeignKey('users.id'),
+            nullable=False)
+
+    reviewer = db.relationship('User', uselist=False, lazy='joined')
+
+
+    def __init__(self, name, num, comment=None):
+        self.name = name
+        self.num = num
+        self.comment = comment
+
+    def __repr__(self):
+        return "<EmptySession {}, {}>".format(self.name, self.num)
+
+    __table_args__ = (ForeignKeyConstraint(['name', 'num'],
+            ['sessions.name', 'sessions.num']),)
 
 class Scan(db.Model):
     __tablename__ = 'scans'
@@ -410,11 +475,11 @@ class Scan(db.Model):
 
     # If a scan has any links pointing to it, this will hold a list of the
     # IDs for these scans
-    other_ids = db.relationship("Scan")
+    other_ids = db.relationship('Scan')
     session = db.relationship('Session', uselist=False, back_populates='scans')
     scantype = db.relationship('Scantype', uselist=False, back_populates='scans')
-    analysis_comments = db.relationship("AnalysisComment")
-    metric_values = db.relationship('MetricValue', cascade="all, delete-orphan")
+    analysis_comments = db.relationship('AnalysisComment')
+    metric_values = db.relationship('MetricValue', cascade='all, delete-orphan')
 
     __table_args__ = (ForeignKeyConstraint(['timepoint', 'session'],
             ['sessions.name', 'sessions.num']),
@@ -477,7 +542,6 @@ class TimepointComment(db.Model):
         self.timepoint_id = timepoint_id
         self.user_id = user_id
         self.comment = comment
-        self.timestamp = datetime.datetime.now()
 
     def __repr__(self):
         return "<TimepointComment for {} by user {}>".format(self.timepoint_id,
@@ -506,7 +570,6 @@ class ScanBlacklist(db.Model):
         self.scan_name = scan_name
         self.user_id = user_id
         self.comment = comment
-        self.timestamp = datetime.datetime.now()
 
     def __repr__(self):
         return "<ScanBlacklist for {} by user {}>".format(self.scan_name,
@@ -659,7 +722,9 @@ class IncidentalFinding(db.Model):
             nullable=False)
     timepoint_id = db.Column(db.String(64), db.ForeignKey('timepoints.name'),
             nullable=False)
-    description = db.Column(db.Text)
+    description = db.Column(db.Text, nullable=False)
+    timestamp = db.Column('date_reported', db.DateTime(timezone=True),
+            nullable=False)
 
     session = db.relationship('Timepoint', uselist=False,
             back_populates="incidental_findings")
