@@ -16,7 +16,6 @@ from sqlalchemy.orm.collections import attribute_mapped_collection
 
 from dashboard import db
 
-
 logger = logging.getLogger(__name__)
 
 ################################################################################
@@ -92,29 +91,39 @@ class User(UserMixin, db.Model):
         if self.dashboard_admin:
             studies = Study.query.order_by(Study.id).all()
         else:
-            studies = self.studies.keys()
+            studies = [su.study for su in self.studies.values()]
         return studies
 
     def has_study_access(self, study):
-        """
-        Check if user has access to a specific study, or any study in a list.
-        This function can take a string (representing a study ID), a Study
-        object or a list of strings/Study objects.
+        return self._get_permissions(study)
 
-        Note that if a list of studies is given only one must match a study the
-        user has permission to access for 'true' to be returned.
-        """
-        if self.dashboard_admin:
-            return True
-        if isinstance(study, Study):
-            study = study.id
-        try:
-            self.studies[study]
-        except KeyError:
-            return False
-        return True
+    def has_phi_access(self, study):
+        return self._get_permissions(study, perm='phi_access')
 
     def is_study_admin(self, study):
+        return self._get_permissions(study, perm='is_admin')
+
+    def is_primary_contact(self, study):
+        return self._get_permissions(study, perm='primary_contact')
+
+    def is_kimel_contact(self, study):
+        return self._get_permissions(study, perm='kimel_contact')
+
+    def is_study_RA(self, study):
+        return self._get_permissions(study, perm='study_RA')
+
+    def does_qc(self, study):
+        return self._get_permissions(study, perm='does_qc')
+
+    def _get_permissions(self, study, perm=None):
+        """
+        Checks the StudyUser records for this user. If no key is given it
+        checks if a record exists for a specific study (i.e. if the user has
+        access to that study). If 'perm' is set it can check a specific
+        permission attribute (e.g. 'is_admin' or 'has_phi').
+
+        Always returns a boolean.
+        """
         if self.dashboard_admin:
             return True
         if isinstance(study, Study):
@@ -123,7 +132,9 @@ class User(UserMixin, db.Model):
             permissions = self.studies[study]
         except KeyError:
             return False
-        return permissions.is_admin
+        if perm:
+            return getattr(permissions, perm)
+        return True
 
     def __repr__(self):
         return "<User {}: {} {}>".format(self.id, self.first_name,
@@ -172,7 +183,7 @@ class Study(db.Model):
         missing_scans = self.get_missing_scans()
 
         new_label = '<td class="col-xs-2"><span class="fa-layers fa-fw" ' + \
-                'style="font-size: 38px;"><i class="fas ' + \
+                'style="font-size: 28px;"><i class="fas ' + \
                 'fa-certificate" style="color: tomato"></i>' + \
                 '<span class="fa-layers-text fa-inverse" ' + \
                 'data-fa-transform="shrink-11.5 rotate--30" ' + \
@@ -346,9 +357,10 @@ class Timepoint(db.Model):
             default=False)
     github_issue = db.Column('github_issue', db.Integer)
     gitlab_issue = db.Column('gitlab_issue', db.Integer)
-    # This column should be removed when the static QC pages are made obsolete
+    # These columns should be removed when the static QC pages are made obsolete
     last_qc_repeat_generated =  db.Column('last_qc_generated', db.Integer,
             nullable=False, default=1)
+    static_page = db.Column('static_page', db.String(1028))
 
     site = db.relationship('Site', uselist=False, back_populates='timepoints')
     studies = db.relationship('Study', secondary=study_timepoints_table,
@@ -359,12 +371,13 @@ class Timepoint(db.Model):
     incidental_findings = db.relationship('IncidentalFinding')
 
     def __init__(self, name, site, is_phantom=False, github_issue=None,
-            gitlab_issue=None):
+            gitlab_issue=None, static_page=None):
         self.name = name
         self.site = site
         self.is_phantom = is_phantom
         self.github_issue = github_issue
         self.gitlab_issue = gitlab_issue
+        self.static_page = static_page
 
     def belongs_to(self, study):
         """
@@ -384,8 +397,28 @@ class Timepoint(db.Model):
             return True
         return all(sess.is_qcd() for sess in self.sessions)
 
+    def needs_redcap_survey(self):
+        for session in self.sessions:
+            if not session.redcap_record:
+                return True
+        return False
+
+    def needs_rewrite(self):
+        if self.last_qc_repeat_generated < len(self.sessions):
+            return True
+        return False
+
+    def missing_scans(self):
+        for session in self.sessions:
+            if session.redcap_record and not session.scans:
+                return True
+        return False
+
     def __repr__(self):
         return "<Timepoint {}>".format(self.name)
+
+    def __str__(self):
+        return self.name
 
 
 class Session(db.Model):
@@ -424,11 +457,11 @@ class Session(db.Model):
             return True
         return self.signed_off
 
-    # def expecting_scans(self):
-    #     return (self.redcap_record and not self.scans)
-
     def __repr__(self):
         return "<Session {}, {}>".format(self.name, self.num)
+
+    def __str__(self):
+        return "{}_{:02}".format(self.name, self.num)
 
 class EmptySession(db.Model):
     """
@@ -446,7 +479,6 @@ class EmptySession(db.Model):
             nullable=False)
 
     reviewer = db.relationship('User', uselist=False, lazy='joined')
-
 
     def __init__(self, name, num, comment=None):
         self.name = name
