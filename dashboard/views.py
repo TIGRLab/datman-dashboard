@@ -265,116 +265,35 @@ def create_issue(session_id, issue_title="", issue_body=""):
     return(redirect(url_for('session', session_id=session.id)))
 
 
-@app.route('/timepoint')
-@app.route('/timepoint/<string:timepoint_id>', methods=['GET', 'POST'])
-@app.route('/timepoint/<string:timepoint_id>/delete/<delete>', methods=['GET', 'POST'])
-@app.route('/timepoint/<string:timepoint_id>/flag_finding/<flag_finding>', methods=['GET', 'POST'])
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>',
+        methods=['GET', 'POST'])
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
+        '/delete/<delete>', methods=['GET', 'POST'])
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
+        '/flag_finding/<flag_finding>', methods=['GET', 'POST'])
 @login_required
-def timepoint(timepoint_id=None, delete=False, flag_finding=False):
+def timepoint(study_id=None, timepoint_id=None, delete=False,
+        flag_finding=False):
     """
-    Default view for a single timepoint
-    If called as http://srv-dashboard/timepoint/<timepoint_id>/delete/True it will
-    delete the timepoint and its sessions from the database
+    Default view for a single timepoint.
 
+    If called as /study/<study_id>/timepoint/<timepoint_id>/delete/True
+    it will delete the timepoint and its sessions from that study or from the
+    database as a whole if the timepoint has no other studies defined.
     """
-    if timepoint_id is None:
-        return redirect('index')
-
     timepoint = Timepoint.query.get(timepoint_id)
-
     if timepoint is None:
         flash("Timepoint {} does not exist".format(timepoint_id))
         return redirect('index')
 
-
-    if not current_user.has_study_access(timepoint.study):
-        flash('Not authorised to view {}'.format(timepoint.study))
+    if (not current_user.has_study_access(study_id) or
+            not timepoint.belongs_to(study_id)):
+        flash('Not authorised to view {}'.format(timepoint_id))
         return redirect('index')
 
-    try:
-        # Update open issue ID if necessary
-        # this is necessary because GitHub may timeout a user without telling us
-        token = flask_session['active_token']
-    except:
-        flash('It appears you\'ve been idle too long; please sign in again.')
-        return redirect(url_for('login'))
-
-    # try:
-    #     # check to see if any issues have been posted on github for this session
-    #     gh = Github(token)
-    #     # Due to the way GitHub search API works, splitting session name into separate search terms will find a session
-    #     # regardless of repeat number, and will not match other sessions with the same study/site
-    #
-    #     open_issues = gh.search_issues("{} in:title repo:TIGRLab/admin state:open".format(str(session.name).replace("_"," ")))
-    #     if open_issues.totalCount:
-    #         session.gh_issue = open_issues[0].number
-    #     else:
-    #         session.gh_issue = None
-    #     db.session.commit()
-    # except Exception as e:
-    #     if not (isinstance(e, GithubException) and e.status==422):
-    #         flash("Error searching for session's GitHub issue.")
-    #
-    # if delete:
-    #     try:
-    #         if current_user.is_admin:
-    #             session.delete()
-    #         else:
-    #             flash('You dont have permission to do that')
-    #             raise Exception
-    #         flash('Deleted session:{}'.format(session.name))
-    #         return redirect(url_for('study',
-    #                                 study_id=session.study_id,
-    #                                 active_tab='qc'))
-    #     except Exception:
-    #         flash('Failed to delete session:{}'.format(session.name))
-    #
-    # if flag_finding:
-    #     try:
-    #         incident = IncidentalFinding()
-    #         incident.session_id = session.id
-    #         incident.user_id = current_user.id
-    #
-    #         db.session.add(incident)
-    #         db.session.commit()
-    #         flash('Finding flagged.')
-    #         return redirect(url_for('session',
-    #                                 session_id=session.id))
-    #     except:
-    #         logger.error('Failed flagging finding for session:{}'
-    #                      .format(session.id))
-    #         flash('Failed flagging finding. Admins have been notified')
-    #
-    # studies = current_user.get_studies()
-    # form = SessionForm(obj=session)
-    #
-    # # This form deals with the checklist comments.
-    # # Updating the checklist in the database causes checklist.csv to be updated
-    # # see models.py
-    # scancomment_form = ScanCommentForm()
-    #
-    # if form.validate_on_submit():
-    #     # form has been submitted
-    #     session.cl_comment = form.cl_comment.data
-    #     try:
-    #         db.session.add(session)
-    #         db.session.commit()
-    #         flash('Session updated')
-    #         return redirect(url_for('study',
-    #                                 study_id=session.study_id,
-    #                                 active_tab='qc'))
-    #
-    #     except SQLAlchemyError as err:
-    #         logger.error('Session update failed:{}'.format(str(err)))
-    #         flash('Update failed, admins have been notified, please try again')
-    #     form.populate_obj(session)
-
-    return render_template('session.html',
-                           studies=studies,
-                           study=session.study,
-                           session=session,
-                           form=form,
-                           scancomment_form=scancomment_form)
+    return render_template('timepoint.html',
+                           study_id=study_id,
+                           timepoint=timepoint)
 
 
 @app.route('/redcap_redirect/<int:session_id>', methods=['GET'])
@@ -463,7 +382,6 @@ def scan(session_scan_id=None):
                            scancomment_form=scancomment_form)
 
 
-@app.route('/study')
 @app.route('/study/<string:study_id>', methods=['GET', 'POST'])
 @app.route('/study/<string:study_id>/<active_tab>', methods=['GET', 'POST'])
 @login_required
@@ -473,10 +391,6 @@ def study(study_id=None, active_tab=None):
     The page is a tabulated view, I would have done this differently given
     another chance.
     """
-
-    if study_id is None:
-        return redirect('/index')
-
     if not current_user.has_study_access(study_id):
         flash('Not authorised')
         return redirect(url_for('index'))

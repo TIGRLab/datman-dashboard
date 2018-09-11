@@ -1,0 +1,64 @@
+<!-- Overview of a single timepoint's data -->
+{% extends "base.html" %}
+{% include "flash.html" %}
+{% block content %}
+<div class="container">
+
+  <div class="jumbotron">
+    <h1>{{ timepoint.name }}</h1>
+    {% if timepoint.is_phantom %}
+      <p class="lead">Phantom</p>
+    {% endif %}
+  </div>
+
+  {% if timepoint.incidental_findings %}
+    {% include 'incidental_finding_snip.html'%}
+  {% endif %}
+
+  <div role="navigation">
+    <div class="btn-group" role="group">
+      <a class="btn btn-primary" href="{{ url_for('study', study_id=study_id) }}">
+        <span class="glyphicon glyphicon-arrow-left"></span>
+        <span class="button-text">Return to {{ study_id }}</span>
+      </a>
+    </div>
+
+    <div class="btn-group-vertical pull-right" role="group">
+      {% if current_user.is_study_admin(study_id) %}
+        <a class="button btn btn-primary" id="print_brain">
+          <span class="pull-right glyphicon glyphicon-print"></span>
+          <span class="button-text">Print Brain</span>
+        </a>
+        <a class="button btn btn-primary" id="delete_session">
+          <span class="pull-right glyphicon glyphicon-trash"></span>
+          <span class="button-text">Delete Session</span>
+        </a>
+      {% endif %}
+      {% if timepoint.github_issue %}
+        <a class="button btn btn-primary" id="goto_issue">
+          <span class="pull-right glyphicon glyphicon-share-alt"></span>
+          <span class="button-text">Go to GitHub Issue</span>
+        </a>
+      {% else %}
+        <a class="button btn btn-primary" id="create_issue">
+          <span class="pull-right glyphicon glyphicon-edit"></span>
+          <span class="button-text">Create GitHub Issue</span>
+        </a>
+      {% endif %}
+      <a class="button btn btn-primary" id="flag_incidental">
+        <span class="pull-right glyphicon glyphicon-flag"></span>
+        <span class="button-text">Flag Incidental Finding</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="timepoint-info">
+    {% if (timepoint.needs_redcap_survey()
+           or timepoint.needs_rewrite()
+           or not timepoint.static_page
+           or timepoint.missing_scans()) %}
+      {% include 'timepoint_warnings_snip.html' %}
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
