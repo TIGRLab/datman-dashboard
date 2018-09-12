@@ -84,7 +84,6 @@ class SessionForm(FlaskForm):
 #     study_id = TextField('Study: ', render_kw={'readonly': True})
 #     user_id = HiddenField()
 #     enabled = BooleanSubField('Access enabled')
-#     phi_access = BooleanSubField('PHI Access: ')
 #     is_admin = BooleanSubField('Admin Access (can delete data + comments): ')
 #     primary_contact = BooleanSubField('Primary Contact (usually the PI): ')
 #     kimel_contact = BooleanSubField('Kimel Contact (i.e. staff member(s) in ' +
@@ -119,7 +118,6 @@ class PermissionRadioField(RadioField):
 class StudyPermissionsForm(FlaskForm):
     study_id = HiddenField()
     user_id = HiddenField()
-    phi_access = PermissionRadioField('PHI Access: ')
     is_admin = PermissionRadioField('Admin Access (can delete data + comments): ')
     primary_contact = PermissionRadioField('Primary Contact (usually the PI): ')
     kimel_contact = PermissionRadioField('Kimel Contact (i.e. staff member(s) in ' +

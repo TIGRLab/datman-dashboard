@@ -112,11 +112,6 @@ thead {
   min-width: 100px;
 }
 
-.timepoint-info {
-  width: 80%;
-  margin: 30px 20px 20px 0px;
-}
-
 /* Style badge on 'new-qc' labels */
 .new-qc {
   background-color: var(--alt-theme-main);

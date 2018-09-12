@@ -40,14 +40,6 @@
           (otherwise they print as a list) -->
           {% for study_form in form.studies %}
             <tr>
-              <td rowspan="6">{{ study_form.hidden_tag() }}{{ study_form.study_id.data }}</td>
-              <td>{{ study_form.phi_access.label }}</td>
-              {% for subfield in study_form.phi_access %}
-                <td>{{ subfield }}</td>
-              {% endfor %}
-              <td rowspan="6">{{ study_form.revoke_access(class_='btn btn-danger') }}</td>
-            </tr>
-            <tr>
               <td>{{ study_form.is_admin.label }}</td>
               {% for subfield in study_form.is_admin %}
                 <td>{{ subfield }}</td>

@@ -14,7 +14,7 @@ def get_user_form(user, current_user):
 
     form = UserAdminForm(obj=user)
 
-    enabled_studies = [study.study_id for study in user.studies]
+    enabled_studies = user.studies.keys()
     if enabled_studies:
         # All studies not in the enabled list for this user
         disabled_studies = Study.query.filter(~Study.id.in_(enabled_studies)).all()

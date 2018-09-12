@@ -97,9 +97,6 @@ class User(UserMixin, db.Model):
     def has_study_access(self, study):
         return self._get_permissions(study)
 
-    def has_phi_access(self, study):
-        return self._get_permissions(study, perm='phi_access')
-
     def is_study_admin(self, study):
         return self._get_permissions(study, perm='is_admin')
 
@@ -336,7 +333,8 @@ class Site(db.Model):
     name = db.Column('name', db.String(32), primary_key=True)
     description = db.Column('description', db.Text)
 
-    studies = db.relationship('StudySite', back_populates='site')
+    studies = db.relationship('StudySite', back_populates='site',
+            collection_class=attribute_mapped_collection('study.id'))
     timepoints = db.relationship('Timepoint')
 
     def __init__(self, site_name, description=None):
@@ -397,11 +395,9 @@ class Timepoint(db.Model):
             return True
         return all(sess.is_qcd() for sess in self.sessions)
 
-    def needs_redcap_survey(self):
-        for session in self.sessions:
-            if not session.redcap_record:
-                return True
-        return False
+    def needs_redcap_survey(self, study_id):
+        uses_redcap = self.site.studies[study_id].uses_redcap
+        return uses_redcap and any(not sess.redcap_record for sess in self.sessions)
 
     def needs_rewrite(self):
         if self.last_qc_repeat_generated < len(self.sessions):
@@ -409,10 +405,7 @@ class Timepoint(db.Model):
         return False
 
     def missing_scans(self):
-        for session in self.sessions:
-            if session.redcap_record and not session.scans:
-                return True
-        return False
+        return any(sess.missing_scans() for sess in self.sessions)
 
     def __repr__(self):
         return "<Timepoint {}>".format(self.name)
@@ -456,6 +449,11 @@ class Session(db.Model):
         if self.timepoint.is_phantom:
             return True
         return self.signed_off
+
+    def missing_scans(self):
+        if self.redcap_record and not self.scans:
+            return True
+        return False
 
     def __repr__(self):
         return "<Session {}, {}>".format(self.name, self.num)
@@ -677,7 +675,6 @@ class StudyUser(db.Model):
             nullable=False, primary_key=True)
     user_id = db.Column('user_id', db.Integer, db.ForeignKey('users.id'),
             nullable=False, primary_key=True)
-    phi_access = db.Column('phi_access', db.Boolean, default=False)
     is_admin = db.Column('is_admin', db.Boolean, default=False)
     primary_contact = db.Column('primary_contact', db.Boolean, default=False)
     kimel_contact = db.Column('kimel_contact', db.Boolean, default=False)
@@ -687,12 +684,10 @@ class StudyUser(db.Model):
     study = db.relationship('Study', back_populates='users')
     user = db.relationship('User', back_populates='studies')
 
-    def __init__(self, study_id, user_id, phi=False, admin=False,
-            is_primary_contact=False, is_kimel_contact=False, is_study_RA=False,
-            does_qc=False):
+    def __init__(self, study_id, user_id, admin=False, is_primary_contact=False,
+            is_kimel_contact=False, is_study_RA=False, does_qc=False):
         self.study_id = study_id
         self.user_id = user_id
-        self.phi_access = phi
         self.is_admin = admin
         self.primary_contact = is_primary_contact
         self.kimel_contact = is_kimel_contact
