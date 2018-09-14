@@ -8,6 +8,7 @@ The @validates decorator ensures this is run before the checklist comment
     checklist.csv is in sync with the database.
 """
 import logging
+import datetime
 
 from flask_login import UserMixin
 from sqlalchemy import and_, exists, func
@@ -33,13 +34,6 @@ study_timepoints_table = db.Table('study_timepoints',
         db.Column('timepoint', db.String(64), db.ForeignKey('timepoints.name'),
                 nullable=False),
         UniqueConstraint('study', 'timepoint'))
-
-session_redcap_table = db.Table('session_redcap', db.Model.metadata,
-        db.Column('name', db.String(64), nullable=False),
-        db.Column('num', db.Integer, nullable=False),
-        db.Column('record_id', db.Integer, db.ForeignKey('redcap_records.id')),
-        db.ForeignKeyConstraint(['name', 'num'],
-                ['sessions.name', 'sessions.num']))
 
 ################################################################################
 # Plain entities
@@ -202,13 +196,13 @@ class Study(db.Model):
         # own copy of the default row
         default_row = ['<td></td>'] * 4
         for session in new_sessions:
-            issues.setdefault(session, default_row[:])[0] = new_label
+            issues.setdefault(session[0], default_row[:])[0] = new_label
         for session in need_rewrite:
-            issues.setdefault(session, default_row[:])[1] = rewrite_label
+            issues.setdefault(session[0], default_row[:])[1] = rewrite_label
         for session in missing_scans:
-            issues.setdefault(session, default_row[:])[2] = scans_label
+            issues.setdefault(session[0], default_row[:])[2] = scans_label
         for session in missing_redcap:
-            issues.setdefault(session, default_row[:])[3] = redcap_label
+            issues.setdefault(session[0], default_row[:])[3] = redcap_label
 
         return issues
 
@@ -232,8 +226,8 @@ class Study(db.Model):
         the scenes because it was firing off one query per session every time a
         study page loaded. So it's way uglier, but way faster. Sorry :(
         """
-        uses_redcap = db.session.query(Session, session_redcap_table) \
-                .outerjoin(session_redcap_table) \
+        uses_redcap = db.session.query(Session, SessionRedcap) \
+                .outerjoin(SessionRedcap) \
                 .join(Timepoint) \
                 .join(study_timepoints_table,
                         and_(study_timepoints_table.c.timepoint == Timepoint.name,
@@ -252,7 +246,7 @@ class Study(db.Model):
         that are expecting a redcap survey but dont yet have one.
         """
         uses_redcap = self.get_sessions_using_redcap()
-        sessions = uses_redcap.filter(session_redcap_table.c.name == None)\
+        sessions = uses_redcap.filter(SessionRedcap.name == None)\
                 .from_self(Session.name, Session.num)
         return sessions.all()
 
@@ -263,7 +257,7 @@ class Study(db.Model):
         session IDs that have explicitly been marked as never expecting data
         """
         uses_redcap = self.get_sessions_using_redcap()
-        sessions = uses_redcap.filter(session_redcap_table.c.record_id != None)\
+        sessions = uses_redcap.filter(SessionRedcap.record_id != None)\
                 .filter(~exists().where(and_(Scan.timepoint == Session.name,
                         Scan.repeat == Session.num))) \
                 .filter(~exists().where(and_(Session.name == EmptySession.name,
@@ -289,6 +283,7 @@ class Study(db.Model):
                         and_(study_timepoints_table.c.timepoint == Timepoint.name,
                         study_timepoints_table.c.study == self.id)) \
                 .join(repeated) \
+                .filter(Timepoint.static_page != None) \
                 .filter(Timepoint.last_qc_repeat_generated < repeated.c.num) \
                 .filter(Session.num > Timepoint.last_qc_repeat_generated) \
                 .from_self(Session.name, Session.num)
@@ -364,7 +359,8 @@ class Timepoint(db.Model):
     studies = db.relationship('Study', secondary=study_timepoints_table,
             back_populates='timepoints',
             collection_class=attribute_mapped_collection('id'))
-    sessions = db.relationship('Session', lazy='joined')
+    sessions = db.relationship('Session', lazy='joined',
+            collection_class=attribute_mapped_collection('num'))
     comments = db.relationship('TimepointComment')
     incidental_findings = db.relationship('IncidentalFinding')
 
@@ -393,19 +389,37 @@ class Timepoint(db.Model):
     def is_qcd(self):
         if self.is_phantom:
             return True
-        return all(sess.is_qcd() for sess in self.sessions)
+        return all(sess.is_qcd() for sess in self.sessions.values())
+
+    def expects_redcap(self, study):
+        return self.site.studies[study].uses_redcap
 
     def needs_redcap_survey(self, study_id):
-        uses_redcap = self.site.studies[study_id].uses_redcap
-        return uses_redcap and any(not sess.redcap_record for sess in self.sessions)
+        if self.is_phantom:
+            return False
+        uses_redcap = self.expects_redcap(study_id)
+        return uses_redcap and any(not sess.redcap_record
+                for sess in self.sessions.values())
+
+    def dismiss_redcap_error(self, session_num):
+        session_redcap = SessionRedcap(self.name, session_num)
+        db.session.add(session_redcap)
+        db.session.commit()
+
+    def ignore_missing_scans(self, session_num, user_id, comment):
+        empty_session = EmptySession(self.name, session_num, user_id, comment)
+        db.session.add(empty_session)
+        db.session.commit()
 
     def needs_rewrite(self):
-        if self.last_qc_repeat_generated < len(self.sessions):
+        if self.static_page and (self.last_qc_repeat_generated < len(self.sessions)):
             return True
         return False
 
     def missing_scans(self):
-        return any(sess.missing_scans() for sess in self.sessions)
+        if self.is_phantom:
+            return False
+        return any(sess.missing_scans() for sess in self.sessions.values())
 
     def __repr__(self):
         return "<Timepoint {}>".format(self.name)
@@ -426,24 +440,24 @@ class Session(db.Model):
     review_date = db.Column('review_date', db.DateTime(timezone=True))
 
 
-    redcap_record = db.relationship('RedcapRecord',
-            secondary=session_redcap_table, back_populates='sessions',
+    redcap_record = db.relationship('SessionRedcap', back_populates='session',
             uselist=False)
     timepoint = db.relationship('Timepoint', uselist=False,
             back_populates='sessions')
     scans = db.relationship('Scan')
     reviewer = db.relationship('User', uselist=False,
             back_populates='sessions_reviewed')
+    empty_session = db.relationship('EmptySession', uselist=False,
+            back_populates='session')
 
     def __init__(self, name, num, date=None, signed_off=False, reviewer=None,
-            review_date=None, redcap_record=None):
+            review_date=None):
         self.name = name
         self.num = num
         self.date = date
         self.signed_off = signed_off
         self.reviewer = reviewer
         self.review_date = review_date
-        self.redcap_record = redcap_record
 
     def is_qcd(self):
         if self.timepoint.is_phantom:
@@ -451,9 +465,16 @@ class Session(db.Model):
         return self.signed_off
 
     def missing_scans(self):
-        if self.redcap_record and not self.scans:
+        if self.redcap_record and not self.scans and not self.empty_session:
             return True
         return False
+
+    def sign_off(self, user_id):
+        self.signed_off = True
+        self.reviewer_id = user_id
+        self.review_date = datetime.datetime.now()
+        db.session.add(self)
+        db.session.commit()
 
     def __repr__(self):
         return "<Session {}, {}>".format(self.name, self.num)
@@ -470,24 +491,58 @@ class EmptySession(db.Model):
 
     name = db.Column('name', db.String(64), primary_key=True, nullable=False)
     num = db.Column('num', db.Integer, primary_key=True, nullable=False)
-    comment = db.Column('comment', db.Text, nullable=False)
-    timestamp = db.Column('date_added', db.DateTime(timezone=True),
+    comment = db.Column('comment', db.String(2048), nullable=False)
+    user_id = db.Column('reviewer', db.Integer, db.ForeignKey('users.id'),
             nullable=False)
-    user_id = db.Column('user', db.Integer, db.ForeignKey('users.id'),
-            nullable=False)
+    date_added = db.Column('date_added', db.DateTime(timezone=True),
+            default=datetime.datetime.now)
 
+    session = db.relationship('Session', uselist=False,
+            back_populates='empty_session')
     reviewer = db.relationship('User', uselist=False, lazy='joined')
 
-    def __init__(self, name, num, comment=None):
+    __table_args__ = (ForeignKeyConstraint(['name', 'num'],
+            ['sessions.name', 'sessions.num']),)
+
+    def __init__(self, name, num, user_id, comment):
         self.name = name
         self.num = num
+        self.user_id = user_id
         self.comment = comment
+        # Leaving out date_added so that postgres sets the default time of 'now'
+        # when new record is made.
 
     def __repr__(self):
         return "<EmptySession {}, {}>".format(self.name, self.num)
 
+
+class SessionRedcap(db.Model):
+# Using a class instead of an association table here to let us know when an
+# entry has been added without a redcap record (i.e. when a user has let us know
+# that a session is never going to get a redcap record)
+    __tablename__ = 'session_redcap'
+
+    name = db.Column('name', db.String(64), primary_key=True, nullable=False)
+    num = db.Column('num', db.Integer, primary_key=True, nullable=False)
+    record_id = db.Column('record_id', db.Integer,
+            db.ForeignKey('redcap_records.id'))
+
+    session = db.relationship('Session', back_populates='redcap_record',
+            uselist=False)
+    record = db.relationship('RedcapRecord', back_populates='sessions',
+            uselist=False)
+
     __table_args__ = (ForeignKeyConstraint(['name', 'num'],
             ['sessions.name', 'sessions.num']),)
+
+    def __init__(self, name, num, record_id=None):
+        self.name = name
+        self.num = num
+        self.record_id = record_id
+
+    def __repr__(self):
+        return "<SessionRedcap {}, {} - record {}>".format(self.name,
+                self.num, self.record_id)
 
 class Scan(db.Model):
     __tablename__ = 'scans'
@@ -620,8 +675,7 @@ class RedcapRecord(db.Model):
     redcap_version = db.Column('redcap_version', db.String(10), default='7.4.2')
     event_id = db.Column('event_id', db.Integer)
 
-    sessions = db.relationship('Session', secondary=session_redcap_table,
-            back_populates='redcap_record')
+    sessions = db.relationship('SessionRedcap', back_populates='record')
 
     __table_args__ = (UniqueConstraint(record, project, url, event_id),)
 
