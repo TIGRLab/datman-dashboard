@@ -9,6 +9,7 @@ import logging
 from functools import wraps
 from xml.sax.saxutils import escape
 
+from urlparse import urlparse, urljoin
 from flask import session as flask_session
 from flask import render_template, flash, url_for, redirect, request, jsonify, \
         abort, g, make_response, send_file
@@ -25,11 +26,12 @@ from . import redcap as REDCAP
 from .queries import query_metric_values_byid, query_metric_types, \
         query_metric_values_byname
 from .models import Study, Site, Session, Scantype, Scan, User, \
-        Timepoint, AnalysisComment, Analysis, IncidentalFinding, StudyUser
-from .forms import SelectMetricsForm, StudyOverviewForm, SessionForm, \
+        Timepoint, AnalysisComment, Analysis, IncidentalFinding, StudyUser, \
+        SessionRedcap, EmptySession
+from .forms import SelectMetricsForm, StudyOverviewForm, \
         ScanBlacklistForm, UserForm, ScanCommentForm, AnalysisForm, \
-        UserAdminForm
-from .view_utils import get_user_form, report_form_errors
+        UserAdminForm, EmptySessionForm
+from .view_utils import get_user_form, report_form_errors, get_timepoint
 
 logger = logging.getLogger(__name__)
 logger.info('Loading views')
@@ -75,6 +77,32 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+def study_admin_required(f):
+    """
+    Verifies a user is a study admin or a dashboard admin
+    """
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_study_admin(kwargs['study_id']):
+            flash("Not authorized.")
+            return redirect(prev_url())
+        return f(*args, **kwargs)
+    return decorated_function
+
+def prev_url():
+    """
+    Returns the referring page if it is safe to do so, otherwise directs
+    the user to the index.
+    """
+    if request.referrer and is_safe_url(request.referrer):
+        return request.referrer
+    return url_for('index')
+
+def is_safe_url(target):
+    ref_url = urlparse(request.host_url)
+    test_url = urlparse(urljoin(request.host_url, target))
+    return test_url.scheme in ('http', 'https') and \
+           ref_url.netloc == test_url.netloc
 
 @app.before_request
 def before_request():
@@ -272,8 +300,7 @@ def create_issue(session_id, issue_title="", issue_body=""):
 @app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
         '/flag_finding/<flag_finding>', methods=['GET', 'POST'])
 @login_required
-def timepoint(study_id=None, timepoint_id=None, delete=False,
-        flag_finding=False):
+def timepoint(study_id, timepoint_id, delete=False, flag_finding=False):
     """
     Default view for a single timepoint.
 
@@ -281,20 +308,74 @@ def timepoint(study_id=None, timepoint_id=None, delete=False,
     it will delete the timepoint and its sessions from that study or from the
     database as a whole if the timepoint has no other studies defined.
     """
-    timepoint = Timepoint.query.get(timepoint_id)
-    if timepoint is None:
-        flash("Timepoint {} does not exist".format(timepoint_id))
-        return redirect('index')
+    timepoint = get_timepoint(study_id, timepoint_id, current_user)
 
-    if (not current_user.has_study_access(study_id) or
-            not timepoint.belongs_to(study_id)):
-        flash('Not authorised to view {}'.format(timepoint_id))
-        return redirect('index')
+    form = EmptySessionForm()
 
-    return render_template('timepoint.html',
-                           study_id=study_id,
-                           timepoint=timepoint)
+    return render_template('timepoint.html', study_id=study_id,
+            timepoint=timepoint, empty_session_form=form)
 
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
+        '/dismiss_redcap/<int:session_num>', methods=['GET', 'POST'])
+@study_admin_required
+@login_required
+def dismiss_redcap(study_id, timepoint_id, session_num):
+    """
+    Dismiss a session's 'missing redcap' error message
+    """
+    timepoint = get_timepoint(study_id, timepoint_id, current_user)
+    dest_URL = url_for('timepoint', study_id=study_id, timepoint_id=timepoint_id)
+
+    try:
+        timepoint.sessions[session_num]
+    except KeyError:
+        flash('Session does not exist.')
+        return redirect(dest_URL)
+
+    timepoint.dismiss_redcap_error(session_num)
+
+    return redirect(dest_URL)
+
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
+        '/dismiss_missing/<int:session_num>', methods=['POST'])
+@study_admin_required
+@login_required
+def dismiss_missing(study_id, timepoint_id, session_num):
+    """
+    Dismiss a session's 'missing scans' error message
+    """
+    timepoint = get_timepoint(study_id, timepoint_id, current_user)
+    dest_URL = url_for('timepoint', study_id=study_id, timepoint_id=timepoint_id)
+
+    try:
+        timepoint.sessions[session_num]
+    except KeyError:
+        flash('Session does not exist.')
+        return redirect(dest_URL)
+
+    form = EmptySessionForm()
+    if form.validate_on_submit():
+        timepoint.ignore_missing_scans(session_num, current_user.id,
+                form.comment.data)
+
+    return redirect(dest_URL)
+
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
+        '/sign_off/<int:session_num>', methods=['GET', 'POST'])
+@login_required
+def sign_off(study_id, timepoint_id, session_num):
+    timepoint = get_timepoint(study_id, timepoint_id, current_user)
+    dest_URL = url_for('timepoint', study_id=study_id, timepoint_id=timepoint_id)
+
+    try:
+        session = timepoint.sessions[session_num]
+    except KeyError:
+        flash("Session does not exist.")
+        return redirect(dest_URL)
+
+    session.sign_off(current_user.id)
+
+    return redirect(dest_URL)
 
 @app.route('/redcap_redirect/<int:session_id>', methods=['GET'])
 @login_required
