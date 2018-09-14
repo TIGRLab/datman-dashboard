@@ -3,10 +3,15 @@
 Helper functions for the routes defined in views.py to make them a bit more
 readable :)
 """
-from flask import flash
+import logging
 
-from .models import Study
+from flask import flash
+from werkzeug.routing import RequestRedirect
+
+from .models import Study, Timepoint
 from .forms import UserForm, UserAdminForm
+
+logger = logging.getLogger(__name__)
 
 def get_user_form(user, current_user):
     if not current_user.dashboard_admin:
@@ -36,3 +41,17 @@ def report_form_errors(form):
             continue
         for error in errors:
             flash('ERROR - {} {}'.format(label, error))
+
+def get_timepoint(study_id, timepoint_id, current_user):
+    timepoint = Timepoint.query.get(timepoint_id)
+
+    if timepoint is None:
+        flash("Timepoint {} does not exist".format(timepoint_id))
+        raise RequestRedirect("index")
+
+    if (not current_user.has_study_access(study_id) or
+            not timepoint.belongs_to(study_id)):
+        flash("Not authorised to view {}".format(timepoint_id))
+        raise RequestRedirect("index")
+
+    return timepoint
