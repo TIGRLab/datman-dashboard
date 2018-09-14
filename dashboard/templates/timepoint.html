@@ -3,7 +3,6 @@
 {% include "flash.html" %}
 {% block content %}
 <div class="container">
-
   <div class="jumbotron">
     <h1>{{ timepoint.name }}</h1>
     {% if timepoint.is_phantom %}
@@ -15,50 +14,83 @@
     {% include 'incidental_finding_snip.html'%}
   {% endif %}
 
-  <div role="navigation">
-    <div class="btn-group" role="group">
-      <a class="btn btn-primary" href="{{ url_for('study', study_id=study_id) }}">
-        <span class="glyphicon glyphicon-arrow-left"></span>
-        <span class="button-text">Return to {{ study_id }}</span>
-      </a>
-    </div>
+  <div class="row">
+    <!-- The main content for a timepoint page -->
+    <div class="col-xs-9">
+      <!-- The back button and 'reviewed' flag if timepoint has been QC'd -->
+      <div class="row">
+        <div class="col-xs-4">
+          <div class="btn-group" role="group">
+            <a class="btn btn-primary" href="{{ url_for('study', study_id=study_id) }}">
+              <span class="glyphicon glyphicon-arrow-left"></span>
+              <span class="button-text">Return to {{ study_id }}</span>
+            </a>
+          </div>
+        </div>
+        <div class="col-xs-8 text-center">
+          {% if timepoint.is_qcd() %}
+            <span class="text-success" style="font-size:24px;">
+              <i class="fas fa-check-circle"></i> Reviewed
+            </span>
+          {% endif %}
+        </div>
+      </div>
 
-    <div class="btn-group-vertical pull-right" role="group">
-      {% if current_user.is_study_admin(study_id) %}
-        <a class="button btn btn-primary" id="print_brain">
-          <span class="pull-right glyphicon glyphicon-print"></span>
-          <span class="button-text">Print Brain</span>
-        </a>
-        <a class="button btn btn-primary" id="delete_session">
-          <span class="pull-right glyphicon glyphicon-trash"></span>
-          <span class="button-text">Delete Session</span>
-        </a>
-      {% endif %}
-      {% if timepoint.github_issue %}
-        <a class="button btn btn-primary" id="goto_issue">
-          <span class="pull-right glyphicon glyphicon-share-alt"></span>
-          <span class="button-text">Go to GitHub Issue</span>
-        </a>
-      {% else %}
-        <a class="button btn btn-primary" id="create_issue">
-          <span class="pull-right glyphicon glyphicon-edit"></span>
-          <span class="button-text">Create GitHub Issue</span>
-        </a>
-      {% endif %}
-      <a class="button btn btn-primary" id="flag_incidental">
-        <span class="pull-right glyphicon glyphicon-flag"></span>
-        <span class="button-text">Flag Incidental Finding</span>
-      </a>
+      <!-- Reporting on the timepoint itself -->
+      <div id="timepoint-reporting" style="margin-top:30px;">
+        {% if (timepoint.needs_redcap_survey(study_id)
+               or timepoint.needs_rewrite()
+               or not timepoint.static_page
+               or timepoint.missing_scans()) %}
+          {% include 'timepoint_warnings_snip.html' %}
+        {% endif %}
+        {% if timepoint.static_page %}
+          <a href="{{ timepoint.static_page }}" class="btn btn-primary" id="doc-page">
+            <span class="button-text">View QC page</span>
+            <span class="glyphicon glyphicon-share-alt"></span>
+          </a>
+        {% endif %}
+      </div>
+    </div>
+    <!-- The navigation button menu for a timepoint -->
+    <div class="col-xs-3">
+      <div role="navigation">
+        <div class="btn-group-vertical pull-right" role="group">
+          {% if current_user.is_study_admin(study_id) %}
+            <a class="button btn btn-primary" id="print_brain">
+              <span class="pull-right glyphicon glyphicon-print"></span>
+              <span class="button-text">Print Brain</span>
+            </a>
+            <a class="button btn btn-primary" id="delete_session">
+              <span class="pull-right glyphicon glyphicon-trash"></span>
+              <span class="button-text">Delete Session</span>
+            </a>
+          {% endif %}
+          {% if timepoint.github_issue %}
+            <a class="button btn btn-primary" id="goto_issue">
+              <span class="pull-right glyphicon glyphicon-share-alt"></span>
+              <span class="button-text">Go to GitHub Issue</span>
+            </a>
+          {% else %}
+            <a class="button btn btn-primary" id="create_issue">
+              <span class="pull-right glyphicon glyphicon-edit"></span>
+              <span class="button-text">Create GitHub Issue</span>
+            </a>
+          {% endif %}
+          <a class="button btn btn-primary" id="flag_incidental">
+            <span class="pull-right glyphicon glyphicon-flag"></span>
+            <span class="button-text">Flag Incidental Finding</span>
+          </a>
+        </div>
+      </div>
     </div>
   </div>
 
-  <div class="timepoint-info">
-    {% if (timepoint.needs_redcap_survey()
-           or timepoint.needs_rewrite()
-           or not timepoint.static_page
-           or timepoint.missing_scans()) %}
-      {% include 'timepoint_warnings_snip.html' %}
-    {% endif %}
+  <!-- This section reports info from individual sessions within the timepoint -->
+  <div id="session-reporting">
+    {% for session in timepoint.sessions.values() %}
+      {% include 'session_snip.html' %}
+    {% endfor %}
   </div>
 </div>
 {% endblock %}

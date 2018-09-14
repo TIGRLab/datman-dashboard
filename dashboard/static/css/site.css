@@ -58,6 +58,13 @@ thead {
   border: 1px solid #D3D3D3;
 }
 
+/* Styling for the session page 'Scan Missing' modal comment box */
+#missing_comment {
+  width: 100% !important;
+  resize: none !important;
+  margin-bottom: 5px !important;
+}
+
 #doc-page {
   margin: 10px;
   margin-left: 0px;

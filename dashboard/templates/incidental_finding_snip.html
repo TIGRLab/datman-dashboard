@@ -2,7 +2,7 @@
   <h2>Incidental Findings:</h2>
   {% for finding in timepoint.incidental_findings %}
     <div class="well" style="margin-bottom: 0px;">{{ finding.description }}</div>
-    <span class="text-muted pull-right">{{ "{} {} - {}".format(
+    <span class="text-muted pull-right">{{ "Recorded by {} {} - {}".format(
         finding.user.first_name, finding.user.last_name, finding.timestamp.strftime(
         '%I:%M %p, %Y-%m-%d')) }}
     </span>
