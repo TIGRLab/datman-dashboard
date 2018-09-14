@@ -50,9 +50,9 @@ class ScanBlacklistForm(FlaskForm):
     submit = SubmitField('Submit')
     delete = SubmitField('Delete Entry')
 
-class SessionForm(FlaskForm):
-    cl_comment = TextAreaField(u'Checklist_comment',
-                           validators=[DataRequired()])
+# class ChecklistForm(FlaskForm):
+#     comment = TextAreaField(u'Checklist_comment',
+#                            validators=[DataRequired()])
 
 # class MultiCheckboxField(SelectMultipleField):
 #     widget = widgets.ListWidget(prefix_label=False)
@@ -109,7 +109,6 @@ class UserForm(FlaskForm):
     update = SubmitField(label='Update')
 
 class PermissionRadioField(RadioField):
-
     def __init__(self, *args, **kwargs):
         super(PermissionRadioField, self).__init__(**kwargs)
         self.choices = [(u'False', 'Disabled'), (u'True', 'Enabled')]
@@ -174,3 +173,8 @@ class ScanCommentForm(FlaskForm):
         analysis_choices = [(str(analysis.id), analysis.name)
                             for analysis in analyses]
         self.analyses.choices = analysis_choices
+
+class EmptySessionForm(FlaskForm):
+    comment = TextAreaField(u'Explanation: ', id="missing_comment",
+            validators=[DataRequired()],
+            render_kw={'rows': 4, 'cols': 50})
