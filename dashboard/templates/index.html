@@ -3,32 +3,47 @@
 
 {% block content %}
   {% include 'flash.html' %}
-  <div class="bd-pageheader jumbotron">
-    <h1>Kimel Lab QC Monitor</h1>
-      <p class="lead"> Monitoring {{ session_count }} sessions for {{ study_count }} studies.</p>
-    </h1>
-  </div>
-  <div>
-    {% if studies|count > 0 %}
-    <h3>Select a study below:</h3>
-    <table class="table-striped">
-      <th>
-        <tr>
-          <td>Nickname</td>
-          <td>Study name</td>
-          <td># of sessions</td>
-        </tr>
-      </th>
-      {% for study in studies %}
-      <tr>
-        <td><a href="{{ url_for('study', study_id=study.id) }}"> {{ study.nickname }}</a></td>
-        <td><a href="{{ url_for('study', study_id=study.id) }}"> {{ study.name }}</a></td>
-        <td><center>{{study.sessions|count}}</center></td>
-      </tr>
-      {% endfor %}
-    </table>
-    {% else %}
-    <h3>You do not have access to any studies. Please contact an administrator to receive access.</h3>
-    {% endif %}
-  </div>
+    <div id="home-body">
+      <div class="jumbotron">
+        <h1>Kimel TIGR Lab MR Quality Control</h1>
+          <p class="lead"> Monitoring {{ session_count }} Sessions for {{ study_count }} Studies.</p>
+        </h1>
+      </div>
+      {% if studies|count > 0 %}
+      <table class="table table-striped table-hover">
+        <thead>
+          <tr>
+            <td>Nickname</td>
+            <!-- This empty column is for the 'new QC' labels  -->
+            <td></td>
+            <td>Study Name</td>
+            <td align="right"># of Sessions</td>
+            <!-- This empty column is for the 'View More' indicator so they know rows are clickable  -->
+            <td></td>
+          </tr>
+        </thead>
+        <tbody>
+          {% for study in studies %}
+          <tr class="clickable-row" data-href="{{ url_for('study', study_id=study.id) }}">
+            <td> {{ study.nickname }} </td>
+            <td>
+              {% if study.new_sessions() %}
+                <span class="label label-primary new-qc">New
+                  <span class="badge">{{ study.new_sessions() }}</span>
+                </span>
+              {% endif %}
+            </td>
+            <td>{{ study.name }}</a></td>
+            <td align="right">{{ study.sessions|count }}</td>
+            <td class="click-me">
+              <span> View More <span class="glyphicon glyphicon-menu-right"></span></span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <h3>You do not have access to any studies. Please contact an administrator to receive access.</h3>
+      {% endif %}
+    </div>
 {% endblock %}
