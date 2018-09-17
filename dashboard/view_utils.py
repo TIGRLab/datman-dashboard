@@ -18,14 +18,7 @@ def get_user_form(user, current_user):
         return UserForm(obj=user)
 
     form = UserAdminForm(obj=user)
-
-    enabled_studies = user.studies.keys()
-    if enabled_studies:
-        # All studies not in the enabled list for this user
-        disabled_studies = Study.query.filter(~Study.id.in_(enabled_studies)).all()
-    else:
-        disabled_studies = Study.query.all()
-
+    disabled_studies = user.get_disabled_studies()
     form.add_access.choices = [(study.id, study.id) for study in
             disabled_studies]
     return form
@@ -55,3 +48,11 @@ def get_timepoint(study_id, timepoint_id, current_user):
         raise RequestRedirect("index")
 
     return timepoint
+
+def get_session(timepoint, session_num, fail_url):
+    try:
+        session = timepoint.sessions[session_num]
+    except KeyError:
+        flash("Session {} does not exist for {}.".format(session_num, timepoint))
+        raise RequestRedirect(fail_url)
+    return session
