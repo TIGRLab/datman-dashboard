@@ -88,6 +88,20 @@ class User(UserMixin, db.Model):
             studies = [su.study for su in self.studies.values()]
         return studies
 
+    def get_disabled_studies(self):
+        """
+        Get a list of Study objects the user does NOT have access to.
+        """
+        enabled_studies = self.studies.keys()
+
+        if enabled_studies:
+            disabled_studies = Study.query.filter(
+                    ~Study.id.in_(enabled_studies)).all()
+        else:
+            disabled_studies = Study.query.all()
+
+        return disabled_studies
+
     def has_study_access(self, study):
         return self._get_permissions(study)
 
@@ -130,6 +144,9 @@ class User(UserMixin, db.Model):
     def __repr__(self):
         return "<User {}: {} {}>".format(self.id, self.first_name,
                 self.last_name)
+
+    def __str__(self):
+        return "{} {}".format(self.first_name, self.last_name)
 
 
 class Study(db.Model):
@@ -360,9 +377,11 @@ class Timepoint(db.Model):
             back_populates='timepoints',
             collection_class=attribute_mapped_collection('id'))
     sessions = db.relationship('Session', lazy='joined',
-            collection_class=attribute_mapped_collection('num'))
-    comments = db.relationship('TimepointComment')
-    incidental_findings = db.relationship('IncidentalFinding')
+            collection_class=attribute_mapped_collection('num'),
+            cascade='all, delete')
+    comments = db.relationship('TimepointComment', cascade='all, delete')
+    incidental_findings = db.relationship('IncidentalFinding',
+            cascade='all, delete')
 
     def __init__(self, name, site, is_phantom=False, github_issue=None,
             gitlab_issue=None, static_page=None):
@@ -401,6 +420,16 @@ class Timepoint(db.Model):
         return uses_redcap and any(not sess.redcap_record
                 for sess in self.sessions.values())
 
+    def needs_rewrite(self):
+        if self.static_page and (self.last_qc_repeat_generated < len(self.sessions)):
+            return True
+        return False
+
+    def missing_scans(self):
+        if self.is_phantom:
+            return False
+        return any(sess.missing_scans() for sess in self.sessions.values())
+
     def dismiss_redcap_error(self, session_num):
         session_redcap = SessionRedcap(self.name, session_num)
         db.session.add(session_redcap)
@@ -411,15 +440,18 @@ class Timepoint(db.Model):
         db.session.add(empty_session)
         db.session.commit()
 
-    def needs_rewrite(self):
-        if self.static_page and (self.last_qc_repeat_generated < len(self.sessions)):
-            return True
-        return False
+    def delete(self):
+        """
+        This will cascade and also delete any records that reference
+        the current timepoint, so be careful :)
+        """
+        db.session.delete(self)
+        db.session.commit()
 
-    def missing_scans(self):
-        if self.is_phantom:
-            return False
-        return any(sess.missing_scans() for sess in self.sessions.values())
+    def report_incidental_finding(self, user_id, comment):
+        new_finding = IncidentalFinding(user_id, self.name, comment)
+        db.session.add(new_finding)
+        db.session.commit()
 
     def __repr__(self):
         return "<Timepoint {}>".format(self.name)
@@ -440,15 +472,15 @@ class Session(db.Model):
     review_date = db.Column('review_date', db.DateTime(timezone=True))
 
 
-    redcap_record = db.relationship('SessionRedcap', back_populates='session',
-            uselist=False)
-    timepoint = db.relationship('Timepoint', uselist=False,
-            back_populates='sessions')
-    scans = db.relationship('Scan')
     reviewer = db.relationship('User', uselist=False,
             back_populates='sessions_reviewed')
+    timepoint = db.relationship('Timepoint', uselist=False,
+            back_populates='sessions')
+    scans = db.relationship('Scan', cascade='all, delete')
     empty_session = db.relationship('EmptySession', uselist=False,
-            back_populates='session')
+            back_populates='session', cascade='all, delete')
+    redcap_record = db.relationship('SessionRedcap', back_populates='session',
+            uselist=False, cascade='all, delete')
 
     def __init__(self, name, num, date=None, signed_off=False, reviewer=None,
             review_date=None):
@@ -474,6 +506,15 @@ class Session(db.Model):
         self.reviewer_id = user_id
         self.review_date = datetime.datetime.now()
         db.session.add(self)
+        db.session.commit()
+
+    def delete(self):
+        """
+        This will also delete anything referencing the current session (i.e.
+        any scans, redcap comments, blacklist entries or dismissed 'missing
+        scans' errors)
+        """
+        db.session.delete(self)
         db.session.commit()
 
     def __repr__(self):
@@ -560,10 +601,10 @@ class Scan(db.Model):
 
     # If a scan has any links pointing to it, this will hold a list of the
     # IDs for these scans
-    other_ids = db.relationship('Scan')
+    other_ids = db.relationship('Scan', cascade='all, delete')
     session = db.relationship('Session', uselist=False, back_populates='scans')
     scantype = db.relationship('Scantype', uselist=False, back_populates='scans')
-    analysis_comments = db.relationship('AnalysisComment')
+    analysis_comments = db.relationship('AnalysisComment', cascade='all, delete')
     metric_values = db.relationship('MetricValue', cascade='all, delete-orphan')
 
     __table_args__ = (ForeignKeyConstraint(['timepoint', 'session'],
@@ -812,6 +853,12 @@ class IncidentalFinding(db.Model):
     user = db.relationship('User', uselist=False,
             back_populates="incidental_findings")
 
+    def __init__(self, user_id, timepoint_id, description):
+        self.user_id = user_id
+        self.timepoint_id = timepoint_id
+        self.description = description
+        self.timestamp = datetime.datetime.now()
+
     def __repr__(self):
         return "<IncidentalFinding {} for {} found by User {}>".format(
                 self.id, self.timepoint_id, self.user_id)
@@ -821,8 +868,8 @@ class MetricValue(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     scan_id = db.Column(db.Integer, db.ForeignKey('scans.id'), nullable=False)
-    metrictype_id = db.Column(db.Integer, db.ForeignKey('metrictypes.id'),
-            nullable=False)
+    metrictype_id = db.Column('metric_type', db.Integer,
+            db.ForeignKey('metrictypes.id'), nullable=False)
     _value = db.Column('value', db.Text)
 
     scan = db.relationship('Scan', back_populates="metric_values")
