@@ -141,9 +141,7 @@
             id="empty-session-form">
           {{ empty_session_form.hidden_tag() }}
           <div>
-            {{ empty_session_form.comment(maxlength="2048",
-                placeholder="Please describe what happened to this session.",
-                required=True) }}
+            {{ empty_session_form.comment() }}
           </div>
           <button type="submit" class="btn btn-primary">Submit</button>
         </form>
