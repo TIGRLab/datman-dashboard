@@ -177,4 +177,11 @@ class ScanCommentForm(FlaskForm):
 class EmptySessionForm(FlaskForm):
     comment = TextAreaField(u'Explanation: ', id="missing_comment",
             validators=[DataRequired()],
-            render_kw={'rows': 4, 'cols': 50})
+            render_kw={'rows': 4, 'cols': 50, 'required': True,
+                    'placeholder': 'Please describe what happened to this session.',
+                    'maxlength': '2048'})
+
+class IncidentalFindingsForm(FlaskForm):
+    comment = TextAreaField(u'Description: ', id='finding-description',
+            validators=[DataRequired()], render_kw={'required': True,
+                    'placeholder': 'Please describe the finding'})
