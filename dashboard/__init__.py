@@ -1,6 +1,8 @@
 from flask import Flask
+from flask_mail import Mail
 from flask_sqlalchemy import SQLAlchemy
-from config import basedir, ADMINS, MAIL_SERVER, MAIL_PORT, MAIL_USERNAME, MAIL_PASSWORD, LOGSERVER
+from config import basedir, ADMINS, MAIL_SERVER, MAIL_PORT, MAIL_USERNAME, \
+        MAIL_PASSWORD, SENDER, LOGSERVER
 from flask_login import LoginManager
 import os
 
@@ -14,6 +16,7 @@ app.config.from_object('config')
 #from app.database import db_session
 db = SQLAlchemy(app)
 lm = LoginManager(app)
+mail = Mail(app)
 
 if not app.debug:
     import logging
@@ -22,7 +25,7 @@ if not app.debug:
     if MAIL_USERNAME or MAIL_PASSWORD:
         credentials = (MAIL_USERNAME, MAIL_PASSWORD)
     mail_handler = SMTPHandler((MAIL_SERVER, MAIL_PORT),
-                                'no-reply@kimellab.ca',
+                                SENDER,
                                 ADMINS,
                                 'Dashboard failure',
                                 credentials)

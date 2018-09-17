@@ -23,6 +23,7 @@ MAIL_SERVER = "smtp.camh.net"
 MAIL_PORT = 25
 MAIL_USERNAME = None
 MAIL_PASSWORD = None
+SENDER = 'no-reply@kimellab.ca'
 
 # administrator list
 try:
