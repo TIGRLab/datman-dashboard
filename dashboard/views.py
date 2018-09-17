@@ -30,8 +30,9 @@ from .models import Study, Site, Session, Scantype, Scan, User, \
         SessionRedcap, EmptySession
 from .forms import SelectMetricsForm, StudyOverviewForm, \
         ScanBlacklistForm, UserForm, ScanCommentForm, AnalysisForm, \
-        UserAdminForm, EmptySessionForm
-from .view_utils import get_user_form, report_form_errors, get_timepoint
+        UserAdminForm, EmptySessionForm, IncidentalFindingsForm
+from .view_utils import get_user_form, report_form_errors, get_timepoint, \
+        get_session
 
 logger = logging.getLogger(__name__)
 logger.info('Loading views')
@@ -65,7 +66,6 @@ def handle_invalid_usage(error):
 def load_user(id):
     return User.query.get(int(id))
 
-
 def login_required(f):
     """
     Checks the requester has a valid authentication cookie
@@ -79,7 +79,8 @@ def login_required(f):
 
 def study_admin_required(f):
     """
-    Verifies a user is a study admin or a dashboard admin
+    Verifies a user is a study admin or a dashboard admin. Any view function
+    this wraps must have 'study_id' as an argument
     """
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -292,28 +293,70 @@ def create_issue(session_id, issue_title="", issue_body=""):
         flash("Please enter both an issue title and description.")
     return(redirect(url_for('session', session_id=session.id)))
 
+############## Timepoint view functions ########################################
+# timepoint() is the main view and renders the html users interact with.
+#
+# The other routes all handle different button clicks from the timepoint() view
+# and then immediately redirect back to it.
 
 @app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>',
         methods=['GET', 'POST'])
-@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
-        '/delete/<delete>', methods=['GET', 'POST'])
-@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
-        '/flag_finding/<flag_finding>', methods=['GET', 'POST'])
 @login_required
 def timepoint(study_id, timepoint_id, delete=False, flag_finding=False):
     """
     Default view for a single timepoint.
-
-    If called as /study/<study_id>/timepoint/<timepoint_id>/delete/True
-    it will delete the timepoint and its sessions from that study or from the
-    database as a whole if the timepoint has no other studies defined.
     """
     timepoint = get_timepoint(study_id, timepoint_id, current_user)
-
-    form = EmptySessionForm()
-
+    empty_form = EmptySessionForm()
+    findings_form = IncidentalFindingsForm()
     return render_template('timepoint.html', study_id=study_id,
-            timepoint=timepoint, empty_session_form=form)
+            timepoint=timepoint, empty_session_form=empty_form,
+            incidental_findings_form=findings_form)
+
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
+        '/sign_off/<int:session_num>', methods=['GET', 'POST'])
+@login_required
+def sign_off(study_id, timepoint_id, session_num):
+    timepoint = get_timepoint(study_id, timepoint_id, current_user)
+    dest_URL = url_for('timepoint', study_id=study_id,
+            timepoint_id=timepoint_id)
+    session = get_session(timepoint, session_num, dest_URL)
+    session.sign_off(current_user.id)
+    return redirect(dest_URL)
+
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
+        '/flag_finding', methods=['POST'])
+@login_required
+def flag_finding(study_id, timepoint_id):
+    timepoint = get_timepoint(study_id, timepoint_id, current_user)
+    dest_URL = url_for('timepoint', study_id=study_id,
+            timepoint_id=timepoint_id)
+
+    form = IncidentalFindingsForm()
+    if form.validate_on_submit():
+        timepoint.report_incidental_finding(current_user.id, form.comment.data)
+    return redirect(dest_URL)
+
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
+        '/delete', methods=['GET'])
+@study_admin_required
+@login_required
+def delete_timepoint(study_id, timepoint_id):
+    timepoint = get_timepoint(study_id, timepoint_id, current_user)
+    timepoint.delete()
+    return redirect(url_for('study', study_id=study_id))
+
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
+        '/delete_session/<int:session_num>', methods=['GET'])
+@study_admin_required
+@login_required
+def delete_session(study_id, timepoint_id, session_num):
+    timepoint = get_timepoint(study_id, timepoint_id, current_user)
+    dest_URL = url_for('timepoint', study_id=study_id,
+            timepoint_id=timepoint_id)
+    session = get_session(timepoint, session_num, dest_URL)
+    session.delete()
+    return redirect(dest_URL)
 
 @app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
         '/dismiss_redcap/<int:session_num>', methods=['GET', 'POST'])
@@ -321,19 +364,13 @@ def timepoint(study_id, timepoint_id, delete=False, flag_finding=False):
 @login_required
 def dismiss_redcap(study_id, timepoint_id, session_num):
     """
-    Dismiss a session's 'missing redcap' error message
+    Dismiss a session's 'missing redcap' error message.
     """
     timepoint = get_timepoint(study_id, timepoint_id, current_user)
-    dest_URL = url_for('timepoint', study_id=study_id, timepoint_id=timepoint_id)
-
-    try:
-        timepoint.sessions[session_num]
-    except KeyError:
-        flash('Session does not exist.')
-        return redirect(dest_URL)
-
+    dest_URL = url_for('timepoint', study_id=study_id,
+            timepoint_id=timepoint_id)
+    session = get_session(timepoint, session_num, dest_URL)
     timepoint.dismiss_redcap_error(session_num)
-
     return redirect(dest_URL)
 
 @app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
@@ -345,13 +382,9 @@ def dismiss_missing(study_id, timepoint_id, session_num):
     Dismiss a session's 'missing scans' error message
     """
     timepoint = get_timepoint(study_id, timepoint_id, current_user)
-    dest_URL = url_for('timepoint', study_id=study_id, timepoint_id=timepoint_id)
-
-    try:
-        timepoint.sessions[session_num]
-    except KeyError:
-        flash('Session does not exist.')
-        return redirect(dest_URL)
+    dest_URL = url_for('timepoint', study_id=study_id,
+            timepoint_id=timepoint_id)
+    session = get_session(timepoint, session_num, dest_URL)
 
     form = EmptySessionForm()
     if form.validate_on_submit():
@@ -360,22 +393,7 @@ def dismiss_missing(study_id, timepoint_id, session_num):
 
     return redirect(dest_URL)
 
-@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
-        '/sign_off/<int:session_num>', methods=['GET', 'POST'])
-@login_required
-def sign_off(study_id, timepoint_id, session_num):
-    timepoint = get_timepoint(study_id, timepoint_id, current_user)
-    dest_URL = url_for('timepoint', study_id=study_id, timepoint_id=timepoint_id)
-
-    try:
-        session = timepoint.sessions[session_num]
-    except KeyError:
-        flash("Session does not exist.")
-        return redirect(dest_URL)
-
-    session.sign_off(current_user.id)
-
-    return redirect(dest_URL)
+############## End of Timepoint View functions #################################
 
 @app.route('/redcap_redirect/<int:session_id>', methods=['GET'])
 @login_required
