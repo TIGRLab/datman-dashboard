@@ -15,6 +15,7 @@ from flask import render_template, flash, url_for, redirect, request, jsonify, \
         abort, g, make_response, send_file
 from flask_login import login_user, logout_user, current_user, \
         login_required, fresh_login_required
+from flask_mail import Message
 from sqlalchemy.exc import SQLAlchemyError
 from oauth import OAuthSignIn
 from github import Github, GithubException
@@ -33,6 +34,7 @@ from .forms import SelectMetricsForm, StudyOverviewForm, \
         UserAdminForm, EmptySessionForm, IncidentalFindingsForm
 from .view_utils import get_user_form, report_form_errors, get_timepoint, \
         get_session
+from .emails import incidental_finding_email
 
 logger = logging.getLogger(__name__)
 logger.info('Loading views')
@@ -322,6 +324,7 @@ def sign_off(study_id, timepoint_id, session_num):
             timepoint_id=timepoint_id)
     session = get_session(timepoint, session_num, dest_URL)
     session.sign_off(current_user.id)
+    flash("{} review completed.".format(session))
     return redirect(dest_URL)
 
 @app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
@@ -335,6 +338,8 @@ def flag_finding(study_id, timepoint_id):
     form = IncidentalFindingsForm()
     if form.validate_on_submit():
         timepoint.report_incidental_finding(current_user.id, form.comment.data)
+        incidental_finding_email(current_user, timepoint.name, form.comment.data)
+        flash("Report submitted.")
     return redirect(dest_URL)
 
 @app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
@@ -344,6 +349,7 @@ def flag_finding(study_id, timepoint_id):
 def delete_timepoint(study_id, timepoint_id):
     timepoint = get_timepoint(study_id, timepoint_id, current_user)
     timepoint.delete()
+    flash("{} has been deleted.".format(timepoint))
     return redirect(url_for('study', study_id=study_id))
 
 @app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
@@ -356,6 +362,7 @@ def delete_session(study_id, timepoint_id, session_num):
             timepoint_id=timepoint_id)
     session = get_session(timepoint, session_num, dest_URL)
     session.delete()
+    flash("{} has been deleted.".format(session))
     return redirect(dest_URL)
 
 @app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
@@ -371,6 +378,7 @@ def dismiss_redcap(study_id, timepoint_id, session_num):
             timepoint_id=timepoint_id)
     session = get_session(timepoint, session_num, dest_URL)
     timepoint.dismiss_redcap_error(session_num)
+    flash("Successfully updated.")
     return redirect(dest_URL)
 
 @app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
@@ -390,6 +398,7 @@ def dismiss_missing(study_id, timepoint_id, session_num):
     if form.validate_on_submit():
         timepoint.ignore_missing_scans(session_num, current_user.id,
                 form.comment.data)
+        flash("Succesfully updated.")
 
     return redirect(dest_URL)
 

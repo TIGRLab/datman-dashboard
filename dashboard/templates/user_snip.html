@@ -1,6 +1,6 @@
   {{ form.hidden_tag() }}
   <div class="panel panel-primary" title="Basic user demographic information">
-    <div class="panel-heading" data-toggle="collapse" data-target="#userInfo">
+    <div class="panel-heading collapsible-heading" data-toggle="collapse" data-target="#userInfo">
       <h3 class="panel-title chevron-toggle">User Details</h3>
     </div>
     <div class="panel-body collapse in" id="userInfo">
@@ -18,7 +18,7 @@
 
   {% if current_user.dashboard_admin %}
     <div class="panel panel-primary" title="User permissions and access settings (Admin Only)">
-      <div class="panel-heading" data-toggle="collapse" data-target="#userPermissions">
+      <div class="panel-heading collapsible-heading" data-toggle="collapse" data-target="#userPermissions">
         <h3 class="panel-title chevron-toggle">User Permissions (Admin View)</h3>
       </div>
       <div class="panel-body collapse in" id="userPermissions">

@@ -119,6 +119,56 @@ thead {
   min-width: 100px;
 }
 
+/* Make the delete buttons slide in on hover */
+.delete-session {
+  overflow: hidden;
+  width: 0;
+  padding: 0;
+  border: none;
+  height: 34px;
+  margin: 0px 10px;
+  transition: 0.2s ease;
+}
+
+.session-header:hover .delete-session {
+  padding: 6px 12px;
+  border: 1px solid transparent;
+  width: 70px;
+}
+
+/* style timepoint comments */
+.thumbnail {
+  padding: 0px;
+}
+.panel {
+	position:relative;
+}
+
+.panel > .panel-heading:after, .panel > .panel-heading:before {
+	position: absolute;
+	top: 11px;
+  left: -16px;
+	right: 100%;
+	width: 0;
+	height: 0;
+	display: block;
+	content: " ";
+	border-color: transparent;
+	border-style: solid solid outset;
+	pointer-events: none;
+}
+
+.panel > .panel-heading:after {
+	border-width: 7px;
+	border-right-color: #f7f7f7;
+	margin-top: 1px;
+	margin-left: 2px;
+}
+.panel > .panel-heading:before {
+	border-right-color: #ddd;
+	border-width: 8px;
+}
+
 /* Style badge on 'new-qc' labels */
 .new-qc {
   background-color: var(--alt-theme-main);
@@ -162,8 +212,8 @@ thead {
 * Bootstrap customizations below
 ***********************************************/
 
-/* Add a chevron toggle for panels */
-.panel-heading {
+/* Add a chevron toggle for collapsible headings (e.g panels) */
+.collapsible-heading {
   cursor: pointer;
 }
 
@@ -173,7 +223,7 @@ thead {
   float: right;
 }
 
-.panel-heading.collapsed .chevron-toggle:after {
+.collapsible-heading.collapsed .chevron-toggle:after {
   content: "\e113";       /* Chevron up */
 }
 

@@ -183,5 +183,6 @@ class EmptySessionForm(FlaskForm):
 
 class IncidentalFindingsForm(FlaskForm):
     comment = TextAreaField(u'Description: ', id='finding-description',
-            validators=[DataRequired()], render_kw={'required': True,
-                    'placeholder': 'Please describe the finding'})
+            validators=[DataRequired()], render_kw={'rows': 4, 'cols': 65,
+                    'required': True, 'placeholder': 'Please describe the finding'})
+    submit = SubmitField('Submit')

@@ -1,6 +1,17 @@
-<div id="{{ session }}">
-  <div class="session-header" data-toggle="collapse" data-target="#{{ session }}-body">
-    <h3 class="chevron-toggle">{{ session }}</h3>
+<div id="{{ session }}" class="row session-info">
+  <div class="collapsible-heading" data-toggle="collapse" data-target="#{{ session }}-body">
+    <h3 class="chevron-toggle session-header">
+      <span>{{ session }}</span>
+      {% if current_user.is_study_admin(study_id) %}
+        <!-- The onclick commands are there to stop the panel from minimizing
+        when delete is clicked -->
+        <a class="button btn btn-danger delete-session" href="#delete-modal"
+          data-toggle="modal" data-session="{{ session.num }}"
+          onclick="event.stopPropagation(); $('#delete-modal').modal('show');">
+          <span class="glyphicon glyphicon-trash"></span>
+        </a>
+      {% endif %}
+    </h3>
   </div>
   <hr class="session-separator">
   <div class="session-content collapse in" id="{{ session }}-body">
@@ -8,8 +19,7 @@
     <div class="review-status">
       <h4>Review:</h4>
       {% if session.signed_off %}
-        {{ '{} {} - {}'.format(session.reviewer.first_name,
-            session.reviewer.last_name,
+        {{ '{} - {}'.format(session.reviewer,
             session.review_date.strftime('%I:%M %p, %Y-%m-%d')) }}
       {% else %}
         Pending.
@@ -67,9 +77,8 @@
       <h4>No Scans Expected</h4>
       <div class="well">{{ session.empty_session.comment }}</div>
       <span class="text-muted pull-right">
-        {{ "Recorded by {} {} - {}".format(
-            session.empty_session.reviewer.first_name,
-            session.empty_session.reviewer.last_name,
+        {{ "Recorded by {} - {}".format(
+            session.empty_session.reviewer,
             session.empty_session.date_added.strftime('%I:%M %p, %Y-%m-%d')) }}
       </span>
     {% endif %}

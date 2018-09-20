@@ -19,6 +19,15 @@ from dashboard import db
 
 logger = logging.getLogger(__name__)
 
+class Comment(object):
+    def __init__(self, user, timestamp, comment):
+        self.user = user
+        self.timestamp = timestamp.strftime('%I:%M %p, %Y-%m-%d')
+        self.text = comment
+
+    def __repr__(self):
+        return "<Comment by {} on {}>".format(self.user, self.timestamp)
+
 ################################################################################
 # Association tables (i.e. basic many to many relationships)
 
@@ -58,7 +67,7 @@ class User(UserMixin, db.Model):
             order_by='StudyUser.study_id',
             collection_class=attribute_mapped_collection('study_id'))
     incidental_findings = db.relationship('IncidentalFinding')
-    blacklist_comments = db.relationship('ScanBlacklist')
+    scan_comments = db.relationship('ScanChecklist')
     timepoint_comments = db.relationship('TimepointComment')
     analysis_comments = db.relationship('AnalysisComment')
     sessions_reviewed = db.relationship('Session')
@@ -379,7 +388,8 @@ class Timepoint(db.Model):
     sessions = db.relationship('Session', lazy='joined',
             collection_class=attribute_mapped_collection('num'),
             cascade='all, delete')
-    comments = db.relationship('TimepointComment', cascade='all, delete')
+    comments = db.relationship('TimepointComment', cascade='all, delete',
+            order_by='TimepointComment._timestamp')
     incidental_findings = db.relationship('IncidentalFinding',
             cascade='all, delete')
 
@@ -460,6 +470,44 @@ class Timepoint(db.Model):
         return self.name
 
 
+class TimepointComment(db.Model):
+    __tablename__ = 'timepoint_comments'
+
+    id = db.Column('id', db.Integer, primary_key=True)
+    timepoint_id = db.Column('timepoint', db.String(64),
+            db.ForeignKey('timepoints.name'), nullable=False)
+    user_id = db.Column('user_id', db.Integer, db.ForeignKey('users.id'),
+            nullable=False)
+    _timestamp = db.Column('comment_timestamp', db.DateTime(timezone=True),
+            nullable=False)
+    comment = db.Column('comment', db.Text, nullable=False)
+    modified = db.Column('modified', db.Boolean, default=False)
+
+    user = db.relationship('User', uselist=False,
+            back_populates='timepoint_comments')
+    timepoint = db.relationship('Timepoint', uselist=False,
+            back_populates='comments')
+
+    def __init__(self, timepoint_id, user_id, comment):
+        self.timepoint_id = timepoint_id
+        self.user_id = user_id
+        self.comment = comment
+
+    def update(self, new_text):
+        self._timestamp = datetime.datetime.now()
+        self.comment = new_text
+        self.modified = True
+        db.session.add(self)
+        db.session.commit()
+
+    @property
+    def timestamp(self):
+        return self._timestamp.strftime('%I:%M %p, %Y-%m-%d')
+
+    def __repr__(self):
+        return "<TimepointComment for {} by user {}>".format(self.timepoint_id,
+                self.user_id)
+
 class Session(db.Model):
     __tablename__ = 'sessions'
 
@@ -470,7 +518,6 @@ class Session(db.Model):
     signed_off = db.Column('signed_off', db.Boolean, default=False)
     reviewer_id = db.Column('reviewer', db.Integer, db.ForeignKey('users.id'))
     review_date = db.Column('review_date', db.DateTime(timezone=True))
-
 
     reviewer = db.relationship('User', uselist=False,
             back_populates='sessions_reviewed')
@@ -599,9 +646,13 @@ class Scan(db.Model):
     # If a scan is a link, this will hold the id of the scan the link points to
     source_id = db.Column('source_data', db.Integer, db.ForeignKey(id))
 
-    # If a scan has any links pointing to it, this will hold a list of the
-    # IDs for these scans
-    other_ids = db.relationship('Scan', cascade='all, delete')
+    # If a scan has any symbolic links pointing to it 'links' will be a list
+    # of them. If a scan is just a link pointing to some other data 'source_data'
+    # will point to this original data.
+    links = db.relationship('Scan', cascade='all, delete',
+        backref=db.backref('source_data', remote_side=[id]))
+    qc_review = db.relationship('ScanChecklist', uselist=False,
+            back_populates='scan', cascade='all, delete', lazy='joined')
     session = db.relationship('Session', uselist=False, back_populates='scans')
     scantype = db.relationship('Scantype', uselist=False, back_populates='scans')
     analysis_comments = db.relationship('AnalysisComment', cascade='all, delete')
@@ -621,6 +672,36 @@ class Scan(db.Model):
         self.description = description
         self.source_id = source_id
 
+    def is_linked(self):
+        return self.source_id is not None
+
+    def get_checklist_entry(self):
+        if self.is_linked():
+            checklist = self.source_data.qc_review
+        else:
+            checklist = self.qc_review
+        return checklist
+
+    def is_new(self):
+        checklist = self.get_checklist_entry()
+        return checklist is None or (not checklist.comment and not checklist.approved)
+
+    def signed_off(self):
+        checklist = self.get_checklist_entry()
+        return checklist.approved and not checklist.comment
+
+    def flagged(self):
+        checklist = self.get_checklist_entry()
+        return checklist.approved and checklist.comment is not None
+
+    def blacklisted(self):
+        checklist = self.get_checklist_entry()
+        return checklist.comment is not None and not checklist.approved
+
+    def get_comment(self):
+        checklist = self.get_checklist_entry()
+        return Comment(checklist.user, checklist.timestamp, checklist.comment)
+
     def __repr__(self):
         if self.source_id:
             repr = "<Scan {}: {} link to scan {}>".format(self.id, self.name,
@@ -628,6 +709,37 @@ class Scan(db.Model):
         else:
             repr = "<Scan {}: {}>".format(self.id, self.name)
         return repr
+
+
+class ScanChecklist(db.Model):
+    __tablename__ = 'scan_checklist'
+
+    id = db.Column('id', db.Integer, primary_key=True)
+    scan_id = db.Column('scan_id', db.Integer, db.ForeignKey('scans.id'),
+            nullable=False)
+    user_id = db.Column('user_id', db.Integer, db.ForeignKey('users.id'),
+            nullable=False)
+    timestamp = db.Column('review_timestamp', db.DateTime(timezone=True),
+            default=datetime.datetime.now())
+    comment = db.Column('comment', db.String(1028))
+    approved = db.Column('signed_off', db.Boolean, nullable=False, default=False)
+
+    scan = db.relationship('Scan', uselist=False, back_populates='qc_review')
+    user = db.relationship('User', uselist=False,
+            back_populates='scan_comments')
+
+
+    __table_args__ = (UniqueConstraint(scan_id),)
+
+    def __init__(self, scan_id, user_id, comment=None, approved=False):
+        self.scan_id = scan_id
+        self.user_id = user_id
+        self.comment = comment
+        self.approved = approved
+
+    def __repr__(self):
+        return "<ScanChecklist for {} by user {}>".format(self.scan_id,
+                self.user_id)
 
 
 class Scantype(db.Model):
@@ -645,61 +757,6 @@ class Scantype(db.Model):
 
     def __repr__(self):
         return "<Scantype {}>".format(self.tag)
-
-
-class TimepointComment(db.Model):
-    __tablename__ = 'timepoint_comments'
-
-    id = db.Column('id', db.Integer, primary_key=True)
-    timepoint_id = db.Column('timepoint', db.String(64),
-            db.ForeignKey('timepoints.name'), nullable=False)
-    user_id = db.Column('user_id', db.Integer, db.ForeignKey('users.id'),
-            nullable=False)
-    timestamp = db.Column('comment_timestamp', db.DateTime(timezone=True),
-            nullable=False)
-    comment = db.Column('comment', db.Text, nullable=False)
-
-    user = db.relationship('User', uselist=False,
-            back_populates='timepoint_comments')
-    timepoint = db.relationship('Timepoint', uselist=False,
-            back_populates='comments')
-
-    def __init__(self, timepoint_id, user_id, comment):
-        self.timepoint_id = timepoint_id
-        self.user_id = user_id
-        self.comment = comment
-
-    def __repr__(self):
-        return "<TimepointComment for {} by user {}>".format(self.timepoint_id,
-                self.user_id)
-
-
-class ScanBlacklist(db.Model):
-    __tablename__ = 'scan_blacklist'
-
-    id = db.Column('id', db.Integer, primary_key=True)
-    # Not a foreign key so blacklist entries can be retained even if a scan is
-    # deleted temporarily
-    scan_name = db.Column('scan_name', db.String(128), nullable=False)
-    user_id = db.Column('user_id', db.Integer, db.ForeignKey('users.id'),
-            nullable=False)
-    timestamp = db.Column('comment_timestamp', db.DateTime(timezone=True),
-            nullable=False)
-    comment = db.Column('comment', db.Text, nullable=False)
-
-    user = db.relationship('User', uselist=False,
-            back_populates='blacklist_comments')
-
-    __table_args__ = (UniqueConstraint(scan_name),)
-
-    def __init__(self, scan_name, user_id, comment):
-        self.scan_name = scan_name
-        self.user_id = user_id
-        self.comment = comment
-
-    def __repr__(self):
-        return "<ScanBlacklist for {} by user {}>".format(self.scan_name,
-                self.user_id)
 
 
 class RedcapRecord(db.Model):
