@@ -463,6 +463,29 @@ class Timepoint(db.Model):
         db.session.add(new_finding)
         db.session.commit()
 
+    def update_comment(self, user_id, comment_id, new_text):
+        comment = self.get_comment(comment_id)
+        if user_id != comment.user_id:
+            raise Exception('User does not have permission to modify comment')
+        comment.update(new_text)
+
+    def add_comment(self, user_id, text):
+        new_comment = TimepointComment(self.name, user_id, text)
+        db.session.add(new_comment)
+        db.session.commit()
+
+    def delete_comment(self, comment_id):
+        comment = self.get_comment(comment_id)
+        db.session.delete(comment)
+        db.session.commit()
+
+    def get_comment(self, comment_id):
+        match = [comment for comment in self.comments
+                if comment.id == comment_id]
+        if not match:
+            raise Exception('Comment not found.')
+        return match[0]
+
     def __repr__(self):
         return "<Timepoint {}>".format(self.name)
 
@@ -492,9 +515,9 @@ class TimepointComment(db.Model):
         self.timepoint_id = timepoint_id
         self.user_id = user_id
         self.comment = comment
+        self._timestamp = datetime.datetime.now()
 
     def update(self, new_text):
-        self._timestamp = datetime.datetime.now()
         self.comment = new_text
         self.modified = True
         db.session.add(self)

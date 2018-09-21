@@ -50,6 +50,7 @@
             <span class="glyphicon glyphicon-share-alt"></span>
           </a>
         {% endif %}
+        {% include 'timepoint_comment_snip.html'%}
       </div>
     </div>
     <!-- The navigation button menu for a timepoint -->
@@ -61,9 +62,10 @@
               <span class="pull-right glyphicon glyphicon-print"></span>
               <span class="button-text">Print Brain</span>
             </a>
-            <a class="button btn btn-primary" id="delete_session">
+            <a class="button btn btn-primary" id="delete-timepoint"
+                data-toggle="modal" href="#delete-modal">
               <span class="pull-right glyphicon glyphicon-trash"></span>
-              <span class="button-text">Delete Session</span>
+              <span class="button-text">Delete Timepoint</span>
             </a>
           {% endif %}
           {% if timepoint.github_issue %}
@@ -77,7 +79,8 @@
               <span class="button-text">Create GitHub Issue</span>
             </a>
           {% endif %}
-          <a class="button btn btn-primary" id="flag_incidental">
+          <a class="button btn btn-primary" data-toggle="modal"
+              href="#incidental-finding-modal">
             <span class="pull-right glyphicon glyphicon-flag"></span>
             <span class="button-text">Flag Incidental Finding</span>
           </a>
@@ -92,5 +95,107 @@
       {% include 'session_snip.html' %}
     {% endfor %}
   </div>
+
+  <!-- The incidental finding modal  -->
+  <div id="incidental-finding-modal" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">
+            <i class="fas fa-times"></i>
+          </button>
+          <h4>Report Incidental Finding</h4>
+        </div>
+        <div class="modal-body">
+          <p>
+            An incidental finding will be reported for <strong>{{ timepoint }}</strong>.
+            Admins will be notified of the issue.
+          </p>
+          <form action="{{ url_for('flag_finding', study_id=study_id,
+              timepoint_id=timepoint.name) }}" method="post" name="flag-finding"
+              class="form">
+              {{ incidental_findings_form.hidden_tag() }}
+              {{ incidental_findings_form.comment() }}
+              <div>
+              {{ incidental_findings_form.submit(class_="btn btn-primary")}}
+              </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary"
+              data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete modal (message text and destination filled in by javascript
+  function)-->
+  <div id="delete-modal" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">
+            <i class="fas fa-times"></i>
+          </button>
+          <h4>Delete database records?</h4>
+        </div>
+        <div class="modal-body">
+          <p><span style="color: red;"><strong>WARNING: </strong></span>
+            <span id="delete-message"></span>
+            <div style="text-align: center;">Continue?</div>
+          </p>
+        </div>
+        <div class="modal-footer">
+          <a type="button" id="delete-submit" class="btn btn-primary pull-left"
+              href="#">
+            Delete
+          </a>
+          <button type="button" class="btn btn-default" data-dismiss="modal">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
 </div>
+
+<script type="text/javascript">
+
+$("#print_brain").bind('click', function(){
+  alert('"Coming soon!" - Us, 2+ years ago.');
+});
+
+// updateDeleteModal is wrapped in a function to ensure session_num isnt set by the browser
+$("#delete-timepoint").on('click', function () {updateDeleteModal()});
+$(".delete-session").on('click', function() {
+  var session = this.getAttribute('data-session');
+  updateDeleteModal(session);
+});
+
+function updateDeleteModal(session_num) {
+  var name = "{{ timepoint.name }}";
+  var warningBox = $("#delete-message");
+  var submitButton = $("#delete-submit");
+  if (session_num) {
+    var message = "Session " + session_num + " from " + name +
+      " will be deleted and everything associated with it will be purged " +
+      "from the database (i.e. all scans, blacklist comments, metrics, etc.). " +
+      "Everything except comments will be regenerated if the data is left on " +
+      "the filesystem.";
+    var destURL = "{{ url_for('timepoint', study_id=study_id, timepoint_id=timepoint.name) }}/delete_session/" +
+        session_num;
+  } else {
+    var message = name + " and all of its sessions will be deleted. " +
+      "Everything associated with this ID will be purged from the database. " +
+      "If the original data is left on the filesystem it will be re-added " +
+      "later, but any associated comments will disappear forever.";
+    var destURL = "{{ url_for('delete_timepoint', study_id=study_id, timepoint_id=timepoint.name)}}";
+  }
+  warningBox.text(message);
+  submitButton.attr("href", destURL);
+}
+</script>
 {% endblock %}

@@ -174,6 +174,7 @@ class ScanCommentForm(FlaskForm):
                             for analysis in analyses]
         self.analyses.choices = analysis_choices
 
+
 class EmptySessionForm(FlaskForm):
     comment = TextAreaField(u'Explanation: ', id="missing_comment",
             validators=[DataRequired()],
@@ -181,8 +182,16 @@ class EmptySessionForm(FlaskForm):
                     'placeholder': 'Please describe what happened to this session.',
                     'maxlength': '2048'})
 
+
 class IncidentalFindingsForm(FlaskForm):
     comment = TextAreaField(u'Description: ', id='finding-description',
             validators=[DataRequired()], render_kw={'rows': 4, 'cols': 65,
                     'required': True, 'placeholder': 'Please describe the finding'})
+    submit = SubmitField('Submit')
+
+
+class TimepointCommentsForm(FlaskForm):
+    comment = TextAreaField(validators=[DataRequired()],
+            render_kw={'rows': 5, 'required': True,
+                    'placeholder': 'Add new comment here'})
     submit = SubmitField('Submit')

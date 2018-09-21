@@ -31,7 +31,8 @@ from .models import Study, Site, Session, Scantype, Scan, User, \
         SessionRedcap, EmptySession
 from .forms import SelectMetricsForm, StudyOverviewForm, \
         ScanBlacklistForm, UserForm, ScanCommentForm, AnalysisForm, \
-        UserAdminForm, EmptySessionForm, IncidentalFindingsForm
+        UserAdminForm, EmptySessionForm, IncidentalFindingsForm, \
+        TimepointCommentsForm
 from .view_utils import get_user_form, report_form_errors, get_timepoint, \
         get_session
 from .emails import incidental_finding_email
@@ -311,9 +312,11 @@ def timepoint(study_id, timepoint_id, delete=False, flag_finding=False):
     timepoint = get_timepoint(study_id, timepoint_id, current_user)
     empty_form = EmptySessionForm()
     findings_form = IncidentalFindingsForm()
+    comments_form = TimepointCommentsForm()
     return render_template('timepoint.html', study_id=study_id,
             timepoint=timepoint, empty_session_form=empty_form,
-            incidental_findings_form=findings_form)
+            incidental_findings_form=findings_form,
+            timepoint_comments_form=comments_form)
 
 @app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
         '/sign_off/<int:session_num>', methods=['GET', 'POST'])
@@ -325,6 +328,44 @@ def sign_off(study_id, timepoint_id, session_num):
     session = get_session(timepoint, session_num, dest_URL)
     session.sign_off(current_user.id)
     flash("{} review completed.".format(session))
+    return redirect(dest_URL)
+
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
+        '/add_comment', methods=['POST'])
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
+        '/add_comment/<int:comment_id>', methods=['POST', 'GET'])
+@login_required
+def add_comment(study_id, timepoint_id, comment_id=None):
+    timepoint = get_timepoint(study_id, timepoint_id, current_user)
+    dest_URL = url_for('timepoint', study_id=study_id,
+            timepoint_id=timepoint_id)
+
+    form = TimepointCommentsForm()
+    if form.validate_on_submit():
+        if comment_id:
+            try:
+                timepoint.update_comment(current_user.id, comment_id,
+                        form.comment.data)
+            except Exception as e:
+                flash("Failed to update comment. Reason: {}".format(e))
+            else:
+                flash("Updated comment.")
+            return redirect(dest_URL)
+        comment = timepoint.add_comment(current_user.id, form.comment.data)
+    return redirect(dest_URL)
+
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
+        '/delete_comment/<int:comment_id>', methods=['GET'])
+@study_admin_required
+@login_required
+def delete_comment(study_id, timepoint_id, comment_id):
+    timepoint = get_timepoint(study_id, timepoint_id, current_user)
+    dest_URL = url_for('timepoint', study_id=study_id,
+            timepoint_id=timepoint_id)
+    try:
+        timepoint.delete_comment(comment_id)
+    except Exception as e:
+        flash("Failed to delete comment. {}".format(e))
     return redirect(dest_URL)
 
 @app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \

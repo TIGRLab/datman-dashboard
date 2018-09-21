@@ -140,11 +140,11 @@ thead {
 .thumbnail {
   padding: 0px;
 }
-.panel {
+.comment-display {
 	position:relative;
 }
 
-.panel > .panel-heading:after, .panel > .panel-heading:before {
+.comment-display > .panel-heading:after, .comment-display > .panel-heading:before {
 	position: absolute;
 	top: 11px;
   left: -16px;
@@ -158,15 +158,20 @@ thead {
 	pointer-events: none;
 }
 
-.panel > .panel-heading:after {
+.comment-display > .panel-heading:after {
 	border-width: 7px;
 	border-right-color: #f7f7f7;
 	margin-top: 1px;
 	margin-left: 2px;
 }
-.panel > .panel-heading:before {
+.comment-display > .panel-heading:before {
 	border-right-color: #ddd;
 	border-width: 8px;
+}
+
+.timepoint-comment {
+  width: 100% !important;
+  margin-bottom: 5px;
 }
 
 /* Style badge on 'new-qc' labels */
