@@ -1,0 +1,43 @@
+<div class="table-responsive">
+  <table class="ui table">
+    <thead>
+      <th class="col-md-1">Series</th>
+      <th class="col-md-1">Tag</th>
+      <th class="col-md-3">Description</th>
+      <th class="col-md-1">Status</th>
+      <th class="col-md-6">Comment</th>
+    </thead>
+    <tbody>
+      {% for scan in session.scans %}
+        <tr id="scan_{{ scan.id }}">
+          <td class="scan_series"> {{ scan.series }}</td>
+          <td class="scan_type"> {{ scan.tag }}</td>
+          <td class="scan_desc">
+            <a href="{{url_for('scan', scan_id=scan.id )}}">
+              {{ scan.description }}
+              {% if scan.source_id %}
+                <span class="bg-warning"><em><small> (linked)</small></em></span>
+              {% endif %}
+            </a>
+          </td>
+
+          <!-- Placeholder until I figure out the blacklist organization -->
+          <td class="scan_status">
+            {% if scan.signed_off() %}
+
+            {% elif scan.flagged() %}
+
+            {% elif scan.blacklisted() %}
+
+            {% else %}
+
+            {% endif %}
+          </td>
+
+          <!-- Placeholder while I figure out what to do about the analysis comments -->
+          <td>&nbsp;</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

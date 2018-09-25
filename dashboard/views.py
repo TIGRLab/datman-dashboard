@@ -313,7 +313,7 @@ def timepoint(study_id, timepoint_id, delete=False, flag_finding=False):
     empty_form = EmptySessionForm()
     findings_form = IncidentalFindingsForm()
     comments_form = TimepointCommentsForm()
-    return render_template('timepoint.html', study_id=study_id,
+    return render_template('timepoint/main.html', study_id=study_id,
             timepoint=timepoint, empty_session_form=empty_form,
             incidental_findings_form=findings_form,
             timepoint_comments_form=comments_form)
@@ -470,15 +470,16 @@ def redcap_redirect(session_id):
     return(redirect(redcap_url))
 
 @app.route('/scan', methods=["GET"])
-@app.route('/scan/<int:session_scan_id>', methods=['GET', 'POST'])
+@app.route('/scan/<int:scan_id>', methods=['GET', 'POST'])
 @login_required
-def scan(session_scan_id=None):
+def scan(scan_id=None):
     """
     Default view for a single scan
     This object actually takes an id from the session_scans table and uses
     that to identify the scan and session
     """
-    if session_scan_id is None:
+
+    if scan_id is None:
         flash('Invalid scan')
         return redirect(url_for('index'))
 

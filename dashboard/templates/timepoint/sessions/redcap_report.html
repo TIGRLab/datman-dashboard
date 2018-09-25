@@ -1,0 +1,21 @@
+<div class="redcap-survey">
+  <h4>REDCap Comment</h4>
+  {% if session.redcap_record.record_id %}
+    <div class="well">
+      {% if session.redcap_record.record.comment %}
+        {{ session.redcap_record.record.comment }}
+      {% else %}
+        N/A - Survey comment field is empty
+      {% endif %}
+    </div>
+    <a href="{{ url_for('redcap_redirect', session_id=session.num) }}"
+        class="pull-right btn btn-primary">
+      <span class="button-text">View Survey </span>
+      <span class="glyphicon glyphicon-share-alt"></span>
+    </a>
+  {% else %}
+    <!-- No redcap record, but a user dismissed the error indicating this
+    is expected -->
+    <div class="well">No REDCap record expected for this session.</div>
+  {% endif %}
+</div>

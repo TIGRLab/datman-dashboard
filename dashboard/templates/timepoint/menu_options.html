@@ -1,0 +1,31 @@
+<div role="navigation">
+  <div class="btn-group-vertical pull-right" role="group">
+    {% if current_user.is_study_admin(study_id) %}
+      <a class="button btn btn-primary" id="print_brain">
+        <span class="pull-right glyphicon glyphicon-print"></span>
+        <span class="button-text">Print Brain</span>
+      </a>
+      <a class="button btn btn-primary" id="delete-timepoint"
+          data-toggle="modal" href="#delete-modal">
+        <span class="pull-right glyphicon glyphicon-trash"></span>
+        <span class="button-text">Delete Timepoint</span>
+      </a>
+    {% endif %}
+    {% if timepoint.github_issue %}
+      <a class="button btn btn-primary" id="goto_issue">
+        <span class="pull-right glyphicon glyphicon-share-alt"></span>
+        <span class="button-text">Go to GitHub Issue</span>
+      </a>
+    {% else %}
+      <a class="button btn btn-primary" id="create_issue">
+        <span class="pull-right glyphicon glyphicon-edit"></span>
+        <span class="button-text">Create GitHub Issue</span>
+      </a>
+    {% endif %}
+    <a class="button btn btn-primary" data-toggle="modal"
+        href="#incidental-finding-modal">
+      <span class="pull-right glyphicon glyphicon-flag"></span>
+      <span class="button-text">Flag Incidental Finding</span>
+    </a>
+  </div>
+</div>

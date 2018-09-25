@@ -1,0 +1,7 @@
+<h4>No Scans Expected</h4>
+<div class="well">{{ session.empty_session.comment }}</div>
+<span class="text-muted pull-right">
+  {{ "Recorded by {} - {}".format(
+      session.empty_session.reviewer,
+      session.empty_session.date_added.strftime('%I:%M %p, %Y-%m-%d')) }}
+</span>
