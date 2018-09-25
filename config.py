@@ -44,6 +44,11 @@ OAUTH_CREDENTIALS = {'github': {'id': os.environ.get('OAUTH_CLIENT_GITHUB'),
                                 'secret': os.environ.get('OAUTH_SECRET_GITLAB')
                                 }}
 
+# Needed to read and write issues. If the repo is private the owner must be the same 
+# as the owner of the dashboard's repo
+GITHUB_OWNER = os.environ.get('GITHUB_ISSUES_OWNER')
+GITHUB_REPO = os.environ.get('GITHUB_ISSUES_REPO')
+
 DISPLAY_METRICS = {'phantom': {'t1': ['c1', 'c2', 'c3', 'c4'],
                               'dti': ['AVENyqratio', 'AVE Ave.radpixshift', 'AVE Ave.colpixshift', 'aveSNR_dwi'],
                               'fmri': ['sfnr', 'rdc']},
