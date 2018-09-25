@@ -287,6 +287,11 @@ export OAUTH_CLIENT_GITHUB=YOUR-SECRET-HERE
 export OAUTH_SECRET_GITLAB=YOUR-SECRET-HERE
 export OAUTH_CLIENT_GITLAB=YOUR-SECRET-HERE
 
+# Enable github issue support. If the repo issues will be added to is private, owner
+# must be the same as the owner of the dashboard app itself
+export GITHUB_OWNER=GITHUB-REPO-OWNER-ACCOUNT-HERE
+export GITHUB_REPO=GITHUB-REPO-NAME-HERE
+
 # Provide a secret key for Flask
 # This can be whatever you want, but you should keep it secret and
 # make it something not easily guessed since it's used to encrypt sessions
