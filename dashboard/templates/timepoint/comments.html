@@ -1,56 +1,64 @@
-<div class="row" id="comment-section">
-  <div class="col-xs-12">
-    <h3>Comments</h3>
-    {% for comment in timepoint.comments %}
-      <div class="row">
-        <div class="col-xs-2">
-          <div class="thumbnail">
-            <!-- Placeholder for github/gitlab avatars -->
-          </div>
-        </div>
-        <div class="col-xs-10">
-          <div class="panel panel-default comment-display">
-            <div class="panel-heading">
-              <span>
-                <strong>{{ comment.user }}</strong>
-                <span class="text-muted">
-                  commented at {{ comment.timestamp }}
+<div class="row">
+  <div class="col-xs-12" id="comment-section">
+    <div class="collapsible-heading" data-toggle="collapse"
+        data-target="#comment-list">
+      <h3 class="chevron-toggle">Comments</h3>
+    </div>
 
-                  {% if comment.modified %}
-                    *EDITED
-                  {% endif %}
-                </span>
-              </span>
-              <span class="btn-group pull-right">
-                {% if current_user.id == comment.user_id %}
-                  <a type="button" class="btn btn-primary edit-comment"
-                      id="{{ comment.id }}">
-                    Edit
-                  </a>
-                {% endif %}
-                {% if current_user.is_study_admin(study_id) %}
-                  <a type="button" class="btn btn-primary"
-                      href="{{ url_for('delete_comment', study_id=study_id,
-                          timepoint_id=timepoint.name, comment_id=comment.id) }}">
-                    Delete
-                  </a>
-                {% endif %}
-              </span>
+    <hr class="section-separator">
+
+    <div class="collapse in" id="comment-list">
+        {% for comment in timepoint.comments %}
+          <div class="row">
+            <div class="col-xs-2">
+              <div class="thumbnail">
+                <!-- Placeholder for github/gitlab avatars -->
+              </div>
             </div>
-            <div class="panel-body comment-body" id="{{ comment.id }}-text">
-              {{ comment.comment }}
+            <div class="col-xs-10">
+              <div class="panel panel-default comment-display">
+                <div class="panel-heading">
+                  <span>
+                    <strong>{{ comment.user }}</strong>
+                    <span class="text-muted">
+                      commented at {{ comment.timestamp }}
+
+                      {% if comment.modified %}
+                        *EDITED
+                      {% endif %}
+                    </span>
+                  </span>
+                  <span class="btn-group pull-right">
+                    {% if current_user.id == comment.user_id %}
+                      <a type="button" class="btn btn-primary edit-comment"
+                          id="{{ comment.id }}">
+                        Edit
+                      </a>
+                    {% endif %}
+                    {% if current_user.is_study_admin(study_id) %}
+                      <a type="button" class="btn btn-primary"
+                          href="{{ url_for('delete_comment', study_id=study_id,
+                              timepoint_id=timepoint.name, comment_id=comment.id) }}">
+                        Delete
+                      </a>
+                    {% endif %}
+                  </span>
+                </div>
+                <div class="panel-body comment-body" id="{{ comment.id }}-text">
+                  {{ comment.comment }}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
-    {% endfor %}
-    <form action="{{ url_for('add_comment', study_id=study_id,
-        timepoint_id=timepoint.name) }}" method="post"
-        name="comment-form" class="form" id="new-comment">
-        {{ timepoint_comments_form.hidden_tag() }}
-        {{ timepoint_comments_form.comment(class_="timepoint-comment") }}
-        {{ timepoint_comments_form.submit(class_="btn btn-primary pull-right") }}
-    </form>
+        {% endfor %}
+        <form action="{{ url_for('add_comment', study_id=study_id,
+            timepoint_id=timepoint.name) }}" method="post"
+            name="comment-form" class="form" id="new-comment">
+            {{ timepoint_comments_form.hidden_tag() }}
+            {{ timepoint_comments_form.comment(class_="timepoint-comment") }}
+            {{ timepoint_comments_form.submit(class_="btn btn-primary pull-right") }}
+        </form>
+    </div>
   </div>
 
   <script type="text/javascript">
@@ -99,5 +107,4 @@
       $("#" + id + "-text").text(oldText);
     };
   </script>
-
 </div>
