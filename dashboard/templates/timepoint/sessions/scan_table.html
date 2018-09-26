@@ -21,21 +21,29 @@
             </a>
           </td>
 
-          <!-- Placeholder until I figure out the blacklist organization -->
           <td class="scan_status">
-            {% if scan.signed_off() %}
-
+            {% if scan.is_new() %}
+              <span class="badge" style="background-color: tomato;">New!</span>
             {% elif scan.flagged() %}
-
+              <span class="text-warning" title="Flagged during review.">
+                <i class="fas fa-exclamation-triangle"></i>
+              </span>
             {% elif scan.blacklisted() %}
-
+              <span class="text-danger" title="Blacklisted">
+                <i class="fas fa-ban"></i>
+              </span>
             {% else %}
-
+              <span class="text-success" title="Passed review.">
+                <i class="fas fa-check-circle"></i>
+              </span>
             {% endif %}
           </td>
 
-          <!-- Placeholder while I figure out what to do about the analysis comments -->
-          <td>&nbsp;</td>
+          {% if not scan.is_new() %}
+            <td>{{ scan.get_comment() }}</td>
+          {% else %}
+            <td>&nbsp;</td>
+          {% endif %}
         </tr>
       {% endfor %}
     </tbody>

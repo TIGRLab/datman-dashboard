@@ -19,9 +19,7 @@
                or timepoint.needs_rewrite()
                or not timepoint.static_page
                or timepoint.missing_scans()) %}
-
           {% include 'timepoint/warnings.html' %}
-
         {% endif %}
 
         {% include 'timepoint/comments.html' %}
