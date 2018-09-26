@@ -45,6 +45,11 @@ OAUTH_CREDENTIALS = {'github': {'id': os.environ.get('OAUTH_CLIENT_GITHUB'),
                                 'secret': os.environ.get('OAUTH_SECRET_GITLAB')
                                 }}
 
+# Github config, needed for issues
+GITHUB_OWNER = os.environ.get('GITHUB_ISSUES_OWNER')
+GITHUB_REPO = os.environ.get('GITHUB_ISSUES_REPO')
+GITHUB_PUBLIC = os.environ.get('GITHUB_ISSUES_PUBLIC')
+
 DISPLAY_METRICS = {'phantom': {'t1': ['c1', 'c2', 'c3', 'c4'],
                               'dti': ['AVENyqratio', 'AVE Ave.radpixshift', 'AVE Ave.colpixshift', 'aveSNR_dwi'],
                               'fmri': ['sfnr', 'rdc']},
