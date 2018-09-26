@@ -21,7 +21,7 @@ from oauth import OAuthSignIn
 from github import Github, GithubException
 
 import datman as dm
-from dashboard import app, db, lm
+from dashboard import app, db, lm, GITHUB_OWNER, GITHUB_REPO
 from . import utils
 from . import redcap as REDCAP
 from .queries import query_metric_values_byid, query_metric_types, \
@@ -285,7 +285,7 @@ def create_issue(session_id, issue_title="", issue_body=""):
     if issue_title and issue_body:
         try:
             gh = Github(token)
-            repo = gh.get_user("TIGRLab").get_repo("Admin")
+            repo = gh.get_user(GITHUB_OWNER).get_repo(GITHUB_REPO)
             iss = repo.create_issue(issue_title, issue_body)
             session.gh_issue = iss.number
             db.session.commit()
@@ -964,7 +964,7 @@ def oauth_callback(provider):
         # db.session.commit()
 
     login_user(user, remember=True)
-    # Not sure why this was done manually so commenting out for now
+    # Token is needed for access to github issues
     flask_session['active_token'] = access_token
     return redirect(url_for('index'))
 
