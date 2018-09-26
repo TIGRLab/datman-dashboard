@@ -3,7 +3,7 @@ This code validates users using the OAuth protocol
 See https://blog.miguelgrinberg.com/post/oauth-authentication-with-flask for an overview.
 """
 
-from config import OAUTH_CREDENTIALS
+from config import OAUTH_CREDENTIALS, GITHUB_PUBLIC
 from rauth import OAuth2Service
 from flask import url_for, request, redirect, session
 import string
@@ -63,8 +63,12 @@ class GithubSignIn(OAuthSignIn):
 
     def authorize(self):
         self.str_rnd = self.random_string()
+        if GITHUB_PUBLIC:
+            app_scope='user public_repo'
+        else:
+            app_scope = 'user repo'
         return redirect(self.service.get_authorize_url(
-            scope='user public_repo',
+            scope=app_scope,
             state=self.str_rnd)
             )
 
