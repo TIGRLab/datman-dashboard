@@ -1,0 +1,19 @@
+<div class="row">
+  <div id="{% block section_id %}{% endblock %}"
+      class="col-xs-12 {% block section_classes %}{% endblock %}">
+    <div class="collapsible-heading" data-toggle="collapse"
+        data-target="#{% block body_id %}{% endblock %}">
+      <h3 class="chevron-toggle {% block header_classes %}{% endblock %}">
+        {% block section_header %}
+        {% endblock %}
+      </h3>
+      <hr class="section-separator">
+    </div>
+
+    <div class="collapse in {% block body_classes %}{% endblock %}"
+        id="{{ self.body_id() }}">
+      {% block body_content %}
+      {% endblock %}
+    </div>
+  </div>
+</div>

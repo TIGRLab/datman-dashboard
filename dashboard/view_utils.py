@@ -10,6 +10,7 @@ from werkzeug.routing import RequestRedirect
 
 from .models import Study, Timepoint
 from .forms import UserForm, UserAdminForm
+from .utils import create_issue as make_issue
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +35,30 @@ def report_form_errors(form):
             continue
         for error in errors:
             flash('ERROR - {} {}'.format(label, error))
+
+def handle_issue(token, issue_form, study_id, timepoint_id):
+    title = clean_issue_title(issue_form.title.data, timepoint_id)
+    study = Study.query.get(study_id)
+    staff_member = study.choose_staff_contact()
+    try:
+        issue = make_issue(token, title, issue_form.body.data,
+                assign=staff_member.github_name)
+    except Exception as e:
+        logger.error("Failed to create a GitHub issue for {}. "
+                "Reason: {}".format(timepoint_id, e))
+        flash("Failed to create issue '{}'".format(title))
+    else:
+        flash("Issue '{}' created!".format(title))
+
+def clean_issue_title(title, timepoint):
+    title = title.rstrip()
+    if not title:
+        title = timepoint
+    elif title.endswith('-'):
+        title = title[:-1].rstrip()
+    elif timepoint_id not in title:
+        title = timepoint + " - " + title
+    return title
 
 def get_timepoint(study_id, timepoint_id, current_user):
     timepoint = Timepoint.query.get(timepoint_id)

@@ -2,6 +2,10 @@
 import logging
 import os
 from subprocess import Popen, STDOUT, PIPE
+
+from github import Github
+
+from dashboard import GITHUB_OWNER, GITHUB_REPO
 import datman.config
 import datman.scanid
 
@@ -13,6 +17,41 @@ CFG = datman.config.config()
 
 class TimeoutError(Exception):
     pass
+
+def search_issues(token, timepoint):
+    search_string = "{} repo:{}/{}".format(timepoint, GITHUB_OWNER, GITHUB_REPO)
+    try:
+        issues = Github(token).search_issues(search_string)
+    except:
+        return None
+    return [issue for issue in issues]
+
+def get_issue(token, issue_num=None):
+    if not issue_num:
+        return None
+    try:
+        repo = get_issues_repo(token)
+        issue = repo.get_issue(issue_num)
+    except Exception as e:
+        logger.error("Can't retrieve issue {}. Reason: {}".format(issue_num, e))
+        issue = None
+    return issue
+
+def create_issue(token, title, body, assign=None):
+    try:
+        repo = get_issues_repo(token)
+        issue = repo.create_issue(title, body, assignee=assign)
+    except Exception as e:
+        raise Exception("Can't create new issue '{}'. Reason: {}".format(title,
+                e))
+    return issue
+
+def get_issues_repo(token):
+    try:
+        repo = Github(token).get_user(GITHUB_OWNER).get_repo(GITHUB_REPO)
+    except Exception as e:
+        raise Exception("Can't retrieve github issues repo. {}".format(e))
+    return repo
 
 
 def get_study_name(str):

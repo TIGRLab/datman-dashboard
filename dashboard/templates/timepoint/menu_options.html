@@ -11,17 +11,6 @@
         <span class="button-text">Delete Timepoint</span>
       </a>
     {% endif %}
-    {% if timepoint.github_issue %}
-      <a class="button btn btn-primary" id="goto_issue">
-        <span class="pull-right glyphicon glyphicon-share-alt"></span>
-        <span class="button-text">Go to GitHub Issue</span>
-      </a>
-    {% else %}
-      <a class="button btn btn-primary" id="create_issue">
-        <span class="pull-right glyphicon glyphicon-edit"></span>
-        <span class="button-text">Create GitHub Issue</span>
-      </a>
-    {% endif %}
     <a class="button btn btn-primary" data-toggle="modal"
         href="#incidental-finding-modal">
       <span class="pull-right glyphicon glyphicon-flag"></span>

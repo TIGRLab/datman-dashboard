@@ -195,3 +195,11 @@ class TimepointCommentsForm(FlaskForm):
             render_kw={'rows': 5, 'required': True,
                     'placeholder': 'Add new comment here'})
     submit = SubmitField('Submit')
+
+class NewIssueForm(FlaskForm):
+    title = TextField(u"Title: ", validators=[DataRequired()],
+            render_kw={'required': True})
+    body = TextAreaField(u"Body: ", validators=[DataRequired()],
+            render_kw={'rows': 4, 'cols': 65, 'required': True,
+            'placeholder': 'Enter issue here.'})
+    submit = SubmitField('Create Issue')

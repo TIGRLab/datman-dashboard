@@ -22,10 +22,15 @@
           {% include 'timepoint/warnings.html' %}
         {% endif %}
 
+
+        {% include 'timepoint/github_issues.html' %}
+
+
         {% include 'timepoint/comments.html' %}
 
         {% if timepoint.static_page %}
-          <a href="{{ timepoint.static_page }}" class="btn btn-primary" id="doc-page">
+          <a href="{{ timepoint.static_page }}" class="btn btn-primary"
+              id="doc-page" target="_blank">
             <span class="button-text">View QC page</span>
             <span class="glyphicon glyphicon-share-alt"></span>
           </a>
@@ -38,11 +43,14 @@
   </div>
 
   <div id="session-reporting">
-    {% include 'timepoint/sessions/main.html' %}
+    {% for session in timepoint.sessions.values() %}
+      {% include 'timepoint/sessions/main.html' %}
+    {% endfor %}
   </div>
 
   {% include 'timepoint/modals/incidental_findings.html' %}
   {% include 'timepoint/modals/delete_data.html' %}
+  {% include 'timepoint/modals/new_issue.html' %}
 
 </div>
 {% endblock %}

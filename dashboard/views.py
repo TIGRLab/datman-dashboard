@@ -14,14 +14,13 @@ from flask import session as flask_session
 from flask import render_template, flash, url_for, redirect, request, jsonify, \
         abort, g, make_response, send_file
 from flask_login import login_user, logout_user, current_user, \
-        login_required, fresh_login_required
+        login_required, fresh_login_required, login_fresh
 from flask_mail import Message
 from sqlalchemy.exc import SQLAlchemyError
 from oauth import OAuthSignIn
-from github import Github, GithubException
 
 import datman as dm
-from dashboard import app, db, lm, GITHUB_OWNER, GITHUB_REPO
+from dashboard import app, db, lm
 from . import utils
 from . import redcap as REDCAP
 from .queries import query_metric_values_byid, query_metric_types, \
@@ -32,9 +31,9 @@ from .models import Study, Site, Session, Scantype, Scan, User, \
 from .forms import SelectMetricsForm, StudyOverviewForm, \
         ScanBlacklistForm, UserForm, ScanCommentForm, AnalysisForm, \
         UserAdminForm, EmptySessionForm, IncidentalFindingsForm, \
-        TimepointCommentsForm
+        TimepointCommentsForm, NewIssueForm
 from .view_utils import get_user_form, report_form_errors, get_timepoint, \
-        get_session
+        get_session, handle_issue
 from .emails import incidental_finding_email
 
 logger = logging.getLogger(__name__)
@@ -68,17 +67,6 @@ def handle_invalid_usage(error):
 @lm.user_loader
 def load_user(id):
     return User.query.get(int(id))
-
-def login_required(f):
-    """
-    Checks the requester has a valid authentication cookie
-    """
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not current_user.is_authenticated:
-            return redirect(url_for('login', next=request.url))
-        return f(*args, **kwargs)
-    return decorated_function
 
 def study_admin_required(f):
     """
@@ -268,34 +256,6 @@ def session_by_name(session_name=None):
     return redirect(url_for('session', session_id=session.id))
 
 
-@app.route('/create_issue/<string:session_id>', methods=['GET', 'POST'])
-@app.route('/create_issue/<string:session_id>/<issue_title>/<issue_body>', methods=['GET', 'POST'])
-@fresh_login_required
-def create_issue(session_id, issue_title="", issue_body=""):
-    """
-    Post a session issue to github, returns to the session view
-    """
-    session = Session.query.get(session_id)
-    if not current_user.has_study_access(session.study):
-        flash("Not authorised")
-        return redirect(url_for('index'))
-
-    token = flask_session['active_token']
-
-    if issue_title and issue_body:
-        try:
-            gh = Github(token)
-            repo = gh.get_user(GITHUB_OWNER).get_repo(GITHUB_REPO)
-            iss = repo.create_issue(issue_title, issue_body)
-            session.gh_issue = iss.number
-            db.session.commit()
-            flash("Issue '{}' created!".format(issue_title))
-        except:
-            flash("Issue '{}' was not created successfully.".format(issue_title))
-    else:
-        flash("Please enter both an issue title and description.")
-    return(redirect(url_for('session', session_id=session.id)))
-
 ############## Timepoint view functions ########################################
 # timepoint() is the main view and renders the html users interact with.
 #
@@ -304,19 +264,33 @@ def create_issue(session_id, issue_title="", issue_body=""):
 
 @app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>',
         methods=['GET', 'POST'])
-@login_required
+@fresh_login_required
 def timepoint(study_id, timepoint_id, delete=False, flag_finding=False):
     """
     Default view for a single timepoint.
     """
     timepoint = get_timepoint(study_id, timepoint_id, current_user)
+
+    try:
+        token = flask_session['active_token']
+    except KeyError:
+        github_issues = None
+    else:
+        github_issues = utils.search_issues(token, timepoint.name)
+
     empty_form = EmptySessionForm()
     findings_form = IncidentalFindingsForm()
     comments_form = TimepointCommentsForm()
-    return render_template('timepoint/main.html', study_id=study_id,
-            timepoint=timepoint, empty_session_form=empty_form,
+    new_issue_form = NewIssueForm()
+    new_issue_form.title.data = timepoint.name + " - "
+    return render_template('timepoint/main.html',
+            study_id=study_id,
+            timepoint=timepoint,
+            empty_session_form=empty_form,
             incidental_findings_form=findings_form,
-            timepoint_comments_form=comments_form)
+            timepoint_comments_form=comments_form,
+            issues=github_issues,
+            issue_form=new_issue_form)
 
 @app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
         '/sign_off/<int:session_num>', methods=['GET', 'POST'])
@@ -441,6 +415,27 @@ def dismiss_missing(study_id, timepoint_id, session_num):
                 form.comment.data)
         flash("Succesfully updated.")
 
+    return redirect(dest_URL)
+
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>/create_issue',
+        methods=['POST'])
+@login_required
+def create_issue(study_id, timepoint_id):
+    """
+    Posts a new issue to Github
+    """
+    # This is used even though timepoint is not needed because it verifies user
+    # permissions and will redirect with an error if they dont have permission
+    get_timepoint(study_id, timepoint_id, current_user)
+    dest_URL = url_for('timepoint', study_id=study_id,
+            timepoint_id=timepoint_id)
+
+    form = NewIssueForm()
+    if not form.validate_on_submit():
+        report_form_errors(form)
+        return redirect(dest_URL)
+    token = flask_session['active_token']
+    handle_issue(token, form, study_id, timepoint_id)
     return redirect(dest_URL)
 
 ############## End of Timepoint View functions #################################
@@ -924,21 +919,33 @@ def internal_error(error):
 
 @app.route('/login')
 def login():
+    next_url = request.args.get('next')
+    if next_url:
+        flask_session['next_url'] = next_url
     return render_template('login.html')
 
 
 @app.route('/authorize/<provider>')
 def oauth_authorize(provider):
-    if not current_user.is_anonymous:
-        return redirect(url_for('login'))
+    if not current_user.is_anonymous and login_fresh():
+        return redirect(url_for('index'))
     oauth = OAuthSignIn.get_provider(provider)
     return oauth.authorize()
 
 
 @app.route('/callback/<provider>')
 def oauth_callback(provider):
-    if not current_user.is_anonymous:
+    if not current_user.is_anonymous and login_fresh():
         return redirect(url_for('index'))
+
+    try:
+        dest_page = flask_session['next_url']
+        del flask_session['next_url']
+        if not is_safe_url(dest_page):
+            raise
+    except:
+        dest_page = url_for('index')
+
     oauth = OAuthSignIn.get_provider(provider)
     access_token, user_info = oauth.callback()
 
@@ -966,7 +973,15 @@ def oauth_callback(provider):
     login_user(user, remember=True)
     # Token is needed for access to github issues
     flask_session['active_token'] = access_token
-    return redirect(url_for('index'))
+    return redirect(dest_page)
+
+@app.route('/refresh_login')
+def refresh_login():
+    flask_session['_fresh'] = False
+    next_url = request.args.get('next')
+    if next_url:
+        flask_session['next_url'] = next_url
+    return redirect(url_for('login'))
 
 @app.route('/scan_comment', methods=['GET','POST'])
 @app.route('/scan_comment/<scan_link_id>', methods=['GET','POST'])

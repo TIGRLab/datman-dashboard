@@ -7,8 +7,9 @@ The @validates decorator ensures this is run before the checklist comment
     field can be updated in the database. This is what ensures the filesystem
     checklist.csv is in sync with the database.
 """
-import logging
 import datetime
+import logging
+from random import randint
 
 from flask_login import UserMixin
 from sqlalchemy import and_, exists, func
@@ -24,6 +25,9 @@ class Comment(object):
         self.user = user
         self.timestamp = timestamp.strftime('%I:%M %p, %Y-%m-%d')
         self.text = comment
+
+    def __str__(self):
+        return self.text or ""
 
     def __repr__(self):
         return "<Comment by {} on {}>".format(self.user, self.timestamp)
@@ -343,6 +347,26 @@ class Study(db.Model):
         contacts = [study_user.user for study_user in self.users
                 if study_user.primary_contact]
         return contacts
+
+    def choose_staff_contact(self):
+        kimel_contacts = [su.user for su in self.users if su.kimel_contact]
+        if len(kimel_contacts) >= 1:
+            user = self.select_next(kimel_contacts)
+        else:
+            user = None
+        return user
+
+    def select_next(self, user_list):
+        """
+        Selects the next user from a study. This can be used to choose
+        the next QC-er to assign, or the next staff member to assign to an
+        issue, etc.
+
+        Current strategy is to pick a random person. This may be changed in
+        the future.
+        """
+        next_idx = randint(0, len(user_list) - 1)
+        return user_list[next_idx]
 
     def __repr__(self):
         return "<Study {}>".format(self.id)

@@ -17,6 +17,8 @@ app.config.from_object('config')
 #from app.database import db_session
 db = SQLAlchemy(app)
 lm = LoginManager(app)
+lm.login_view = 'login'
+lm.refresh_view = 'refresh_login'
 mail = Mail(app)
 
 if not app.debug:
