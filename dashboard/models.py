@@ -602,6 +602,10 @@ class Session(db.Model):
         db.session.add(self)
         db.session.commit()
 
+    def is_new(self):
+        return ((self.scans is None and self.missing_scans())
+                or any([scan.is_new() for scan in self.scans]))
+
     def delete(self):
         """
         This will also delete anything referencing the current session (i.e.
@@ -749,6 +753,13 @@ class Scan(db.Model):
         checklist = self.get_checklist_entry()
         return Comment(checklist.user, checklist.timestamp, checklist.comment)
 
+    def list_children(self):
+        return [link.name for link in self.links]
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+
     def __repr__(self):
         if self.source_id:
             repr = "<Scan {}: {} link to scan {}>".format(self.id, self.name,
@@ -756,6 +767,9 @@ class Scan(db.Model):
         else:
             repr = "<Scan {}: {}>".format(self.id, self.name)
         return repr
+
+    def __str__(self):
+        return self.name
 
 
 class ScanChecklist(db.Model):

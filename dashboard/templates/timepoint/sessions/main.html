@@ -8,9 +8,10 @@
   {% if current_user.is_study_admin(study_id) %}
     <!-- The onclick commands are there to stop the panel from minimizing
     when delete is clicked -->
-    <a class="button btn btn-danger delete-session" href="#delete-modal"
-      data-toggle="modal" data-session="{{ session.num }}"
-      onclick="event.stopPropagation(); $('#delete-modal').modal('show');">
+    <a class="button btn btn-danger slide-button delete-session"
+        href="#delete-modal"
+        data-toggle="modal" data-session="{{ session.num }}"
+        onclick="event.stopPropagation(); $('#delete-modal').modal('show');">
       <span class="glyphicon glyphicon-trash"></span>
     </a>
   {% endif %}

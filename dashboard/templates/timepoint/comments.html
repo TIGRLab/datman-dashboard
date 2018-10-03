@@ -32,7 +32,7 @@
                 Edit
               </a>
             {% endif %}
-            {% if current_user.is_study_admin(study_id) %}
+            {% if current_user.dashboard_admin %}
               <a type="button" class="btn btn-primary"
                   href="{{ url_for('delete_comment', study_id=study_id,
                       timepoint_id=timepoint.name, comment_id=comment.id) }}">

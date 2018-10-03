@@ -28,16 +28,31 @@
 
 <script type="text/javascript">
 
-function updateDeleteModal(session_num) {
+function updateDeleteModal(session_num, scan_id, scan_name, scan_children) {
   var name = "{{ timepoint.name }}";
   var warningBox = $("#delete-message");
   var submitButton = $("#delete-submit");
-  if (session_num) {
+  if (session_num && scan_id) {
+    var message = "Scan '" + scan_name + "' will be deleted. Any metrics " +
+        "associated with it will also be deleted. If data is left on the " +
+        "filesystem it will regenerate but any related comments or QC status " +
+        "will be lost forever.";
+    if (scan_children) {
+      message = message + "<br><br>This scan is also linked under other names. If " +
+        "deleted the following scans entries will also be deleted:<br><br>" +
+        "<div style='text-align:center;'>" + scan_children + "</div><br><br>";
+    }
+    // Done manually for same reason as below
+    var destURL = "{{ url_for('delete_scan', study_id=study_id, timepoint_id=timepoint.name) }}" + scan_id;
+  }else if (session_num) {
     var message = "Session " + session_num + " from " + name +
       " will be deleted and everything associated with it will be purged " +
       "from the database (i.e. all scans, blacklist comments, metrics, etc.). " +
       "Everything except comments will be regenerated if the data is left on " +
       "the filesystem.";
+    // Session_num is appended manually because the value of the variable isnt
+    // known until run time when a button is clicked. By this point the template
+    // has already been rendered.
     var destURL = "{{ url_for('timepoint', study_id=study_id, timepoint_id=timepoint.name) }}/delete_session/" +
         session_num;
   } else {
@@ -47,9 +62,11 @@ function updateDeleteModal(session_num) {
       "later, but any associated comments will disappear forever.";
     var destURL = "{{ url_for('delete_timepoint', study_id=study_id, timepoint_id=timepoint.name)}}";
   }
-  warningBox.text(message);
+  warningBox.html(message);
   submitButton.attr("href", destURL);
 }
+
+// Set up listeners on the buttons that use this modal
 
 // updateDeleteModal is wrapped in a function to ensure session_num isnt set by the browser
 $("#delete-timepoint").on('click', function () {updateDeleteModal()});
@@ -57,6 +74,14 @@ $("#delete-timepoint").on('click', function () {updateDeleteModal()});
 $(".delete-session").on('click', function() {
   var session = this.getAttribute('data-session');
   updateDeleteModal(session);
+});
+
+$('.delete-scan').on('click', function() {
+  var session = this.getAttribute('data-session');
+  var scan = this.getAttribute('data-scan');
+  var name = this.getAttribute('data-scan-name');
+  var children = this.getAttribute('data-links');
+  updateDeleteModal(session, scan, name, children);
 });
 
 </script>

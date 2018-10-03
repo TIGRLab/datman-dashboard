@@ -119,8 +119,8 @@ thead {
   min-width: 100px;
 }
 
-/* Make the delete buttons slide in on hover */
-.delete-session {
+/* Make a button slide in on hover */
+.slide-button {
   overflow: hidden;
   width: 0;
   padding: 0;
@@ -130,10 +130,18 @@ thead {
   transition: 0.2s ease;
 }
 
-.session-header:hover .delete-session {
+/* slide in on session section header */
+.session-header:hover .slide-button {
   padding: 6px 12px;
   border: 1px solid transparent;
   width: 70px;
+}
+
+/* slide in on scan rows. Note different button size to session header */
+.scan-row:hover .slide-button {
+  padding: 6px 12px;
+  border: 1px solid transparent;
+  width: 46px;
 }
 
 /* style timepoint comments */

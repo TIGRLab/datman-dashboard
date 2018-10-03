@@ -33,7 +33,7 @@ from .forms import SelectMetricsForm, StudyOverviewForm, \
         UserAdminForm, EmptySessionForm, IncidentalFindingsForm, \
         TimepointCommentsForm, NewIssueForm
 from .view_utils import get_user_form, report_form_errors, get_timepoint, \
-        get_session, handle_issue
+        get_session, get_scan, handle_issue, get_redcap_record
 from .emails import incidental_finding_email
 
 logger = logging.getLogger(__name__)
@@ -67,6 +67,18 @@ def handle_invalid_usage(error):
 @lm.user_loader
 def load_user(id):
     return User.query.get(int(id))
+
+def dashboard_admin_required(f):
+    """
+    Verifies a user is a dashboard admin before granting access
+    """
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.dashboard_admin:
+            flash("Not authorized")
+            return redirect(prev_url())
+        return f(*args, **kwargs)
+    return decorated_function
 
 def study_admin_required(f):
     """
@@ -259,7 +271,7 @@ def session_by_name(session_name=None):
 ############## Timepoint view functions ########################################
 # timepoint() is the main view and renders the html users interact with.
 #
-# The other routes all handle different button clicks from the timepoint() view
+# The other routes all handle different functionality for the timepoint() view
 # and then immediately redirect back to it.
 
 @app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>',
@@ -301,7 +313,6 @@ def sign_off(study_id, timepoint_id, session_num):
             timepoint_id=timepoint_id)
     session = get_session(timepoint, session_num, dest_URL)
     session.sign_off(current_user.id)
-    flash("{} review completed.".format(session))
     return redirect(dest_URL)
 
 @app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
@@ -330,7 +341,7 @@ def add_comment(study_id, timepoint_id, comment_id=None):
 
 @app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
         '/delete_comment/<int:comment_id>', methods=['GET'])
-@study_admin_required
+@dashboard_admin_required
 @login_required
 def delete_comment(study_id, timepoint_id, comment_id):
     timepoint = get_timepoint(study_id, timepoint_id, current_user)
@@ -438,93 +449,96 @@ def create_issue(study_id, timepoint_id):
     handle_issue(token, form, study_id, timepoint_id)
     return redirect(dest_URL)
 
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
+        '/delete_scan/', methods=['GET'])
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
+        '/delete_scan/<int:scan_id>', methods=['GET'])
+@study_admin_required
+@login_required
+def delete_scan(study_id, timepoint_id, scan_id):
+    dest_URL = url_for('timepoint', study_id=study_id, timepoint_id=timepoint_id)
+    scan = get_scan(scan_id, study_id, current_user, dest_URL)
+    scan.delete()
+    return redirect(dest_URL)
+
 ############## End of Timepoint View functions #################################
 
-@app.route('/redcap_redirect/<int:session_id>', methods=['GET'])
+@app.route('/redcap_redirect/<int:record_id>', methods=['GET'])
 @login_required
-def redcap_redirect(session_id):
+def redcap_redirect(record_id):
     """
-    Used to provide a link from the session page to a redcap session complete record
+    Used to provide a link from the session page to a redcap session complete
+    record
     """
-    session = Session.query.get(session_id)
-    if session.redcap_eventid:
-        redcap_url = '{}redcap_v{}/DataEntry/index.php?pid={}&id={}&event_id={}&page={}'
-        redcap_url = redcap_url.format(session.redcap_url,
-                                       session.redcap_version,
-                                       session.redcap_projectid,
-                                       session.redcap_record,
-                                       session.redcap_eventid,
-                                       session.redcap_instrument)
+    record = get_redcap_record(record_id)
+
+    if record.event_id:
+        event_string = "&event_id={}".format(record.event_id)
     else:
-        redcap_url = '{}redcap_v{}/DataEntry/index.php?pid={}&id={}&page={}'
-        redcap_url = redcap_url.format(session.redcap_url,
-                                       session.redcap_version,
-                                       session.redcap_projectid,
-                                       session.redcap_record,
-                                       session.redcap_instrument)
-    return(redirect(redcap_url))
+        event_string = ""
+
+    redcap_url = '{}redcap_v{}/DataEntry/index.php?pid={}&id={}{}&page={}'
+    redcap_url = redcap_url.format(record.url, record.redcap_version,
+            record.project, record.record, event_string, record.instrument)
+
+    return redirect(redcap_url)
 
 @app.route('/scan', methods=["GET"])
 @app.route('/scan/<int:scan_id>', methods=['GET', 'POST'])
 @login_required
 def scan(scan_id=None):
-    """
-    Default view for a single scan
-    This object actually takes an id from the session_scans table and uses
-    that to identify the scan and session
-    """
-
-    if scan_id is None:
-        flash('Invalid scan')
-        return redirect(url_for('index'))
-
-    # Check the user has permission to see this study
-    studies = current_user.get_studies()
-    session_scan = Session_Scan.query.get(session_scan_id)
-    scan = session_scan.scan
-    session = session_scan.session
-    if not current_user.has_study_access(session.study):
-        flash('Not authorised')
-        return redirect(url_for('index'))
-
-    # form for updating the study blacklist.csv on the filesystem
-    bl_form = ScanBlacklistForm()
-    # form used for updating the analysis comments
-    scancomment_form = ScanCommentForm()
-
-    if not bl_form.is_submitted():
-        # this isn't an update so just populate the blacklist form with current values from the database
-        # these should be the same as in the filesystem
-        bl_form.scan_id = scan.id
-        bl_form.bl_comment.data = scan.bl_comment
-
-    if bl_form.validate_on_submit():
-        # going to make an update to the blacklist
-        # update the scan object in the database with info from the form
-        # updating the databse object automatically syncronises blacklist.csv on the filesystem
-        #   see models.py
-        if bl_form.delete.data:
-            scan.bl_comment = None
-        else:
-            scan.bl_comment = bl_form.bl_comment.data
-
-        try:
-            db.session.add(scan)
-            db.session.commit()
-            flash("Blacklist updated")
-            return redirect(url_for('session', session_id=session.id))
-        except SQLAlchemyError as err:
-            logger.error('Scan blacklist update failed:{}'.format(str(err)))
-            flash('Update failed, admins have been notified, please try again')
+    ## Test user has permission to view -a- study that this scan belongs to
+    ## Make checklist form (and populate it if pre-existing data)
 
 
-    return render_template('scan.html',
-                           studies=studies,
-                           scan=scan,
-                           session=session,
-                           session_scan=session_scan,
-                           blacklist_form=bl_form,
-                           scancomment_form=scancomment_form)
+    # # Check the user has permission to see this study
+    # studies = current_user.get_studies()
+    # session_scan = Session_Scan.query.get(session_scan_id)
+    # scan = session_scan.scan
+    # session = session_scan.session
+    # if not current_user.has_study_access(session.study):
+    #     flash('Not authorised')
+    #     return redirect(url_for('index'))
+    #
+    # # form for updating the study blacklist.csv on the filesystem
+    # bl_form = ScanBlacklistForm()
+    # # form used for updating the analysis comments
+    # scancomment_form = ScanCommentForm()
+    #
+    # if not bl_form.is_submitted():
+    #     # this isn't an update so just populate the blacklist form with current values from the database
+    #     # these should be the same as in the filesystem
+    #     bl_form.scan_id = scan.id
+    #     bl_form.bl_comment.data = scan.bl_comment
+    #
+    # if bl_form.validate_on_submit():
+    #     # going to make an update to the blacklist
+    #     # update the scan object in the database with info from the form
+    #     # updating the databse object automatically syncronises blacklist.csv on the filesystem
+    #     #   see models.py
+    #     if bl_form.delete.data:
+    #         scan.bl_comment = None
+    #     else:
+    #         scan.bl_comment = bl_form.bl_comment.data
+    #
+    #     try:
+    #         db.session.add(scan)
+    #         db.session.commit()
+    #         flash("Blacklist updated")
+    #         return redirect(url_for('session', session_id=session.id))
+    #     except SQLAlchemyError as err:
+    #         logger.error('Scan blacklist update failed:{}'.format(str(err)))
+    #         flash('Update failed, admins have been notified, please try again')
+    #
+    #
+    # return render_template('scan.html',
+    #                        studies=studies,
+    #                        scan=scan,
+    #                        session=session,
+    #                        session_scan=session_scan,
+    #                        blacklist_form=bl_form,
+    #                        scancomment_form=scancomment_form)
+    return render_template('scan.html')
 
 
 @app.route('/study/<string:study_id>', methods=['GET', 'POST'])

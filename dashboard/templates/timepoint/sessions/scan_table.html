@@ -9,7 +9,7 @@
     </thead>
     <tbody>
       {% for scan in session.scans %}
-        <tr id="scan_{{ scan.id }}">
+        <tr class="scan-row" id="scan_{{ scan.id }}">
           <td class="scan_series"> {{ scan.series }}</td>
           <td class="scan_type"> {{ scan.tag }}</td>
           <td class="scan_desc">
@@ -39,11 +39,20 @@
             {% endif %}
           </td>
 
-          {% if not scan.is_new() %}
-            <td>{{ scan.get_comment() }}</td>
-          {% else %}
-            <td>&nbsp;</td>
-          {% endif %}
+          <td>
+            {% if not scan.is_new() %}
+              {{ scan.get_comment() }}
+            {% else %}
+              &nbsp;
+            {% endif %}
+            <a class="button btn btn-danger slide-button delete-scan pull-right"
+                href="#delete-modal"
+                data-toggle="modal" data-session="{{ session.num }}"
+                data-scan="{{ scan.id }}" data-scan-name="{{ scan.name }}"
+                data-links="{{ "<br>".join(scan.list_children()) }}">
+              <span class="glyphicon glyphicon-trash"></span>
+            </a>
+          </td>
         </tr>
       {% endfor %}
     </tbody>

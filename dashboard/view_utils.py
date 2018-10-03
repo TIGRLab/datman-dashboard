@@ -5,10 +5,10 @@ readable :)
 """
 import logging
 
-from flask import flash
+from flask import flash, url_for
 from werkzeug.routing import RequestRedirect
 
-from .models import Study, Timepoint
+from .models import Study, Timepoint, Scan, RedcapRecord
 from .forms import UserForm, UserAdminForm
 from .utils import create_issue as make_issue
 
@@ -81,3 +81,31 @@ def get_session(timepoint, session_num, fail_url):
         flash("Session {} does not exist for {}.".format(session_num, timepoint))
         raise RequestRedirect(fail_url)
     return session
+
+def get_scan(scan_id, current_user, fail_url=None):
+    if not fail_url:
+        fail_url = url_for('index')
+
+    scan = Scan.query.get(scan_id)
+
+    if scan is None:
+        logger.error("User {} attempted to retrieve scan with ID {}. Retrieval "
+                "failed.".format(current_user, scan_id))
+        flash("Scan does not exist.".format(scan_id))
+        raise RequestRedirect(fail_url)
+
+    return scan
+
+def get_redcap_record(record_id, fail_url=None):
+    if not fail_url:
+        fail_url = url_for('index')
+
+    record = RedcapRecord.query.get(record_id)
+
+    if record is None:
+        logger.error("Tried and failed to retrieve RedcapRecord with "
+                "ID {}".format(record_id))
+        flash("Record not found.")
+        raise RequestRedirect(fail_url)
+
+    return record
