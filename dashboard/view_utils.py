@@ -82,7 +82,7 @@ def get_session(timepoint, session_num, fail_url):
         raise RequestRedirect(fail_url)
     return session
 
-def get_scan(scan_id, current_user, fail_url=None):
+def get_scan(scan_id, study_id, current_user, fail_url=None):
     if not fail_url:
         fail_url = url_for('index')
 
@@ -92,6 +92,11 @@ def get_scan(scan_id, current_user, fail_url=None):
         logger.error("User {} attempted to retrieve scan with ID {}. Retrieval "
                 "failed.".format(current_user, scan_id))
         flash("Scan does not exist.".format(scan_id))
+        raise RequestRedirect(fail_url)
+
+    if (not current_user.has_study_access(study_id) or
+            not scan.session.timepoint.belongs_to(study_id)):
+        flash("Not authorized to view {}".format(scan.name))
         raise RequestRedirect(fail_url)
 
     return scan

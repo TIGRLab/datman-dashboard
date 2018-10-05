@@ -307,22 +307,25 @@ def get_export_info(study, site):
     export_info = CFG.get_exportinfo(site=site, study=study)
     return export_info
 
-def get_study_folder(study, folder_type=None):
+def get_study_path(study, folder=None):
     """
-    Returns the base filesystem path for the study.
-    If folder is supplied and is defined in study config
-    then path to the foder is returned
+    Returns the full path to the study on the file system.
 
-    >>> get_study_folder('TEST', 'nii')
-    /archive/data/TEST/data/nii/
+    If folder is supplied and is defined in study config
+    then path to the foder is returned instead.
     """
+    if folder:
+        try:
+            path = CFG.get_path(folder, study)
+        except Exception as e:
+            logger.error("Failed to find folder {} for study {}. Reason: {}"
+                    "".format(folder, study, e))
+            path = None
+        return path
+
     try:
-        if folder_type:
-            path = CFG.get_path(folder_type, study)
-        else:
-            path = CFG.get_study_base(study=study)
-    except KeyError:
-        logger.error('Failed to find folder:{} for study:{}'
-                     .format(folder_type, study))
-        return None
+        path = CFG.get_study_base(study=study)
+    except Exception as e:
+        logger.error("Failed to find path for {}. Reason: {}".format(study, e))
+        path = None
     return path

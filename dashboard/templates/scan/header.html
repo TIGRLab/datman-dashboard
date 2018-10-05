@@ -1,0 +1,22 @@
+<div class="jumbotron">
+  <h1>{{ scan.name }}</h1>
+  <p class="lead">
+    {% if scan.session.is_phantom %}
+      Phantom Data
+    {% else %}
+      Human Data
+    {% endif %}
+  </p>
+</div>
+
+<a href="{{ url_for('timepoint', study_id=study_id, timepoint_id=scan.timepoint) }}"
+    class="btn btn-primary">
+  <span class="glyphicon glyphicon-arrow-left"></span>
+  <span class="button-text">{{ scan.timepoint }}</span>
+</a>
+
+<button type="button" class="pull-right btn btn-danger btn_add_scan_blacklist"
+    data-scanname="{{ scan.name }}" data-toggle="modal"
+    data-target="#add_scan_blacklist_modal">
+  Add to Blacklist <span class="glyphicon glyphicon-pencil"></span>
+</button>

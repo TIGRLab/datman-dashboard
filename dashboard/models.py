@@ -7,6 +7,7 @@ The @validates decorator ensures this is run before the checklist comment
     field can be updated in the database. This is what ensures the filesystem
     checklist.csv is in sync with the database.
 """
+import os
 import datetime
 import logging
 from random import randint
@@ -17,6 +18,7 @@ from sqlalchemy.schema import UniqueConstraint, ForeignKeyConstraint
 from sqlalchemy.orm.collections import attribute_mapped_collection
 
 from dashboard import db
+from dashboard.utils import get_study_path
 
 logger = logging.getLogger(__name__)
 
@@ -722,6 +724,25 @@ class Scan(db.Model):
         self.tag = tag
         self.description = description
         self.source_id = source_id
+
+    def get_path(self, study_id=None):
+        if self.is_linked():
+            timepoint = self.source_data.session.timepoint
+        else:
+            timepoint = self.session.timepoint
+        if study_id:
+            study = study_id
+        else:
+            study = timepoint.studies.values()[0].id
+        nii_folder = get_study_path(study, folder='nii')
+        file_name = self.full_name + '.nii.gz'
+        return os.path.join(nii_folder, self.timepoint, file_name)
+
+    @property
+    def full_name(self):
+        # This can be replaced later with code that accounts for some names (all?)
+        # being in BIDs format or other naming schemes
+        return "_".join([self.name, self.description])
 
     def is_linked(self):
         return self.source_id is not None

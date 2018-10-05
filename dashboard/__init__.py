@@ -1,11 +1,14 @@
+import os
+
 from flask import Flask
 from flask_mail import Mail
 from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager
+from werkzeug.routing import BaseConverter
+
 from config import basedir, ADMINS, MAIL_SERVER, MAIL_PORT, MAIL_USERNAME, \
         MAIL_PASSWORD, SENDER, LOGSERVER, GITHUB_OWNER, GITHUB_REPO, \
         GITHUB_PUBLIC
-from flask_login import LoginManager
-import os
 
 """
 Main init script, creates the app object and sets up logging
@@ -20,6 +23,25 @@ lm = LoginManager(app)
 lm.login_view = 'login'
 lm.refresh_view = 'refresh_login'
 mail = Mail(app)
+
+################################################################################
+# These settings should only be uncommented for development instances of the
+# dashboard
+#
+# from flask_debugtoolbar import DebugToolbarExtension
+# app.debug = True
+# toolbar = DebugToolbarExtension(app)
+# app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
+################################################################################
+
+# This adds a 'regex' type for app routes.
+# See: https://stackoverflow.com/questions/5870188/does-flask-support-regular-expressions-in-its-url-routing
+class RegexConverter(BaseConverter):
+    def __init__(self, url_map, *items):
+        super(RegexConverter, self).__init__(url_map)
+        self.regex = items[0]
+
+app.url_map.converters['regex'] = RegexConverter
 
 if not app.debug:
     import logging

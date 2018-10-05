@@ -12,7 +12,7 @@ from xml.sax.saxutils import escape
 from urlparse import urlparse, urljoin
 from flask import session as flask_session
 from flask import render_template, flash, url_for, redirect, request, jsonify, \
-        abort, g, make_response, send_file
+        abort, g, make_response, send_file, send_from_directory
 from flask_login import login_user, logout_user, current_user, \
         login_required, fresh_login_required, login_fresh
 from flask_mail import Message
@@ -277,7 +277,7 @@ def session_by_name(session_name=None):
 @app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>',
         methods=['GET', 'POST'])
 @fresh_login_required
-def timepoint(study_id, timepoint_id, delete=False, flag_finding=False):
+def timepoint(study_id, timepoint_id):
     """
     Default view for a single timepoint.
     """
@@ -483,11 +483,13 @@ def redcap_redirect(record_id):
 
     return redirect(redcap_url)
 
-@app.route('/scan', methods=["GET"])
-@app.route('/scan/<int:scan_id>', methods=['GET', 'POST'])
+# @app.route('/scan', methods=["GET"])
+@app.route('/study/<string:study_id>/scan/<int:scan_id>', methods=['GET', 'POST'])
 @login_required
-def scan(scan_id=None):
-    ## Test user has permission to view -a- study that this scan belongs to
+def scan(study_id, scan_id):
+    scan = get_scan(scan_id, study_id, current_user, fail_url=url_for('study',
+            study_id=study_id))
+
     ## Make checklist form (and populate it if pre-existing data)
 
 
@@ -538,7 +540,7 @@ def scan(scan_id=None):
     #                        session_scan=session_scan,
     #                        blacklist_form=bl_form,
     #                        scancomment_form=scancomment_form)
-    return render_template('scan.html')
+    return render_template('scan/main.html', scan=scan, study_id=study_id)
 
 
 @app.route('/study/<string:study_id>', methods=['GET', 'POST'])
@@ -1103,3 +1105,29 @@ def analysis(analysis_id=None):
     return render_template('analyses.html',
                            analyses=analyses,
                            form=form)
+
+# These functions serve up static files from the local filesystem
+@app.route('/study/<string:study_id>/data/RESOURCES/<path:tech_notes_path>')
+@app.route('/study/<string:study_id>/qc/<string:timepoint_id>/index.html')
+@app.route('/study/<string:study_id>/qc/<string:timepoint_id>/<regex(".*\.png"):image>')
+@login_required
+def static_qc_page(study_id, timepoint_id=None, image=None, tech_notes_path=None):
+    if tech_notes_path:
+        resources = utils.get_study_path(study_id, 'resources')
+        return send_from_directory(resources, tech_notes_path)
+    timepoint = get_timepoint(study_id, timepoint_id, current_user)
+    if image:
+        qc_dir, _ = os.path.split(timepoint.static_page)
+        return send_from_directory(qc_dir, image)
+    return send_file(timepoint.static_page)
+
+# The file name (with 'nii.gz' extension) needs to be last part of the URL or
+# papaya will fail to read the file because it wont recognize that it needs to
+# be decompressed
+@app.route('/study/<string:study_id>/load_scan/<int:scan_id>/<string:file_name>')
+@login_required
+def load_scan(study_id, scan_id, file_name):
+    scan = get_scan(scan_id, study_id, current_user, fail_url=prev_url())
+    return send_file(scan.get_path(), as_attachment=True,
+            attachment_filename=file_name,
+            mimetype="application/gzip")

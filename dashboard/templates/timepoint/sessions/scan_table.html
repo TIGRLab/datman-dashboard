@@ -13,7 +13,7 @@
           <td class="scan_series"> {{ scan.series }}</td>
           <td class="scan_type"> {{ scan.tag }}</td>
           <td class="scan_desc">
-            <a href="{{url_for('scan', scan_id=scan.id )}}">
+            <a href="{{url_for('scan', study_id=study_id, scan_id=scan.id )}}">
               {{ scan.description }}
               {% if scan.source_id %}
                 <span class="bg-warning"><em><small> (linked)</small></em></span>

@@ -1,0 +1,16 @@
+<!-- Overview for a single scan -->
+{% extends 'base.html' %}
+{% include 'flash.html' %}
+{% block content %}
+
+<div class="container">
+
+  {% include 'scan/header.html' %}
+  {% include 'scan_viewer.html' %}
+
+</div>
+
+<link rel="stylesheet" type="text/css" href="/static/css/papaya.css" />
+<script type="text/javascript" src="/static/js/papaya.js"></script>
+
+{% endblock %}
