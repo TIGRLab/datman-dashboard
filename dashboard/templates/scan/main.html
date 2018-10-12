@@ -3,11 +3,13 @@
 {% include 'flash.html' %}
 {% block content %}
 
+{% if not scan.tag in ['T1','T2'] %}
+  {% include 'scan/papaya_nav.html' %}
+{% endif %}
+
 <div class="container">
-
   {% include 'scan/header.html' %}
-  {% include 'scan_viewer.html' %}
-
+  {% include 'scan/viewer.html' %}
 </div>
 
 <link rel="stylesheet" type="text/css" href="/static/css/papaya.css" />

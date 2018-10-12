@@ -222,6 +222,36 @@ thead {
 }
 
 /**********************************************
+* papaya-nav styling
+***********************************************/
+#papaya-nav {
+  position: absolute;
+  top: 70%;
+  left: 80px;
+  width: 160px;
+  height: 208px;
+  display: block;
+}
+
+#loop-series {
+  margin-left: 35px !important;
+}
+
+#papaya-nav > #play-speed-controls {
+  display: none;
+  margin: 10px 0px 20px 0px;
+}
+
+#play-speed-controls > input {
+  display: block;
+  margin-bottom: 5px;
+}
+
+#papaya-nav > #change-volume-controls {
+  margin-top: 20px;
+}
+
+/**********************************************
 * Bootstrap customizations below
 ***********************************************/
 
