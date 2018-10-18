@@ -27,9 +27,9 @@ from .queries import query_metric_values_byid, query_metric_types, \
         query_metric_values_byname
 from .models import Study, Site, Session, Scantype, Scan, User, \
         Timepoint, AnalysisComment, Analysis, IncidentalFinding, StudyUser, \
-        SessionRedcap, EmptySession
+        SessionRedcap, EmptySession, ScanChecklist
 from .forms import SelectMetricsForm, StudyOverviewForm, \
-        ScanBlacklistForm, UserForm, ScanCommentForm, AnalysisForm, \
+        ScanChecklistForm, UserForm, AnalysisForm, \
         UserAdminForm, EmptySessionForm, IncidentalFindingsForm, \
         TimepointCommentsForm, NewIssueForm
 from .view_utils import get_user_form, report_form_errors, get_timepoint, \
@@ -489,59 +489,55 @@ def redcap_redirect(record_id):
 def scan(study_id, scan_id):
     scan = get_scan(scan_id, study_id, current_user, fail_url=url_for('study',
             study_id=study_id))
+    checklist_form = ScanChecklistForm(obj=scan.get_checklist_entry())
+    return render_template('scan/main.html', scan=scan, study_id=study_id,
+            checklist_form=checklist_form)
 
-    ## Make checklist form (and populate it if pre-existing data)
 
+@app.route('/study/<string:study_id>/scan/<int:scan_id>/review',
+        methods=['GET', 'POST'])
+@app.route('/study/<string:study_id>/scan/<int:scan_id>/review/<sign_off>',
+        methods=['GET', 'POST'])
+@app.route('/study/<string:study_id>/scan/<int:scan_id>/delete/<delete>',
+        methods=['GET', 'POST'])
+@app.route('/study/<string:study_id>/scan/<int:scan_id>/update/<update>',
+        methods=['GET', 'POST'])
+@login_required
+def scan_review(study_id, scan_id, sign_off=False, delete=False, update=False):
+    scan = get_scan(scan_id, study_id, current_user, fail_url=url_for('study',
+            study_id=study_id))
+    dest_url = url_for('scan', study_id=study_id, scan_id=scan_id)
 
-    # # Check the user has permission to see this study
-    # studies = current_user.get_studies()
-    # session_scan = Session_Scan.query.get(session_scan_id)
-    # scan = session_scan.scan
-    # session = session_scan.session
-    # if not current_user.has_study_access(session.study):
-    #     flash('Not authorised')
-    #     return redirect(url_for('index'))
-    #
-    # # form for updating the study blacklist.csv on the filesystem
-    # bl_form = ScanBlacklistForm()
-    # # form used for updating the analysis comments
-    # scancomment_form = ScanCommentForm()
-    #
-    # if not bl_form.is_submitted():
-    #     # this isn't an update so just populate the blacklist form with current values from the database
-    #     # these should be the same as in the filesystem
-    #     bl_form.scan_id = scan.id
-    #     bl_form.bl_comment.data = scan.bl_comment
-    #
-    # if bl_form.validate_on_submit():
-    #     # going to make an update to the blacklist
-    #     # update the scan object in the database with info from the form
-    #     # updating the databse object automatically syncronises blacklist.csv on the filesystem
-    #     #   see models.py
-    #     if bl_form.delete.data:
-    #         scan.bl_comment = None
-    #     else:
-    #         scan.bl_comment = bl_form.bl_comment.data
-    #
-    #     try:
-    #         db.session.add(scan)
-    #         db.session.commit()
-    #         flash("Blacklist updated")
-    #         return redirect(url_for('session', session_id=session.id))
-    #     except SQLAlchemyError as err:
-    #         logger.error('Scan blacklist update failed:{}'.format(str(err)))
-    #         flash('Update failed, admins have been notified, please try again')
-    #
-    #
-    # return render_template('scan.html',
-    #                        studies=studies,
-    #                        scan=scan,
-    #                        session=session,
-    #                        session_scan=session_scan,
-    #                        blacklist_form=bl_form,
-    #                        scancomment_form=scancomment_form)
-    return render_template('scan/main.html', scan=scan, study_id=study_id)
+    if delete:
+        entry = scan.get_checklist_entry()
+        entry.delete()
+        return redirect(dest_url)
 
+    if sign_off:
+        # Just in case the value provided in the URL was not boolean
+        sign_off = True
+
+    checklist_form = ScanChecklistForm()
+    if checklist_form.is_submitted():
+        if not checklist_form.validate_on_submit():
+            report_form_errors(checklist_form)
+            return redirect(dest_url)
+        comment = checklist_form.comment.data
+    else:
+        comment = None
+
+    if update:
+        # Update is done separately so that a review entry can't accidentally
+        # be changed from 'flagged' to blacklisted. i.e. 'sign_off' isnt changed
+        if comment is None:
+            flash("Cannot update entry with empty comment")
+            return redirect(dest_url)
+        scan.add_checklist_entry(current_user.id, comment)
+        return redirect(dest_url)
+
+    print("Signing off with a comment now")
+    scan.add_checklist_entry(current_user.id, comment, sign_off)
+    return redirect(url_for('scan', study_id=study_id, scan_id=scan_id))
 
 @app.route('/study/<string:study_id>', methods=['GET', 'POST'])
 @app.route('/study/<string:study_id>/<active_tab>', methods=['GET', 'POST'])

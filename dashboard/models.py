@@ -16,23 +16,12 @@ from flask_login import UserMixin
 from sqlalchemy import and_, exists, func
 from sqlalchemy.schema import UniqueConstraint, ForeignKeyConstraint
 from sqlalchemy.orm.collections import attribute_mapped_collection
+from psycopg2.tz import FixedOffsetTimezone
 
-from dashboard import db
+from dashboard import db, TZ_OFFSET
 from dashboard.utils import get_study_path
 
 logger = logging.getLogger(__name__)
-
-class Comment(object):
-    def __init__(self, user, timestamp, comment):
-        self.user = user
-        self.timestamp = timestamp.strftime('%I:%M %p, %Y-%m-%d')
-        self.text = comment
-
-    def __str__(self):
-        return self.text or ""
-
-    def __repr__(self):
-        return "<Comment by {} on {}>".format(self.user, self.timestamp)
 
 ################################################################################
 # Association tables (i.e. basic many to many relationships)
@@ -541,7 +530,7 @@ class TimepointComment(db.Model):
         self.timepoint_id = timepoint_id
         self.user_id = user_id
         self.comment = comment
-        self._timestamp = datetime.datetime.now()
+        self._timestamp = datetime.datetime.now(FixedOffsetTimezone(offset=TZ_OFFSET))
 
     def update(self, new_text):
         self.comment = new_text
@@ -600,7 +589,7 @@ class Session(db.Model):
     def sign_off(self, user_id):
         self.signed_off = True
         self.reviewer_id = user_id
-        self.review_date = datetime.datetime.now()
+        self.review_date = datetime.datetime.now(FixedOffsetTimezone(offset=TZ_OFFSET))
         db.session.add(self)
         db.session.commit()
 
@@ -635,8 +624,7 @@ class EmptySession(db.Model):
     comment = db.Column('comment', db.String(2048), nullable=False)
     user_id = db.Column('reviewer', db.Integer, db.ForeignKey('users.id'),
             nullable=False)
-    date_added = db.Column('date_added', db.DateTime(timezone=True),
-            default=datetime.datetime.now)
+    date_added = db.Column('date_added', db.DateTime(timezone=True))
 
     session = db.relationship('Session', uselist=False,
             back_populates='empty_session')
@@ -650,8 +638,7 @@ class EmptySession(db.Model):
         self.num = num
         self.user_id = user_id
         self.comment = comment
-        # Leaving out date_added so that postgres sets the default time of 'now'
-        # when new record is made.
+        self.date_added = datetime.datetime.now(FixedOffsetTimezone(offset=TZ_OFFSET))
 
     def __repr__(self):
         return "<EmptySession {}, {}>".format(self.name, self.num)
@@ -696,7 +683,7 @@ class Scan(db.Model):
     tag = db.Column('tag', db.String(64), db.ForeignKey('scantypes.tag'),
             nullable=False)
     description = db.Column('description', db.String(128))
-    # If a scan is a link, this will hold the id of the scan the link points to
+    # If a scan is a link, this will hold the id of the source scan
     source_id = db.Column('source_data', db.Integer, db.ForeignKey(id))
 
     # If a scan has any symbolic links pointing to it 'links' will be a list
@@ -735,17 +722,15 @@ class Scan(db.Model):
         else:
             study = timepoint.studies.values()[0].id
         nii_folder = get_study_path(study, folder='nii')
-        file_name = self.full_name + '.nii.gz'
-        return os.path.join(nii_folder, self.timepoint, file_name)
+        return os.path.join(nii_folder, self.timepoint, self.nifti_name)
 
     @property
-    def full_name(self):
-        # This can be replaced later with code that accounts for some names (all?)
-        # being in BIDs format or other naming schemes
-        return "_".join([self.name, self.description])
-
-    def is_linked(self):
-        return self.source_id is not None
+    def nifti_name(self):
+        if self.is_linked():
+            full_name = [self.source_data.name, self.source_data.description]
+        else:
+            full_name = [self.name, self.description]
+        return "_".join(full_name) + ".nii.gz"
 
     def get_checklist_entry(self):
         if self.is_linked():
@@ -753,6 +738,21 @@ class Scan(db.Model):
         else:
             checklist = self.qc_review
         return checklist
+
+    def _new_checklist_entry(self, signing_user):
+        if self.is_linked():
+            return ScanChecklist(self.source_id, signing_user)
+        return ScanChecklist(self.id, signing_user)
+
+    def add_checklist_entry(self, signing_user, comment=None, sign_off=None):
+        checklist = self.get_checklist_entry()
+        if not checklist:
+            checklist = self._new_checklist_entry(signing_user)
+        checklist.update_entry(signing_user, comment, sign_off)
+        checklist.save()
+
+    def is_linked(self):
+        return self.source_id is not None
 
     def is_new(self):
         checklist = self.get_checklist_entry()
@@ -772,7 +772,7 @@ class Scan(db.Model):
 
     def get_comment(self):
         checklist = self.get_checklist_entry()
-        return Comment(checklist.user, checklist.timestamp, checklist.comment)
+        return checklist.comment or ""
 
     def list_children(self):
         return [link.name for link in self.links]
@@ -801,8 +801,7 @@ class ScanChecklist(db.Model):
             nullable=False)
     user_id = db.Column('user_id', db.Integer, db.ForeignKey('users.id'),
             nullable=False)
-    timestamp = db.Column('review_timestamp', db.DateTime(timezone=True),
-            default=datetime.datetime.now())
+    _timestamp = db.Column('review_timestamp', db.DateTime(timezone=True))
     comment = db.Column('comment', db.String(1028))
     approved = db.Column('signed_off', db.Boolean, nullable=False, default=False)
 
@@ -819,10 +818,29 @@ class ScanChecklist(db.Model):
         self.comment = comment
         self.approved = approved
 
+    @property
+    def timestamp(self):
+        return self._timestamp.strftime('%I:%M %p, %Y-%m-%d')
+
+    def update_entry(self, user_id, comment=None, status=None):
+        if status is not None:
+            self.approved = status
+        if comment is not None:
+            self.comment = comment
+        self.user_id = user_id
+        self._timestamp = datetime.datetime.now(FixedOffsetTimezone(offset=TZ_OFFSET))
+
+    def save(self):
+        db.session.add(self)
+        db.session.commit()
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+
     def __repr__(self):
         return "<ScanChecklist for {} by user {}>".format(self.scan_id,
                 self.user_id)
-
 
 class Scantype(db.Model):
     __tablename__ = 'scantypes'
@@ -996,7 +1014,7 @@ class IncidentalFinding(db.Model):
         self.user_id = user_id
         self.timepoint_id = timepoint_id
         self.description = description
-        self.timestamp = datetime.datetime.now()
+        self.timestamp = datetime.datetime.now(FixedOffsetTimezone(offset=TZ_OFFSET))
 
     def __repr__(self):
         return "<IncidentalFinding {} for {} found by User {}>".format(

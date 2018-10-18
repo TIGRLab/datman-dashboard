@@ -42,17 +42,12 @@ class StudyOverviewForm(FlaskForm):
     study_id = HiddenField()
 
 
-class ScanBlacklistForm(FlaskForm):
-    scan_id = HiddenField(id="scan_id")
-    bl_comment = TextField(u'Enter the reason for blacklisting: ',
-                           id="bl_comment",
-                           validators=[DataRequired()])
+class ScanChecklistForm(FlaskForm):
+    comment = TextAreaField('Comment:', id='scan-comment',
+            validators=[DataRequired()],
+            render_kw={'placeholder': 'Add description', 'rows': 12,
+                    'required': True, 'maxlength': '1028'})
     submit = SubmitField('Submit')
-    delete = SubmitField('Delete Entry')
-
-# class ChecklistForm(FlaskForm):
-#     comment = TextAreaField(u'Checklist_comment',
-#                            validators=[DataRequired()])
 
 # class MultiCheckboxField(SelectMultipleField):
 #     widget = widgets.ListWidget(prefix_label=False)
@@ -91,6 +86,21 @@ class ScanBlacklistForm(FlaskForm):
 #     study_RA = BooleanSubField('Study RA: ')
 #     does_qc = BooleanSubField('Does QC: ')
 
+# class ScanCommentForm(FlaskForm):
+#     scan_id = HiddenField(id="scan_id")
+#     user_id = HiddenField(id="user_id")
+#     analyses = SelectField(u'Analysis used:', id="analysis")
+#     excluded = BooleanField(u'Was excluded:', id="excluded", default=False)
+#     comment = TextField(u'Comment',
+#                         id="comment",
+#                         validators=[DataRequired()])
+#     def __init__(self, *args, **kwargs):
+#         FlaskForm.__init__(self, *args, **kwargs)
+#         analyses = Analysis.query.all()
+#         analysis_choices = [(str(analysis.id), analysis.name)
+#                             for analysis in analyses]
+#         self.analyses.choices = analysis_choices
+
 
 
 class UserForm(FlaskForm):
@@ -108,11 +118,13 @@ class UserForm(FlaskForm):
     gitlab_name = TextField(u'GitLab Username: ')
     update = SubmitField(label='Update')
 
+
 class PermissionRadioField(RadioField):
     def __init__(self, *args, **kwargs):
         super(PermissionRadioField, self).__init__(**kwargs)
         self.choices = [(u'False', 'Disabled'), (u'True', 'Enabled')]
         self.default = u'False'
+
 
 class StudyPermissionsForm(FlaskForm):
     study_id = HiddenField()
@@ -124,6 +136,7 @@ class StudyPermissionsForm(FlaskForm):
     study_RA = PermissionRadioField('Study RA: ')
     does_qc = PermissionRadioField('Does QC: ')
     revoke_access = SubmitField(label='Remove Access')
+
 
 class UserAdminForm(UserForm):
     dashboard_admin = BooleanField(u'Dashboard Admin: ')
@@ -159,22 +172,6 @@ class AnalysisForm(FlaskForm):
     software = TextAreaField(u'Software')
 
 
-class ScanCommentForm(FlaskForm):
-    scan_id = HiddenField(id="scan_id")
-    user_id = HiddenField(id="user_id")
-    analyses = SelectField(u'Analysis used:', id="analysis")
-    excluded = BooleanField(u'Was excluded:', id="excluded", default=False)
-    comment = TextField(u'Comment',
-                        id="comment",
-                        validators=[DataRequired()])
-    def __init__(self, *args, **kwargs):
-        FlaskForm.__init__(self, *args, **kwargs)
-        analyses = Analysis.query.all()
-        analysis_choices = [(str(analysis.id), analysis.name)
-                            for analysis in analyses]
-        self.analyses.choices = analysis_choices
-
-
 class EmptySessionForm(FlaskForm):
     comment = TextAreaField(u'Explanation: ', id="missing_comment",
             validators=[DataRequired()],
@@ -195,6 +192,7 @@ class TimepointCommentsForm(FlaskForm):
             render_kw={'rows': 5, 'required': True,
                     'placeholder': 'Add new comment here'})
     submit = SubmitField('Submit')
+
 
 class NewIssueForm(FlaskForm):
     title = TextField(u"Title: ", validators=[DataRequired()],

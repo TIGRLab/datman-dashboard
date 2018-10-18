@@ -8,7 +8,7 @@ from werkzeug.routing import BaseConverter
 
 from config import basedir, ADMINS, MAIL_SERVER, MAIL_PORT, MAIL_USERNAME, \
         MAIL_PASSWORD, SENDER, LOGSERVER, GITHUB_OWNER, GITHUB_REPO, \
-        GITHUB_PUBLIC
+        GITHUB_PUBLIC, TZ_OFFSET
 
 """
 Main init script, creates the app object and sets up logging

@@ -25,15 +25,15 @@
             {% if scan.is_new() %}
               <span class="badge" style="background-color: tomato;">New!</span>
             {% elif scan.flagged() %}
-              <span class="text-warning" title="Flagged during review.">
+              <span class="flagged" title="Flagged during review.">
                 <i class="fas fa-exclamation-triangle"></i>
               </span>
             {% elif scan.blacklisted() %}
-              <span class="text-danger" title="Blacklisted">
+              <span class="blacklisted" title="Blacklisted">
                 <i class="fas fa-ban"></i>
               </span>
             {% else %}
-              <span class="text-success" title="Passed review.">
+              <span class="approved" title="Passed review.">
                 <i class="fas fa-check-circle"></i>
               </span>
             {% endif %}

@@ -8,6 +8,9 @@ import os
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
+# Timezone offset used for timezone aware timestamps. Default is Eastern time
+# See https://docs.python.org/2/library/datetime.html#datetime.datetime.now
+TZ_OFFSET = os.environ.get('TIMEZONE') or -240
 WTF_CSRF_ENABLED = True
 SECRET_KEY = os.environ.get('FLASK_SECRET_KEY')
 #SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir,'dashboard.sqlite')

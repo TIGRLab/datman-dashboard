@@ -7,6 +7,9 @@
   --theme-light: #904B9C;     /* Lighter purple from CAMH palette */
   --alt-theme-main: #00A39B;  /* CAMH teal */
   --alt-theme-light: #7DCBD5; /* Lighter teal from CAMH palette */
+  --bootstrap-success: #5CB85C;
+  --bootstrap-warning: #F0AD4E;
+  --bootstrap-danger: #D9534F;
 }
 
 body {
@@ -70,15 +73,49 @@ thead {
   margin-left: 0px;
 }
 
+#comment-container {
+  display: inline-block;
+  width: 100%;
+  height: 56px;
+  padding-top: 5px;
+  padding-bottom: 0px;
+}
+
+#scan-qc-comment {
+  display: inline-block;
+  max-height: 56px;
+}
+
+#qc-badge {
+  padding-top: 12px;
+  margin-bottom: 10px;
+}
+
+#scan-qc-status {
+  font-size: 1.5em;
+}
+
+#scan-qc-signature {
+  font-size: .7em;
+}
+
+.approved {
+  color: var(--bootstrap-success);
+}
+
+.flagged {
+  color: var(--bootstrap-warning);
+}
+
+.blacklisted {
+  color: var(--bootstrap-danger);
+}
+
 #viewer-container {
   /* Needs extra space for the buttons that appear above the papaya viewer */
   padding-top: 30px;
   padding-bottom: 10px;
-  margin: 5px 0px;
-}
-
-#scan-nav {
-  padding: 20px 0px;
+  /* margin: 20px 0px; */
 }
 
 .well {
@@ -130,14 +167,7 @@ thead {
   transition: 0.2s ease;
 }
 
-/* slide in on session section header */
-.session-header:hover .slide-button {
-  padding: 6px 12px;
-  border: 1px solid transparent;
-  width: 70px;
-}
-
-/* slide in on scan rows. Note different button size to session header */
+/* slide in on scan rows */
 .scan-row:hover .slide-button {
   padding: 6px 12px;
   border: 1px solid transparent;
@@ -226,8 +256,8 @@ thead {
 ***********************************************/
 #papaya-nav {
   position: absolute;
-  top: 70%;
-  left: 80px;
+  top: 80%;
+  left: 2.5%;
   width: 160px;
   height: 208px;
   display: block;
@@ -302,6 +332,7 @@ table-striped */
 }
 
 .jumbotron h1 {
+  word-wrap: break-word;
   font-size: 42px;
   color: var(--light-text);
   font-weight: 700;

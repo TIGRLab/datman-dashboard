@@ -4,7 +4,12 @@
 {% block content %}
 <div class="container">
 
-  {% include 'timepoint/header.html' %}
+  <div class="jumbotron">
+    <h1>{{ timepoint.name }}</h1>
+    {% if timepoint.is_phantom %}
+      <p class="lead">Phantom</p>
+    {% endif %}
+  </div>
 
   {% if timepoint.incidental_findings %}
     {% include 'timepoint/incidental_finding_message.html'%}

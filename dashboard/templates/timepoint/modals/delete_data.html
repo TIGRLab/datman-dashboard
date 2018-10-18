@@ -38,8 +38,8 @@ function updateDeleteModal(session_num, scan_id, scan_name, scan_children) {
         "filesystem it will regenerate but any related comments or QC status " +
         "will be lost forever.";
     if (scan_children) {
-      message = message + "<br><br>This scan is also linked under other names. If " +
-        "deleted the following scans entries will also be deleted:<br><br>" +
+      message = message + "<br><br>This scan data is linked under other names. If " +
+        "deleted, the following scans entries will also be removed:<br><br>" +
         "<div style='text-align:center;'>" + scan_children + "</div><br><br>";
     }
     // Done manually for same reason as below
@@ -56,7 +56,7 @@ function updateDeleteModal(session_num, scan_id, scan_name, scan_children) {
     var destURL = "{{ url_for('timepoint', study_id=study_id, timepoint_id=timepoint.name) }}/delete_session/" +
         session_num;
   } else {
-    var message = name + " and all of its sessions will be deleted. " +
+    var message = name + " will be deleted. " +
       "Everything associated with this ID will be purged from the database. " +
       "If the original data is left on the filesystem it will be re-added " +
       "later, but any associated comments will disappear forever.";
