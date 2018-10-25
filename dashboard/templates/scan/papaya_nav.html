@@ -1,0 +1,71 @@
+<div id="papaya-nav">
+    <div class="btn-group-lg" role="group">
+      <button id="loop-series" class="btn btn-primary" onclick="loopSeries();">
+        Play <i class="fas fa-play"></i>
+      </button>
+    </div>
+
+    <div id="play-speed-controls">
+      <label for="play-speed">Volumes per second: </label>
+      <input id="play-speed" type="number"/>
+      <button id="set-speed" onclick="updateSpeed();" class="btn btn-primary pull-right">Update</button>
+    </div>
+
+    <div id="change-volume-controls">
+      <button id="prev-series" class="btn btn-primary pull-left"
+          onclick="papayaContainers[0].viewer.decrementSeriesPoint();">
+        <i class="fas fa-backward"></i> Prev
+      </button>
+      <button id="next-series" class="btn btn-primary pull-right"
+          onclick="papayaContainers[0].viewer.incrementSeriesPoint();">
+        Next <i class="fas fa-forward"></i>
+      </button>
+    </div>
+</div>
+
+<script type="text/javascript">
+// Implements the 'play' button
+var intervalHandler;
+var frames = 3;
+function loopSeries() {
+  if (intervalHandler) {
+    window.clearInterval(intervalHandler);
+    intervalHandler = undefined;
+    $("#loop-series").html('Play <i class="fas fa-play"></i>');
+    $("#play-speed-controls").hide();
+    $("#change-volume-controls").show();
+    return
+  }
+
+  try {
+    var viewer = papayaContainers[0].viewer;
+  } catch(err) {
+    return
+  }
+
+  var speed = 1000 / frames;
+  intervalHandler = window.setInterval(function() {
+    if (viewer.currentScreenVolume.currentTimepoint < (viewer.volume.header.imageDimensions.timepoints - 1)) {
+      viewer.incrementSeriesPoint();
+    } else {
+      // Loop to beginning
+      viewer.currentScreenVolume.currentTimepoint = 1;
+      viewer.decrementSeriesPoint();
+    }
+  }, speed);
+
+  $("#play-speed").val(frames);
+  $("#loop-series").html('Stop <i class="fas fa-stop"></i>');
+  $("#play-speed-controls").show();
+  $("#change-volume-controls").hide();
+}
+
+function updateSpeed() {
+  frames = $("#play-speed").val();
+  if (intervalHandler) {
+    // stop first
+    loopSeries();
+  }
+  loopSeries();
+}
+</script>

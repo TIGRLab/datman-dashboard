@@ -1,17 +1,80 @@
   {{ form.hidden_tag() }}
-  {{ form.user_id }}
-  <div class="form-group">
-    <label for="realname">Name:</label>
-    {{ form.realname }}
+  <div class="panel panel-primary" title="Basic user demographic information">
+    <div class="panel-heading collapsible-heading" data-toggle="collapse" data-target="#userInfo">
+      <h3 class="panel-title chevron-toggle">User Details</h3>
+    </div>
+    <div class="panel-body collapse in" id="userInfo">
+      {{ form.first_name.label }} {{ form.first_name() }}<br>
+      {{ form.last_name.label }} {{ form.last_name() }}<br>
+      {{ form.email.label }} {{ form.email() }}<br>
+      {{ form.position.label }} {{ form.position() }}<br>
+      {{ form.institution.label }} {{ form.institution() }}<br>
+      {{ form.phone.label }} {{ form.phone() }}<br>
+      {{ form.ext.label }}{{ form.ext() }}<br>
+      {{ form.alt_phone.label }} {{ form.alt_phone() }}<br>
+      {{ form.alt_ext.label }}{{ form.alt_ext() }}<br>
+      {{ form.username.label }} {{ form.username() }}<br>
+    </div>
   </div>
-  <div class="form-group">
-    <label for="is_admin">Admin:
-    {{ form.is_admin }}</label>
-    <label for="has_phi">Access PHI:
-    {{ form.has_phi }}</label>
-  </div>
-  <div class="form-group">
-    <label for="studies">Studies:</label>
-      {{ form.studies }}
-  </div>
-  <button type="Submit" class="btn btn-default">Update</button>
+
+  {% if current_user.dashboard_admin %}
+    <div class="panel panel-primary" title="User permissions and access settings (Admin Only)">
+      <div class="panel-heading collapsible-heading" data-toggle="collapse" data-target="#userPermissions">
+        <h3 class="panel-title chevron-toggle">User Permissions (Admin View)</h3>
+      </div>
+      <div class="panel-body collapse in" id="userPermissions">
+        {{ form.is_active.label }} {{ form.is_active() }}
+        {{ form.dashboard_admin.label }} {{ form.dashboard_admin() }}
+        <br>
+        {{ form.add_access.label }}{{ form.add_access }}{{ form.update_access(class_='btn btn-primary') }}
+        <br>
+        <table>
+          <tr>
+            <th>Study</th>
+            <th>Setting</th>
+            <th>Disabled</th>
+            <th>Enabled</th>
+            <th></th>
+          </tr>
+          <!-- Iterate over settings form for each Study this user has access to
+          and then iterate over the radio choices to align them on one row
+          (otherwise they print as a list) -->
+          {% for study_form in form.studies %}
+            <tr>
+              <td>{{ study_form.is_admin.label }}</td>
+              {% for subfield in study_form.is_admin %}
+                <td>{{ subfield }}</td>
+              {% endfor %}
+            </tr>
+            <tr>
+              <td>{{ study_form.primary_contact.label }}</td>
+              {% for subfield in study_form.primary_contact %}
+                <td>{{ subfield }}</td>
+              {% endfor %}
+            </tr>
+            <tr>
+              <td>{{ study_form.kimel_contact.label }}</td>
+              {% for subfield in study_form.kimel_contact %}
+                <td>{{ subfield }}</td>
+              {% endfor %}
+            </tr>
+            <tr>
+              <td>{{ study_form.study_RA.label }}</td>
+              {% for subfield in study_form.study_RA %}
+                <td>{{ subfield }}</td>
+              {% endfor %}
+            </tr>
+            <tr>
+              <td>{{ study_form.does_qc.label }}</td>
+              {% for subfield in study_form.does_qc %}
+                <td>{{ subfield }}</td>
+              {% endfor %}
+            </tr>
+          {% endfor %}
+        </table>
+        {{ form.revoke_all_access(class_='btn btn-danger')}}
+      </div>
+    </div>
+  {% endif %}
+
+  {{ form.update(class_='btn btn-primary') }}

@@ -2,13 +2,76 @@
 Database queries used by the app
 """
 from dashboard import db
-from .models import Study, Site, Session, Scan, MetricType, \
-    MetricValue, ScanType, Session_Scan  # noqa: F401
+from .models import Timepoint, Session, Scan, Study, Site, Metrictype, \
+    MetricValue, Scantype  # noqa: F401
 import logging
 import utils
 
 logger = logging.getLogger(__name__)
 logger.info('Loading queries')
+
+def find_subjects(search_str):
+    search_str = search_str.strip().upper()
+    query = Timepoint.query.filter(func.upper(Timepoint.name).contains(
+            search_str))
+    return query.all()
+
+def find_sessions(search_str):
+    search_str = search_str.strip().upper()
+    try:
+        ident = scanid.parse(search_str)
+    except:
+        # Not a proper ID, try fuzzy search for name match
+        query = Session.query.filter(func.upper(Session.name).contains(
+                search_str))
+    else:
+        if not ident.session:
+            query = Session.query.filter((func.upper(Session.name) ==
+                    ident.get_full_subjectid_with_timepoint()))
+        else:
+            query = Session.query.filter(and_(func.upper(Session.name) ==
+                    ident.get_full_subjectid_with_timepoint(),
+                    Session.num == ident.session))
+    return query.all()
+
+def find_scans(search_str):
+    search_str = search_str.strip().upper()
+    try:
+        ident, tag, series, _ = scanid.parse_filename(search_str)
+    except:
+        try:
+            ident = scanid.parse(search_str)
+        except:
+            # Doesnt match a file name or a subject ID so fuzzy search
+            # for...
+            # matching scan name
+            query = Scan.query.filter(func.upper(Scan.name).contains(
+                    search_str))
+            if query.count() == 0:
+                # or matching subid
+                query = Scan.query.filter(func.upper(Scan.timepoint).contains(
+                        search_str))
+            if query.count() == 0:
+                # or matching tags
+                query = Scan.query.filter(func.upper(Scan.tag).contains(
+                        search_str))
+            if query.count() == 0:
+                # or matching series description
+                query = Scan.query.filter(func.upper(Scan.description).contains(
+                        search_str))
+        else:
+            if ident.session:
+                query = Scan.query.filter(and_(func.upper(Scan.timepoint) ==
+                        ident.get_full_subjectid_with_timepoint(),
+                        Scan.session == ident.session))
+            else:
+                query = Scan.query.filter((func.upper(Scan.timepoint) ==
+                        ident.get_full_subjectid_with_timepoint()))
+    else:
+        name = "_".join([ident.get_full_subjectid_with_timepoint(), tag, series])
+        query = Scan.query.filter(func.upper(Scan.name).contains(name))
+
+    return query.all()
 
 def query_metric_values_byid(**kwargs):
     """Queries the database for metrics matching the specifications.
@@ -113,7 +176,7 @@ def query_metric_values_byname(**kwargs):
 
 
 def query_metric_types(**kwargs):
-    """Query the database for metric types fitting the specifictions"""
+    """Query the database for metric types fitting the specifications"""
         # convert the argument keys to lowercase
     kwargs = {k.lower(): v for k, v in kwargs.items()}
 
@@ -128,13 +191,13 @@ def query_metric_types(**kwargs):
     good_keys = arg_keys & set(filters.keys())
 
     if bad_keys:
-        logger.warning('Ignoring invalid filter keys provided:{}'
+        logger.warning('Ignoring invalid filter keys provided: {}'
                        .format(bad_keys))
 
-    q = db.session.query(Study, Site, ScanType, MetricType) \
+    q = db.session.query(Study, Site, Scantype, Metrictype) \
           .join(Study.sites) \
           .join(Study.scantypes) \
-          .join(ScanType.metrictypes) \
+          .join(Scantype.metrictypes) \
           .distinct()
 
     for key in good_keys:

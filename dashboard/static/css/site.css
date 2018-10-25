@@ -1,112 +1,491 @@
-/*
-inline styles for local site
-*/
-@link-color:       @brand-primary;
-@link-hover-color: darken(@link-color, 15%);
-
-a {
-  color: @link-color;
-  text-decoration: none;
-
-  &:hover {
-    color: @link-hover-color;
-    text-decoration: underline;
-  }
-}
-
-.nomargin{
-    margin-top:0px;
-    margin-bottom:0px;
-    margin-right:0px;
-    margin-left:0px;
-}
-
-
-.bd-pageheader {
-  padding: 2rem 15px;
-  margin-bottom: 1.5rem;
-  color: #FFFFFF;
-  text-align: center;
-  background-color: #6E298D;
-}
-
-.bd-pageheader .container {
-  position: relative;
-}
-
-.camh {
-  background-color: #6E298D
-}
-
-.scantype_dti{
-  display: none;
-}
-
-.scantype_fmri{
-  display: none;
-}
-
-.centered img {
-  display: block;
-  margin: auto;
-  width: 40%;
-}
-
-.bd-pageheader h1 {
-  font-size: 4rem;
-  font-weight: normal;
-  color: #fff;
-}
-
-.bd-pageheader p {
-  margin-bottom: 0;
-  font-size: 1.25rem;
-  font-weight: 300;
-}
-
-@media (min-width: 544px) {
-  .bd-pageheader {
-    padding-top: 2rem;
-    padding-bottom: 3.5rem;
-    margin-bottom: 3rem;
-    text-align: left;
-  }
-  .bd-pageheader .carbonad {
-    margin: 2rem 0 0 !important;
-  }
-}
-
-@media (min-width: 768px) {
-  .bd-pageheader h1 {
-    font-size: 4rem;
-  }
-  .bd-pageheader p {
-    font-size: 1.5rem;
-  }
-}
-
-@media (min-width: 992px) {
-  .bd-pageheader h1,
-  .bd-pageheader p {
-    margin-right: 380px;
-  }
-  .bd-pageheader .carbonad {
-    position: absolute;
-    top: 0;
-    right: .75rem;
-    margin: 0 !important;
-  }
-}
-
-.control-label{
-  font-weight: bold;fg
+/* Colors are defined here! */
+:root {
+  --light-text: #F8F8F8;      /* Slightly off white */
+  --dark-text: #383838;       /* Slightly gray black */
+  --theme-main: #6E298D;      /* CAMH purple */
+  --theme-dark: #5B2374;      /* Darker purple for highlight on hover etc. */
+  --theme-light: #904B9C;     /* Lighter purple from CAMH palette */
+  --alt-theme-main: #00A39B;  /* CAMH teal */
+  --alt-theme-light: #7DCBD5; /* Lighter teal from CAMH palette */
+  --bootstrap-success: #5CB85C;
+  --bootstrap-warning: #F0AD4E;
+  --bootstrap-danger: #D9534F;
 }
 
 body {
-  padding-bottom: 200px;
+  /*Add padding so the footer doesnt overlap the content*/
+  padding-bottom: 70px;
+  color: var(--dark-text);
 }
-@media (max-width: 980px){
-  body{
-    padding-bottom: 0;
+
+thead {
+  color: var(--light-text);
+  background-color: var(--alt-theme-main);
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+#copyright {
+  padding: 15px 10px;
+}
+
+#home-body {
+  width: 90%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+#search-data-text {
+  width: 350px !important;
+}
+
+#qc-panel {
+  width: 60%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Make the qc panel body scrollable if the list is too long */
+#qclist {
+  height: auto;
+  max-height: 300px;
+  overflow-x: hidden;
+}
+
+/* Styling for the session page 'QC Comment' text area */
+#cl_comment {
+  width: 100%;
+  padding-bottom: 5px;
+  margin-bottom: 10px;
+  resize: none;
+  border: 1px solid #D3D3D3;
+}
+
+/* Styling for the session page 'Scan Missing' modal comment box */
+#missing_comment {
+  width: 100% !important;
+  resize: none !important;
+  margin-bottom: 5px !important;
+}
+
+#doc-page {
+  margin: 10px;
+  margin-left: 0px;
+}
+
+#comment-container {
+  display: inline-block;
+  width: 100%;
+  height: 56px;
+  padding-top: 5px;
+  padding-bottom: 0px;
+}
+
+#scan-qc-comment {
+  display: inline-block;
+  max-height: 56px;
+}
+
+#qc-badge {
+  padding-top: 12px;
+  margin-bottom: 10px;
+}
+
+#scan-qc-status {
+  font-size: 1.5em;
+}
+
+#scan-qc-signature {
+  font-size: .7em;
+}
+
+.approved {
+  color: var(--bootstrap-success);
+}
+
+.flagged {
+  color: var(--bootstrap-warning);
+}
+
+.blacklisted {
+  color: var(--bootstrap-danger);
+}
+
+#viewer-container {
+  /* Needs extra space for the buttons that appear above the papaya viewer */
+  padding-top: 30px;
+  padding-bottom: 10px;
+  /* margin: 20px 0px; */
+}
+
+.well {
+  margin-bottom: 10px;
+}
+
+.tab-content {
+  margin-top: 20px;
+}
+
+.subject-warning-panel {
+  margin-bottom: 30px;
+}
+
+.center {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Add a bit of styling around text in buttons with glyphicons  */
+.button-text {
+  padding: 5px;
+}
+
+.scrollable-menu {
+  height: auto;
+  max-height: 200px;
+  overflow-x: hidden;
+}
+
+.study-menu {
+  /* Make study list menu same width as dropdown button */
+  min-width: 100%;
+}
+
+.qc-warnings {
+  display: inline-block;
+  min-width: 100px;
+}
+
+/* Make a button slide in on hover */
+.slide-button {
+  overflow: hidden;
+  width: 0;
+  padding: 0;
+  border: none;
+  height: 34px;
+  margin: 0px 10px;
+  transition: 0.2s ease;
+}
+
+/* slide in on scan rows */
+.scan-row:hover .slide-button {
+  padding: 6px 12px;
+  border: 1px solid transparent;
+  width: 46px;
+}
+
+/* style timepoint comments */
+.thumbnail {
+  padding: 0px;
+}
+.comment-display {
+	position:relative;
+}
+
+.comment-display > .panel-heading:after, .comment-display > .panel-heading:before {
+	position: absolute;
+	top: 11px;
+  left: -16px;
+	right: 100%;
+	width: 0;
+	height: 0;
+	display: block;
+	content: " ";
+	border-color: transparent;
+	border-style: solid solid outset;
+	pointer-events: none;
+}
+
+.comment-display > .panel-heading:after {
+	border-width: 7px;
+	border-right-color: #f7f7f7;
+	margin-top: 1px;
+	margin-left: 2px;
+}
+.comment-display > .panel-heading:before {
+	border-right-color: #ddd;
+	border-width: 8px;
+}
+
+.timepoint-comment {
+  width: 100% !important;
+  margin-bottom: 5px;
+}
+
+/* Style badge on 'new-qc' labels */
+.new-qc {
+  background-color: var(--alt-theme-main);
+  float: right;
+  width: 80px;
+  height: 100%;
+  text-align: left;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.new-qc .badge {
+  background-color: var(--light-text);
+  color: var(--alt-theme-main);
+  width: 35px;
+}
+
+/* Set up clickable rows and 'buttons' to indicate the table can be clicked */
+.clickable-row {
+  cursor: pointer;
+}
+
+.click-me {
+  background: var(--alt-theme-light);
+  color: var(--light-text);
+  height: 100%;
+  padding: 0px;
+  text-align: right;
+}
+
+.table-hover tbody tr:hover .click-me {
+  background: var(--alt-theme-main);
+}
+
+/* Make sure icons in the header have a standard amount of space around them */
+.header-icon {
+  margin: 0px 3px;
+}
+
+/**********************************************
+* papaya-nav styling
+***********************************************/
+#papaya-nav {
+  position: absolute;
+  top: 80%;
+  left: 2.5%;
+  width: 160px;
+  height: 208px;
+  display: block;
+}
+
+#loop-series {
+  margin-left: 35px !important;
+}
+
+#papaya-nav > #play-speed-controls {
+  display: none;
+  margin: 10px 0px 20px 0px;
+}
+
+#play-speed-controls > input {
+  display: block;
+  margin-bottom: 5px;
+}
+
+#papaya-nav > #change-volume-controls {
+  margin-top: 20px;
+}
+
+/**********************************************
+* Bootstrap customizations below
+***********************************************/
+
+/* Add a chevron toggle for collapsible headings (e.g panels) */
+.collapsible-heading {
+  cursor: pointer;
+}
+
+.chevron-toggle:after {
+  font-family: 'Glyphicons Halflings';
+  content: "\e114";     /* Chevron down */
+  float: right;
+}
+
+.collapsible-heading.collapsed .chevron-toggle:after {
+  content: "\e113";       /* Chevron up */
+}
+
+/* Remove top border of tables without a head */
+.table > tbody > tr:first-child > td {
+  border: none;
+}
+
+/* Ensure top border exists on tables with a header */
+.table > thead + tbody > tr:first-child > td {
+  border-top: 1px solid #ddd;
+}
+
+/* Change table hover color so it can be used in conjunction with
+table-striped */
+.table-hover tbody tr:hover td, .table-hover tbody tr:hover th {
+  background-color: #e6e6e6;
+}
+
+/* Restrict brand image size */
+.navbar-brand img {
+  height: 100%;
+}
+
+/* Improve jumbotron styling */
+.jumbotron {
+  color: var(--light-text);
+  background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('/static/images/jumbotron-bg.png');
+  background-position: left center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  text-transform: capitalize;
+}
+
+.jumbotron h1 {
+  word-wrap: break-word;
+  font-size: 42px;
+  color: var(--light-text);
+  font-weight: 700;
+  text-shadow: 1px 3px 1px rgba(0,0,0,0.3);
+}
+
+/* Get rid of padding on the ends of the header */
+.navbar-collapse {
+  padding: 0px;
+}
+
+/* Make the navbar collapse earlier so it doesnt become two overlapping columns
+as screen size shrinks */
+@media (min-width: 768px) and (max-width: 1120px) {
+  .navbar-collapse.collapse {
+    display: none !important;
   }
+
+  .navbar-collapse.collapse.in {
+    display: block !important;
+  }
+
+  .navbar-header .collapse, .navbar-toggle {
+    display: block !important;
+  }
+
+  .navbar-header {
+    float: none;
+  }
+}
+
+/* Color scheme of navbar, tables and panel-primary to match CAMH scheme */
+#search-data-btn {
+  background-color: var(--theme-main);
+  color: var(--light-text);
+}
+
+#search-data-btn:hover {
+  background-color: var(--theme-dark);
+}
+
+.navbar-default {
+  background-color: var(--theme-main);
+  border-color: var(--theme-main);
+  color: var(--light-text);
+}
+
+.navbar-default .navbar-text {
+  color: var(--light-text);
+}
+
+.navbar-default .navbar-brand {
+  color: var(--light-text);
+}
+
+.navbar-default .navbar-brand:hover,
+.navbar-default .navbar-brand:focus {
+  color: var(--light-text);
+}
+
+.navbar-default .navbar-nav > li:hover {
+  background-color: var(--theme-dark);
+}
+
+.navbar-default .navbar-nav > li > .dropdown-menu {
+  background-color: var(--theme-main);
+}
+.navbar-default .navbar-nav > li > .dropdown-menu > li > a {
+  color: var(--light-text);
+}
+.navbar-default .navbar-nav > li > .dropdown-menu > li > a:hover,
+.navbar-default .navbar-nav > li > .dropdown-menu > li > a:focus {
+  color: var(--light-text);
+  background-color: var(--theme-dark);
+}
+
+.navbar-default .navbar-nav > li > a {
+  color: var(--light-text);
+}
+
+.navbar-default .navbar-nav > li > a:hover,
+.navbar-default .navbar-nav > li > a:focus {
+  color: var(--light-text);
+}
+
+.navbar-default .navbar-nav > li > .dropdown-menu > li.divider {
+  background-color: var(--theme-dark);
+}
+.navbar-default .navbar-nav .open .dropdown-menu > .active > a,
+.navbar-default .navbar-nav .open .dropdown-menu > .active > a:hover,
+.navbar-default .navbar-nav .open .dropdown-menu > .active > a:focus {
+  color: var(--light-text);
+  background-color: var(--theme-dark);
+}
+.navbar-default .navbar-nav > .active > a,
+.navbar-default .navbar-nav > .active > a:hover,
+.navbar-default .navbar-nav > .active > a:focus {
+  color: var(--light-text);
+  background-color: var(--theme-dark);
+}
+.navbar-default .navbar-nav > .open > a,
+.navbar-default .navbar-nav > .open > a:hover,
+.navbar-default .navbar-nav > .open > a:focus {
+  color: var(--light-text);
+  background-color: var(--theme-dark);
+}
+.navbar-default .navbar-toggle {
+  border-color: var(--theme-dark);
+}
+.navbar-default .navbar-toggle:hover,
+.navbar-default .navbar-toggle:focus {
+  background-color: var(--theme-dark);
+}
+.navbar-default .navbar-toggle .icon-bar {
+  background-color: var(--light-text);
+}
+.navbar-default .navbar-collapse,
+.navbar-default .navbar-form {
+  border-color: var(--light-text);
+}
+.navbar-default .navbar-link {
+  color: var(--light-text);
+}
+.navbar-default .navbar-link:hover {
+  color: var(--light-text);
+}
+
+@media (max-width: 767px) {
+  .navbar-default .navbar-nav .open .dropdown-menu > li > a {
+    color: var(--light-text);
+  }
+  .navbar-default .navbar-nav .open .dropdown-menu > li > a:hover,
+  .navbar-default .navbar-nav .open .dropdown-menu > li > a:focus {
+    color: var(--light-text);
+  }
+  .navbar-default .navbar-nav .open .dropdown-menu > .active > a,
+  .navbar-default .navbar-nav .open .dropdown-menu > .active > a:hover,
+  .navbar-default .navbar-nav .open .dropdown-menu > .active > a:focus {
+    color: var(--light-text);
+    background-color: var(--theme-dark);
+  }
+}
+
+.panel-primary > .panel-heading {
+  color: var(--light-text);
+  background-color: var(--theme-main);
+  border-color: var(--theme-main);
+}
+
+.panel-primary {
+  border-color: var(--theme-main);
+}
+
+.panel-primary > .panel-heading:hover {
+  background-color: var(--theme-dark);
 }

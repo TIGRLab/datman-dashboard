@@ -1,0 +1,47 @@
+{% extends 'timepoint/collapsible_section.html' %}
+
+{% block section_id %}github-issues{% endblock %}
+{% block body_id %}issue-list{% endblock %}
+{% block section_header %}
+  Github Issues
+  <a class="button btn btn-primary" id="create-issue" href="#issue-modal"
+      data-toggle="modal"
+      onclick="event.stopPropagation(); $('#issue-modal').modal('show');">
+    <span class="pull-right glyphicon glyphicon-edit"></span>
+    <span class="button-text">Create Issue</span>
+  </a>
+{% endblock %}
+
+{% block body_content%}
+{% if issues is none %}
+  Cannot retrieve Github issues. If this is a persistent problem please contact
+  a dashboard administrator.
+{% elif not issues %}
+  None found for {{ timepoint.name }}
+{% else %}
+  {% for issue in issues %}
+    <div class="row">
+      <div class="well">{{ issue.title }}</div>
+      <div class="text-muted issue-details">
+        <span class="pull-left">
+          Status: {{ issue.state }}
+          Comments: {{ issue.comments }}
+        </span>
+        <span class="pull-right">
+          {% if issue.state == 'closed' %}
+            Closed: {{ issue.closed_at.strftime('%I:%M %p, %Y-%m-%d') }}
+          {% else %}
+            Created: {{ issue.created_at.strftime('%I:%M %p, %Y-%m-%d') }}
+            Last update: {{ issue.updated_at.strftime('%I:%M %p, %Y-%m-%d') }}
+          {% endif %}
+        <span>
+      </div>
+      <a class="button btn btn-primary" href="{{ issue.html_url }}"
+          target="_blank">
+        <span class="pull-right glyphicon glyphicon-share-alt"></span>
+        <span class="button-text">Go to Issue</span>
+      </a>
+    </div>
+  {% endfor %}
+{% endif %}
+{% endblock %}

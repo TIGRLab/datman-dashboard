@@ -1,4 +1,4 @@
-#!venv/bin/python
+#!/usr/bin/env python
 """
 Add extra study information into the database.
 Parses the datman config files for study information and updates
@@ -12,7 +12,7 @@ $ add_study_info.py
 """
 
 from dashboard import db
-from dashboard.models import Study, Person, Site, ScanType
+from dashboard.models import Study, Person, Site, ScanType, StudySite
 import datman as dm
 import logging
 
@@ -46,7 +46,7 @@ def main():
         contact_name = cfg.get_if_exists('study', ['PrimaryContact'])
         #Get the primary contact information
         if not contact_name:
-            logger.warning('Contact not set for study:{}.format(key)')
+            logger.warning('Contact not set for study:{}'.format(key))
         else:
             if Person.query.filter(Person.name == contact_name).count():
                 logger.debug('Getting person:{} from database'
@@ -72,7 +72,7 @@ def main():
             scan_types = cfg.get_if_exists('study',
                                            ['Sites', site_name, 'ExportInfo'])
             if not scan_types:
-                logger.warning('ScanTypes not found for Study:{} at site:{}'
+                logger.warning('ScanTypes not found for Study: {} at site: {}'
                                .format(key, site_name))
                 continue
             all_scan_types = all_scan_types + scan_types.keys()
@@ -84,15 +84,30 @@ def main():
 
             # get site from db or create and append to study
             if Site.query.filter(Site.name == site_name).count():
-                logger.debug('Getting site:{} from database'.format(site_name))
+                logger.debug('Getting site {} from database'.format(site_name))
                 site = Site.query.filter(Site.name == site_name).first()
+                # Get existing StudySite record linking the site to this study
+                study_site = StudySite.query.filter(StudySite.study_id == study.id,
+                        StudySite.site_id == site.id).first()
             else:
-                logger.debug('Creating site:{}')
+                logger.debug('Creating site: {}')
                 site = Site()
                 site.name = site_name
                 db.session.add(site)
+                # Need to flush to get an id assigned to the new site
+                db.session.flush()
+                # Make a new study_site record linking this site to the study
+                study_site = StudySite()
+                study_site.study_id = study.id
+                study_site.site_id = site.id
+                db.session.add(study_site)
 
-            study.sites.append(site)
+            # Set the 'uses_redcap' field for this site
+            try:
+                redcap = cfg.get_key('USES_REDCAP', site=site_name)
+            except KeyError:
+                redcap = False
+            study_site.uses_redcap = redcap
 
         #now process the scan types
         all_scan_types = set(all_scan_types)

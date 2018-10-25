@@ -1,9 +1,6 @@
 {% extends "base.html" %}
 {% include 'flash.html' %}
 {% block content %}
-  <div class="bd-pageheader jumbotron">
-    <h1>{{ user.realname }}</h1>
-  </div>
   <div class="container">
     <form action="{{ url_for('user')}}" method="post" name="profile">
       {% include 'user_snip.html' %}
