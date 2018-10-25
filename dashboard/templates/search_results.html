@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+
+  {% if not subjects and not sessions and not scans %}
+    <h1>No results found for '{{ user_search }}'</h1>
+    <div>
+      Nothing matched your search terms. Some tips to help your search:
+      <ul>
+        <li>
+          You can match a broad range of Subjects/Sessions/Scans by
+          concatenating search terms with '%'. For example, to get all scans
+          from a single scan site belonging to a specific study you'd use
+          'STUDYCODE%SITECODE', e.g. 'SPN01%CMH' to get all camh scans for
+          the SPINS study.
+        </li>
+        <li>
+          If you're searching with multiple terms note that order is important!
+          The search matches the terms in the order they're presented, so
+          'SPN01%CMH' would match an ID like 'SPN01_CMH_...' but 'CMH%SPN01'
+          would not.
+        </li>
+        <li>
+          Double check that what you're searching for is in one of the search
+          categories used by the search bar. These include:
+            <ul>
+              <li>Subject names</li>
+              <li>Session IDs (the subject name + repeat number)</li>
+              <li>Scan names</li>
+              <li>Scan tags</li>
+              <li>Scan descriptions (from the dicom series description field)</li>
+            </ul>
+        </li>
+      </ul>
+    </div>
+  {% else %}
+    <h1>Results for '{{ user_search }}'</h1>
+  {% endif %}
+
+  {% if subjects %}
+    <h2>Subjects</h2>
+    <ul>
+    {% for sub in subjects %}
+      <li>{{ sub }}</li>
+    {% endfor %}
+    </ul>
+  {% endif %}
+
+  {% if sessions %}
+    <h2>Sessions</h2>
+    {% for sess in sessions %}
+      {{ sess }}
+    {% endfor %}
+  {% endif %}
+
+  {% if scans %}
+    <h2>Scans</h2>
+    {% for scan in scans %}
+      {{ scan }}
+    {% endfor %}
+  {% endif %}
+
+</div>
+{% endblock %}

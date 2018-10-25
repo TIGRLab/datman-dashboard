@@ -20,6 +20,7 @@ from psycopg2.tz import FixedOffsetTimezone
 
 from dashboard import db, TZ_OFFSET
 from dashboard.utils import get_study_path
+from datman import scanid
 
 logger = logging.getLogger(__name__)
 
@@ -51,10 +52,12 @@ class User(UserMixin, db.Model):
     email = db.Column('email', db.String(256))
     position = db.Column('position', db.String(64))
     institution = db.Column('institution', db.String(128))
-    phone1 = db.Column('phone1', db.String(20))
-    phone2 = db.Column('phone2', db.String(20))
-    github_name = db.Column('github_username', db.String(64))
-    gitlab_name = db.Column('gitlab_username', db.String(64))
+    phone = db.Column('phone', db.String(20))
+    ext = db.Column('ext', db.String(10))
+    alt_phone = db.Column('alt_phone', db.String(20))
+    alt_ext = db.Column('alt_ext', db.String(10))
+    _username = db.Column('username', db.String(70))
+    picture = db.Column('picture', db.String(2048))
     dashboard_admin = db.Column('dashboard_admin', db.Boolean, default=False)
     is_active = db.Column('account_active', db.Boolean, default=False)
 
@@ -68,19 +71,36 @@ class User(UserMixin, db.Model):
     sessions_reviewed = db.relationship('Session')
 
     def __init__(self, first, last, email=None, position=None, institution=None,
-            phone1=None, phone2=None, github_name=None, gitlab_name=None,
+            phone=None, ext=None, alt_phone=None, alt_ext=None,
+            username=None, github=True, picture=None,
             dashboard_admin=False, account_active=False):
         self.first_name = first
         self.last_name = last
         self.email = email
         self.position = position
         self.institution = institution
-        self.phone1 = phone1
-        self.phone2 = phone2
-        self.github_name = github_name
-        self.gitlab_name = gitlab_name
+        self.phone = phone
+        self.ext = ext
+        self.alt_phone = alt_phone
+        self.alt_ext = alt_ext
+        if username:
+            self.update_username(username, github=github)
+        self.picture = picture
         self.dashboard_admin = dashboard_admin
         self.account_active = account_active
+
+    def update_username(self, new_name, github=True):
+        # Make sure the username is globally unique by adding a prefix based on
+        # the oauth provider
+        if github:
+            self._username = "gh_" + new_name
+        else:
+            # gitlab is the only alt provider for now
+            self._username = "gl_" + new_name
+
+    @property
+    def username(self):
+        return self._username.split("_")[1]
 
     def get_studies(self):
         """
@@ -429,6 +449,16 @@ class Timepoint(db.Model):
         except KeyError:
             return False
         return True
+
+    def accessible_study(self, user):
+        """
+        Returns a study that the timepoint belongs to and the user has access to
+        if one exists.
+        """
+        for study_name in self.studies:
+            if user.has_study_access(study_name):
+                return self.studies[study_name]
+        return None
 
     def is_qcd(self):
         if self.is_phantom:

@@ -11,6 +11,7 @@ from flask_wtf import FlaskForm
 from wtforms import SelectField, SelectMultipleField, HiddenField, SubmitField, \
         TextAreaField, TextField, FormField, BooleanField, widgets, FieldList, \
         RadioField
+from wtforms.fields.html5 import EmailField, TelField
 from wtforms.compat import iteritems
 from wtforms.validators import DataRequired, Email
 from models import Study, Analysis
@@ -105,18 +106,20 @@ class ScanChecklistForm(FlaskForm):
 
 class UserForm(FlaskForm):
     id = HiddenField()
-    first_name = TextField(u'First Name: ',
-                         validators=[DataRequired()])
-    last_name = TextField(u'Last Name: ',
-                         validators=[DataRequired()])
-    email = TextField(u'Email: ')
-    position = TextField(u'Position: ')
-    institution = TextField(u'Institution: ')
-    phone1 = TextField(u'Phone Number: ')
-    phone2 = TextField(u'Alt. Phone Number: ')
-    github_name = TextField(u'GitHub Username: ')
-    gitlab_name = TextField(u'GitLab Username: ')
-    update = SubmitField(label='Update')
+    first_name = TextField(u'First Name: ', validators=[DataRequired()],
+            render_kw={'required': True, 'maxlength': '64'})
+    last_name = TextField(u'Last Name: ', validators=[DataRequired()],
+            render_kw={'required': True, 'maxlength': '64'})
+    email = EmailField(u'Email: ', validators=[DataRequired()],
+            render_kw={'required': True, 'maxlength': '256'})
+    position = TextField(u'Position: ', render_kw={'maxlength': '64'})
+    institution = TextField(u'Institution: ', render_kw={'maxlength': '128'})
+    phone = TelField(u'Phone Number: ', render_kw={'maxlength': '20'})
+    ext = TextField(u'Extension: ', render_kw={'maxlength': '10'})
+    alt_phone = TelField(u'Alt. Phone Number: ', render_kw={'maxlength': '20'})
+    alt_ext = TextField(u'Alt. Extension: ', render_kw={'maxlength': '10'})
+    username = TextField(u'Username: ', render_kw={'maxlength': '64'})
+    update = SubmitField(u'Update')
 
 
 class PermissionRadioField(RadioField):
@@ -135,7 +138,7 @@ class StudyPermissionsForm(FlaskForm):
         'charge of handling this study): ')
     study_RA = PermissionRadioField('Study RA: ')
     does_qc = PermissionRadioField('Does QC: ')
-    revoke_access = SubmitField(label='Remove Access')
+    revoke_access = SubmitField('Remove Access')
 
 
 class UserAdminForm(UserForm):
@@ -146,6 +149,11 @@ class UserAdminForm(UserForm):
     update_access = SubmitField(label='Give Access')
     revoke_all_access = SubmitField(label='Remove All')
 
+
+class AccessRequestForm(UserForm):
+    studies = FieldList(FormField(StudyPermissionsForm))
+    request_access = SelectMultipleField('Request access to studies: ')
+    send_request = SubmitField(label='Submit Request')
 
     # def __init__(self, *args, **kwargs):
     #     FlaskForm.__init__(self, *args, **kwargs)

@@ -35,7 +35,7 @@ thead {
   margin-right: auto;
 }
 
-#find_session_text {
+#search-data-text {
   width: 350px !important;
 }
 
@@ -365,12 +365,12 @@ as screen size shrinks */
 }
 
 /* Color scheme of navbar, tables and panel-primary to match CAMH scheme */
-#find_session {
+#search-data-btn {
   background-color: var(--theme-main);
   color: var(--light-text);
 }
 
-#find_session:hover {
+#search-data-btn:hover {
   background-color: var(--theme-dark);
 }
 

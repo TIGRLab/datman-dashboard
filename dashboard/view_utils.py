@@ -14,6 +14,27 @@ from .utils import create_issue as make_issue
 
 logger = logging.getLogger(__name__)
 
+# def fill_request_form(request_form, user_info):
+#     # This will have to be adapted to work with gitlab user info
+#     try:
+#         request_form.email.data = user_info['email']
+#     except:
+#         pass
+#
+#     try:
+#         name = user_info['name'].split()
+#         request_form.first_name.data = name[0]
+#         request_form.last_name.data = name[-1]
+#     except:
+#         pass
+#
+#     try:
+#         request_form.github_name.data = user_info['login']
+#     except:
+#         pass
+#
+#     return request_form
+
 def get_user_form(user, current_user):
     if not current_user.dashboard_admin:
         return UserForm(obj=user)

@@ -24,14 +24,15 @@ from dashboard import app, db, lm
 from . import utils
 from . import redcap as REDCAP
 from .queries import query_metric_values_byid, query_metric_types, \
-        query_metric_values_byname
+        query_metric_values_byname, find_subjects, \
+        find_sessions, find_scans
 from .models import Study, Site, Session, Scantype, Scan, User, \
         Timepoint, AnalysisComment, Analysis, IncidentalFinding, StudyUser, \
         SessionRedcap, EmptySession, ScanChecklist
 from .forms import SelectMetricsForm, StudyOverviewForm, \
         ScanChecklistForm, UserForm, AnalysisForm, \
         UserAdminForm, EmptySessionForm, IncidentalFindingsForm, \
-        TimepointCommentsForm, NewIssueForm
+        TimepointCommentsForm, NewIssueForm, AccessRequestForm
 from .view_utils import get_user_form, report_form_errors, get_timepoint, \
         get_session, get_scan, handle_issue, get_redcap_record
 from .emails import incidental_finding_email
@@ -159,7 +160,7 @@ def users():
     """
     View that lists all users
     """
-    if not current_user.is_admin:
+    if not current_user.dashboard_admin:
         flash('You are not authorised')
         return redirect(url_for('user'))
     users = User.query.all()
@@ -240,32 +241,63 @@ def user(user_id=None):
 
     return render_template('user.html', user=user, form=form)
 
-@app.route('/session_by_name')
-@app.route('/session_by_name/<session_name>', methods=['GET'])
+@app.route('/search_data')
+@app.route('/search_data/<string:search_string>', methods=['GET','POST'])
 @login_required
-def session_by_name(session_name=None):
+def search_data(search_string=None):
     """
-    Basically just a helper view, converts a session name to a sesssion_id
-    and returns the session view
+    Implements the site's search bar.
     """
-    if session_name is None:
-        return redirect('/index')
-    # Strip any file extension or qc_ prefix
-    session_name = session_name.replace('qc_', '')
-    session_name = os.path.splitext(session_name)[0]
+    if not search_string:
+        # We need the URL endpoint without a search string to enable the use of
+        # 'url_for' in the javascript for the 'search' button, but no one should
+        # ever actually access the page this way
+        flash('Please enter a search term.')
+        return redirect('index')
 
-    q = Session.query.filter(Session.name == session_name)
-    if q.count() < 1:
-        flash('Session not found')
-        return redirect(url_for('index'))
+    subjects = find_subjects(search_string)
+    if len(subjects) == 1:
+        study = subjects[0].accessible_study(current_user)
+        if study:
+            return redirect(url_for('timepoint', study_id=study.id,
+                    timepoint_id=subjects[0].name))
+    subjects = [url_for('timepoint', study_id=sub.accessible_study(current_user),
+            timepoint_id=sub.name)
+            for sub in subjects if sub.accessible_study(current_user)]
 
-    session = q.first()
+    sessions = find_sessions(search_string)
+    if len(sessions) == 1:
+        study = sessions[0].timepoint.accessible_study(current_user)
+        if study:
+            return redirect(url_for('timepoint', study_id=study.id,
+                    timepoint_id=sessions[0].timepoint.name,
+                    _anchor="sess" + str(sessions[0].num)))
+    # sess2 = []
+    # for sess in sessions:
+    #     if sess.timepoint.accessible_study(current_user):
+    #         sess2.append(url_for('timepoint',
+    #                 study_id=sess.timepoint.accessible_study(current_user),
+    #                 timepoint_id=sess.timepoint.name,
+    #                 _anchor="sess" + str(sess.num)))
+    # sessions = sess2
+    # print(sessions)
+    sessions = [url_for('timepoint', study_id=sess.timepoint.accessible_study(current_user),
+            timepoint_id=sess.timepoint.name, _anchor="sess" + str(sess.num))
+            for sess in sessions if sess.timepoint.accessible_study(current_user)]
 
-    if not current_user.has_study_access(session.study):
-        flash('Not authorised')
-        return redirect(url_for('index'))
+    scans = find_scans(search_string)
+    if len(scans) == 1:
+        study = scans[0].session.timepoint.accessible_study(current_user)
+        if study:
+            return redirect(url_for('scan', study_id=study.id,
+                    scan_id=scans[0].id))
+    scans = [url_for('scan', study_id=scan.session.timepoint.accessible_study(current_user),
+            scan_id=scan.id)
+            for scan in scans
+            if scan.session.timepoint.accessible_study(current_user)]
 
-    return redirect(url_for('session', session_id=session.id))
+    return render_template('search_results.html', user_search=search_string,
+            subjects=subjects, sessions=sessions, scans=scans)
 
 
 ############## Timepoint view functions ########################################
@@ -535,7 +567,6 @@ def scan_review(study_id, scan_id, sign_off=False, delete=False, update=False):
         scan.add_checklist_entry(current_user.id, comment)
         return redirect(dest_url)
 
-    print("Signing off with a comment now")
     scan.add_checklist_entry(current_user.id, comment, sign_off)
     return redirect(url_for('scan', study_id=study_id, scan_id=scan_id))
 
@@ -626,12 +657,11 @@ def person(person_id=None):
 @login_required
 def metricData():
     """
-    This is a generic view for querying the database
-    It allows selection of any combination of metrics and returns the data
-    in csv format suitable for copy / pasting into a spreadsheet
+    This is a generic view for querying the database and allows selection of
+    any combination of metrics and returns the data.
 
     The form is submitted on any change, this allows dynamic updating of the
-    selection boxes displayed in the html (i.e. is SPINS study is selected
+    selection boxes displayed in the html (i.e. if SPINS study is selected
     the sites selector is filtered to only show sites relevent to SPINS).
 
     We only actually query and return the data if the query_complete is defined
@@ -687,8 +717,8 @@ def metricData():
 
     for res in form_vals:
         study_vals.append((res[0].id, res[0].name))
-        site_vals.append((res[1].id, res[1].name))
-        scantype_vals.append((res[2].id, res[2].name))
+        site_vals.append((res[1].name, res[1].name))
+        scantype_vals.append((res[2].tag, res[2].tag))
         metrictype_vals.append((res[3].id, res[3].name))
         # study_vals.append((res.id, res.name))
         # for site in res.sites:
@@ -967,20 +997,13 @@ def oauth_callback(provider):
 
     if provider == 'github':
         username = user_info['login']
-        user = User.query.filter_by(github_name=username).first()
     elif provider == 'gitlab':
         username = user_info['username']
-        user = User.query.filter_by(gitlab_name=username).first()
+
+    user = User.query.filter_by(username).first()
 
     if not user:
-        # Temp. disabled. Need to update account creation process to avoid empty name / email fields
-        redirect(404)
-        # username = User.make_unique_nickname(username)
-        # user = User(username=username,
-        #             realname=github_user['name'],
-        #             email=github_user['email'])
-        # db.session.add(user)
-        # db.session.commit()
+        return redirect(url_for('new_account'))
 
     login_user(user, remember=True)
     # Token is needed for access to github issues
@@ -994,6 +1017,13 @@ def refresh_login():
     if next_url:
         flask_session['next_url'] = next_url
     return redirect(url_for('login'))
+
+@app.route('/new_account', methods=['GET', 'POST'])
+def new_account():
+    request_form = AccessRequestForm()
+    # if request_form.validate_on_submit():
+    #     flash('')
+    return render_template('account_request.html', form=request_form)
 
 @app.route('/scan_comment', methods=['GET','POST'])
 @app.route('/scan_comment/<scan_link_id>', methods=['GET','POST'])

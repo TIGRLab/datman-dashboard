@@ -4,7 +4,7 @@
 {% block body_id %}{{ session }}-body{% endblock %}
 {% block header_classes %}session-header{% endblock %}
 {% block section_header %}
-  <span>{{ session }}</span>
+  <a name="sess{{ session.num }}"></a><span>{{ session }}</span>
   {% if current_user.is_study_admin(study_id) %}
     <!-- The onclick commands are there to stop the panel from minimizing
     when delete is clicked -->
