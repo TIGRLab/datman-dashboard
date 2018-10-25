@@ -8,32 +8,26 @@ import logging
 from flask import flash, url_for
 from werkzeug.routing import RequestRedirect
 
-from .models import Study, Timepoint, Scan, RedcapRecord
+from .models import Study, Timepoint, Scan, RedcapRecord, User, AccountRequest
 from .forms import UserForm, UserAdminForm
 from .utils import create_issue as make_issue
 
 logger = logging.getLogger(__name__)
 
-# def fill_request_form(request_form, user_info):
-#     # This will have to be adapted to work with gitlab user info
-#     try:
-#         request_form.email.data = user_info['email']
-#     except:
-#         pass
-#
-#     try:
-#         name = user_info['name'].split()
-#         request_form.first_name.data = name[0]
-#         request_form.last_name.data = name[-1]
-#     except:
-#         pass
-#
-#     try:
-#         request_form.github_name.data = user_info['login']
-#     except:
-#         pass
-#
-#     return request_form
+
+def request_account(account_form):
+    first = account_form.first_name.data
+    last = account_form.last_name.data
+    new_user = User(first, last,
+            username=account_form.account.data,
+            provider=account_form.provider.data)
+    account_form.populate_obj(new_user)
+    new_user.save_changes()
+    AccountRequest(new_user.id)
+    AccountRequest.submit()
+    account_request_email(first, last)
+    flash("Request sent to administrators. Please allow up to 2 "
+            "days for a response.")
 
 def get_user_form(user, current_user):
     if not current_user.dashboard_admin:

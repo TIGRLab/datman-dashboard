@@ -105,21 +105,25 @@ class ScanChecklistForm(FlaskForm):
 
 
 class UserForm(FlaskForm):
-    id = HiddenField()
+    # id = HiddenField()
     first_name = TextField(u'First Name: ', validators=[DataRequired()],
             render_kw={'required': True, 'maxlength': '64'})
     last_name = TextField(u'Last Name: ', validators=[DataRequired()],
             render_kw={'required': True, 'maxlength': '64'})
     email = EmailField(u'Email: ', validators=[DataRequired()],
             render_kw={'required': True, 'maxlength': '256'})
+    provider = RadioField('Account provider: ',
+            validators=[DataRequired()],
+            choices=[(u'github', 'GitHub')], default='github')
+    account = TextField(u'Username: ', validators=[DataRequired()],
+            render_kw={'required': True, 'maxlength': '64'})
     position = TextField(u'Position: ', render_kw={'maxlength': '64'})
     institution = TextField(u'Institution: ', render_kw={'maxlength': '128'})
     phone = TelField(u'Phone Number: ', render_kw={'maxlength': '20'})
     ext = TextField(u'Extension: ', render_kw={'maxlength': '10'})
     alt_phone = TelField(u'Alt. Phone Number: ', render_kw={'maxlength': '20'})
     alt_ext = TextField(u'Alt. Extension: ', render_kw={'maxlength': '10'})
-    username = TextField(u'Username: ', render_kw={'maxlength': '64'})
-    update = SubmitField(u'Update')
+    submit = SubmitField(u'Submit Request')
 
 
 class PermissionRadioField(RadioField):

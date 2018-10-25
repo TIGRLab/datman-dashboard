@@ -27,3 +27,10 @@ def incidental_finding_email(user, timepoint, comment):
     body = '{} has reported an incidental finding for {}. Description: {}'.format(
             user, timepoint, comment)
     send_email(subject, body)
+
+def account_request_email(first_name, last_name):
+    subject = "New account request from {} {}".format(first_name,
+            last_name)
+    body = "{} {} has requested a dashboard account. Please log in to " + \
+            "approve or reject this request".format(first_name, last_name)
+    send_email(subject, body)

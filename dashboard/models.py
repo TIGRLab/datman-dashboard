@@ -70,9 +70,9 @@ class User(UserMixin, db.Model):
     analysis_comments = db.relationship('AnalysisComment')
     sessions_reviewed = db.relationship('Session')
 
-    def __init__(self, first, last, email=None, position=None, institution=None,
-            phone=None, ext=None, alt_phone=None, alt_ext=None,
-            username=None, github=True, picture=None,
+    def __init__(self, first, last, username=None, provider='github',email=None,
+            position=None, institution=None, phone=None, ext=None,
+            alt_phone=None, alt_ext=None, picture=None,
             dashboard_admin=False, account_active=False):
         self.first_name = first
         self.last_name = last
@@ -84,15 +84,15 @@ class User(UserMixin, db.Model):
         self.alt_phone = alt_phone
         self.alt_ext = alt_ext
         if username:
-            self.update_username(username, github=github)
+            self.update_username(username, provider)
         self.picture = picture
         self.dashboard_admin = dashboard_admin
         self.account_active = account_active
 
-    def update_username(self, new_name, github=True):
+    def update_username(self, new_name, provider='github'):
         # Make sure the username is globally unique by adding a prefix based on
         # the oauth provider
-        if github:
+        if provider == 'github':
             self._username = "gh_" + new_name
         else:
             # gitlab is the only alt provider for now
@@ -101,6 +101,14 @@ class User(UserMixin, db.Model):
     @property
     def username(self):
         return self._username.split("_")[1]
+
+    @property
+    def account_provider(self):
+        if not self._username:
+            return None
+        if self._username.startswith('gl_'):
+            return 'gitlab'
+        return 'github'
 
     def get_studies(self):
         """
@@ -165,12 +173,27 @@ class User(UserMixin, db.Model):
             return getattr(permissions, perm)
         return True
 
+    def save_changes(self):
+        db.session.add(self)
+        db.session.commit()
+
     def __repr__(self):
         return "<User {}: {} {}>".format(self.id, self.first_name,
                 self.last_name)
 
     def __str__(self):
         return "{} {}".format(self.first_name, self.last_name)
+
+class AccountRequest(db.Model):
+    __tablename__ = 'account_requests'
+
+    user_id = db.Column('user_id', db.Integer, db.ForeignKey("users.id"),
+            primary_key=True)
+
+    user = db.relationship('User', uselist=False, lazy='joined')
+
+    def __init__(self, user_id):
+        self.user_id = user_id
 
 
 class Study(db.Model):

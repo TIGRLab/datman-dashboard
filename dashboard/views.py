@@ -15,7 +15,6 @@ from flask import render_template, flash, url_for, redirect, request, jsonify, \
         abort, g, make_response, send_file, send_from_directory
 from flask_login import login_user, logout_user, current_user, \
         login_required, fresh_login_required, login_fresh
-from flask_mail import Message
 from sqlalchemy.exc import SQLAlchemyError
 from oauth import OAuthSignIn
 
@@ -35,7 +34,7 @@ from .forms import SelectMetricsForm, StudyOverviewForm, \
         TimepointCommentsForm, NewIssueForm, AccessRequestForm
 from .view_utils import get_user_form, report_form_errors, get_timepoint, \
         get_session, get_scan, handle_issue, get_redcap_record
-from .emails import incidental_finding_email
+from .emails import incidental_finding_email, account_request_email
 
 logger = logging.getLogger(__name__)
 logger.info('Loading views')
@@ -996,13 +995,15 @@ def oauth_callback(provider):
         return redirect(url_for('login'))
 
     if provider == 'github':
-        username = user_info['login']
+        username = "gh_" + user_info['login']
     elif provider == 'gitlab':
-        username = user_info['username']
+        username = "gl_" + user_info['username']
 
-    user = User.query.filter_by(username).first()
+    print(username)
+    user = User.query.filter_by(username=username).first()
 
     if not user:
+        flash("No account found. Please submit a request for a dashboard account.")
         return redirect(url_for('new_account'))
 
     login_user(user, remember=True)
@@ -1020,9 +1021,10 @@ def refresh_login():
 
 @app.route('/new_account', methods=['GET', 'POST'])
 def new_account():
-    request_form = AccessRequestForm()
-    # if request_form.validate_on_submit():
-    #     flash('')
+    request_form = UserForm()
+    if request_form.validate_on_submit():
+
+        return redirect(url_for('login'))
     return render_template('account_request.html', form=request_form)
 
 @app.route('/scan_comment', methods=['GET','POST'])
