@@ -77,11 +77,6 @@ def main():
                 continue
             all_scan_types = all_scan_types + scan_types.keys()
 
-            # deal with type PDT2 which is split into PD & T2
-            if 'PDT2' in all_scan_types:
-                all_scan_types.append('PD')
-                all_scan_types.append('T2')
-
             # get site from db or create and append to study
             if Site.query.filter(Site.name == site_name).count():
                 logger.debug('Getting site {} from database'.format(site_name))
