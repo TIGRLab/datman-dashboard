@@ -217,12 +217,10 @@ def user(user_id=None):
             # Update user info
             form.populate_obj(updated_user)
 
-        # Revoke user's access to a single study if a 'remove access' was pushed
-        for study_form in form.studies:
-            if not study_form.revoke_access.data:
-                continue
-            updated_user.remove_studies(study_form.study_id.data)
-            break
+        removed_studies = [sf.study_id.data for sf in form.studies
+                if sf.revoke_access.data]
+        for study_id in removed_studies:
+            updated_user.remove_studies(study_id)
 
         updated_user.save_changes()
 
