@@ -105,7 +105,7 @@ class ScanChecklistForm(FlaskForm):
 
 
 class UserForm(FlaskForm):
-    # id = HiddenField()
+    id = HiddenField()
     first_name = TextField(u'First Name: ', validators=[DataRequired()],
             render_kw={'required': True, 'maxlength': '64'})
     last_name = TextField(u'Last Name: ', validators=[DataRequired()],
@@ -123,7 +123,7 @@ class UserForm(FlaskForm):
     ext = TextField(u'Extension: ', render_kw={'maxlength': '10'})
     alt_phone = TelField(u'Alt. Phone Number: ', render_kw={'maxlength': '20'})
     alt_ext = TextField(u'Alt. Extension: ', render_kw={'maxlength': '10'})
-    submit = SubmitField(u'Submit Request')
+    submit = SubmitField(u'Submit')
 
 
 class PermissionRadioField(RadioField):
@@ -152,6 +152,47 @@ class UserAdminForm(UserForm):
     add_access = SelectMultipleField('Give Access to Studies: ')
     update_access = SubmitField(label='Give Access')
     revoke_all_access = SubmitField(label='Remove All')
+
+    def process(self, formdata=None, obj=None, data=None, **kwargs):
+        """
+        This is identical to WTForm 2.1's implementation of 'process',
+        but it must pass in the User.studies.values() when it's called with
+        an object instead of just User.studies, since studies is a mapped
+        collection
+        """
+        formdata = self.meta.wrap_formdata(self, formdata)
+
+        if data is not None:
+            # XXX we want to eventually process 'data' as a new entity.
+            #     Temporarily, this can simply be merged with kwargs.
+            kwargs = dict(data, **kwargs)
+
+        for name, field, in iteritems(self._fields):
+            if obj is not None and hasattr(obj, name):
+                ## This if statement is the only change made to the original
+                ## code for BaseForm.process() - Dawn
+                if name == 'studies':
+                    field.process(formdata, obj.studies.values())
+                else:
+                    field.process(formdata, getattr(obj, name))
+            elif name in kwargs:
+                field.process(formdata, kwargs[name])
+            else:
+                field.process(formdata)
+
+    def populate_obj(self, obj):
+        """
+        As with process, this implementation is the same as WTForm 2.1's
+        default with the 'studies' field treated as a special case to
+        account for the fact that it is a mapped collection
+        """
+        for name, field in iteritems(self._fields):
+            if name == 'studies':
+                for study_form in self.studies.entries:
+                    study_form.form.populate_obj(
+                            obj.studies[study_form.study_id.data])
+            else:
+                field.populate_obj(obj, name)
 
 
 class AccessRequestForm(UserForm):

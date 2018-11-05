@@ -75,16 +75,37 @@
               </li>
               {% if current_user.dashboard_admin %}
                 <li class="dropdown">
-                  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Admin <span class="caret"></span></a>
-                  <ul class="dropdown-menu" role="menu" aria-labelledby="admin_roles">
+                  <a href="#" class="dropdown-toggle" data-toggle="dropdown"
+                      role="button" aria-haspopup="true" aria-expanded="false">
+                    Admin
+                    {% if session['user_requests'] %}
+                      <span class="badge">
+                        {{ session['user_requests'] }}
+                      </span>
+                    {% endif %}
+                    <span class="caret"></span>
+                  </a>
+                  <ul class="dropdown-menu" role="menu"
+                      aria-labelledby="admin_roles">
                     <li role="presentation">
-                      <a role="menuitem" href={{ url_for('users') }} >Manage Users</a>
+                      <a role="menuitem" href={{ url_for('users') }} >
+                        Manage Users
+                        {% if session['user_requests'] %}
+                          <span class="badge">
+                            {{ session['user_requests'] }}
+                          </span>
+                        {% endif %}
+                      </a>
                     </li>
                   </ul>
                 </li>
               {% endif %}
               <li class="dropdown">
-                <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Help <span class="caret"></span></a>
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown"
+                    role="button" aria-haspopup="true" aria-expanded="false">
+                  Help
+                  <span class="caret"></span>
+                </a>
                 <ul class="dropdown-menu" role="menu" aria-labelledby="help_menu">
                   <li role="presentation">
                     <a role="menuitem" href="https://github.com/TIGRLab/documentation/wiki/QC---dashboard">Dashboard Help</a>

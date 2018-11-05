@@ -8,32 +8,20 @@ import logging
 from flask import flash, url_for
 from werkzeug.routing import RequestRedirect
 
-from .models import Study, Timepoint, Scan, RedcapRecord, User, AccountRequest
+from .models import Study, Timepoint, Scan, RedcapRecord, User
 from .forms import UserForm, UserAdminForm
 from .utils import create_issue as make_issue
 
 logger = logging.getLogger(__name__)
 
-
-def request_account(account_form):
-    first = account_form.first_name.data
-    last = account_form.last_name.data
-    new_user = User(first, last,
-            username=account_form.account.data,
-            provider=account_form.provider.data)
-    account_form.populate_obj(new_user)
-    new_user.save_changes()
-    AccountRequest(new_user.id)
-    AccountRequest.submit()
-    account_request_email(first, last)
-    flash("Request sent to administrators. Please allow up to 2 "
-            "days for a response.")
-
 def get_user_form(user, current_user):
     if not current_user.dashboard_admin:
-        return UserForm(obj=user)
+        form = UserForm(obj=user)
+        form.account.data = user.username
+        return form
 
     form = UserAdminForm(obj=user)
+    form.account.data = user.username
     disabled_studies = user.get_disabled_studies()
     form.add_access.choices = [(study.id, study.id) for study in
             disabled_studies]

@@ -27,7 +27,7 @@ from .queries import query_metric_values_byid, query_metric_types, \
         find_sessions, find_scans
 from .models import Study, Site, Session, Scantype, Scan, User, \
         Timepoint, AnalysisComment, Analysis, IncidentalFinding, StudyUser, \
-        SessionRedcap, EmptySession, ScanChecklist
+        SessionRedcap, EmptySession, ScanChecklist, AccountRequest
 from .forms import SelectMetricsForm, StudyOverviewForm, \
         ScanChecklistForm, UserForm, AnalysisForm, \
         UserAdminForm, EmptySessionForm, IncidentalFindingsForm, \
@@ -200,22 +200,19 @@ def user(user_id=None):
         submitted_id = form.id.data
 
         if submitted_id != current_user.id and not current_user.dashboard_admin:
-            # This if statement is needed to catch malicious users who update
-            # the user_id submitted with the form to modify other user settings
+            # This catches anyone who tries to modify the user_id submitted
+            # with the form to change other user's settings
             flash("You are not authorized to update other users' settings.")
             return redirect(url_for('user'))
 
         updated_user = User.query.get(submitted_id)
 
         if form.update_access.data:
-            # Give user access to new study
-            for study in form.add_access.data:
-                record = StudyUser(study, updated_user.id)
-                updated_user.studies.append(record)
+            # Give user access to a new study
+            updated_user.add_studies(form.add_access.data)
         elif form.revoke_all_access.data:
             # Revoke access to all enabled studies
-            for study_user_record in updated_user.studies:
-                db.session.delete(study_user_record)
+            updated_user.remove_studies(updated_user.studies.values())
         else:
             # Update user info
             form.populate_obj(updated_user)
@@ -224,14 +221,10 @@ def user(user_id=None):
         for study_form in form.studies:
             if not study_form.revoke_access.data:
                 continue
-            for study_user_record in updated_user.studies:
-                if study_user_record.study_id == study_form.study_id.data:
-                    db.session.delete(study_user_record)
-            # Only one can be pushed at a time, so exit once the match is deleted
+            updated_user.remove_studies(study_form.study_id.data)
             break
 
-        db.session.add(updated_user)
-        db.session.commit()
+        updated_user.save_changes()
 
         flash("User profile updated.")
         return redirect(url_for('user', user_id=submitted_id))
@@ -999,16 +992,19 @@ def oauth_callback(provider):
     elif provider == 'gitlab':
         username = "gl_" + user_info['username']
 
-    print(username)
-    user = User.query.filter_by(username=username).first()
+    user = User.query.filter_by(_username=username).first()
 
     if not user:
-        flash("No account found. Please submit a request for a dashboard account.")
+        flash("No account found. Please submit a request for an account.")
         return redirect(url_for('new_account'))
 
     login_user(user, remember=True)
     # Token is needed for access to github issues
     flask_session['active_token'] = access_token
+    # This is needed to display admin notifications
+    if user.dashboard_admin:
+        flask_session['user_requests'] = AccountRequest.query.count()
+
     return redirect(dest_page)
 
 @app.route('/refresh_login')
@@ -1023,8 +1019,17 @@ def refresh_login():
 def new_account():
     request_form = UserForm()
     if request_form.validate_on_submit():
-
+        first = request_form.first_name.data
+        last = request_form.last_name.data
+        new_user = User(first, last,
+                username=request_form.account.data,
+                provider=request_form.provider.data)
+        new_user.request_account(request_form)
+        flash("Request submitted. Please allow up to 2 days for a response "
+                "before contacting an admin.")
         return redirect(url_for('login'))
+    if request_form.is_submitted:
+        report_form_errors(request_form)
     return render_template('account_request.html', form=request_form)
 
 @app.route('/scan_comment', methods=['GET','POST'])

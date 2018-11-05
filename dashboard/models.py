@@ -16,10 +16,12 @@ from flask_login import UserMixin
 from sqlalchemy import and_, exists, func
 from sqlalchemy.schema import UniqueConstraint, ForeignKeyConstraint
 from sqlalchemy.orm.collections import attribute_mapped_collection
+from sqlalchemy.exc import IntegrityError
 from psycopg2.tz import FixedOffsetTimezone
 
 from dashboard import db, TZ_OFFSET
 from dashboard.utils import get_study_path
+from dashboard.emails import account_request_email
 from datman import scanid
 
 logger = logging.getLogger(__name__)
@@ -69,6 +71,7 @@ class User(UserMixin, db.Model):
     timepoint_comments = db.relationship('TimepointComment')
     analysis_comments = db.relationship('AnalysisComment')
     sessions_reviewed = db.relationship('Session')
+    pending_approval = db.relationship('AccountRequest', uselist=False)
 
     def __init__(self, first, last, username=None, provider='github',email=None,
             position=None, institution=None, phone=None, ext=None,
@@ -109,6 +112,34 @@ class User(UserMixin, db.Model):
         if self._username.startswith('gl_'):
             return 'gitlab'
         return 'github'
+
+    def request_account(self, request_form):
+        request_form.populate_obj(self)
+        try:
+            self.save_changes()
+            request = AccountRequest(self.id)
+            db.session.add(request)
+            db.session.commit()
+        except IntegrityError:
+            # Account exists or request is already pending
+            db.session.rollback()
+        else:
+            account_request_email(self.first_name, self.last_name)
+
+    def add_studies(self, study_ids):
+        for study in study_ids:
+            record = StudyUser(study, self.id)
+            self.studies[study] = record
+        self.save_changes()
+
+    def remove_studies(self, study_ids):
+        if not isinstance(study_ids, list):
+            study_ids = [study_ids]
+        for study in study_ids:
+            if isinstance(study, StudyUser):
+                study = study.study_id
+            db.session.delete(self.studies[study])
+        self.save_changes()
 
     def get_studies(self):
         """
@@ -190,11 +221,13 @@ class AccountRequest(db.Model):
     user_id = db.Column('user_id', db.Integer, db.ForeignKey("users.id"),
             primary_key=True)
 
-    user = db.relationship('User', uselist=False, lazy='joined')
+    user = db.relationship('User', uselist=False)
 
     def __init__(self, user_id):
         self.user_id = user_id
 
+    def __repr__(self):
+        return "<User {} Requested Account>".format(self.user_id)
 
 class Study(db.Model):
     __tablename__ = 'studies'

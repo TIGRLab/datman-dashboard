@@ -476,6 +476,12 @@ as screen size shrinks */
   }
 }
 
+.navbar-nav .badge {
+  background-color: #E60000;
+  margin-left: 2.5px;
+  margin-right: 2.5px;
+}
+
 .panel-primary > .panel-heading {
   color: var(--light-text);
   background-color: var(--theme-main);
