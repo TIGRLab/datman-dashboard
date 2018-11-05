@@ -475,11 +475,7 @@ class Scan(db.Model):
         nii_path = utils.get_study_folder(study=session.study.nickname,
                                           folder_type='nii')
 
-        # Hacky solution to account for the fact that we split PDT2s
-        if self.scantype.name == 'PDT2':
-            name = self.name.replace('_PDT2_', '_T2_')
-        else:
-            name = self.name
+        name = self.name
 
         file_name = '_'.join([name, self.description]) + '.nii.gz'
         path = os.path.join(nii_path, session.name, file_name)
