@@ -287,6 +287,11 @@ export OAUTH_CLIENT_GITHUB=YOUR-SECRET-HERE
 export OAUTH_SECRET_GITLAB=YOUR-SECRET-HERE
 export OAUTH_CLIENT_GITLAB=YOUR-SECRET-HERE
 
+# Enable github issue support. If the repo issues will be added to is private, owner
+# must be the same as the owner of the dashboard app itself
+export GITHUB_OWNER=GITHUB-REPO-OWNER-ACCOUNT-HERE
+export GITHUB_REPO=GITHUB-REPO-NAME-HERE
+
 # Provide a secret key for Flask
 # This can be whatever you want, but you should keep it secret and
 # make it something not easily guessed since it's used to encrypt sessions
@@ -477,21 +482,41 @@ most of the load time and the SQLAlchemy tab can let you know if your code is ac
 generating a huge number of queries.
 
 ### Jinja Templating
-Flask's HTML templates use Jinja templating to fill in values when a page is rendered 
+Flask's HTML templates use Jinja templating to render pages
 ([docs here](http://jinja.pocoo.org/docs/2.10/)). The most important thing to be aware 
-of with Jinja is that while you can break up your pages into smaller, more readable,
+of is that while you can break up your pages into smaller, more readable,
 chunks by saving html in another file and then importing it with something like
 ```jinja
-{% include my_other_file.html %}
+{% include 'my_other_file.html' %}
 ```
 performance wise this is not always a good idea. Each and every time the 'include' 
 statement is read when the website's page is loaded the included file has to be 
 read from the filesystem. File reads are (relatively) slow and if the include is 
 inside of a loop with a large number of iterations you can easily add extra seconds 
-of load time for a minimal boost in HTML readability. For example, our original Study
-page was reading 'sessions_snip.html' once for every session in a study and adding
-about 5 seconds of extra load time to the study page for larger studies like SPINS.
-So... use that feature carefully!
+of load time for a minimal boost in HTML readability.
+
+Some tips to get the most out of Jinja without adding too much overhead:
+  - If you have a loop and want to 'include' the body of the loop from another 
+    file, it's better to keep the loop inside the included file (so the file is 
+    opened and read once, rather than once per iteration)
+  - If you have an 'if' statement and the body of it is included from another
+    snippet it's better to keep the 'if' in your original file, so you dont 
+    need to open the snippet just to discover the if statement failed
+
+Also note that if you're organizing your html snippets in a nested folder you always need to 
+give the full path from the root of the template directory to the file you want to include. 
+If you get an error about a missing template, make sure you quoted the name of the file to 
+be included.
+
+```jinja
+# Good
+{% include 'my_snippet.html' %} # for templates/my_snippet.html
+{% include 'session/modals/incidental_findings.html' %} # For templates/session/modals/incidental_findings.html
+
+# Bad
+{% include my_snippet.html %} # Missing quotes on file name
+{% include 'incidental_findings.html' %} # This file won't be found without the full path
+```
 
 ### SQLAlchemy
 SQLAlchemy is awesome and very powerful BUT sometimes it makes really naive queries.

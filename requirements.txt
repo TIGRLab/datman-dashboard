@@ -1,7 +1,7 @@
 psycopg2==2.7.1
 PyCap==1.0.2
 future==0.16.0
-Flask==0.11.1
+Flask==1.0.2
 Flask-Login==0.4.0
 Flask-SQLAlchemy==2.1
 Flask-WTF==0.13.1
@@ -29,7 +29,7 @@ nibabel==2.1.0
 nose==1.3.7
 numpy==1.11.2
 oauth==1.0.1
-paramiko==2.4.1
+paramiko==2.4.2
 pbr==1.10.0
 pyasn1==0.1.9
 pycparser==2.17
@@ -37,7 +37,7 @@ pydicom==0.9.9
 pysftp==0.2.9
 pyxnat==1.0.0.0
 rauth==0.7.2
-requests==2.12.1
+requests==2.20.0
 six==1.10.0
 sqlalchemy-migrate==0.10.0
 sqlparse==0.2.2
