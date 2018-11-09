@@ -21,7 +21,8 @@ from psycopg2.tz import FixedOffsetTimezone
 
 from dashboard import db, TZ_OFFSET
 from dashboard.utils import get_study_path
-from dashboard.emails import account_request_email
+from dashboard.emails import account_request_email, account_activation_email, \
+        account_rejection_email
 from datman import scanid
 
 logger = logging.getLogger(__name__)
@@ -71,7 +72,8 @@ class User(UserMixin, db.Model):
     timepoint_comments = db.relationship('TimepointComment')
     analysis_comments = db.relationship('AnalysisComment')
     sessions_reviewed = db.relationship('Session')
-    pending_approval = db.relationship('AccountRequest', uselist=False)
+    pending_approval = db.relationship('AccountRequest', uselist=False,
+            cascade="all, delete")
 
     def __init__(self, first, last, username=None, provider='github',email=None,
             position=None, institution=None, phone=None, ext=None,
@@ -103,7 +105,11 @@ class User(UserMixin, db.Model):
 
     @property
     def username(self):
-        return self._username.split("_")[1]
+        try:
+            uname = self._username.split("_")[1]
+        except AttributeError:
+            uname = ""
+        return uname
 
     @property
     def account_provider(self):
@@ -113,8 +119,17 @@ class User(UserMixin, db.Model):
             return 'gitlab'
         return 'github'
 
+    def update_avatar(self, url=None):
+        if url is None or url == self.picture:
+            return
+        self.picture = url
+        self.save_changes()
+
     def request_account(self, request_form):
         request_form.populate_obj(self)
+        # This is needed because the form sets it to an empty string, which
+        # causes postgres to throw an error (it expects an int)
+        self.id = None
         try:
             self.save_changes()
             request = AccountRequest(self.id)
@@ -125,6 +140,19 @@ class User(UserMixin, db.Model):
             db.session.rollback()
         else:
             account_request_email(self.first_name, self.last_name)
+
+    def activate_account(self):
+        self.is_active = True
+        try:
+            db.session.delete(self.pending_approval)
+            self.save_changes()
+        except IntegrityError as e:
+            db.session.rollback()
+            logger.error("Account activation failed for user {}. Reason: "
+                    "{}".format(self.id, e))
+            raise e
+        else:
+            account_activation_email(self)
 
     def add_studies(self, study_ids):
         for study in study_ids:
@@ -208,6 +236,10 @@ class User(UserMixin, db.Model):
         db.session.add(self)
         db.session.commit()
 
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+
     def __repr__(self):
         return "<User {}: {} {}>".format(self.id, self.first_name,
                 self.last_name)
@@ -226,8 +258,26 @@ class AccountRequest(db.Model):
     def __init__(self, user_id):
         self.user_id = user_id
 
+    def reject(self):
+        account_rejection_email(self.user_id)
+        self.user.delete()
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+
     def __repr__(self):
         return "<User {} Requested Account>".format(self.user_id)
+
+    def __str__(self):
+        if self.user:
+            result = "{} {} requests access under username {}".format(
+                    self.user.first_name, self.user.last_name,
+                    self.user.username)
+        else:
+            result = "User with ID {} requests dashboard access".format(
+                    self.user_id)
+        return result
 
 class Study(db.Model):
     __tablename__ = 'studies'

@@ -8,9 +8,11 @@
 {% for comment in timepoint.comments %}
   <div class="row">
     <div class="col-xs-2">
-      <div class="thumbnail">
-        <!-- Placeholder for github/gitlab avatars -->
-      </div>
+      {% if comment.user.picture %}
+        <div class="thumbnail">
+          <img src="{{ comment.user.picture }}">
+        </div>
+      {% endif %}
     </div>
     <div class="col-xs-10">
       <div class="panel panel-default comment-display">
@@ -19,7 +21,6 @@
             <strong>{{ comment.user }}</strong>
             <span class="text-muted">
               commented at {{ comment.timestamp }}
-
               {% if comment.modified %}
                 *EDITED
               {% endif %}

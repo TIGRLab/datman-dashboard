@@ -142,15 +142,15 @@ class StudyPermissionsForm(FlaskForm):
         'charge of handling this study): ')
     study_RA = PermissionRadioField('Study RA: ')
     does_qc = PermissionRadioField('Does QC: ')
-    revoke_access = SubmitField('Remove Access')
+    revoke_access = SubmitField('Remove')
 
 
 class UserAdminForm(UserForm):
     dashboard_admin = BooleanField(u'Dashboard Admin: ')
     is_active = BooleanField(u'Active Account: ')
     studies = FieldList(FormField(StudyPermissionsForm))
-    add_access = SelectMultipleField('Give Access to Studies: ')
-    update_access = SubmitField(label='Give Access')
+    add_access = SelectMultipleField('Currently disabled studies: ')
+    update_access = SubmitField(label='Enable')
     revoke_all_access = SubmitField(label='Remove All')
 
     def process(self, formdata=None, obj=None, data=None, **kwargs):

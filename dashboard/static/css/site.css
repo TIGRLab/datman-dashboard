@@ -251,6 +251,11 @@ thead {
   margin: 0px 3px;
 }
 
+.user-request {
+  line-height: 34px;
+  margin: 7px 25px 7px;
+}
+
 /**********************************************
 * papaya-nav styling
 ***********************************************/

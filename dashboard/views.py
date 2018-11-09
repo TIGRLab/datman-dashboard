@@ -33,7 +33,8 @@ from .forms import SelectMetricsForm, StudyOverviewForm, \
         UserAdminForm, EmptySessionForm, IncidentalFindingsForm, \
         TimepointCommentsForm, NewIssueForm, AccessRequestForm
 from .view_utils import get_user_form, report_form_errors, get_timepoint, \
-        get_session, get_scan, handle_issue, get_redcap_record
+        get_session, get_scan, handle_issue, get_redcap_record, \
+        get_admin_user_form
 from .emails import incidental_finding_email, account_request_email
 
 logger = logging.getLogger(__name__)
@@ -153,29 +154,6 @@ def sites():
 def scantypes():
     pass
 
-@app.route('/users')
-@login_required
-def users():
-    """
-    View that lists all users
-    """
-    if not current_user.dashboard_admin:
-        flash('You are not authorised')
-        return redirect(url_for('user'))
-    users = User.query.all()
-    user_forms = []
-    for user in users:
-        form = UserForm()
-        form.user_id.data = user.id
-        form.realname.data = user.realname
-        form.is_admin.data = user.is_admin
-        form.has_phi.data = user.has_phi
-        study_ids = [str(study.id) for study in user.studies]
-        form.studies.data = study_ids
-        user_forms.append(form)
-    return render_template('users.html',
-                           studies=current_user.get_studies(),
-                           user_forms=user_forms)
 
 @app.route('/user', methods=['GET', 'POST'])
 @app.route('/user/<int:user_id>', methods=['GET', 'POST'])
@@ -229,7 +207,46 @@ def user(user_id=None):
 
     report_form_errors(form)
 
-    return render_template('user.html', user=user, form=form)
+    return render_template('users/profile.html', user=user, form=form)
+
+
+@app.route('/manage_users')
+@app.route('/manage_users/<int:user_id>/account/<approve>')
+@login_required
+@dashboard_admin_required
+def manage_users(user_id=None, approve=False):
+    users = User.query.all()
+    account_requests = AccountRequest.query.all()
+    # study_requests = []
+
+    if not user_id:
+        return render_template('users/manage_users.html', users=users,
+                account_requests=account_requests)
+
+    user = User.query.get(user_id)
+    if not approve:
+        try:
+            user.pending_approval.reject()
+        except:
+            flash("Failed while rejecting account for user {}".format(user.id))
+        else:
+            flask_session['user_requests'] = flask_session['user_requests'] - 1
+            flash('Account rejected.')
+        return render_template('users/manage_users.html', users=users,
+                account_requests=account_requests)
+
+    try:
+        user.activate_account()
+    except:
+        flash('Failed while trying to activate account for user {}'.format(
+                user.id))
+    else:
+        flask_session['user_requests'] = flask_session['user_requests'] - 1
+        flash('Account access for {} enabled'.format(user.username))
+
+    return render_template('users/manage_users.html', users=users,
+            account_requests=account_requests)
+
 
 @app.route('/search_data')
 @app.route('/search_data/<string:search_string>', methods=['GET','POST'])
@@ -987,10 +1004,13 @@ def oauth_callback(provider):
 
     if provider == 'github':
         username = "gh_" + user_info['login']
+        avatar_url = user_info['avatar_url']
     elif provider == 'gitlab':
         username = "gl_" + user_info['username']
+        avatar_url = None
 
     user = User.query.filter_by(_username=username).first()
+    user.update_avatar(avatar_url)
 
     if not user:
         flash("No account found. Please submit a request for an account.")
@@ -1028,7 +1048,7 @@ def new_account():
         return redirect(url_for('login'))
     if request_form.is_submitted:
         report_form_errors(request_form)
-    return render_template('account_request.html', form=request_form)
+    return render_template('users/account_request.html', form=request_form)
 
 @app.route('/scan_comment', methods=['GET','POST'])
 @app.route('/scan_comment/<scan_link_id>', methods=['GET','POST'])

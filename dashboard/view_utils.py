@@ -19,7 +19,10 @@ def get_user_form(user, current_user):
         form = UserForm(obj=user)
         form.account.data = user.username
         return form
+    form = get_admin_user_form(user)
+    return form
 
+def get_admin_user_form(user):
     form = UserAdminForm(obj=user)
     form.account.data = user.username
     disabled_studies = user.get_disabled_studies()

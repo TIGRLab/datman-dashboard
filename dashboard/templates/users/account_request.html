@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% include 'flash.html' %}
+
+{% block content %}
+  <div class="container">
+    <form action="{{ url_for('new_account') }}" method="post"
+        name="new_account">
+      {{ form.hidden_tag() }}
+      <h2>New User Details</h2>
+      {% include 'users/demographics_snip.html' %}
+      {{ form.submit(class_="btn btn-primary") }}
+    </form>
+  </div>
+{% endblock %}
