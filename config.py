@@ -27,6 +27,8 @@ MAIL_PORT = 25
 MAIL_USERNAME = None
 MAIL_PASSWORD = None
 SENDER = 'no-reply@kimellab.ca'
+DASH_SUPPORT = os.environ.get("DASHBOARD_SUPPORT_EMAIL") or ""
+
 
 # administrator list
 try:
