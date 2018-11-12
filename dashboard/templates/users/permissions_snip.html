@@ -1,53 +1,61 @@
-<div class="user-access-info">
-  {{ form.add_access.label }}{{ form.add_access }}{{ form.update_access(class_='btn btn-primary') }}
-  <br>
-  <table>
-    <tr>
-      <th>Study</th>
-      <th>Setting</th>
-      <th>Disabled</th>
-      <th>Enabled</th>
-      <th></th>
-    </tr>
-    {% for study_form in form.studies %}
-      <tr>
-        <td rowspan="5">
-          {{ study_form.hidden_tag() }}
-          {{ study_form.study_id.data }}
-        </td>
-        <td>{{ study_form.is_admin.label }}</td>
-        {% for subfield in study_form.is_admin %}
-          <td>{{ subfield }}</td>
+<div id="user-access-info">
+  <div class="enable-study-panel">
+  {{ form.add_access.label }}{{ form.add_access }}
+  {{ form.update_access(class_='btn btn-primary') }}
+  </div>
+  <div id="access-table-box">
+    <table id="permission-table">
+      <thead>
+        <tr>
+          <th>Study</th>
+          <th>Setting</th>
+          <th>Disabled</th>
+          <th>Enabled</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for study_form in form.studies %}
+          <tr>
+            <td rowspan="5">
+              {{ study_form.hidden_tag() }}
+              {{ study_form.study_id.data }}
+            </td>
+            <td>{{ study_form.is_admin.label.text }}</td>
+            {% for subfield in study_form.is_admin %}
+              <td>{{ subfield }}</td>
+            {% endfor %}
+            <td rowspan="5">
+              {{ study_form.revoke_access(class_='btn btn-danger') }}
+            </td>
+          </tr>
+          <tr>
+            <td>{{ study_form.primary_contact.label.text }}</td>
+            {% for subfield in study_form.primary_contact %}
+              <td>{{ subfield }}</td>
+            {% endfor %}
+          </tr>
+          <tr>
+            <td>{{ study_form.kimel_contact.label.text }}</td>
+            {% for subfield in study_form.kimel_contact %}
+              <td>{{ subfield }}</td>
+            {% endfor %}
+          </tr>
+          <tr>
+            <td>{{ study_form.study_RA.label.text }}</td>
+            {% for subfield in study_form.study_RA %}
+              <td>{{ subfield }}</td>
+            {% endfor %}
+          </tr>
+          <tr>
+            <td>{{ study_form.does_qc.label.text }}</td>
+            {% for subfield in study_form.does_qc %}
+              <td>{{ subfield }}</td>
+            {% endfor %}
+          </tr>
         {% endfor %}
-        <td rowspan="5">
-          {{ study_form.revoke_access(class_='btn btn-danger') }}
-        </td>
-      </tr>
-      <tr>
-        <td>{{ study_form.primary_contact.label }}</td>
-        {% for subfield in study_form.primary_contact %}
-          <td>{{ subfield }}</td>
-        {% endfor %}
-      </tr>
-      <tr>
-        <td>{{ study_form.kimel_contact.label }}</td>
-        {% for subfield in study_form.kimel_contact %}
-          <td>{{ subfield }}</td>
-        {% endfor %}
-      </tr>
-      <tr>
-        <td>{{ study_form.study_RA.label }}</td>
-        {% for subfield in study_form.study_RA %}
-          <td>{{ subfield }}</td>
-        {% endfor %}
-      </tr>
-      <tr>
-        <td>{{ study_form.does_qc.label }}</td>
-        {% for subfield in study_form.does_qc %}
-          <td>{{ subfield }}</td>
-        {% endfor %}
-      </tr>
-    {% endfor %}
-  </table>
+      </tbody>
+    </table>
+  <div>
   {{ form.revoke_all_access(class_='btn btn-danger')}}
 </div>

@@ -216,36 +216,38 @@ def user(user_id=None):
 @dashboard_admin_required
 def manage_users(user_id=None, approve=False):
     users = User.query.all()
-    account_requests = AccountRequest.query.all()
     # study_requests = []
 
     if not user_id:
         return render_template('users/manage_users.html', users=users,
-                account_requests=account_requests)
+                account_requests=AccountRequest.query.all())
 
-    user = User.query.get(user_id)
+    if approve == "False":
+        # URL gets parsed into unicode
+        approve = False
+
+    user_request = AccountRequest.query.get(user_id)
     if not approve:
         try:
-            user.pending_approval.reject()
+            user_request.reject()
         except:
-            flash("Failed while rejecting account for user {}".format(user.id))
+            flash("Failed while rejecting account request for user {}".format(
+                    user_id))
         else:
-            flask_session['user_requests'] = flask_session['user_requests'] - 1
             flash('Account rejected.')
         return render_template('users/manage_users.html', users=users,
-                account_requests=account_requests)
+                account_requests=AccountRequest.query.all())
 
     try:
-        user.activate_account()
+        user_request.approve()
     except:
         flash('Failed while trying to activate account for user {}'.format(
-                user.id))
+                user_id))
     else:
-        flask_session['user_requests'] = flask_session['user_requests'] - 1
-        flash('Account access for {} enabled'.format(user.username))
+        flash('Account access for {} enabled'.format(user_id))
 
     return render_template('users/manage_users.html', users=users,
-            account_requests=account_requests)
+            account_requests=AccountRequest.query.all())
 
 
 @app.route('/search_data')
@@ -1019,9 +1021,6 @@ def oauth_callback(provider):
     login_user(user, remember=True)
     # Token is needed for access to github issues
     flask_session['active_token'] = access_token
-    # This is needed to display admin notifications
-    if user.dashboard_admin:
-        flask_session['user_requests'] = AccountRequest.query.count()
 
     return redirect(dest_page)
 

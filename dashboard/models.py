@@ -141,18 +141,13 @@ class User(UserMixin, db.Model):
         else:
             account_request_email(self.first_name, self.last_name)
 
-    def activate_account(self):
-        self.is_active = True
-        try:
-            db.session.delete(self.pending_approval)
-            self.save_changes()
-        except IntegrityError as e:
-            db.session.rollback()
-            logger.error("Account activation failed for user {}. Reason: "
-                    "{}".format(self.id, e))
-            raise e
-        else:
-            account_activation_email(self)
+    def num_requests(self):
+        """
+        Returns a count of all pending user requests that need to be reviewed
+        """
+        if not self.dashboard_admin:
+            return 0
+        return AccountRequest.query.count()
 
     def add_studies(self, study_ids):
         for study in study_ids:
@@ -258,16 +253,33 @@ class AccountRequest(db.Model):
     def __init__(self, user_id):
         self.user_id = user_id
 
-    def reject(self):
-        account_rejection_email(self.user_id)
-        self.user.delete()
+    def approve(self):
+        try:
+            self.user.is_active = True
+            db.session.delete(self)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            logger.error("Account activation failed for user {}. Reason: "
+                    "{}".format(self.user_id, e))
+            raise e
+        else:
+            account_activation_email(self.user)
 
-    def delete(self):
-        db.session.delete(self)
-        db.session.commit()
+    def reject(self):
+        try:
+            db.session.delete(self.user)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            logger.error("Account request rejection failed for user {}. "
+                    "Reason: {}".format(self.user_id, e))
+            raise e
+        else:
+            account_rejection_email(self.user)
 
     def __repr__(self):
-        return "<User {} Requested Account>".format(self.user_id)
+        return "<User {} Requires Admin Review>".format(self.user_id)
 
     def __str__(self):
         if self.user:

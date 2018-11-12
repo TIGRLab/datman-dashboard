@@ -136,12 +136,11 @@ class PermissionRadioField(RadioField):
 class StudyPermissionsForm(FlaskForm):
     study_id = HiddenField()
     user_id = HiddenField()
-    is_admin = PermissionRadioField('Admin Access (can delete data + comments): ')
-    primary_contact = PermissionRadioField('Primary Contact (usually the PI): ')
-    kimel_contact = PermissionRadioField('Kimel Contact (i.e. staff member(s) in ' +
-        'charge of handling this study): ')
-    study_RA = PermissionRadioField('Study RA: ')
-    does_qc = PermissionRadioField('Does QC: ')
+    is_admin = PermissionRadioField(label='Study Admin')
+    primary_contact = PermissionRadioField('Primary Contact')
+    kimel_contact = PermissionRadioField('Kimel Contact')
+    study_RA = PermissionRadioField('Study RA')
+    does_qc = PermissionRadioField('Does QC')
     revoke_access = SubmitField('Remove')
 
 

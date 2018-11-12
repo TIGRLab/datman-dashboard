@@ -257,6 +257,55 @@ thead {
 }
 
 /**********************************************
+* User permissions form styling
+***********************************************/
+
+#access-table-box {
+  border: 3px solid var(--alt-theme-main);
+  border-radius:10px;
+  background-color: var(--alt-theme-main);
+  margin: 10px 0px;
+}
+
+#user-access-info table {
+  table-layout: fixed;
+  width: 100%;
+  margin: 5px 0px;
+}
+
+#permission-table tbody {
+  background-color: white;
+}
+
+#permission-table tbody tr:nth-child(even) {
+  background-color: #bcf4f1;
+}
+
+#user-access-info thead th:nth-child(1) {
+  width: 40%;
+}
+
+#user-access-info thead th:nth-child(2) {
+  width: 30%;
+}
+
+#user-access-info thead th:nth-child(3) {
+  width: 10%;
+}
+
+#user-access-info thead th:nth-child(4) {
+  width: 10%;
+}
+
+#user-access-info thead th:nth-child(5) {
+  width: 10%;
+}
+
+#user-access-info td {
+  padding: 2.5px;
+}
+
+/**********************************************
 * papaya-nav styling
 ***********************************************/
 #papaya-nav {

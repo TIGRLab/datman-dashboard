@@ -66,7 +66,7 @@
                 <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">View <span class="caret"></span></a>
                 <ul class="dropdown-menu" role="menu" aria-labelledby="Options menu">
                   <li role="presentation">
-                    <a role="menuitem" href= {{ url_for('analysis') }} >Analyses</a>
+                    <a role="menuitem" href={{ url_for('analysis') }}>Analyses</a>
                   </li>
                   <li role="presentation">
                     <a role="menuitem" href={{ url_for('metricData') }}>Metric Data</a>
@@ -74,13 +74,14 @@
                 </ul>
               </li>
               {% if current_user.dashboard_admin %}
-                <li class="dropdown">
+                <li class="dropdown" id="admin-menu">
                   <a href="#" class="dropdown-toggle" data-toggle="dropdown"
                       role="button" aria-haspopup="true" aria-expanded="false">
-                    Admin
-                    {% if session['user_requests'] %}
-                      <span class="badge">
-                        {{ session['user_requests'] }}
+                    <span id="admin-menu-text" style="height: 23px; line-height: 23px;">Admin</span>
+                    {% set num_requests = current_user.num_requests() %}
+                    {% if num_requests %}
+                      <span id="request-count" class="badge">
+                        {{ num_requests }}
                       </span>
                     {% endif %}
                     <span class="caret"></span>
@@ -88,12 +89,10 @@
                   <ul class="dropdown-menu" role="menu"
                       aria-labelledby="admin_roles">
                     <li role="presentation">
-                      <a role="menuitem" href={{ url_for('manage_users') }} >
-                        Manage Users
-                        {% if session['user_requests'] %}
-                          <span class="badge">
-                            {{ session['user_requests'] }}
-                          </span>
+                      <a role="menuitem" href={{ url_for('manage_users') }}
+                          id="manage-users">
+                        {% if num_requests %}
+                          Manage Users
                         {% endif %}
                       </a>
                     </li>
@@ -175,6 +174,17 @@
           window.location.href = url;
         }
       });
+
+      {% if current_user.dashboard_admin %}
+        // Move the notification badge when user interacts with Admin menu
+        $("#admin-menu").on("show.bs.dropdown", function() {
+            $("#request-count").appendTo("#manage-users");
+        });
+
+        $("#admin-menu").on("hide.bs.dropdown", function() {
+          $("#request-count").insertAfter("#admin-menu-text");
+        });
+      {% endif %}
     </script>
 
   </body>
