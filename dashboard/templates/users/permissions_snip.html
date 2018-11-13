@@ -1,5 +1,5 @@
 <div id="user-access-info">
-  <div class="enable-study-panel">
+  <div id="enable-study-panel">
   {{ form.add_access.label }}{{ form.add_access }}
   {{ form.update_access(class_='btn btn-primary') }}
   </div>
@@ -26,7 +26,7 @@
               <td>{{ subfield }}</td>
             {% endfor %}
             <td rowspan="5">
-              {{ study_form.revoke_access(class_='btn btn-danger') }}
+              {{ study_form.revoke_access(class_='btn btn-danger remove-study-btn') }}
             </td>
           </tr>
           <tr>
@@ -56,6 +56,6 @@
         {% endfor %}
       </tbody>
     </table>
-  <div>
-  {{ form.revoke_all_access(class_='btn btn-danger')}}
+    {{ form.revoke_all_access(class_='btn btn-danger')}}
+  </div>
 </div>

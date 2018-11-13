@@ -107,23 +107,31 @@ class ScanChecklistForm(FlaskForm):
 class UserForm(FlaskForm):
     id = HiddenField()
     first_name = TextField(u'First Name: ', validators=[DataRequired()],
-            render_kw={'required': True, 'maxlength': '64'})
+            render_kw={'required': True, 'maxlength': '64',
+            'placeholder': 'Jane'})
     last_name = TextField(u'Last Name: ', validators=[DataRequired()],
-            render_kw={'required': True, 'maxlength': '64'})
+            render_kw={'required': True, 'maxlength': '64', 'placeholder': 'Doe'})
     email = EmailField(u'Email: ', validators=[DataRequired()],
-            render_kw={'required': True, 'maxlength': '256'})
+            render_kw={'required': True, 'maxlength': '256', 'placeholder': 'Enter email'})
     provider = RadioField('Account provider: ',
             validators=[DataRequired()],
             choices=[(u'github', 'GitHub')], default='github')
     account = TextField(u'Username: ', validators=[DataRequired()],
-            render_kw={'required': True, 'maxlength': '64'})
-    position = TextField(u'Position: ', render_kw={'maxlength': '64'})
-    institution = TextField(u'Institution: ', render_kw={'maxlength': '128'})
-    phone = TelField(u'Phone Number: ', render_kw={'maxlength': '20'})
-    ext = TextField(u'Extension: ', render_kw={'maxlength': '10'})
-    alt_phone = TelField(u'Alt. Phone Number: ', render_kw={'maxlength': '20'})
-    alt_ext = TextField(u'Alt. Extension: ', render_kw={'maxlength': '10'})
-    submit = SubmitField(u'Submit')
+            render_kw={'required': True, 'maxlength': '64', 'placeholder':
+            'Username used on account provider\'s site'})
+    position = TextField(u'Position: ', render_kw={'maxlength': '64',
+            'placeholder': 'Job title or position'})
+    institution = TextField(u'Institution: ', render_kw={'maxlength': '128',
+            'placeholder': 'Full name or acronym for institution'})
+    phone = TelField(u'Phone Number: ', render_kw={'maxlength': '20',
+            'placeholder': '555-555-5555'})
+    ext = TextField(u'Extension: ', render_kw={'maxlength': '10',
+            'placeholder': 'XXXXXXXXXX'})
+    alt_phone = TelField(u'Alt. Phone Number: ', render_kw={'maxlength': '20',
+            'placeholder': '555-555-5555'})
+    alt_ext = TextField(u'Alt. Extension: ', render_kw={'maxlength': '10',
+            'placeholder': 'XXXXXXXXXX'})
+    submit = SubmitField(u'Save Changes')
 
 
 class PermissionRadioField(RadioField):

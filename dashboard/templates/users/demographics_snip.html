@@ -1,23 +1,59 @@
-<div class="user-demo-info">
-  <div id="user_info">
-    {{ form.first_name.label }}{{ form.first_name }}<br>
-    {{ form.last_name.label }}{{ form.last_name }}<br>
-    {{ form.email.label }}{{ form.email }}<br>
-    {{ form.provider.label }}<br>
-    {% for subfield in form.provider %}
-      {{ subfield.label }}
-      {{ subfield }}
-    {% endfor %}
-    <br>
-    {{ form.account.label }}{{ form.account }}<br>
+<div id="user-demo-info">
+  <div id="user-info">
+    <label class="col-one-half">
+      <span class="label-text">First Name</span>
+      {{ form.first_name }}
+    </label>
+    <label class="col-one-half"
+        style="border-left: 1px solid #333; padding-left: 0.25em;">
+      <span class="label-text">Last Name</span>
+      {{ form.last_name }}
+    </label>
+    <label>
+      <span class="label-text">Email</span>
+      {{ form.email }}
+    </label>
+    <label class="col-one-half">
+      <span class="label-text">Account Provider</span>
+      {% for subfield in form.provider %}
+        <span class="radio-label">{{ subfield.label.text }}</span>
+        {{ subfield }}
+      {% endfor %}
+    </label>
+    <label class="col-one-half"
+        style="border-left: 1px solid #333; padding-left: 0.25em;">
+      <span class="label-text">Username</span>
+      {{ form.account }}
+    </label>
+
   </div>
-  <div id="optional_user_info">
-    <h4>Optional Information</h4>
-    {{ form.position.label }} {{ form.position }}<br>
-    {{ form.institution.label }} {{ form.institution }}<br>
-    {{ form.phone.label }} {{ form.phone }}<br>
-    {{ form.ext.label }} {{ form.ext }}<br>
-    {{ form.alt_phone.label }} {{ form.alt_phone }}<br>
-    {{ form.alt_ext.label }} {{ form.alt_ext }}<br>
+  <div id="optional-user-info">
+    <h3>Optional Information</h3>
+    <label>
+      <span class="label-text">Position</span>
+      {{ form.position }}
+    </label>
+    <label>
+      <span class="label-text">Institution</span>
+      {{ form.institution }}
+    </label>
+    <label class="col-one-half">
+      <span class="label-text">Phone Number</span>
+      {{ form.phone }}
+    </label>
+    <label class="col-one-half"
+        style="border-left: 1px solid #333; padding-left: 0.25em;">
+      <span class="label-text">Extension</span>
+      {{ form.ext }}
+    </label>
+    <label class="col-one-half">
+      <span class="label-text">Alt. Phone Number</span>
+      {{ form.alt_phone }}
+    </label>
+    <label class="col-one-half"
+        style="border-left: 1px solid #333; padding-left: 0.25em;">
+      <span class="label-text">Alt. Extension</span>
+      {{ form.alt_ext }}
+    </label>
   </div>
 </div>

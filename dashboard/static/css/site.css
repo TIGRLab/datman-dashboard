@@ -257,6 +257,79 @@ thead {
 }
 
 /**********************************************
+* User profile styling
+***********************************************/
+#global-permissions {
+  height: 35px;
+  line-height: 35px;
+}
+
+#global-permissions span {
+  margin-right: 52px;
+  margin-bottom: 5px;
+}
+
+#global-permissions label {
+  padding-right: 5px;
+}
+
+/**********************************************
+* User demographics form styling
+***********************************************/
+#user-demo-info label {
+  border-bottom: 1px solid #333;
+  display: block;
+  font-size: 1.25em;
+  margin-bottom: 0.5em;
+}
+
+#user-demo-info label.col-one-half {
+  float: left;
+  width: 50%;
+}
+
+#user-demo-info label input {
+  background: none;
+  border: none;
+  line-height: 1em;
+  font-weight: 300;
+  padding: 0.125em 0.25em;
+  width: 100%;
+}
+
+#user-demo-info label input:focus {
+  outline: none;
+}
+
+#user-demo-info label .label-text {
+  display: block;
+  font-size: 0.5em;
+  font-weight: bold;
+  padding-left: 0.5em;
+  text-transform: uppercase;
+}
+
+#user-demo-info label span.radio-label {
+  display: inline;
+  width: auto;
+  line-height: 1em;
+  font-weight: 300;
+  padding: 0.125em 0.25em;
+}
+
+#user-demo-info label.col-one-half input[type=radio] {
+  display: inline;
+  clear: none;
+  width: auto;
+  border: 1px solid red;
+  margin-top: 0px;
+}
+
+#optional-user-info h3 {
+  margin: 80px 0px 10px 0px;
+}
+
+/**********************************************
 * User permissions form styling
 ***********************************************/
 
@@ -273,7 +346,7 @@ thead {
   margin: 5px 0px;
 }
 
-#permission-table tbody {
+#permission-table tbody tr:nth-child(odd) {
   background-color: white;
 }
 
@@ -282,7 +355,7 @@ thead {
 }
 
 #user-access-info thead th:nth-child(1) {
-  width: 40%;
+  width: 20%;
 }
 
 #user-access-info thead th:nth-child(2) {
@@ -290,19 +363,42 @@ thead {
 }
 
 #user-access-info thead th:nth-child(3) {
-  width: 10%;
+  width: 15%;
 }
 
 #user-access-info thead th:nth-child(4) {
-  width: 10%;
+  width: 15%;
 }
 
 #user-access-info thead th:nth-child(5) {
-  width: 10%;
+  width: 20%;
 }
 
 #user-access-info td {
   padding: 2.5px;
+}
+
+#enable-study-panel {
+  margin: 5px 0px;
+  display: flex;
+  align-items: flex-start;
+}
+
+#enable-study-panel select {
+  width: 150px;
+  margin: 0px 10px;
+}
+
+#enable-study-panel input {
+  align-self: center;
+}
+
+#revoke_all_access {
+  margin: 2px 0px 3px 10px;
+}
+
+.remove-study-btn {
+  margin: 0px 10px;
 }
 
 /**********************************************

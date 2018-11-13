@@ -30,9 +30,13 @@
             <h3 class="panel-title chevron-toggle">User Permissions (Admin View)</h3>
           </div>
           <div class="panel-body collapse in" id="userPermissions">
-            <div class="global-permissions">
-              {{ form.is_active.label }} {{ form.is_active() }}
-              {{ form.dashboard_admin.label }} {{ form.dashboard_admin() }}
+            <div id="global-permissions">
+              <span>
+                {{ form.is_active.label }} {{ form.is_active() }}
+              </span>
+              <span>
+                {{ form.dashboard_admin.label }} {{ form.dashboard_admin() }}
+              </span>
             </div>
             {% include 'users/permissions_snip.html' %}
           </div>
