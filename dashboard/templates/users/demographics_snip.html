@@ -1,32 +1,29 @@
 <div id="user-demo-info">
-  <div id="user-info">
-    <label class="col-one-half">
-      <span class="label-text">First Name</span>
-      {{ form.first_name }}
-    </label>
-    <label class="col-one-half"
-        style="border-left: 1px solid #333; padding-left: 0.25em;">
-      <span class="label-text">Last Name</span>
-      {{ form.last_name }}
-    </label>
-    <label>
-      <span class="label-text">Email</span>
-      {{ form.email }}
-    </label>
-    <label class="col-one-half">
-      <span class="label-text">Account Provider</span>
-      {% for subfield in form.provider %}
-        <span class="radio-label">{{ subfield.label.text }}</span>
-        {{ subfield }}
-      {% endfor %}
-    </label>
-    <label class="col-one-half"
-        style="border-left: 1px solid #333; padding-left: 0.25em;">
-      <span class="label-text">Username</span>
-      {{ form.account }}
-    </label>
-
-  </div>
+  <label class="col-one-half">
+    <span class="label-text">First Name</span>
+    {{ form.first_name }}
+  </label>
+  <label class="col-one-half"
+      style="border-left: 1px solid #333; padding-left: 0.25em;">
+    <span class="label-text">Last Name</span>
+    {{ form.last_name }}
+  </label>
+  <label>
+    <span class="label-text">Email</span>
+    {{ form.email }}
+  </label>
+  <label class="col-one-half">
+    <span class="label-text">Account Provider</span>
+    {% for subfield in form.provider %}
+      <span class="radio-label">{{ subfield.label.text }}</span>
+      {{ subfield }}
+    {% endfor %}
+  </label>
+  <label class="col-one-half"
+      style="border-left: 1px solid #333; padding-left: 0.25em;">
+    <span class="label-text">Username</span>
+    {{ form.account }}
+  </label>
   <div id="optional-user-info">
     <h3>Optional Information</h3>
     <label>

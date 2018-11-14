@@ -280,7 +280,7 @@ thead {
   border-bottom: 1px solid #333;
   display: block;
   font-size: 1.25em;
-  margin-bottom: 0.5em;
+  margin-bottom: 0px;
 }
 
 #user-demo-info label.col-one-half {
@@ -305,7 +305,7 @@ thead {
   display: block;
   font-size: 0.5em;
   font-weight: bold;
-  padding-left: 0.5em;
+  padding: 0.15em 0em 0.125em 0.5em;
   text-transform: uppercase;
 }
 
