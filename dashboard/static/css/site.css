@@ -156,6 +156,22 @@ thead {
   min-width: 100px;
 }
 
+.section-separator {
+  margin-top: 5px;
+  border: 0;
+  height: 1px;
+  background: #333;
+  background-image: linear-gradient(to right, #CCC, #333, #CCC);
+}
+
+.section-subheader {
+  font-size: 1.3em;
+}
+
+.delete-session {
+  margin-left: 10px;
+}
+
 /* Make a button slide in on hover */
 .slide-button {
   overflow: hidden;
@@ -172,6 +188,37 @@ thead {
   padding: 6px 12px;
   border: 1px solid transparent;
   width: 46px;
+}
+
+.review-status {
+  overflow: hidden;
+  margin: 5px 0;
+  line-height: 27px;
+}
+
+.redcap-survey {
+  overflow: hidden;
+  margin: 10px 0;
+}
+
+.redcap-survey .well {
+  margin-bottom: 0px;
+}
+
+.entry-date {
+  font-size: 0.8em;
+}
+
+.redcap-survey a {
+  margin-top: 7px;
+}
+
+.scan-table {
+  margin: 10px 0;
+}
+
+.scan-status {
+  text-align: center;
 }
 
 /* style timepoint comments */
