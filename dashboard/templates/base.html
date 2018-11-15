@@ -173,6 +173,13 @@
         }
       });
 
+      // Lets the user submit a search when they hit enter
+      $("#search-data-text").keyup(function(e) {
+        if (e.keyCode == 13) {
+          $("#search-data-btn").click();
+        }
+      });
+
       {% if current_user.dashboard_admin %}
         // Move the notification badge when user interacts with Admin menu
         $("#admin-menu").on("show.bs.dropdown", function() {
