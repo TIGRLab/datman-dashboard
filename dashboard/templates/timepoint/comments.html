@@ -57,15 +57,13 @@
     {{ timepoint_comments_form.submit(class_="btn btn-primary pull-right") }}
 </form>
 
-{% endblock %}
-
 <script type="text/javascript">
   // Holds the edited comment's text between button clicks
   var oldText;
   // Holds most recently edited comment's ID
   var id;
 
-  $(".edit-comment").on('click.edit', edit);
+  $('.edit-comment').on('click.edit', edit);
 
   // Logic for Edit button
   function edit() {
@@ -93,7 +91,7 @@
     editButton.on('click.cancel', cancel);
     commentBody.html(formHTML);
     $("#edit-comment > .timepoint-comment").text(oldText);
-  }
+  };
 
   // Logic for Cancel button (to stop editing)
   function cancel() {
@@ -105,3 +103,5 @@
     $("#" + id + "-text").text(oldText);
   };
 </script>
+
+{% endblock %}
