@@ -281,15 +281,7 @@ def search_data(search_string=None):
             return redirect(url_for('timepoint', study_id=study.id,
                     timepoint_id=sessions[0].timepoint.name,
                     _anchor="sess" + str(sessions[0].num)))
-    # sess2 = []
-    # for sess in sessions:
-    #     if sess.timepoint.accessible_study(current_user):
-    #         sess2.append(url_for('timepoint',
-    #                 study_id=sess.timepoint.accessible_study(current_user),
-    #                 timepoint_id=sess.timepoint.name,
-    #                 _anchor="sess" + str(sess.num)))
-    # sessions = sess2
-    # print(sessions)
+                    
     sessions = [url_for('timepoint', study_id=sess.timepoint.accessible_study(current_user),
             timepoint_id=sess.timepoint.name, _anchor="sess" + str(sess.num))
             for sess in sessions if sess.timepoint.accessible_study(current_user)]
@@ -303,7 +295,7 @@ def search_data(search_string=None):
     scans = [url_for('scan', study_id=scan.session.timepoint.accessible_study(current_user),
              scan_id=scan.id) for scan in scans
                 if scan.session.timepoint.accessible_study(current_user)]
-                
+
     return render_template('search_results.html', user_search=search_string,
             subjects=subjects, sessions=sessions, scans=scans)
 
