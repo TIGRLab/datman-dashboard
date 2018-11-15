@@ -301,10 +301,9 @@ def search_data(search_string=None):
             return redirect(url_for('scan', study_id=study.id,
                     scan_id=scans[0].id))
     scans = [url_for('scan', study_id=scan.session.timepoint.accessible_study(current_user),
-            scan_id=scan.id)
-            for scan in scans
-            if scan.session.timepoint.accessible_study(current_user)]
-
+             scan_id=scan.id) for scan in scans
+                if scan.session.timepoint.accessible_study(current_user)]
+                
     return render_template('search_results.html', user_search=search_string,
             subjects=subjects, sessions=sessions, scans=scans)
 

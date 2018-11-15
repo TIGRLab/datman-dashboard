@@ -1,11 +1,15 @@
 """
 Database queries used by the app
 """
-from dashboard import db
-from .models import Timepoint, Session, Scan, Study, Site, Metrictype, \
-    MetricValue, Scantype  # noqa: F401
 import logging
 import utils
+
+from sqlalchemy import and_, func
+
+from dashboard import db
+from .models import Timepoint, Session, Scan, Study, Site, Metrictype, \
+    MetricValue, Scantype
+import datman.scanid as scanid
 
 logger = logging.getLogger(__name__)
 logger.info('Loading queries')
@@ -25,13 +29,17 @@ def find_sessions(search_str):
         query = Session.query.filter(func.upper(Session.name).contains(
                 search_str))
     else:
-        if not ident.session:
-            query = Session.query.filter((func.upper(Session.name) ==
-                    ident.get_full_subjectid_with_timepoint()))
-        else:
+        if ident.session:
             query = Session.query.filter(and_(func.upper(Session.name) ==
                     ident.get_full_subjectid_with_timepoint(),
                     Session.num == ident.session))
+            if not query.count():
+                ident.session = None
+
+        if not ident.session:
+            query = Session.query.filter((func.upper(Session.name) ==
+                    ident.get_full_subjectid_with_timepoint()))
+
     return query.all()
 
 def find_scans(search_str):
@@ -63,12 +71,15 @@ def find_scans(search_str):
             if ident.session:
                 query = Scan.query.filter(and_(func.upper(Scan.timepoint) ==
                         ident.get_full_subjectid_with_timepoint(),
-                        Scan.session == ident.session))
-            else:
+                        Scan.repeat == int(ident.session)))
+                if not query.count():
+                    ident.session = None
+
+            if not ident.session:
                 query = Scan.query.filter((func.upper(Scan.timepoint) ==
                         ident.get_full_subjectid_with_timepoint()))
     else:
-        name = "_".join([ident.get_full_subjectid_with_timepoint(), tag, series])
+        name = "_".join([ident.get_full_subjectid_with_timepoint_session(), tag, series])
         query = Scan.query.filter(func.upper(Scan.name).contains(name))
 
     return query.all()
