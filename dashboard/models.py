@@ -527,8 +527,6 @@ class Timepoint(db.Model):
             nullable=False)
     is_phantom = db.Column('is_phantom', db.Boolean, nullable=False,
             default=False)
-    github_issue = db.Column('github_issue', db.Integer)
-    gitlab_issue = db.Column('gitlab_issue', db.Integer)
     # These columns should be removed when the static QC pages are made obsolete
     last_qc_repeat_generated =  db.Column('last_qc_generated', db.Integer,
             nullable=False, default=1)
@@ -546,13 +544,10 @@ class Timepoint(db.Model):
     incidental_findings = db.relationship('IncidentalFinding',
             cascade='all, delete')
 
-    def __init__(self, name, site, is_phantom=False, github_issue=None,
-            gitlab_issue=None, static_page=None):
+    def __init__(self, name, site, is_phantom=False, static_page=None):
         self.name = name
         self.site = site
         self.is_phantom = is_phantom
-        self.github_issue = github_issue
-        self.gitlab_issue = gitlab_issue
         self.static_page = static_page
 
     def belongs_to(self, study):

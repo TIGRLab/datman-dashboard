@@ -190,6 +190,32 @@ thead {
   width: 46px;
 }
 
+.github-issue {
+  margin-bottom: 15px;
+}
+
+.github-issue .panel {
+  margin-bottom: 0;
+}
+
+.github-issue .issue-header {
+  margin-bottom: 2px;
+}
+
+.github-issue .issue-header .issue-status {
+  text-transform: capitalize;
+  font-weight: 700;
+  padding-right: 10px;
+}
+
+.github-issue .issue-footer {
+  display: inline-block;
+}
+
+.github-issue a {
+  margin-top: 5px;
+}
+
 .review-status {
   overflow: hidden;
   margin: 5px 0;
@@ -213,6 +239,14 @@ thead {
   margin-top: 7px;
 }
 
+#incidental-findings-report {
+  margin-bottom: 40px;
+}
+
+#incidental-findings-report .finding-comment {
+  margin-bottom: 30px;
+}
+
 .scan-table {
   margin: 10px 0;
 }
@@ -227,6 +261,21 @@ thead {
 }
 .comment-display {
 	position:relative;
+}
+
+.comment-display .panel-heading {
+  overflow: hidden;
+  padding: 0;
+  height: 42px;
+  line-height: 42px;
+}
+
+.comment-display .comment-creator {
+  padding: 15px;
+}
+
+.comment-display .btn-group {
+  padding: 4px 5px;
 }
 
 .comment-display > .panel-heading:after, .comment-display > .panel-heading:before {

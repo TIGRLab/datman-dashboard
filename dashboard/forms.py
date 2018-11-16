@@ -250,7 +250,7 @@ class IncidentalFindingsForm(FlaskForm):
 class TimepointCommentsForm(FlaskForm):
     comment = TextAreaField(validators=[DataRequired()],
             render_kw={'rows': 5, 'required': True,
-                    'placeholder': 'Add new comment here'})
+                    'placeholder': 'Add new comment'})
     submit = SubmitField('Submit')
 
 

@@ -281,7 +281,7 @@ def search_data(search_string=None):
             return redirect(url_for('timepoint', study_id=study.id,
                     timepoint_id=sessions[0].timepoint.name,
                     _anchor="sess" + str(sessions[0].num)))
-                    
+
     sessions = [url_for('timepoint', study_id=sess.timepoint.accessible_study(current_user),
             timepoint_id=sess.timepoint.name, _anchor="sess" + str(sess.num))
             for sess in sessions if sess.timepoint.accessible_study(current_user)]
@@ -345,6 +345,10 @@ def sign_off(study_id, timepoint_id, session_num):
             timepoint_id=timepoint_id)
     session = get_session(timepoint, session_num, dest_URL)
     session.sign_off(current_user.id)
+    # This is temporary until I add some final touches to sign off process
+    for scan in session.scans:
+        if scan.is_new():
+            scan.add_checklist_entry(current_user.id, sign_off=True)
     return redirect(dest_URL)
 
 @app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
@@ -467,9 +471,7 @@ def create_issue(study_id, timepoint_id):
     """
     Posts a new issue to Github
     """
-    # This is used even though timepoint is not needed because it verifies user
-    # permissions and will redirect with an error if they dont have permission
-    get_timepoint(study_id, timepoint_id, current_user)
+    timepoint = get_timepoint(study_id, timepoint_id, current_user)
     dest_URL = url_for('timepoint', study_id=study_id,
             timepoint_id=timepoint_id)
 
@@ -478,7 +480,9 @@ def create_issue(study_id, timepoint_id):
         report_form_errors(form)
         return redirect(dest_URL)
     token = flask_session['active_token']
-    handle_issue(token, form, study_id, timepoint_id)
+
+    handle_issue(token, form, study_id, timepoint.name)
+
     return redirect(dest_URL)
 
 @app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \

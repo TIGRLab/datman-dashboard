@@ -33,19 +33,20 @@
 
         {% include 'timepoint/comments.html' %}
 
-        {% if timepoint.static_page %}
-          <a href="{{ url_for('static_qc_page', study_id=study_id, timepoint_id=timepoint.name) }}"
-              class="btn btn-primary" id="doc-page" target="_blank">
-            <span class="button-text">View QC page</span>
-            <span class="glyphicon glyphicon-share-alt"></span>
-          </a>
-        {% endif %}
       </div>
     </div>
     <div class="col-xs-3">
       {% include 'timepoint/menu_options.html' %}
     </div>
   </div>
+
+  {% if timepoint.static_page %}
+    <a href="{{ url_for('static_qc_page', study_id=study_id, timepoint_id=timepoint.name) }}"
+        class="btn btn-primary pull-right" id="doc-page" target="_blank">
+      <span class="button-text">View QC page</span>
+      <span class="glyphicon glyphicon-share-alt"></span>
+    </a>
+  {% endif %}
 
   <div id="session-reporting">
     {% for session in timepoint.sessions.values() %}

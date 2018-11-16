@@ -42,16 +42,22 @@ def report_form_errors(form):
         for error in errors:
             flash('ERROR - {} {}'.format(label, error))
 
-def handle_issue(token, issue_form, study_id, timepoint_id):
-    title = clean_issue_title(issue_form.title.data, timepoint_id)
+def handle_issue(token, issue_form, study_id, timepoint):
+    title = clean_issue_title(issue_form.title.data, timepoint)
     study = Study.query.get(study_id)
+
     staff_member = study.choose_staff_contact()
+    if staff_member:
+        assigned_user = staff_member.github_name
+    else:
+        assigned_user = None
+
     try:
         issue = make_issue(token, title, issue_form.body.data,
-                assign=staff_member.github_name)
+                assign=assigned_user)
     except Exception as e:
         logger.error("Failed to create a GitHub issue for {}. "
-                "Reason: {}".format(timepoint_id, e))
+                "Reason: {}".format(timepoint, e))
         flash("Failed to create issue '{}'".format(title))
     else:
         flash("Issue '{}' created!".format(title))
@@ -62,7 +68,7 @@ def clean_issue_title(title, timepoint):
         title = timepoint
     elif title.endswith('-'):
         title = title[:-1].rstrip()
-    elif timepoint_id not in title:
+    elif timepoint not in title:
         title = timepoint + " - " + title
     return title
 

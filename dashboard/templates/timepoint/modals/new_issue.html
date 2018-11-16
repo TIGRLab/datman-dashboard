@@ -13,6 +13,14 @@
           Please add a descriptive title and add as much detail as possible to
           the body to help with investigating and resolving the problem.
         </p>
+        <br>
+        <br>
+        <p>
+          <strong>NOTE:</strong> You may have to refresh the participant's page
+          before your new issue appears.
+        </p>
+        <br>
+        <br>
         <form action="{{ url_for('create_issue', study_id=study_id,
             timepoint_id=timepoint.name)}}" method="post" name="add-issue"
             class="form">

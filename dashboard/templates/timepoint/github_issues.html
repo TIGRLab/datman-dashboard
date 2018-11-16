@@ -20,27 +20,41 @@
   None found for {{ timepoint.name }}
 {% else %}
   {% for issue in issues %}
-    <div class="row">
-      <div class="well">{{ issue.title }}</div>
-      <div class="text-muted issue-details">
-        <span class="pull-left">
-          Status: {{ issue.state }}
+    <div class="row github-issue">
+      <div class="col-xs-12">
+        <div class="text-muted issue-header">
+          Status:
+          <span class="issue-status {% if issue.state == 'open' %}text-success{% else %}text-danger{% endif %}">
+            {{ issue.state }}
+          </span>
           Comments: {{ issue.comments }}
-        </span>
-        <span class="pull-right">
-          {% if issue.state == 'closed' %}
-            Closed: {{ issue.closed_at.strftime('%I:%M %p, %Y-%m-%d') }}
-          {% else %}
+          <span class="pull-right entry-date">
             Created: {{ issue.created_at.strftime('%I:%M %p, %Y-%m-%d') }}
-            Last update: {{ issue.updated_at.strftime('%I:%M %p, %Y-%m-%d') }}
-          {% endif %}
-        <span>
+          </span>
+        </div>
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            {{ issue.title }}
+          </div>
+          <div class="panel-body">
+            {{ issue.body }}
+          </div>
+        </div>
+        <div class="text-muted issue-footer">
+          <span class="issue-last-mod entry-date">
+            {% if issue.state == 'closed' %}
+              Closed: {{ issue.closed_at.strftime('%I:%M %p, %Y-%m-%d') }}
+            {% else %}
+              Last update: {{ issue.updated_at.strftime('%I:%M %p, %Y-%m-%d') }}
+            {% endif %}
+          </span>
+        </div>
+        <a class="button btn btn-primary pull-right" href="{{ issue.html_url }}"
+            target="_blank">
+          <span class="pull-right glyphicon glyphicon-share-alt"></span>
+          <span class="button-text">Go to Issue</span>
+        </a>
       </div>
-      <a class="button btn btn-primary" href="{{ issue.html_url }}"
-          target="_blank">
-        <span class="pull-right glyphicon glyphicon-share-alt"></span>
-        <span class="button-text">Go to Issue</span>
-      </a>
     </div>
   {% endfor %}
 {% endif %}

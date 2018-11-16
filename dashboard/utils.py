@@ -24,7 +24,8 @@ def search_issues(token, timepoint):
         issues = Github(token).search_issues(search_string)
     except:
         return None
-    return [issue for issue in issues]
+    result = sorted(issues, key=lambda x: x.created_at)
+    return result
 
 def get_issue(token, issue_num=None):
     if not issue_num:
@@ -40,7 +41,13 @@ def get_issue(token, issue_num=None):
 def create_issue(token, title, body, assign=None):
     try:
         repo = get_issues_repo(token)
-        issue = repo.create_issue(title, body, assignee=assign)
+        if assign:
+            issue = repo.create_issue(title, body, assignee=assign)
+        else:
+            # I thought a default of None would be a clever way to avoid needing
+            # an if/else here but it turns out 'assignee' will raise a
+            # mysterious exception when set to None :( So... here we are
+            issue = repo.create_issue(title, body)
     except Exception as e:
         raise Exception("Can't create new issue '{}'. Reason: {}".format(title,
                 e))
