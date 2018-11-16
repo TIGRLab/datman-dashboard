@@ -49,60 +49,7 @@ class ScanChecklistForm(FlaskForm):
             render_kw={'placeholder': 'Add description', 'rows': 12,
                     'required': True, 'maxlength': '1028'})
     submit = SubmitField('Submit')
-
-# class MultiCheckboxField(SelectMultipleField):
-#     widget = widgets.ListWidget(prefix_label=False)
-#     option_widget = widgets.CheckboxInput()
-
-# class StudySelectionForm(FlaskForm):
-#     # studies = MultiCheckboxField(u'Study Access')
-#
-#
-#     def __init__(self, *args, **kwargs):
-#         FlaskForm.__init__(self, *args, **kwargs)
-#         studies = Study.query.all()
-#         study_choices = [(study.id, study.id) for study in studies]
-#         self.studies.choices = sorted(study_choices)
-
-# class BooleanSubField(BooleanField):
-#     """
-#     Work around for the fact that BooleanFields in a FormField list get
-#     set to 'True' regardless of what default you specify, as
-#     explained here: https://github.com/wtforms/wtforms/issues/308
-#     """
-#     def process_data(self, value):
-#         if isinstance(value, BooleanField):
-#             self.data = value.data
-#         else:
-#             self.data = bool(value)
-#
-# class StudyPermissionsForm(FlaskForm):
-#     study_id = TextField('Study: ', render_kw={'readonly': True})
-#     user_id = HiddenField()
-#     enabled = BooleanSubField('Access enabled')
-#     is_admin = BooleanSubField('Admin Access (can delete data + comments): ')
-#     primary_contact = BooleanSubField('Primary Contact (usually the PI): ')
-#     kimel_contact = BooleanSubField('Kimel Contact (i.e. staff member(s) in ' +
-#         'charge of handling this study): ')
-#     study_RA = BooleanSubField('Study RA: ')
-#     does_qc = BooleanSubField('Does QC: ')
-
-# class ScanCommentForm(FlaskForm):
-#     scan_id = HiddenField(id="scan_id")
-#     user_id = HiddenField(id="user_id")
-#     analyses = SelectField(u'Analysis used:', id="analysis")
-#     excluded = BooleanField(u'Was excluded:', id="excluded", default=False)
-#     comment = TextField(u'Comment',
-#                         id="comment",
-#                         validators=[DataRequired()])
-#     def __init__(self, *args, **kwargs):
-#         FlaskForm.__init__(self, *args, **kwargs)
-#         analyses = Analysis.query.all()
-#         analysis_choices = [(str(analysis.id), analysis.name)
-#                             for analysis in analyses]
-#         self.analyses.choices = analysis_choices
-
-
+    
 
 class UserForm(FlaskForm):
     id = HiddenField()
@@ -206,23 +153,6 @@ class AccessRequestForm(UserForm):
     studies = FieldList(FormField(StudyPermissionsForm))
     request_access = SelectMultipleField('Request access to studies: ')
     send_request = SubmitField(label='Submit Request')
-
-    # def __init__(self, *args, **kwargs):
-    #     FlaskForm.__init__(self, *args, **kwargs)
-    #     user_studies = obj.studies
-    #     for record in user_studies:
-    #         permissions = StudyPermissionsForm(obj=record)
-    #         self.studies.append_entry(permissions)
-
-    # def populate_obj(self, obj):
-    #     for study in obj.studies:
-    #         permissions = StudyPermissionsForm(obj=study)
-    #         self.studies.append_entry(permissions)
-    #     UserForm.populate_obj(self, obj)
-        # for name, field in iteritems(self._fields):
-        #     if name == 'studies':
-        #         continue
-        #     field.populate_obj(obj, name)
 
 class AnalysisForm(FlaskForm):
     name = TextField(u'Brief name',
