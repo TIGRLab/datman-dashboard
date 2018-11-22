@@ -27,6 +27,11 @@ from datman import scanid
 
 logger = logging.getLogger(__name__)
 
+class InvalidDataException(Exception):
+    """
+    Default exception when user tries to insert something obviously wrong.
+    """
+
 ################################################################################
 # Association tables (i.e. basic many to many relationships)
 
@@ -295,22 +300,49 @@ class Study(db.Model):
     __tablename__ = 'studies'
 
     id = db.Column('id', db.String(32), primary_key=True)
-    code = db.Column('study_code', db.String(32))
     name = db.Column('name', db.String(1024))
     description = db.Column('description', db.Text)
 
     users = db.relationship('StudyUser', back_populates='study')
-    sites = db.relationship('StudySite', back_populates='study')
+    sites = db.relationship('StudySite', back_populates='study',
+            collection_class=attribute_mapped_collection('site_id'))
     timepoints = db.relationship('Timepoint', secondary=study_timepoints_table,
             back_populates='studies', lazy='dynamic')
     scantypes = db.relationship('Scantype', secondary=study_scantype_table,
             back_populates='studies')
 
-    def __init__(self, study_id, code=None, full_name=None, description=None):
+    def __init__(self, study_id, full_name=None, description=None):
         self.id = study_id
-        self.code = code
         self.full_name = full_name
         self.description = description
+
+    def add_timepoint(self, timepoint):
+        if isinstance(timepoint, scanid.Identifier):
+            timepoint = Timepoint(timepoint.get_full_subjectid_with_timepoint(),
+                    timepoint.site, is_phantom=scanid.is_phantom(timepoint))
+
+        if not isinstance(timepoint, Timepoint):
+            raise InvalidDataException("Invalid input to 'add_timepoint()': "
+                    "instance of dashboard.models.Timepoint or "
+                    "datman.scanid.Identifier expected")
+
+        if timepoint.site_id not in self.sites.keys():
+            raise InvalidDataException("Timepoint's site {} is not configured "
+                    "for study {}".format(timepoint.site_id, self.id))
+        self.timepoints.append(timepoint)
+        try:
+            db.session.add(self)
+            db.session.commit()
+        except FlushError as e:
+            db.session.rollback()
+            raise InvalidDataException("Can't add timepoint {}. Already "
+                    "exists.".format(timepoint))
+        except Exception as e:
+            db.session.rollback()
+            e.message = "Failed to add timepoint {}. Reason: {}".format(
+                    timepoint, e)
+            raise
+        return timepoint
 
     def num_timepoints(self, type=''):
         if type.lower() == 'human':
@@ -546,9 +578,26 @@ class Timepoint(db.Model):
 
     def __init__(self, name, site, is_phantom=False, static_page=None):
         self.name = name
-        self.site = site
+        self.site_id = site
         self.is_phantom = is_phantom
         self.static_page = static_page
+
+    def add_session(self, num, date=None):
+        session = Session(self.name, num, date=date)
+        self.sessions[num] = session
+        try:
+            db.session.add(self)
+            db.session.commit()
+        except AssertionError as e:
+            db.session.rollback()
+            raise InvalidDataException("Session {} of timepoint {} already "
+                    "exists".format(num, self.name))
+        except Exception as e:
+            db.session.rollback()
+            e.message = "Failed to add session {} to timepoint {}. Reason: " \
+                    "{}".format(num, self.name, e)
+            raise
+        return session
 
     def belongs_to(self, study):
         """
@@ -710,13 +759,13 @@ class Session(db.Model):
     redcap_record = db.relationship('SessionRedcap', back_populates='session',
             uselist=False, cascade='all, delete')
 
-    def __init__(self, name, num, date=None, signed_off=False, reviewer=None,
+    def __init__(self, name, num, date=None, signed_off=False, reviewer_id=None,
             review_date=None):
         self.name = name
         self.num = num
         self.date = date
         self.signed_off = signed_off
-        self.reviewer = reviewer
+        self.reviewer_id = reviewer_id
         self.review_date = review_date
 
     def is_qcd(self):
@@ -788,9 +837,9 @@ class EmptySession(db.Model):
 
 
 class SessionRedcap(db.Model):
-# Using a class instead of an association table here to let us know when an
-# entry has been added without a redcap record (i.e. when a user has let us know
-# that a session is never going to get a redcap record)
+    # Using a class instead of an association table here to let us know when an
+    # entry has been added without a redcap record (i.e. when a user has let us know
+    # that a session is never going to get a redcap record)
     __tablename__ = 'session_redcap'
 
     name = db.Column('name', db.String(64), primary_key=True, nullable=False)
@@ -1102,6 +1151,7 @@ class StudySite(db.Model):
     site_id = db.Column('site', db.String(32), db.ForeignKey('sites.name'),
             primary_key=True)
     uses_redcap = db.Column('uses_redcap', db.Boolean, default=False)
+    code = db.Column('code', db.String(32))
 
     site = db.relationship('Site', back_populates='studies')
     study = db.relationship('Study', back_populates='sites')

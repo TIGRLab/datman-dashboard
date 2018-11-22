@@ -8,19 +8,37 @@ from sqlalchemy import and_, func
 
 from dashboard import db
 from .models import Timepoint, Session, Scan, Study, Site, Metrictype, \
-    MetricValue, Scantype
+    MetricValue, Scantype, StudySite
 import datman.scanid as scanid
 
 logger = logging.getLogger(__name__)
-logger.info('Loading queries')
+
+def get_study(study_code, site=None):
+    studies = StudySite.query.filter(StudySite.code == study_code)
+    if site:
+        studies = studies.filter(StudySite.site_id == site)
+    return studies.all()
 
 def find_subjects(search_str):
+    """
+    Used by the dashboard's search bar
+    """
     search_str = search_str.strip().upper()
     query = Timepoint.query.filter(func.upper(Timepoint.name).contains(
             search_str))
     return query.all()
 
+def get_session(name, num):
+    """
+    Used by datman. Return a specific session or None
+    """
+    return Session.query.get((name, num))
+
 def find_sessions(search_str):
+    """
+    Used by the dashboard's search bar and so must work around fuzzy user
+    input.
+    """
     search_str = search_str.strip().upper()
     try:
         ident = scanid.parse(search_str)
@@ -43,6 +61,10 @@ def find_sessions(search_str):
     return query.all()
 
 def find_scans(search_str):
+    """
+    Used by the dashboard's search bar and so must work around fuzzy user
+    input.
+    """
     search_str = search_str.strip().upper()
     try:
         ident, tag, series, _ = scanid.parse_filename(search_str)
