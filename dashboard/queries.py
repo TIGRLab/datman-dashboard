@@ -34,6 +34,7 @@ def get_session(name, num):
     """
     return Session.query.get((name, num))
 
+
 def find_sessions(search_str):
     """
     Used by the dashboard's search bar and so must work around fuzzy user
@@ -59,6 +60,19 @@ def find_sessions(search_str):
                     ident.get_full_subjectid_with_timepoint()))
 
     return query.all()
+
+
+def get_scan(scan_name, timepoint=None, session=None):
+    """
+    Used by datman. Return a list of matching scans or an empty list
+    """
+    query = Scan.query.filter(Scan.name == scan_name)
+    if timepoint:
+        query = query.filter(Scan.timepoint == timepoint)
+    if session:
+        query = query.filter(Scan.repeat == session)
+    return query.all()
+
 
 def find_scans(search_str):
     """

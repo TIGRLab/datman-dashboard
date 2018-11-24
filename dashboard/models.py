@@ -768,6 +768,32 @@ class Session(db.Model):
         self.reviewer_id = reviewer_id
         self.review_date = review_date
 
+    def add_scan(self, name, series, tag, description=None, source_id=None):
+        scan = Scan(name, self.name, self.num, series, tag, description,
+                source_id)
+        self.scans.append(scan)
+        try:
+            db.session.add(self)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            raise InvalidDataException("Failed to add scan {}. Reason: "
+                    "{}".format(name, e))
+        return scan
+
+    def delete_scan(self, name):
+        match = [scan for scan in self.scans if scan.name == name]
+        if not match:
+            return
+        try:
+            db.session.delete(match[0])
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            e.message = "Could not delete scan {}. Reason: {}".format(name,
+                    e.message)
+            raise e
+
     def is_qcd(self):
         if self.timepoint.is_phantom:
             return True
@@ -892,7 +918,7 @@ class Scan(db.Model):
 
     __table_args__ = (ForeignKeyConstraint(['timepoint', 'session'],
             ['sessions.name', 'sessions.num']),
-            UniqueConstraint(timepoint, repeat, series))
+            UniqueConstraint(name))
 
     def __init__(self, name, timepoint, repeat, series, tag, description=None,
             source_id=None):
