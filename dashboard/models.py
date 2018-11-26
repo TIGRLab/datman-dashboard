@@ -824,6 +824,10 @@ class Session(db.Model):
         db.session.delete(self)
         db.session.commit()
 
+    def save(self):
+        db.session.add(self)
+        db.session.commit()
+
     def __repr__(self):
         return "<Session {}, {}>".format(self.name, self.num)
 
