@@ -1186,10 +1186,11 @@ class StudySite(db.Model):
     site = db.relationship('Site', back_populates='studies')
     study = db.relationship('Study', back_populates='sites')
 
-    def __init__(self, study_id, site_id, uses_redcap=False):
+    def __init__(self, study_id, site_id, uses_redcap=False, code=None):
         self.study_id = study_id
         self.site_id = site_id
         self.uses_redcap = uses_redcap
+        self.code = code
 
     def __repr__(self):
         return "<StudySite {} - {}>".format(self.study_id, self.site_id)

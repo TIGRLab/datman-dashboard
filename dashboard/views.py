@@ -889,38 +889,6 @@ def metricDataAsJson(format='http'):
         return(json.dumps(objects, indent=4, separators=(',', ': ')))
 
 
-@app.route('/todo')
-@app.route('/todo/<int:study_id>', methods=['GET'])
-@login_required
-def todo(study_id=None):
-    """
-    Runs the datman binary dm-qc-todo.py and returns the results
-    as a json object
-    """
-    if study_id:
-        study = Study.query.get(study_id)
-        study_name = study.nickname
-    else:
-        study_name = None
-
-    if not current_user.has_study_access(study_id):
-        flash('Not authorised')
-        return redirect(url_for('index'))
-
-    # todo_list = utils.get_todo(study_name)
-    try:
-        todo_list = utils.get_todo(study_name)
-    except utils.TimeoutError:
-        # should do something nicer here
-        todo_list = {'error': 'timeout'}
-    except RuntimeError as e:
-        todo_list = {'error': 'runtime:{}'.format(e)}
-    except:
-        todo_list = {'error': 'other'}
-
-    return jsonify(todo_list)
-
-
 @app.route('/redcap', methods=['GET', 'POST'])
 def redcap():
     """

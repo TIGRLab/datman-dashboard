@@ -11,6 +11,7 @@ import datman.scanid
 from config import REDCAP_TOKEN
 from .models import Session, Study, Site
 from . import utils
+from .queries import get_study
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +100,7 @@ class redcap_record(object):
 
             self.__set_site(ident.site)
             # Requires whole name because 'DTI' study id is overloaded
-            self.__set_study(str_session)
+            self.__set_study(str_session, ident.site)
 
             db_session = Session()
             db_session.name = str_session
@@ -141,23 +142,19 @@ class redcap_record(object):
             logger.debug('Setting site to:{}.'
                          .format(self.db_site.name))
 
-    def __set_study(self, study_str):
+    def __set_study(self, study_str, site):
         """
         Set the study from the id in the session name
         """
-        if not utils._check_study(study_str):
-            study_str = utils.get_study_name(study_str)
+        study = get_study(study_str, site=site)
 
-        db_study = Study.query.filter(Study.nickname == study_str)
-
-        if db_study.count() != 1:
-            msg = 'Failed to identify study:{} in database'.format(study_str)
+        if len(study) != 1:
+            msg = 'Failed to identify study {}'.format(study_str)
             logger.error(msg)
             raise redcap_exception(msg)
-        else:
-            self.db_study = db_study.first()
-            logger.debug('Setting study to:{}.'
-                         .format(self.db_study.nickname))
+
+        self.db_study = study[0].study
+        logger.debug('Setting study to {}'.format(self.db_study))
 
     def update_db_session(self):
         if not self.db_session:
