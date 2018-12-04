@@ -1,6 +1,6 @@
 <div class="redcap-survey">
   <span class="section-subheader">REDCap Comment</span>
-  {% if session.redcap_record.record_id %}
+  {% if session.redcap_record.record %}
     <div class="well">
       {% if session.redcap_record.record.comment %}
         {{ session.redcap_record.record.comment }}

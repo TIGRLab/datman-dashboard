@@ -794,6 +794,20 @@ class Session(db.Model):
                     e.message)
             raise e
 
+    def add_redcap(self, redcap_record):
+        if self.redcap_record:
+            raise InvalidDataException("{} already has a redcap record "
+                    "with ID {}. Delete the current one from the database "
+                    "before adding a new record.".format(self,
+                    self.redcap_record.record_id))
+        if not isinstance(redcap_record, RedcapRecord):
+            raise InvalidDataException("RedcapRecord instance expected.")
+        db.session.add(redcap_record)
+        db.session.flush()
+        sess_redcap = SessionRedcap(self.name, self.num, redcap_record.id)
+        self.redcap_record = sess_redcap
+        self.save()
+
     def is_qcd(self):
         if self.timepoint.is_phantom:
             return True
