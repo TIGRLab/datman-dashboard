@@ -143,18 +143,6 @@ def index():
                            study_count=study_count,
                            site_count=site_count)
 
-@app.route('/sites')
-@login_required
-def sites():
-    pass
-
-
-@app.route('/scantypes')
-@login_required
-def scantypes():
-    pass
-
-
 @app.route('/user', methods=['GET', 'POST'])
 @app.route('/user/<int:user_id>', methods=['GET', 'POST'])
 @login_required
@@ -499,12 +487,35 @@ def delete_scan(study_id, timepoint_id, scan_id):
 
 ############## End of Timepoint View functions #################################
 
+@app.route('/redcap', methods=['GET', 'POST'])
+def redcap():
+    """
+    A redcap server can send a notification to this URL when a survey is saved
+    and the record will be retrieved from the redcap server and saved to the
+    database.
+    """
+    logger.info('Received a query from redcap')
+    if request.method != 'POST':
+        logger.error('Received an invalid redcap request. A REDCAP data '
+                'callback may be misconfigured')
+        raise InvalidUsage('Expected a POST request', status_code=400)
+
+    logger.debug('Received keys {} from REDcap from URL {}'.format(
+            request.form.keys(), request.form['project_url']))
+    try:
+        REDCAP.create_from_request(request)
+    except Exception as e:
+        logger.error('Failed creating redcap object. Reason: {}'.format(e))
+        raise InvalidUsage(str(e), status_code=400)
+
+    return render_template('200.html'), 200
+
 @app.route('/redcap_redirect/<int:record_id>', methods=['GET'])
 @login_required
 def redcap_redirect(record_id):
     """
     Used to provide a link from the session page to a redcap session complete
-    record
+    record on the redcap server itself.
     """
     record = get_redcap_record(record_id)
 
@@ -519,7 +530,6 @@ def redcap_redirect(record_id):
 
     return redirect(redcap_url)
 
-# @app.route('/scan', methods=["GET"])
 @app.route('/study/<string:study_id>/scan/<int:scan_id>', methods=['GET', 'POST'])
 @login_required
 def scan(study_id, scan_id):
@@ -887,37 +897,6 @@ def metricDataAsJson(format='http'):
     else:
         # return a pretty object for human readable
         return(json.dumps(objects, indent=4, separators=(',', ': ')))
-
-
-@app.route('/redcap', methods=['GET', 'POST'])
-def redcap():
-    """
-    Route used by the redcap ScanCompeted data callback.
-    Basically grabs the redcap record id and updates the database.
-    """
-    logger.info('Recieved a query from redcap')
-    if request.method == 'POST':
-        logger.debug('Recieved keys:{} from REDcap.'.format(request.form.keys()))
-        logger.debug(request.form['project_url'])
-        try:
-            rc = REDCAP.redcap_record(request)
-        except Exception as e:
-            logger.error('Failed creating redcap object:{}'.format(str(e)))
-            logger.debug(str(e))
-            raise InvalidUsage(str(e), status_code=400)
-    else:
-        logger.error('Invalid redcap response')
-        raise InvalidUsage('Expected a POST request', status_code=400)
-    logger.info('Processing query')
-    if rc.instrument_completed:
-        logger.info('Updating db session.')
-        rc.update_db_session()
-    else:
-        logger.info('Instrument not complete, ignoring.')
-
-    rc.get_survey_return_code()
-
-    return render_template('200.html'), 200
 
 
 @app.errorhandler(404)

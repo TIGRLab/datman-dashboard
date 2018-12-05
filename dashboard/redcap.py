@@ -31,6 +31,7 @@ def create_from_request(request):
                 'required key. Found keys: {}'.format(request.form.keys()))
 
     if completed != 2:
+        logger.info("Record {} not completed. Ignoring".format(record))
         return
 
     rc = REDCAP.Project(url + 'api/', REDCAP_TOKEN)
@@ -59,7 +60,7 @@ def create_from_request(request):
     if session.redcap_record:
         orig_record = session.redcap_record.record
         if (orig_record.record != record or
-                orig_record.project != project or
+                str(orig_record.project) != project or
                 orig_record.url != url):
             raise RedcapException("Redcap record already found for {}. "
                     "Please delete original record before adding a new "
@@ -112,13 +113,3 @@ def get_timepoint(ident):
         study = get_study(ident)
         timepoint = study.add_timepoint(ident)
     return timepoint
-
-def get_survey_return_code(redcap_entry):
-    url = self.redcap_url + 'api/'
-    payload = {'token': REDCAP_TOKEN,
-               'format': 'json',
-               'record': redcap_entry.record,
-               'instrument': redcap_entry.instrument,
-               'content': 'surveyLink'}
-    response = requests.post(url, data=payload)
-    logger.info(str(response.text))
