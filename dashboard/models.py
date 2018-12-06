@@ -693,6 +693,14 @@ class Timepoint(db.Model):
             raise Exception('Comment not found.')
         return match[0]
 
+    def save(self):
+        try:
+            db.session.add(self)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            raise e
+
     def __repr__(self):
         return "<Timepoint {}>".format(self.name)
 
