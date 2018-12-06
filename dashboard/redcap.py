@@ -3,13 +3,12 @@ from __future__ import absolute_import
 import re
 import logging
 
-import requests
 import redcap as REDCAP
 
 import datman.scanid
 
 from config import REDCAP_TOKEN
-from .models import RedcapRecord, Session, Study, Site, db
+from .models import RedcapRecord, Session
 from .queries import get_study
 
 logger = logging.getLogger(__name__)
@@ -57,30 +56,12 @@ def create_from_request(request):
                 server_record.keys()))
 
     session = set_session(session_name)
-    if session.redcap_record:
-        orig_record = session.redcap_record.record
-        if (orig_record.record != record or
-                str(orig_record.project) != project or
-                orig_record.url != url):
-            raise RedcapException("Redcap record already found for {}. "
-                    "Please delete original record before adding a new "
-                    "one".format(session))
-        orig_record.instrument = instrument
-        orig_record.date = date
-        orig_record.user = redcap_user
-        orig_record.comment = comment
-        orig_record.redcap_version = version
-        db.session.add(orig_record)
-        db.session.commit()
-        return orig_record
-
-    new_record = RedcapRecord(record, project, url)
-    new_record.instrument = instrument
-    new_record.date = date
-    new_record.user = redcap_user
-    new_record.comment = comment
-    new_record.redcap_version = version
-    session.add_redcap(new_record)
+    try:
+        new_record = session.add_redcap(record, project, url, instrument, date,
+                redcap_user, comment, version)
+    except Exception as e:
+        raise RedcapException("Failed adding record {} from project {} on "
+                "server {}. Reason: {}".format(record, project, url, e))
 
     return new_record
 
@@ -100,8 +81,8 @@ def set_session(name):
         session = timepoint.add_session(num)
     return session
 
-def get_study(ident):
-    study = queries.get_study(ident.study, site=ident.site)
+def find_study(ident):
+    study = get_study(ident.study, site=ident.site)
     if not study:
         raise RedcapException("Invalid study/site combination: {} {}"
             "".format(ident.study, ident.site))
@@ -110,6 +91,6 @@ def get_study(ident):
 def get_timepoint(ident):
     timepoint = Timepoint.query.get(ident.get_full_subjectid_with_timepoint())
     if not timepoint:
-        study = get_study(ident)
+        study = find_study(ident)
         timepoint = study.add_timepoint(ident)
     return timepoint

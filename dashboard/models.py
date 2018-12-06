@@ -794,19 +794,36 @@ class Session(db.Model):
                     e.message)
             raise e
 
-    def add_redcap(self, redcap_record):
+    def add_redcap(self, record_num, project, url, instrument=None, date=None,
+            rc_user=None, comment=None, version=None, event_id=None):
         if self.redcap_record:
-            raise InvalidDataException("{} already has a redcap record "
-                    "with ID {}. Delete the current one from the database "
-                    "before adding a new record.".format(self,
-                    self.redcap_record.record_id))
-        if not isinstance(redcap_record, RedcapRecord):
-            raise InvalidDataException("RedcapRecord instance expected.")
-        db.session.add(redcap_record)
-        db.session.flush()
-        sess_redcap = SessionRedcap(self.name, self.num, redcap_record.id)
-        self.redcap_record = sess_redcap
-        self.save()
+            rc_record = self.redcap_record.record
+            if (rc_record.record != record_num or
+                    str(rc_record.project) != project or
+                    rc_record.url != url):
+                raise InvalidDataException("Existing record already found. "
+                    "Please remove the old record before adding a new one.")
+        else:
+            rc_record = RedcapRecord(record_num, project, url)
+            db.session.add(rc_record)
+            # Flush to get an ID assigned
+            db.session.flush()
+            self.redcap_record = SessionRedcap(self.name, self.num, rc_record.id)
+            self.save()
+
+        if instrument:
+            rc_record.instrument = instrument
+        if date:
+            rc_record.date = date
+        if rc_user:
+            rc_record.user = rc_user
+        if comment:
+            rc_record.comment = comment
+        if version:
+            rc_record.version = version
+        db.session.add(rc_record)
+        db.session.commit()
+        return rc_record
 
     def is_qcd(self):
         if self.timepoint.is_phantom:
