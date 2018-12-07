@@ -13,8 +13,10 @@ import datman.scanid as scanid
 
 logger = logging.getLogger(__name__)
 
-def get_study(study_code, site=None):
-    studies = StudySite.query.filter(StudySite.code == study_code)
+def get_study(name=None, tag=None, site=None):
+    if name:
+        return Study.query.filter(Study.id == name).all()
+    studies = StudySite.query.filter(StudySite.code == tag)
     if site:
         studies = studies.filter(StudySite.site_id == site)
     return studies.all()
