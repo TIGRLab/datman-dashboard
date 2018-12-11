@@ -82,7 +82,7 @@ def set_session(name):
     return session
 
 def find_study(ident):
-    study = get_study(tag=ident.study, site=ident.site))
+    study = get_study(tag=ident.study, site=ident.site)
     if not study:
         raise RedcapException("Invalid study/site combination: {} {}"
             "".format(ident.study, ident.site))

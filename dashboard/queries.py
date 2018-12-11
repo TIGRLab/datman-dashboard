@@ -8,7 +8,7 @@ from sqlalchemy import and_, func
 
 from dashboard import db
 from .models import Timepoint, Session, Scan, Study, Site, Metrictype, \
-    MetricValue, Scantype, StudySite
+    MetricValue, Scantype, StudySite, User
 import datman.scanid as scanid
 
 logger = logging.getLogger(__name__)
@@ -120,6 +120,11 @@ def find_scans(search_str):
         name = "_".join([ident.get_full_subjectid_with_timepoint_session(), tag, series])
         query = Scan.query.filter(func.upper(Scan.name).contains(name))
 
+    return query.all()
+
+def get_user(username):
+    query = User.query.filter(func.lower(User._username).contains(
+            func.lower(username)))
     return query.all()
 
 def query_metric_values_byid(**kwargs):

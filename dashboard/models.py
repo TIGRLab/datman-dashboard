@@ -481,6 +481,32 @@ class Study(db.Model):
 
         return need_rewrite.all()
 
+    def get_blacklisted_scans(self):
+        query = self._get_checklist()
+        blacklisted_scans =  query.filter(and_(ScanChecklist.approved == False,
+                ScanChecklist.comment is not None))
+        return blacklisted_scans.all()
+
+    def get_flagged_scans(self):
+        query = self._get_checklist()
+        flagged_scans = query.filter(and_(ScanChecklist.approved == True,
+                ScanChecklist.comment != None))
+        return flagged_scans.all()
+
+    def get_qced_scans(self):
+        query = self._get_checklist()
+        reviewed_scans = query.filter(and_(ScanChecklist.approved == True,
+                ScanChecklist.comment == None))
+        return reviewed_scans.all()
+
+    def _get_checklist(self):
+        query = db.session.query(ScanChecklist) \
+            .join(Scan) \
+            .join(study_timepoints_table,
+                    and_(study_timepoints_table.c.timepoint == Scan.timepoint,
+                    study_timepoints_table.c.study == self.id))
+        return query
+
     def get_valid_metric_names(self):
         """
         Return a list of metric names with duplicates removed.
