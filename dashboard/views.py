@@ -1113,9 +1113,9 @@ def static_qc_page(study_id, timepoint_id=None, image=None, tech_notes_path=None
         return send_from_directory(qc_dir, image)
     return send_file(timepoint.static_page)
 
-# The file name (with 'nii.gz' extension) needs to be last part of the URL or
-# papaya will fail to read the file because it wont recognize that it needs to
-# be decompressed
+# The file name (with correct extension) needs to be last part of the URL or
+# papaya will fail to read the file because it wont figure out on its own
+# whether or not a file needs decompression
 @app.route('/study/<string:study_id>/load_scan/<int:scan_id>/<string:file_name>')
 @login_required
 def load_scan(study_id, scan_id, file_name):

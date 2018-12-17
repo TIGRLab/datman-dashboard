@@ -999,25 +999,23 @@ class Scan(db.Model):
         self.description = description
         self.source_id = source_id
 
-    def get_path(self, study_id=None):
-        if self.is_linked():
-            timepoint = self.source_data.session.timepoint
-        else:
-            timepoint = self.session.timepoint
-        if study_id:
-            study = study_id
-        else:
-            study = timepoint.studies.values()[0].id
+    def get_path(self, study=None):
+        if not study:
+            study = self.session.timepoint.studies.values()[0].id
         nii_folder = get_study_path(study, folder='nii')
-        return os.path.join(nii_folder, str(timepoint), self.nifti_name)
+        fname = "_".join([self.name, self.description + ".nii.gz"])
+        full_path = os.path.join(nii_folder, self.timepoint, fname)
+        if not os.path.exists(full_path):
+            full_path = full_path.replace(".nii.gz", ".nii")
+        return os.path.realpath(full_path)
 
     @property
     def nifti_name(self):
-        if self.is_linked():
-            full_name = [self.source_data.name, self.source_data.description]
-        else:
-            full_name = [self.name, self.description]
-        return "_".join(full_name) + ".nii.gz"
+        # This is needed for the papaya viewer - it requires the file name with
+        # extension. If the real file is .gz and the given file name doesnt end
+        # that way (or vice versa) the viewer crashes, so you need to actually
+        # locate it on the file system, no short cuts :(
+        return os.path.basename(self.get_path())
 
     def get_checklist_entry(self):
         if self.is_linked():
