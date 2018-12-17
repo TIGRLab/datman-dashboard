@@ -1009,7 +1009,7 @@ class Scan(db.Model):
         else:
             study = timepoint.studies.values()[0].id
         nii_folder = get_study_path(study, folder='nii')
-        return os.path.join(nii_folder, self.timepoint, self.nifti_name)
+        return os.path.join(nii_folder, str(timepoint), self.nifti_name)
 
     @property
     def nifti_name(self):
