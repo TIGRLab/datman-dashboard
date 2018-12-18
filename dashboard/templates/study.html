@@ -14,104 +14,86 @@ Most of the html in the divs is extracted into a snippet file and rendered
   using a jinja include function
  -->
 {% extends "base.html" %}
-{% include 'flash.html' %}
+{% include "flash.html" %}
 {% block content %}
-  <div class="bd-pageheader jumbotron">
-    <h1>{{ study.name }}</h1>
-      {% if study.description %}
-      <p class="lead">
-        {{ study.description }}
-      </p>
-        {% endif %}
-      <p class="lead">
-        <ul class="list-inline">
-          <li>Human: <span class="badge">{{study.session_count('human')}}</span></li>
-          <li>Phantom: <span class="badge">{{study.session_count('phantom')}}</span></li>
-        </ul>
-      </p>
-    </h1>
-  </div>
+
   <div class="container">
-    <ul class="nav nav-tabs">
-    <!-- THE LIST OF TAB HEADERS STARTS HERE -->
-      <li role="presentation" class="dropdown">
-        <a class="dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
-          {{ study.nickname }} <span class="caret"></span>
-        </a>
-        <ul class="dropdown-menu" role="menu" aria-labelledby="site_menu">
-          {% for study in current_user.get_studies() %}
-          <li role="presentation">
-            <a role="menuitem" href= {{ url_for('study', study_id=study.id) }} >
-              {{ study.nickname }}
-            </a>
-          </li>
-        {% endfor %}
-      </ul>
-      {% if active_tab %}
-        <li><a data-toggle="tab" href="#overview">Overview</a></li>
-      {% else %}
-        <li class="active"><a data-toggle="tab" href="#overview">Overview</a></li>
+    <div class="jumbotron">
+      <h1>{{ study.name }}</h1>
+      {% if study.description %}
+        <p class="lead">{{ study.description }}</p>
       {% endif %}
-      {% if active_tab=='qc' %}
-        <li class="active"><a data-toggle="tab" href="#qc">QC to-do list</a></li>
-      {% else %}
-        <li><a data-toggle="tab" href="#qc">QC to-do list</a></li>
-      {% endif %}
-      {% if active_tab=='sessions' %}
-        <li class="active"><a data-toggle="tab" href="#sessions">Sessions</a></li>
-      {% else %}
-        <li><a data-toggle="tab" href="#sessions">Sessions</a></li>
-      {% endif %}
-      <li><a data-toggle="tab" href="#phantoms">Phantoms</a></li>
-      <li><a data-toggle="tab" href="#humans">Subjects</a></li>
-    </ul>
-    <!-- THE LIST OF TAB HEADERS ENDS HERE -->
-    <!-- THE LIST OF CONTENT DIVS STARTS HERE -->
-    <div class="tab-content">
-      {% if active_tab %}
-        <div id="overview" class="tab-pane fade in">
-      {% else %}
-        <div id="overview" class="tab-pane fade in active">
-      {% endif %}
-      {% include 'study_overview_snip.html' %}
-      </div><!--/overview-content-->
-      {% if active_tab=='qc' %}
-        <div id="qc" class="tab-pane fade in active">
-      {% else %}
-        <div id="qc" class="tab-pane fade in">
-      {% endif %}
-        {% include 'qc_snip.html' %}
-      </div><!--/qc-content-->
-      {%if active_tab=='sessions' %}
-        <div id="sessions" class="tab-pane fade in active">
-      {% else %}
-        <div id="sessions" class="tab-pane fade in">
-      {% endif %}
-      <!-- the following code could be extracted to a snippet file -->
-    <br/>
-        <table class="table table-condensed table-hover table-striped" id="tbl_sessions">
-          <thead>
-            <tr>
-              <th>Session</th>
-              <th>QC complete</th>
-              <th>Is Phantom</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for session in study.sessions %}
-              {% include 'sessions_snip.html' %}
+        <p class="lead">
+          <ul class="list-inline">
+            <li>Human: <span class="badge">{{study.session_count('human')}}</span></li>
+            <li>Phantom: <span class="badge">{{study.session_count('phantom')}}</span></li>
+          </ul>
+        </p>
+    </div>
+
+    {% set pending_qc = study.outstanding_issues() %}
+    {% if pending_qc|count %}
+      {% include 'qc_snip.html' %}
+    {% endif %}
+
+    <div role="navigation">
+      <!-- THE LIST OF TAB HEADERS STARTS HERE -->
+      <ul class="nav nav-tabs">
+        <li role="presentation" class="dropdown">
+          <a class="dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
+            Change Study <span class="caret"></span>
+          </a>
+          <ul class="dropdown-menu scrollable-menu study-menu">
+            {% for study in current_user.get_studies() %}
+              <li>
+                <a href="{{ url_for('study', study_id=study.id) }}">
+                  {{ study.nickname }}
+                </a>
+              </li>
             {% endfor %}
-        </tbody>
-      </table>
-      <!-- end of potential snippet file -->
-    </div><!--/session content-->
-      <div id="phantoms" class="tab-pane fade in metrics">
+          </ul>
+        </li>
+        <li role="presentation" class="active">
+          <a data-toggle="tab" href="#overview">Overview</a>
+        </li>
+        <li role="presentation">
+          <a data-toggle="tab" href="#sessions">Session List</a>
+        </li>
+        <li role="presentation">
+          <a data-toggle="tab" href="#phantoms">Phantom Plots</a>
+        </li>
+        <li role="presentation">
+          <a data-toggle="tab" href="#humans">Subject Plots</a>
+        </li>
+      </ul>
+    </div>
+
+    <div class="tab-content">
+      <!-- TAB CONTENT BEGINS HERE -->
+      <div class="tab-pane active" id="overview">
+        {% include 'study_overview_snip.html' %}
+      </div>
+      <div class="tab-pane" id="sessions">
+        {% include 'session_list_snip.html' %}
+      </div>
+      <div class="tab-pane" id="phantoms">
         {% include 'metric_selections_phantom_snip.html' %}
-      </div><!--/humans-content-->
-      <div id="humans" class="tab-pane fade in metrics">
+      </div>
+      <div class="tab-pane" id="humans">
         {% include 'metric_selections_human_snip.html' %}
-      </div><!--/humans-content-->
-    </div><!--/tab content-->
-  </div><!--/container-->
-  <script async src="/static/js/metric-selector.js"></script>
+      </div>
+    </div>
+  </div>
+
+<!-- Turns on the DataTables plugin for the Session List table -->
+<!-- this plugin provides the pagination, search bar, etc. that wraps the table -->
+<script>
+$(document).ready(function (){
+  $('#tbl_sessions').DataTable();
+})
+</script>
+
+<!-- Holds the code for the Subject plot and Phantom plot graphs -->
+<script async src="/static/js/metric-selector.js"></script>
+
 {% endblock %}

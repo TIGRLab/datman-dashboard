@@ -25,11 +25,6 @@ These following lines define many - many links between tables.
 i.e. a study can have many sites and a site can be part of many studies.
 This type of definition requires a _linking_ table in SQL.
 """
-study_site_table = db.Table('study_site',
-                            db.Column('study_id', db.Integer,
-                                      db.ForeignKey('studies.id')),
-                            db.Column('site_id', db.Integer,
-                                      db.ForeignKey('sites.id')))
 
 study_scantype_table = db.Table('study_scantypes',
                                 db.Column('study_id', db.Integer,
@@ -138,8 +133,7 @@ class Study(db.Model):
     name = db.Column(db.String(64))
     scantypes = db.relationship('ScanType', secondary=study_scantype_table,
                                 back_populates='studies')
-    sites = db.relationship('Site', secondary=study_site_table,
-                            back_populates='studies')
+    sites = db.relationship("StudySite", back_populates="study")
     sessions = db.relationship('Session')
     description = db.Column(db.String(1024))
     fullname = db.Column(db.String(1024))
@@ -182,14 +176,40 @@ class Study(db.Model):
 
         return(len(sessions))
 
+    def new_sessions(self):
+        """
+        Returns a count of all sessions that are ready for review and sign off
+        """
+        new = 0
+        for session in self.sessions:
+            if (not session.is_current_qcd() and session.scan_count() > 0):
+                new += 1
+        return new
+
+    def outstanding_issues(self):
+        """
+        Returns a list of sessions with outstanding QC issues. This includes:
+            1. Sessions that need sign off still
+            2. Sessions missing a redcap record (where one is expected)
+            3. Sessions with a redcap record but no imaging
+            4. Sessions with a new repeat session that need their QC page
+               regenerated (these also need sign off)
+        """
+        session_list = []
+        for session in self.sessions:
+            if (not session.is_current_qcd() or
+                    session.needs_rewrite() or
+                    session.needs_redcap_survey() or
+                    session.needs_scans()):
+                session_list.append(session)
+        return session_list
 
 class Site(db.Model):
     __tablename__ = 'sites'
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), index=True, unique=True)
-    studies = db.relationship('Study', secondary=study_site_table,
-                              back_populates='sites')
+    studies = db.relationship("StudySite", back_populates="site")
     sessions = db.relationship('Session')
 
     def __repr__(self):
@@ -220,6 +240,7 @@ class Session(db.Model):
     gh_issue = db.Column(db.Integer)
     redcap_record = db.Column(db.String(256))  # ID of the record in redcap
     redcap_entry_date = db.Column(db.Date)  # date of record entry in redcap
+    redcap_eventid = db.Column(db.Integer)  # integer mapping of redcap event name
     redcap_user = db.Column(db.Integer)  # ID of the user who filled in the redcap record
     redcap_comment = db.Column(db.String(3072))  # Redcap comment field
     redcap_url = db.Column(db.String(1024))  # URL for the redcap server
@@ -235,7 +256,11 @@ class Session(db.Model):
                        self.site.name))
 
     def is_qcd(self):
-        """checks if session has (ever) been quality checked"""
+        """
+        Checks if session has (ever) been quality checked. Repeats that have
+        never been reviewed will not be picked up by this one. See
+        'is_current_qcd()' for an answer that takes repeats into account
+        """
         if self.cl_comment:
             return True
 
@@ -243,8 +268,44 @@ class Session(db.Model):
         """
         checks if the most recent repeat of a session has been quality checked
         """
-        if self.last_repeat_qcd == self.repeat_count:
-            return True
+        if not self.is_phantom:
+            return self.last_repeat_qcd == self.repeat_count
+        return True
+
+    def needs_rewrite(self):
+        """
+        Returns True if the QC page needs to be updated due to a new repeat session
+        """
+        if not self.is_current_qcd() and self.is_repeated:
+            return self.repeat_count > self.last_repeat_qc_generated
+        return False
+
+    def needs_redcap_survey(self):
+        """
+        Checks if a redcap survey is missing. Should be updated later to take
+        into account that some sites for some studies dont expect a redcap survey
+        """
+        if not self.is_phantom and self.redcap_expected():
+            return not self.redcap_record
+        return False
+
+    def needs_scans(self):
+        """
+        Checks if a redcap record exists but no scan data. i.e. we havent received
+        data that we know we're expecting.
+        """
+        return self.redcap_record and self.scan_count() == 0
+
+    def redcap_expected(self):
+        # Get list of studies that this site is associated with
+        site_studies = self.site.studies
+        cur_study = [study for study in site_studies if study.study_id == self.study_id]
+        if not cur_study:
+            # Error in database records, so report and return False
+            logger.error("Record for site {} and study {} doesnt exist in "
+                    "study_site table".format(self.site_id, self.study_id))
+            return False
+        return cur_study[0].uses_redcap
 
     def get_qc_doc(self):
         """Return the absolute path to the session qc doc if it exists"""
@@ -281,19 +342,22 @@ class Session(db.Model):
         If session scans are linked to other projects, also deletes those records.
         """
         for scan_link in self.scans:
+            scan = scan_link.scan
+
+            # Delete the link between session and scans first
             if not scan_link.is_primary:
-                # just delete the link record
                 db.session.delete(scan_link)
             else:
-                scan = scan_link.scan
                 linked_scans = Session_Scan.query.filter(Session_Scan.scan_id == scan_link.scan_id)
                 if linked_scans.count() > 1:
                     flash('Scan is linked in other studies')
-                # first delete the scan, then the linking records
+                # Delete all the linking records
                 for link in linked_scans:
                     db.session.delete(link)
-                db.session.delete(scan)
-        # finally delete the current session
+
+        # Delete the scan record
+        db.session.delete(scan)
+        # Delete the session record
         db.session.delete(self)
         db.session.commit()
 
@@ -410,11 +474,7 @@ class Scan(db.Model):
         nii_path = utils.get_study_folder(study=session.study.nickname,
                                           folder_type='nii')
 
-        # Hacky solution to account for the fact that we split PDT2s
-        if self.scantype.name == 'PDT2':
-            name = self.name.replace('_PDT2_', '_T2_')
-        else:
-            name = self.name
+        name = self.name
 
         file_name = '_'.join([name, self.description]) + '.nii.gz'
         path = os.path.join(nii_path, session.name, file_name)
@@ -567,3 +627,15 @@ class Session_Scan(db.Model):
     session = db.relationship("Session", back_populates="scans")
     # not a typo ",None" needed to enforce tuple structure
     __table_args__ = (UniqueConstraint(session_id, scan_id, name="session_scan"),None)
+
+class StudySite(db.Model):
+    __tablename__ = "study_site"
+
+    # These arent actually primary keys, but are valid candidate keys to uniquely identify a row.
+    # Primary key must be specified for SQLAlchemy to map to the database. - Dawn
+    study_id = db.Column('study_id', db.Integer, db.ForeignKey('studies.id'), primary_key=True)
+    site_id = db.Column('site_id', db.Integer, db.ForeignKey('sites.id'), primary_key=True)
+    uses_redcap = db.Column('uses_redcap', db.Boolean, default=False)
+
+    site = db.relationship("Site", back_populates="studies")
+    study = db.relationship("Study", back_populates="sites")

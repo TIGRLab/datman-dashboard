@@ -135,13 +135,13 @@ def add_session(session_name):
         return
     study = q.first()
 
-    site = [s for s in study.sites if s.name == ident.site]
+    site = [s for s in study.sites if s.site.name == ident.site]
     if not site:
         logger.error('Site:{} not valid for Study:{}, skipping.'
                      .format(ident.site, study.nickname))
         return
-    else:
-        site = site[0]
+
+    site = site[0].site
 
     session_name = ident.get_full_subjectid_with_timepoint()
     query = Session.query.filter(Session.name == session_name)

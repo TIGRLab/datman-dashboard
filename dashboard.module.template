@@ -9,6 +9,14 @@ setenv		OAUTH_CLIENT_GITHUB  	<from github>
 setenv		OAUTH_SECRET_GITLAB  	<from gitlab>
 setenv		OAUTH_CLIENT_GITLAB  	<from gitlab>
 
+# Provide Github Issues details
+# Used to create / read github issues from a subject's page in the dashboard
+# NOTE: If the issues repo is private, the owner must be the same as the owner
+# of the dashboard app itself or the repo will not be found
+setenv    GITHUB_ISSUES_OWNER   <owner of issues repo>
+setenv    GITHUB_ISSUES_REPO    <name of issues repo>
+
+
 
 # Provide a secret key for Flask
 # This can be whatever you want, but you should keep it secret and 

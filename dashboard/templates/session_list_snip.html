@@ -1,0 +1,17 @@
+<!-- Code snippet for session list table on study page  -->
+<br/>
+
+<table class="table table-condensed table-hover table-striped" id="tbl_sessions">
+  <thead>
+    <tr>
+      <th>Session</th>
+      <th>QC Complete</th>
+      <th>Is Phantom</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for session in study.sessions %}
+      {% include 'sessions_snip.html' %}
+    {% endfor %}
+  </tbody>
+</table>

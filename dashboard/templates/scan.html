@@ -2,63 +2,52 @@
 {% extends "base.html" %}
 {% include 'flash.html' %}
 {% block content %}
+
 {% include('add_scan_blacklist_modal.html') %}
 {% include('add_scan_comment_modal.html') %}
-<div class="bd-pageheader jumbotron">
-  <div class="row">
-    <div class="col-md-6">
-      <h1>{{ scan.name }}</h1>
-      <span class="lead"><strong>Session:</strong>
-        <a href="{{ url_for('session',session_id=session.id) }}">
-          {{ session.name }}
-        </a>
-      </span>
+<div class="container">
+
+  <div class="jumbotron">
+    <h1>{{ scan.name }}</h1>
+    <p class="lead">
       {% if session.is_phantom %}
-        <p class="lead">Phantom</p>
+        Phantom Data
       {% else %}
-        <p class="lead">Human</p>
+        Human Data
       {% endif %}
-      </h1>
-    </div>
+    </p>
   </div>
-</div>
-<div class="container-fluid">
-  <div class="navbar">
-    <div class="pull-left">
-      <ul class="nav nav-tabs">
-        <li class="active"><a data-toggle="tab" href="#viewer">Viewer</a></li>
-        {% if scan.scantype.name == 'T1' %}
-          <li><a data-toggle="tab" href="#hcp">HCP QC</a></li>
-        {% endif %}
-        <li><a data-toggle="tab" href="#comments">Comments</a></li>
-      </ul>
-    </div>
-    <div class="pull-right">
-      <div class="nav btn-group">
-        <button type="button" class="btn btn-info btn_add_scan_blacklist" data-toggle="modal" data-scanid="{{ scan.id }}" data-scanname="{{ session_scan.name }}" data-toggle="modal" data-target="#add_scan_blacklist_modal">
-          Add to Blacklist
-        </button>
-      </div>
-    </div>
+
+  <a href="{{ url_for('session',session_id=session.id) }}" class="btn btn-primary">
+    <span class="glyphicon glyphicon-arrow-left"></span>
+    <span class="button-text">Return to Session</span>
+  </a>
+
+  <div id="scan-nav" role="navigation">
+    <ul class="nav nav-tabs">
+      <li class="active"><a data-toggle="tab" href="#viewer">Viewer</a></li>
+      <!-- The 'HCP QC' tab used to be here, but it doesnt seemed to have ever
+      worked that well (if at all) and should probably be moved anyway - Dawn  -->
+      <li><a data-toggle="tab" href="#comments">Comments</a></li>
+    </ul>
   </div>
+
   <div class="tab-content">
     <div id="viewer" class="tab-pane fade in active">
+      <button type="button" class="pull-right btn btn-danger btn_add_scan_blacklist" data-scanname="{{ session_scan.name }}" data-toggle="modal" data-target="#add_scan_blacklist_modal">
+        Add to Blacklist <span class="glyphicon glyphicon-pencil"></span>
+      </button>
       {% include 'scan_viewer.html' %}
     </div>
-    {% if scan.scantype.name == 'T1' %}
-      <div id="hcp" class="tab-pane fade in">
-      {% include 'hcp_qc.html' %}
-      </div>
-    {% endif %}
     <div id="comments" class="tab-pane fade in">
       {% include 'scan_comments_snip.html' %}
-      <button type="button" class="btn btn-info btn_add_scan_comments" data-scanid="{{ scan.id }}" data-scanname="{{ session_scan.name }}" data-toggle="modal" data-target="#add_scan_comment_modal">
+      <button type="button" class="pull-right btn btn-primary btn_add_scan_comments" data-scanid="{{ scan.id }}" data-scanname="{{ session_scan.name }}" data-toggle="modal" data-target="#add_scan_comment_modal">
         Add analysis comment
       </button>
     </div>
   </div>
-
 </div>
+
 <link rel="stylesheet" type="text/css" href="/static/css/papaya.css" />
 <script type="text/javascript" src="/static/js/papaya.js"></script>
 {% endblock %}

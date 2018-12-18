@@ -50,7 +50,7 @@ class ScanBlacklistForm(FlaskForm):
     delete = SubmitField('Delete Entry')
 
 class SessionForm(FlaskForm):
-    cl_comment = TextField(u'Checklist_comment',
+    cl_comment = TextAreaField(u'Checklist_comment',
                            validators=[DataRequired()])
 
 

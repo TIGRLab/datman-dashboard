@@ -141,8 +141,3 @@ $("input[name='site']").bind('click', updatePlot);
 $("#metrictypeselector li").bind('click', updatePlot);
 $("input[name='scantype']").bind('click', updatePlot);
 $("#remove_outliers").bind('click', noOutliersPlot);
-
-// make the sessions table dynamic
-$(document).ready(function (){
-  $('#tbl_sessions').DataTable();
-})

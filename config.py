@@ -15,7 +15,7 @@ SQLALCHEMY_DATABASE_URI = 'postgresql://{user}:{pwd}@{srvr}/{db}'.format(user=os
                                                                                pwd=os.environ.get('POSTGRES_PASS'),
                                                                                srvr=os.environ.get('POSTGRES_SRVR'),
                                                                                db=os.environ.get('POSTGRES_DATABASE'))
-SQLALCHEMY_MIGRATE_REPO = os.path.join(basedir, 'db_repository')
+SQLALCHEMY_MIGRATE_REPO = os.path.join(basedir, 'migrations')
 SQLALCHEMY_TRACK_MODIFICATIONS = True #This should be turned off after development
 
 # mail server settings
@@ -24,12 +24,13 @@ MAIL_PORT = 25
 MAIL_USERNAME = None
 MAIL_PASSWORD = None
 
-LOGSERVER = '172.26.216.101'
 # administrator list
-ADMINS = ['dawn.smith@camh.ca',
-          'michael.joseph@camh.ca',
-          'admins@tigrsrv.camhres.ca']
+try:
+    ADMINS = os.environ.get("ADMINS").split(",")
+except AttributeError:
+    ADMINS = ""
 
+LOGSERVER = '172.26.216.101'
 
 OPENID_PROVIDERS = [
     {'name': 'GitHub',
@@ -42,6 +43,11 @@ OAUTH_CREDENTIALS = {'github': {'id': os.environ.get('OAUTH_CLIENT_GITHUB'),
                      'gitlab': {'id': os.environ.get('OAUTH_CLIENT_GITLAB'),
                                 'secret': os.environ.get('OAUTH_SECRET_GITLAB')
                                 }}
+
+# Needed to read and write issues. If the repo is private the owner must be the same 
+# as the owner of the dashboard's repo
+GITHUB_OWNER = os.environ.get('GITHUB_ISSUES_OWNER')
+GITHUB_REPO = os.environ.get('GITHUB_ISSUES_REPO')
 
 DISPLAY_METRICS = {'phantom': {'t1': ['c1', 'c2', 'c3', 'c4'],
                               'dti': ['AVENyqratio', 'AVE Ave.radpixshift', 'AVE Ave.colpixshift', 'aveSNR_dwi'],

@@ -1,121 +1,111 @@
-<!-- Overview for a single study -->
+<!-- Overview of a single session's data -->
 {% extends "base.html" %}
-{% include 'flash.html' %}
+{% include "flash.html" %}
 {% block content %}
-  {% include('add_scan_comment_modal.html') %}
-  <div class="bd-pageheader jumbotron">
-    <div class="row">
-      <div class="col-md-6">
-        <h1>{{ session.name }}</h1>
-        {% if session.is_phantom %}
-          <p class="lead">Phantom</p>
-        {% else %}
-          <p class="lead">Human</p>
-        {% endif %}
-        </h1>
+<!-- This feature was only partially implemented but should be completed
+     by us later - Dawn -->
+{% include("add_scan_comment_modal.html") %}
+<div class="container">
+
+  <div class="jumbotron">
+    <h1>{{ session.name }}</h1>
+    {% if session.is_phantom %}
+      <p class="lead">Phantom</p>
+    {% endif %}
+  </div>
+
+  <div role="navigation">
+    <div class="btn-group" role="group">
+      <a class="btn btn-primary" href="{{ url_for('study', study_id=session.study_id) }}">
+        <span class="glyphicon glyphicon-arrow-left"></span>
+        <span class="button-text">Return to {{ session.study.nickname }}</span>
+      </a>
     </div>
-    <div class="col-md-6">
-      <span class="pull-right pull-down">
-        <div class="row">
-          Choose an option:
-        </div>
-        {% if current_user.is_admin %}
-        <div class="row">
-          <button class="btn btn-primary btn-block" id="print_brain" style="">Print Brain</button>
-        </div>
-        <div class="row">
-          <button class="btn btn-primary btn-block" id="delete_session">Delete Session</button>
-        </div>
-        {% endif %}
-        <div class="row">
-          {% if session.gh_issue %}
-            <button class="btn btn-primary btn-block" id="goto_issue">Go to open GitHub Issue</button>
+
+    <div class="btn-group-vertical pull-right" role="group">
+      {% if current_user.is_admin %}
+        <a class="button btn btn-primary" id="print_brain">
+          <span class="pull-right glyphicon glyphicon-print"></span>
+          <span class="button-text">Print Brain</span>
+        </a>
+        <a class="button btn btn-primary" id="delete_session">
+          <span class="pull-right glyphicon glyphicon-trash"></span>
+          <span class="button-text">Delete Session</span>
+        </a>
+      {% endif %}
+      {% if session.gh_issue %}
+        <a class="button btn btn-primary" id="goto_issue">
+          <span class="pull-right glyphicon glyphicon-share-alt"></span>
+          <span class="button-text">Go to GitHub Issue</span>
+        </a>
+      {% else %}
+        <a class="button btn btn-primary" id="create_issue">
+          <span class="pull-right glyphicon glyphicon-edit"></span>
+          <span class="button-text">Create GitHub Issue</span>
+        </a>
+      {% endif %}
+      {% if not session.incidental_finding %}
+        <a class="button btn btn-primary" id="flag_incidental">
+          <span class="pull-right glyphicon glyphicon-flag"></span>
+          <span class="button-text">Flag Incidental Finding</span>
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="session-info">
+    {% set doc_path = session.get_qc_doc() %}
+    {% if session.incidental_finding or session.needs_redcap_survey() or not doc_path %}
+      {% include 'session_warnings_snip.html' %}
+    {% endif %}
+
+    {% if session.redcap_url %}
+      <div id="redcap-survey">
+        <h4>REDCap Comment</h4>
+        <div class="well">
+          {% if session.redcap_comment %}
+            {{ session.redcap_comment }}
           {% else %}
-            <button class="btn btn-primary btn-block" id="create_issue">Create GitHub Issue</button>
+            N/A - Survey comment field is empty
           {% endif %}
         </div>
-        {% if not session.incidental_finding %}
-          <div class="row">
-            <button class="btn btn-primary btn-block" id="flag_incidental">Flag Incidental finding</button>
-          </div>
-        {% endif %}
-      </span>
-    </div>
-  </div>
-  </div>
-  {% if session.incidental_finding %}
-  <div class="row">
-    <div class="col-sm-12">
-      <span class="warning">
-        <h3>Incidental Finding Noted. <small>See project folder on T: drive for more infomation</small></h3>
-      </span>
-    </div>
-  </div>
-  {% endif %}
-  <div class="row">
-    <div class="col-sm-12">
-      <h3>
-        {% if session.get_qc_doc() %}
-        QC Doc:
-          <a href="{{ session.get_qc_doc() }}" target='#'>{{ session.name }}</a>
-        {% else %}
-          <span class="label label-warning">No QC Doc available</span>
-        {% endif %}
-      </h3>
-    </div>
-  </div>
-  <div class="row">
-    <div class="col-sm-12">
-      <h3>
-        {% if session.redcap_url %}
-          Redcap comment:
-          <small>
-            {{ session.redcap_comment }}
-            <a href="{{ url_for('redcap_redirect', session_id=session.id) }}">link</a>
-          </small>
-        {% else %}
-          <span class="label label-warning">No Redcap record available</span>
-        {% endif %}
-      </h3>
-    </div>
-  </div>
-  <div class="row">
-    <h3>
-      <div class="col-sm-2">
-        QC Comment:
+        <a href="{{ url_for('redcap_redirect', session_id=session.id) }}" class="pull-right btn btn-primary">
+          <span class="button-text">View Survey </span><span class="glyphicon glyphicon-share-alt"></span>
+        </a>
       </div>
-      <div class="col-sm-1">
-        <button type="button" class="btn btn-default" aria-label="Edit QC" id="edit_qc">
-          <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>
+    {% endif %}
+
+    <form id="comment-form" class="form-inline" action="" method="post" name="session_qc">
+      <div class="form-group" style="width: 100%;">
+        <h4>QC Reviewer Comment</h4>
+        {{ form.hidden_tag() }}
+        <!-- cl_comment is a textarea with id 'cl_comment'. Max length for the database field is 1024 characters -->
+        {{ form.cl_comment(maxlength="1024", placeholder="Participant not yet reviewed. Add comment here") }}
+        <div class="pull-left" id="char-count"></div>
+        <button class="pull-right btn btn-primary" id="edit-qc">
+          <span class='button-text'>Save</span>
+          <span class='glyphicon glyphicon-floppy-disk'></span>
         </button>
       </div>
-      <div class="col-sm-9 text-left">
-        <span class="collapse in text-left" id="qc_comment"><small>
-          {% if session.is_qcd() %}
-              {{ session.cl_comment }}
-          {% else %}
-              Not checked
-          {% endif %}
-        </small></span>
-        <span class="collapse" id="qc_form">
-          <form action="" method="post" name="session_qc">
-            {{ form.hidden_tag() }}
-            {{ form.cl_comment(width='100%') }}
-            <input type="submit" value="Update" id="btn_update">
-          </form>
-        </span>
-      </div>
-    </h3>
+    </form>
   </div>
-  <div class="row">
+
+  {% if doc_path %}
+    <a href="{{ doc_path }}" class="btn btn-primary" id="doc-page">
+      <span class="button-text">View QC page</span>
+      <span class="glyphicon glyphicon-share-alt"></span>
+    </a>
+  {% endif %}
+
+  <div class="table-responsive">
     <table class="ui table">
       <thead>
         <th>Series</th>
         <th>Tag</th>
-        <th>Repeat number</th>
+        <th>Repeat</th>
         <th>Description</th>
-        <th>Blacklisted</th>
-        <th>Analysis Comments</th>
+        <th>Blacklist Comment</th>
+        <th>Analysis Comment</th>
       </thead>
       <tbody>
         {% for scanlink in session.scans %}
@@ -125,50 +115,57 @@
       </tbody>
     </table>
   </div>
-  <script type="text/javascript">
-  $("#print_brain").bind('click', function(){
-    alert('Coming soon!');
-  });
-  $('#edit_qc').bind('click', function(){
-    $('#qc_comment').collapse('toggle');
-    $('#qc_form').collapse('toggle');
-  })
-  $('.btn_blacklist').bind('click', function(){
-    window.location.href = "{{url_for('scan')}}/" + $(this).attr('value')
-  })
-  $('#delete_session').bind('click', function(){
-    window.location.href = "{{url_for('session',session_id=session.id, delete=True)}}";
-  })
-  $('#goto_issue').bind('click', function(){
-    window.location.href = "https://github.com/TIGRLab/admin/issues/{{session.gh_issue}}"
-  })
-  $('#create_issue').bind('click', function(){
-     /*ECMA6 import syntax that doesn't work on most browsers...probably better to move this to server
-    import Issue from "github-api";
+</div>
 
-    var iss = new Issue("TIGRLab/admin",
-      {
-        //Removed token
-      token: ""
-    });
-    Issue.createIssue({
-      title: issTitle,
-      body: issDetails
-    });
-   */
-  var issTitle = prompt("Please enter a title for the issue:", "{{ session.name }}");
-  if (issTitle === null) {
-    return;
-  }
-  var issBody = prompt("Please enter issue details:", "");
-  if (issBody === null) {
-    return;
-  }
-  url = "{{url_for('create_issue', session_id=session.id)}}/" + encodeURIComponent(issTitle) + '/' + encodeURIComponent(issBody)
-  window.location.href = url;
-  })
-  $('#flag_incidental').bind('click', function(){
-    window.location.href = "{{url_for('session', session_id=session.id, flag_finding=True) }}";
-  })
-  </script>
+<!-- Autosize version 4.0.2: Automatically adjusts textarea height as input is added/deleted. -->
+<!-- source: http://www.jacklmoore.com/autosize/ -->
+<script src="/static/js/autosize.min.js"></script>
+
+<script type="text/javascript">
+
+// Turn on autosize plugin for cl_comment field
+autosize($('#cl_comment'));
+
+// Character counter for the comment text area
+$('#cl_comment').on('input', function() {
+  // Not hard-coded in case max length in database / form changes
+  var length = $(this)[0].maxLength;
+  var curLength = $(this).val().length;
+  $('#char-count').text(Math.max(0, length - curLength) + ' / ' + length);
+});
+
+// session menu button logic begins here
+$("#print_brain").bind('click', function(){
+  alert('"Coming soon!" - Us, 2+ years ago.');
+});
+
+$('.btn_blacklist').bind('click', function(){
+  window.location.href = "{{url_for('scan')}}/" + $(this).attr('value')
+})
+
+$('#delete_session').bind('click', function(){
+  window.location.href = "{{url_for('session',session_id=session.id, delete=True)}}";
+})
+
+$('#goto_issue').bind('click', function(){
+  window.location.href = "https://github.com/TIGRLab/admin/issues/{{session.gh_issue}}"
+})
+
+$('#create_issue').bind('click', function(){
+var issTitle = prompt("Please enter a title for the issue:", "{{ session.name }}");
+if (issTitle === null) {
+  return;
+}
+var issBody = prompt("Please enter issue details:", "");
+if (issBody === null) {
+  return;
+}
+url = "{{url_for('create_issue', session_id=session.id)}}/" + encodeURIComponent(issTitle) + '/' + encodeURIComponent(issBody)
+window.location.href = url;
+})
+$('#flag_incidental').bind('click', function(){
+  window.location.href = "{{url_for('session', session_id=session.id, flag_finding=True) }}";
+})
+
+</script>
 {% endblock %}
