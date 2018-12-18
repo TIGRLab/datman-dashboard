@@ -358,8 +358,14 @@ as screen size shrinks */
 
 .panel-primary {
   border-color: var(--theme-main);
+
 }
 
 .panel-primary > .panel-heading:hover {
   background-color: var(--theme-dark);
+}
+
+.hide-dropdown{
+  position: absolute;
+  display: none;
 }

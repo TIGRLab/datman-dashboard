@@ -7,8 +7,8 @@ from sqlalchemy.exc import SQLAlchemyError
 from dashboard import app, db, lm
 from oauth import OAuthSignIn
 from .queries import query_metric_values_byid, query_metric_types, query_metric_values_byname
-from .models import Study, Site, Session, ScanType, Scan, User, ScanComment, Analysis, IncidentalFinding, Session_Scan
-from .forms import SelectMetricsForm, StudyOverviewForm, SessionForm, ScanBlacklistForm, UserForm, ScanCommentForm, AnalysisForm
+from .models import Study, Site, Session, ScanType, Scan, User, ScanComment, Analysis, IncidentalFinding, Session_Scan, Person
+from .forms import SelectMetricsForm, StudyOverviewForm, SessionForm, ScanBlacklistForm, UserForm, ScanCommentForm, AnalysisForm, StudyForm, PersonForm, AddUserForm, ScanTypeForm, NewScantypeForm, NewSiteForm
 from . import utils
 from . import redcap as REDCAP
 import json
@@ -21,6 +21,7 @@ import datman as dm
 import shutil
 import logging
 import inspect
+import yaml
 from github import Github, GithubException
 
 from xml.sax.saxutils import escape
@@ -438,6 +439,156 @@ def scan(session_scan_id=None):
                            blacklist_form=bl_form,
                            scancomment_form=scancomment_form)
 
+
+@app.route('/add_study', methods=['GET', 'POST'])
+@login_required
+def add_study():
+
+    if not current_user.is_admin:
+        flash('You are not authorised')
+        return redirect(url_for('index'))
+
+    study_form = StudyForm()
+    studies = Study.query.all()
+    study_nicknames = [str(study.nickname) for study in studies]
+    study_form.nickname.validators[0].values = study_nicknames
+
+    person_form = PersonForm(name='person')
+    people = Person.query.all()
+    people_names = [str(person.name) for person in people]
+    person_form.person_name.validators[0].values = people_names
+
+    user_form = AddUserForm()
+    users = User.query.all()
+    user_realnames = [str(user.realname) for user in users]
+    user_usernames = [str(user.username) for user in users]
+    user_form.realname.validators[0].values = user_realnames
+    user_form.username.validators[0].values = user_usernames
+
+    new_site_form = NewSiteForm()
+    sites = Site.query.all()
+    site_names = [str(site.name) for site in sites]
+    new_site_form.new_site_name.validators[0].values = site_names
+
+    new_scantype_form = NewScantypeForm()
+    scantypes = ScanType.query.all()
+    scantype_names = [str(scantype.name) for scantype in scantypes]
+    new_scantype_form.new_scantype_name.validators[0].values = scantype_names
+
+    if study_form.submit_study.data and study_form.validate_on_submit():
+        data = dict()
+
+        nickname = str(study_form.nickname.data)
+        data['PROJECTDIR'] = nickname
+
+        study_name = str(study_form.study_name.data)
+        data['FullName'] = study_name
+
+        description = str(study_form.description.data)
+        if description != '':
+            data['Description'] = description
+
+        new_study = Study(
+            nickname=nickname,
+            name=study_name,
+            description=description
+        )
+
+        people_id = str(study_form.people.data)
+        if people_id != '':
+            new_study.primary_contact_id = people_id
+            person = Person.query.filter_by(id=people_id).first()
+            data['PrimaryContact'] = str(person.name)
+
+        for user_id in study_form.users.data:
+            user = User.query.filter_by(id=str(user_id)).first()
+            new_study.users.append(user)
+
+        data['Sites'] = dict()
+        for site_entry in study_form.sites.entries:
+            site_id = str(site_entry.site_name.data)
+            site = Site.query.filter_by(id=site_id).first()
+            new_study.sites.append(site)
+            site_name = str(site.name)
+            data['Sites'][site_name] = dict()
+
+            site_tags = site_entry.site_tags.data.split(',')
+            if len(site_tags) != 0:
+                data['Sites'][site_name]['SITE_TAGS'] = [str(x) for x in site_tags if x != '']
+
+            for k in site_entry.data.keys():
+                if k  in ['csrf_token', 'site_name', 'site_tags']:
+                    continue
+                elif k == 'scantypes':
+                    data['Sites'][site_name]['ExportSettings'] = dict()
+                    for scantype_entry in site_entry.scantypes:
+                        scantype_id = str(scantype_entry.scantype_name.data)
+                        scantype = ScanType.query.filter_by(id=scantype_id).first()
+                        new_study.scantypes.append(scantype)
+                        scantype_name = str(scantype.name)
+                        data['Sites'][site_name]['ExportSettings'][scantype_name] = dict()
+
+                        patterns = scantype_entry.patterns.data.split(',')
+                        if len(patterns) != 0:
+                            data['Sites'][site_name]['ExportSettings'][scantype_name]['Pattern'] =[str(x) for x in patterns if x != '']
+                        if scantype_entry.count.data:
+                            data['Sites'][site_name]['ExportSettings'][scantype_name]['Count'] = scantype_entry.count.data
+                else:
+                    if site_entry.data[k] != '':
+                        data['Sites'][site_name][str(k).upper()] = str(site_entry.data[k])
+
+        db.session.add(new_study)
+        db.session.commit()
+
+        output = make_response(yaml.dump(data, indent=4))
+        output.headers["Content-Disposition"] = "attachment; filename=output.yaml"
+        output.headers["Content-Type"] = "text/yaml"
+        output.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        output.headers['Pragma'] = 'no-cache'
+        return output
+        return redirect(url_for('add_study'))
+
+    if person_form.submit_person.data and person_form.validate_on_submit():
+        new_person = Person(
+            name=person_form.person_name.data,
+            role=person_form.role.data,
+            email=person_form.person_email.data,
+            phone1=person_form.phone1.data,
+            phone2=person_form.phone2.data
+        )
+        db.session.add(new_person)
+        db.session.commit()
+        return redirect(url_for('add_study'))
+
+    if user_form.submit_user.data and user_form.validate_on_submit():
+        new_user = User(
+            realname=user_form.realname.data,
+            username=user_form.username.data,
+            email=user_form.user_email.data,
+            is_admin=user_form.is_admin.data,
+            has_phi=user_form.has_phi.data
+        )
+        db.session.add(new_user)
+        db.session.commit()
+        return redirect(url_for('add_study'))
+
+    if new_site_form.submit_site.data and new_site_form.validate_on_submit():
+        new_site = Site(
+            name=new_site_form.new_site_name.data.upper()
+        )
+        db.session.add(new_site)
+        db.session.commit()
+        return redirect(url_for('add_study'))
+
+    if new_scantype_form.submit_scantype.data and new_scantype_form.validate_on_submit():
+        new_scantype = ScanType(
+            name=new_scantype_form.new_scantype_name.data.upper()
+        )
+        db.session.add(new_scantype)
+        db.session.commit()
+        return redirect(url_for('add_study'))
+
+    return render_template('add_study.html', study_form=study_form, person_form=person_form, user_form=user_form, new_site_form=new_site_form, new_scantype_form=new_scantype_form)
 
 @app.route('/study')
 @app.route('/study/<int:study_id>', methods=['GET', 'POST'])
