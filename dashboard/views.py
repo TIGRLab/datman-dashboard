@@ -18,7 +18,6 @@ from flask_login import login_user, logout_user, current_user, \
 from sqlalchemy.exc import SQLAlchemyError
 from oauth import OAuthSignIn
 
-import datman as dm
 from dashboard import app, db, lm
 from . import utils
 from . import redcap as REDCAP
@@ -597,24 +596,14 @@ def study(study_id=None, active_tab=None):
         flash('Not authorised')
         return redirect(url_for('index'))
 
+    # get the list of metrics to be displayed in the graph pages from the study config
+    display_metrics = app.config['DISPLAY_METRICS']
+
+    # get the study object from the database
+    study = Study.query.get(study_id)
+
     # this is used to update the readme text file
     form = StudyOverviewForm()
-
-    # load the study config
-    cfg = dm.config.config()
-    try:
-        cfg.set_study(study_id)
-    except KeyError:
-        abort(500)
-
-    # Get the contents of the study README.md file from the file system
-    readme_path = os.path.join(cfg.get_study_base(), 'README.md')
-
-    try:
-        with codecs.open(readme_path, encoding='utf-8', mode='r') as myfile:
-            data = myfile.read()
-    except IOError:
-        data = ''
 
     if form.validate_on_submit():
         # form has been submitted check for changes
@@ -623,31 +612,12 @@ def study(study_id=None, active_tab=None):
 
         # also strip blank lines at the start and end as these are
         # automatically stripped when the form is submitted
-        if not form.readme_txt.data.strip() == data.strip():
-            if os.path.exists(readme_path):
-                # form has been updated so make a backup and write back to file
-                timestamp = datetime.datetime.now().strftime('%Y%m%d%H%m')
-                base, ext = os.path.splitext(readme_path)
-                backup_file = base + '_' + timestamp + ext
-                try:
-                    shutil.copyfile(readme_path, backup_file)
-                except (IOError, os.error, shutil.Error), why:
-                    logger.error('Failed to backup readme for study {} with excuse {}'
-                                 .format(study_id, why))
-                    abort(500)
+        if not form.readme_txt.data.strip() == study.read_me:
+            study.read_me = form.readme_txt.data
+            study.save()
 
-            with codecs.open(readme_path, encoding='utf-8', mode='w') as myfile:
-                myfile.write(form.readme_txt.data)
-            data = form.readme_txt.data
-
-    form.readme_txt.data = data
+    form.readme_txt.data = study.read_me
     form.study_id.data = study_id
-
-    # get the list of metrics to be displayed in the graph pages from the study config
-    display_metrics = app.config['DISPLAY_METRICS']
-
-    # get the study object from the database
-    study = Study.query.get(study_id)
 
     return render_template('study.html',
                            metricnames=study.get_valid_metric_names(),

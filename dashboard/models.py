@@ -14,6 +14,7 @@ from random import randint
 
 from flask_login import UserMixin
 from sqlalchemy import and_, exists, func
+from sqlalchemy.orm import deferred
 from sqlalchemy.schema import UniqueConstraint, ForeignKeyConstraint
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.exc import IntegrityError
@@ -302,6 +303,7 @@ class Study(db.Model):
     id = db.Column('id', db.String(32), primary_key=True)
     name = db.Column('name', db.String(1024))
     description = db.Column('description', db.Text)
+    read_me = deferred(db.Column('read_me', db.Text))
 
     users = db.relationship('StudyUser', back_populates='study')
     sites = db.relationship('StudySite', back_populates='study',
@@ -554,6 +556,10 @@ class Study(db.Model):
         """
         next_idx = randint(0, len(user_list) - 1)
         return user_list[next_idx]
+
+    def save(self):
+        db.session.add(self)
+        db.session.commit()
 
     def __repr__(self):
         return "<Study {}>".format(self.id)
