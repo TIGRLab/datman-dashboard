@@ -12,8 +12,6 @@ DM_QC_TODO = '/archive/code/datman/bin/dm-qc-todo.py'
 logger = logging.getLogger(__name__)
 logger.info('loading utils')
 
-CFG = datman.config.config()
-
 class TimeoutError(Exception):
     pass
 
@@ -66,9 +64,10 @@ def get_study_path(study, folder=None):
     If folder is supplied and is defined in study config
     then path to the folder is returned instead.
     """
+    cfg = datman.config.config()
     if folder:
         try:
-            path = CFG.get_path(folder, study)
+            path = cfg.get_path(folder, study)
         except Exception as e:
             logger.error("Failed to find folder {} for study {}. Reason: {}"
                     "".format(folder, study, e))
@@ -76,7 +75,7 @@ def get_study_path(study, folder=None):
         return path
 
     try:
-        path = CFG.get_study_base(study=study)
+        path = cfg.get_study_base(study=study)
     except Exception as e:
         logger.error("Failed to find path for {}. Reason: {}".format(study, e))
         path = None
