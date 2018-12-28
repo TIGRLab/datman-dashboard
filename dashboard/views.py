@@ -535,8 +535,9 @@ def scan(study_id, scan_id):
     scan = get_scan(scan_id, study_id, current_user, fail_url=url_for('study',
             study_id=study_id))
     checklist_form = ScanChecklistForm(obj=scan.get_checklist_entry())
+    name = os.path.basename(utils.get_nifti_path(scan))
     return render_template('scan/main.html', scan=scan, study_id=study_id,
-            checklist_form=checklist_form)
+            checklist_form=checklist_form, nifti_name=name)
 
 
 @app.route('/study/<string:study_id>/scan/<int:scan_id>/review',
@@ -961,77 +962,6 @@ def new_account():
         report_form_errors(request_form)
     return render_template('users/account_request.html', form=request_form)
 
-@app.route('/scan_comment', methods=['GET','POST'])
-@app.route('/scan_comment/<scan_link_id>', methods=['GET','POST'])
-@login_required
-def scan_comment(scan_link_id):
-    """
-    View for adding scan comments
-    Comments are specific to a scan and can be seen by all
-    studies linking to that scan.
-    scan_link_id is passed for security checking and to ensure we get the user
-    back to the right place.
-
-    """
-    scan_link = Session_Scan.query.get(scan_link_id)
-    scan = scan_link.scan
-    session = scan_link.session
-
-    form = ScanCommentForm()
-    form.user_id = current_user.id
-    form.scan_id = scan.id
-
-    if not current_user.has_study_access(session.study):
-        flash('Not authorised')
-        return redirect(url_for('index'))
-
-    if form.validate_on_submit():
-        try:
-            scancomment = ScanComment()
-            scancomment.scan_id = scan.id
-            scancomment.user_id = current_user.id
-            scancomment.analysis_id = form.analyses.data
-            scancomment.excluded = form.excluded.data
-            scancomment.comment = form.comment.data
-
-            db.session.add(scancomment)
-            db.session.commit()
-            flash('Scan comment added')
-        except Exception as e:
-            assert app.debug==False
-            flash('Failed adding comment')
-
-    return redirect(url_for('session', session_id=session.id))
-
-
-@app.route('/scan_blacklist', methods=['GET','POST'])
-@app.route('/scan_blacklist/<scan_id>', methods=['GET','POST'])
-@login_required
-def scan_blacklist(scan_id):
-    """
-    View for adding scan comments
-    """
-    form = ScanBlacklistForm()
-    form.scan_id = scan_id
-
-    scan = Scan.query.get(scan_id)
-    session = scan.session
-
-    if not current_user.has_study_access(session.study):
-        flash('Not authorised')
-        return redirect(url_for('index'))
-
-    if form.validate_on_submit():
-        try:
-            scan.bl_comment = form.bl_comment.data
-
-            db.session.commit()
-            flash('Scan blacklisted')
-        except:
-            flash('Failed blacklisting scan')
-
-    return redirect(url_for('session', session_id=session.id))
-
 
 @app.route('/analysis', methods=['GET','POST'])
 @app.route('/analysis/<analysis_id>')
@@ -1083,6 +1013,7 @@ def static_qc_page(study_id, timepoint_id=None, image=None, tech_notes_path=None
         return send_from_directory(qc_dir, image)
     return send_file(timepoint.static_page)
 
+
 # The file name (with correct extension) needs to be last part of the URL or
 # papaya will fail to read the file because it wont figure out on its own
 # whether or not a file needs decompression
@@ -1090,6 +1021,7 @@ def static_qc_page(study_id, timepoint_id=None, image=None, tech_notes_path=None
 @login_required
 def load_scan(study_id, scan_id, file_name):
     scan = get_scan(scan_id, study_id, current_user, fail_url=prev_url())
-    return send_file(scan.get_path(), as_attachment=True,
+    full_path = utils.get_nifti_path(scan)
+    return send_file(full_path, as_attachment=True,
             attachment_filename=file_name,
             mimetype="application/gzip")
