@@ -8,7 +8,6 @@ from github import Github
 from dashboard import GITHUB_OWNER, GITHUB_REPO
 import datman.config
 
-DM_QC_TODO = '/archive/code/datman/bin/dm-qc-todo.py'
 logger = logging.getLogger(__name__)
 logger.info('loading utils')
 
