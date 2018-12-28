@@ -21,7 +21,6 @@ from sqlalchemy.exc import IntegrityError
 from psycopg2.tz import FixedOffsetTimezone
 
 from dashboard import db, TZ_OFFSET
-from dashboard.utils import get_study_path
 from dashboard.emails import account_request_email, account_activation_email, \
         account_rejection_email
 from datman import scanid
@@ -1004,24 +1003,6 @@ class Scan(db.Model):
         self.tag = tag
         self.description = description
         self.source_id = source_id
-
-    def get_path(self, study=None):
-        if not study:
-            study = self.session.timepoint.studies.values()[0].id
-        nii_folder = get_study_path(study, folder='nii')
-        fname = "_".join([self.name, self.description + ".nii.gz"])
-        full_path = os.path.join(nii_folder, self.timepoint, fname)
-        if not os.path.exists(full_path):
-            full_path = full_path.replace(".nii.gz", ".nii")
-        return os.path.realpath(full_path)
-
-    @property
-    def nifti_name(self):
-        # This is needed for the papaya viewer - it requires the file name with
-        # extension. If the real file is .gz and the given file name doesnt end
-        # that way (or vice versa) the viewer crashes, so you need to actually
-        # locate it on the file system, no short cuts :(
-        return os.path.basename(self.get_path())
 
     def get_checklist_entry(self):
         if self.is_linked():

@@ -64,7 +64,7 @@ def get_study_path(study, folder=None):
     Returns the full path to the study on the file system.
 
     If folder is supplied and is defined in study config
-    then path to the foder is returned instead.
+    then path to the folder is returned instead.
     """
     if folder:
         try:
@@ -81,3 +81,14 @@ def get_study_path(study, folder=None):
         logger.error("Failed to find path for {}. Reason: {}".format(study, e))
         path = None
     return path
+
+def get_nifti_path(scan):
+    study = scan.session.timepoint.studies.values()[0].id
+    nii_folder = get_study_path(study, folder='nii')
+    fname = "_".join([scan.name, scan.description + ".nii.gz"])
+
+    full_path = os.path.join(nii_folder, scan.timepoint, fname)
+    if not os.path.exists(full_path):
+        full_path = full_path.replace(".nii.gz", ".nii")
+
+    return full_path

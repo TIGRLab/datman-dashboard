@@ -535,8 +535,9 @@ def scan(study_id, scan_id):
     scan = get_scan(scan_id, study_id, current_user, fail_url=url_for('study',
             study_id=study_id))
     checklist_form = ScanChecklistForm(obj=scan.get_checklist_entry())
+    name = os.path.basename(utils.get_nifti_path(scan))
     return render_template('scan/main.html', scan=scan, study_id=study_id,
-            checklist_form=checklist_form)
+            checklist_form=checklist_form, nifti_name=name)
 
 
 @app.route('/study/<string:study_id>/scan/<int:scan_id>/review',
@@ -1083,6 +1084,7 @@ def static_qc_page(study_id, timepoint_id=None, image=None, tech_notes_path=None
         return send_from_directory(qc_dir, image)
     return send_file(timepoint.static_page)
 
+
 # The file name (with correct extension) needs to be last part of the URL or
 # papaya will fail to read the file because it wont figure out on its own
 # whether or not a file needs decompression
@@ -1090,6 +1092,7 @@ def static_qc_page(study_id, timepoint_id=None, image=None, tech_notes_path=None
 @login_required
 def load_scan(study_id, scan_id, file_name):
     scan = get_scan(scan_id, study_id, current_user, fail_url=prev_url())
-    return send_file(scan.get_path(), as_attachment=True,
+    full_path = utils.get_nifti_path(scan)
+    return send_file(full_path, as_attachment=True,
             attachment_filename=file_name,
             mimetype="application/gzip")
