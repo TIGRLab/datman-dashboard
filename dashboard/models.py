@@ -313,10 +313,11 @@ class Study(db.Model):
     scantypes = db.relationship('Scantype', secondary=study_scantype_table,
             back_populates='studies')
 
-    def __init__(self, study_id, full_name=None, description=None):
+    def __init__(self, study_id, full_name=None, description=None, read_me=None):
         self.id = study_id
         self.full_name = full_name
         self.description = description
+        self.read_me = read_me
 
     def add_timepoint(self, timepoint):
         if isinstance(timepoint, scanid.Identifier):
@@ -518,7 +519,7 @@ class Study(db.Model):
         instead (and store it in the database). For now I just got it
         working with the new schema - Dawn
         """
-        valid_fmri_scantypes = ['IMI', 'RST', 'EMP', 'OBS', 'SPRL', 'VN-SPRL']
+        valid_fmri_scantypes = ['IMI', 'RST', 'EMP', 'OBS', 'SPRL-COMB', 'VN-SPRL-COMB']
         names = []
         for scantype in self.scantypes:
             for metrictype in scantype.metrictypes:
@@ -799,7 +800,7 @@ class Session(db.Model):
     redcap_record = db.relationship('SessionRedcap', back_populates='session',
             uselist=False, cascade='all, delete')
 
-    def __init__(self, name, num, date=None, signed_off=False, reviewer_id=None,
+    def __init__(self, name, num, date=None, signed_off=False, reviewer_id=None, 
             review_date=None):
         self.name = name
         self.num = num
