@@ -77,4 +77,6 @@ if not app.debug:
 else:
     app.config['SQLALCHEMY_ECHO'] = True
 
+# Need to import views here to get Flask to build url map based on our routes
+# Has to be at the bottom after 'app' is defined.
 from dashboard import views, models
