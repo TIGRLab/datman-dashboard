@@ -631,6 +631,16 @@ class Timepoint(db.Model):
             raise
         return session
 
+    def get_blacklist_entries(self):
+        """
+        Returns any ScanChecklist entries for blacklisted scans for
+        every session belonging to this timepoint.
+        """
+        entries = []
+        for session in self.sessions.values():
+            entries.extend(session.get_blacklist_entries())
+        return entries
+
     def belongs_to(self, study):
         """
         Returns true if the data in this Timepoint is considered part of the
@@ -799,7 +809,7 @@ class Session(db.Model):
     redcap_record = db.relationship('SessionRedcap', back_populates='session',
             uselist=False, cascade='all, delete')
 
-    def __init__(self, name, num, date=None, signed_off=False, reviewer_id=None, 
+    def __init__(self, name, num, date=None, signed_off=False, reviewer_id=None,
             review_date=None):
         self.name = name
         self.num = num
@@ -885,6 +895,18 @@ class Session(db.Model):
     def is_new(self):
         return ((self.scans is None and self.missing_scans())
                 or any([scan.is_new() for scan in self.scans]))
+
+    def get_blacklist_entries(self):
+        """
+        Returns all ScanChecklist entries for all blacklisted scans in this
+        session.
+        """
+        entries = []
+        for scan in self.scans:
+            if not scan.blacklisted():
+                continue
+            entries.append(scan.get_checklist_entry())
+        return entries
 
     def delete(self):
         """
