@@ -1055,18 +1055,20 @@ class Scan(db.Model):
 
     def signed_off(self):
         checklist = self.get_checklist_entry()
-        return checklist.approved and not checklist.comment
+        return checklist is not None and checklist.approved and not checklist.comment
 
     def flagged(self):
         checklist = self.get_checklist_entry()
-        return checklist.approved and checklist.comment is not None
+        return checklist is not None and checklist.approved and checklist.comment is not None
 
     def blacklisted(self):
         checklist = self.get_checklist_entry()
-        return checklist.comment is not None and not checklist.approved
+        return checklist is not None and checklist.comment is not None and not checklist.approved
 
     def get_comment(self):
         checklist = self.get_checklist_entry()
+        if checklist is None:
+            return ""
         return checklist.comment or ""
 
     def list_children(self):
