@@ -16,7 +16,7 @@ class MonitorException(Exception):
 
 def monitor_scan_import(session):
     id = uuid4().hex
-    scheduled_time = datetime.now() + timedelta(minutes=5)
+    scheduled_time = datetime.now() + timedelta(days=2)
     extra_args = {'trigger': 'date', 'run_date': scheduled_time,
             'args': [session.name, session.num]}
     scheduler.add_job(id, check_scans, **extra_args)
