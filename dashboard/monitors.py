@@ -25,8 +25,8 @@ def check_scans(name, num):
     session = Session.query.get((name, num))
     if not session:
         raise MonitorException("Redcap record had been received without "
-                "scan data for {}_{} but no session found in database "
-                "at 48 hour follow up.".format(name, num))
+                "scan data for {} but no session found in database "
+                "at 48 hour follow up.".format(name))
     if session.scans:
         return
     missing_session_data_email(str(session))
