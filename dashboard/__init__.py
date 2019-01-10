@@ -4,6 +4,7 @@ from flask import Flask
 from flask_mail import Mail
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
+from flask_apscheduler import APScheduler
 from werkzeug.routing import BaseConverter
 
 from config import basedir, ADMINS, MAIL_SERVER, MAIL_PORT, MAIL_USERNAME, \
@@ -23,6 +24,9 @@ lm = LoginManager(app)
 lm.login_view = 'login'
 lm.refresh_view = 'refresh_login'
 mail = Mail(app)
+scheduler = APScheduler()
+scheduler.init_app(app)
+scheduler.start()
 
 ################################################################################
 # These settings should only be uncommented for development instances of the

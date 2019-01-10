@@ -5,6 +5,7 @@ In production environment variables are defined in:
 """
 
 import os
+from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
@@ -29,6 +30,11 @@ MAIL_PASSWORD = None
 SENDER = 'no-reply@kimellab.ca'
 DASH_SUPPORT = os.environ.get("DASHBOARD_SUPPORT_EMAIL") or ""
 
+# Scheduler settings
+SCHEDULER_JOBSTORES = {
+        'default': SQLAlchemyJobStore(url=SQLALCHEMY_DATABASE_URI)
+}
+SCHEDULER_API_ENABLED = False
 
 # administrator list
 try:

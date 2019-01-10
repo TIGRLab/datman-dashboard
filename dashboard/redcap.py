@@ -10,6 +10,7 @@ import datman.scanid
 from config import REDCAP_TOKEN
 from .models import RedcapRecord, Session, Timepoint
 from .queries import get_study
+from .monitors import monitor_scan_import
 
 logger = logging.getLogger(__name__)
 
@@ -79,6 +80,8 @@ def set_session(name):
     if not session:
         timepoint = get_timepoint(ident)
         session = timepoint.add_session(num)
+    if not session.scans:
+        monitor_scan_import(session)
     return session
 
 def find_study(ident):
