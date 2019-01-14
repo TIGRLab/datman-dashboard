@@ -247,6 +247,7 @@ class User(UserMixin, db.Model):
     def __str__(self):
         return "{} {}".format(self.first_name, self.last_name)
 
+
 class AccountRequest(db.Model):
     __tablename__ = 'account_requests'
 
@@ -296,6 +297,7 @@ class AccountRequest(db.Model):
                     self.user_id)
         return result
 
+
 class Study(db.Model):
     __tablename__ = 'studies'
 
@@ -344,6 +346,7 @@ class Study(db.Model):
             e.message = "Failed to add timepoint {}. Reason: {}".format(
                     timepoint, e)
             raise
+
         return timepoint
 
     def num_timepoints(self, type=''):
@@ -537,10 +540,19 @@ class Study(db.Model):
                 if study_user.primary_contact]
         return contacts
 
+    def get_staff_contacts(self):
+        return [su.user for su in self.users if su.kimel_contact]
+
+    def get_RAs(self):
+        return [su.user for su in self.users if su.study_RA]
+
+    def get_QCers(self):
+        return [su.user for su in self.users if su.does_qc]
+
     def choose_staff_contact(self):
-        kimel_contacts = [su.user for su in self.users if su.kimel_contact]
-        if len(kimel_contacts) >= 1:
-            user = self.select_next(kimel_contacts)
+        contacts = self.get_staff_contacts()
+        if len(contacts) >= 1:
+            user = self.select_next(contacts)
         else:
             user = None
         return user

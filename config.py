@@ -23,12 +23,13 @@ SQLALCHEMY_MIGRATE_REPO = os.path.join(basedir, 'migrations')
 SQLALCHEMY_TRACK_MODIFICATIONS = True #This should be turned off after development
 
 # mail server settings
-MAIL_SERVER = "smtp.camh.net"
-MAIL_PORT = 25
-MAIL_USERNAME = None
-MAIL_PASSWORD = None
-SENDER = 'no-reply@kimellab.ca'
-DASH_SUPPORT = os.environ.get("DASHBOARD_SUPPORT_EMAIL") or ""
+MAIL_SERVER = os.environ.get("DASHBOARD_MAIL_SERVER") or "smtp.gmail.com"
+MAIL_PORT = os.environ.get("DASHBOARD_MAIL_PORT") or 465
+MAIL_USERNAME = os.environ.get("DASHBOARD_MAIL_UNAME") or None
+MAIL_PASSWORD = os.environ.get("DASHBOARD_MAIL_PASS") or None
+DASH_SUPPORT = os.environ.get("DASHBOARD_SUPPORT_EMAIL") or MAIL_USERNAME
+SENDER = DASH_SUPPORT or MAIL_USERNAME or "no-reply@kimellab.ca"
+MAIL_USE_SSL = True
 
 # Scheduler settings
 SCHEDULER_JOBSTORES = {
