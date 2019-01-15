@@ -643,6 +643,26 @@ class Timepoint(db.Model):
             raise
         return session
 
+    def get_study(self, study_id=None):
+        """
+        Most timepoints only ever have one study and this will just return
+        the first one found. If 'id' is given it will either return the study
+        object or raise an exception if this timepoint doesnt belong to that
+        study
+        """
+        if study_id:
+            try:
+                return self.studies[study_id]
+            except KeyError:
+                raise InvalidDataException("Timepoint {} does not belong to "
+                        "study {}".format(self, study_id))
+        try:
+            study = self.studies.values()[0]
+        except IndexError:
+            raise InvalidDataException("Timepoint {} does not have any studies "
+                    "configured.".format(self))
+        return study
+
     def get_blacklist_entries(self):
         """
         Returns any ScanChecklist entries for blacklisted scans for
@@ -831,6 +851,9 @@ class Session(db.Model):
         self.signed_off = signed_off
         self.reviewer_id = reviewer_id
         self.review_date = review_date
+
+    def get_study(self, study_id=None):
+        return self.timepoint.get_study(study_id=study_id)
 
     def add_scan(self, name, series, tag, description=None, source_id=None):
         scan = Scan(name, self.name, self.num, series, tag, description,
@@ -1040,6 +1063,9 @@ class Scan(db.Model):
         self.tag = tag
         self.description = description
         self.source_id = source_id
+
+    def get_study(self, study_id=None):
+        return self.session.get_study(study_id=study_id)
 
     def get_checklist_entry(self):
         if self.is_linked():

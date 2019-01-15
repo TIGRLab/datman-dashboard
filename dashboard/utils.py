@@ -81,7 +81,7 @@ def get_study_path(study, folder=None):
     return path
 
 def get_nifti_path(scan):
-    study = scan.session.timepoint.studies.values()[0].id
+    study = scan.get_study().id
     nii_folder = get_study_path(study, folder='nii')
     fname = "_".join([scan.name, scan.description + ".nii.gz"])
 
