@@ -55,6 +55,8 @@ def get_emails(users):
             logger.error("No email configured for user {} - {}. Cannot enable "
                     "email notification.".format(user.id, user))
             continue
+        if user.email in recipients:
+            continue
         recipients.append(user.email)
     return recipients
 
@@ -73,17 +75,21 @@ def monitor_scan_import(session, users=None):
             raise MonitorException("No users given and no dashboard admins "
                     "found, cant add scan import monitor for {}".format(session))
 
+    if not isinstance(users, list):
+        users = [users]
+
     recipients = get_emails(users)
     if not recipients:
-        raise MonitorException("No recipients found to receive scan "
-                "import notifications for {}".format(session))
+        raise MonitorException("None of the users {} expected to receive scan "
+                "import notifications for {} have an email address "
+                "configured.".format(users, session))
 
     args = [session.name, session.num]
     kwargs = {'recipients': recipients}
 
     add_monitor(check_scans, args, input_kwargs=kwargs, days=2)
 
-def check_scans(name, num):
+def check_scans(name, num, recipients=None):
     session = Session.query.get((name, num))
     if not session:
         raise MonitorException("Monitored session {}_{:02d} is no "
@@ -91,55 +97,40 @@ def check_scans(name, num):
                 "received".format(name, num))
     if session.scans:
         return
-    missing_session_data_email(str(session))
+    missing_session_data_email(str(session), dest_emails=None)
 
-def monitor_redcap_import(name, num, study=None):
-    if study:
-        db_study = Study.query.get(study)
-    else:
-        session = Session.query.get((name, num))
-        db_study = session.get_study(study_id=study)
+def monitor_redcap_import(name, num, users=None, study=None):
+    session = Session.query.get((name, num))
 
-    contacts = db_study.get_staff_contacts()
-    contacts.extend(db_study.get_RAs())
-    if not contacts:
-        logger.info("No staff contacts or RAs configured for study {}. "
-                "Dashboard admins will receive any notifications for missing "
-                "redcap surveys instead.".format(db_study))
+    if not session.timepoint.expects_redcap() or session.redcap_record:
+        return
 
-    recipients = []
-    for user in contacts:
-        if not user.email:
-            logger.error("No contact information configured for user {} with "
-                    "ID {}. Can't set up redcap survey notification.".format(
-                    user, user.id))
-            continue
-        recipients.append(user.email)
+    db_study = session.get_study(study_id=study)
 
-    # Just in case someone has been added twice
-    recipients = list(set(recipients))
-    id = uuid4().hex
+    if not users:
+        users = db_study.get_staff_contacts()
+        users.extend(db_study.get_RAs())
+        if not users:
+            raise MonitorException("No users found to receive redcap import "
+                    "notifications for {}".format(session))
 
+    if not isinstance(users, list):
+        users = [users]
 
+    recipients = get_emails(users)
+    if not recipients:
+        raise MonitorException("None of the expected users {} have an email "
+                "address configured. Cannot send redcap import notifications "
+                "for {}".format(users, session))
 
-
-    #scheduled_time = datetime.now() + timedelta(days=2)
-    scheduled_time = datetime.now() + timedelta(minutes=2)
-
-
-
-
-
-    extra_args = {'trigger': 'date', 'run_date': scheduled_time,
-            'args': [session.name, session.num],
-            'kwargs': {'recipients': recipients}}
-    scheduler.add_job(id, check_redcap, **extra_args)
+    args = [session.name, session.num]
+    kwargs = {'recipients': recipients}
+    add_monitor(check_redcap, args, input_kwargs=kwargs, days=2)
 
 def check_redcap(name, num, recipients=None):
     """
     Recipients should be a list of email addresses.
     """
-
     session = Session.query.get((name, num))
     if not session:
         raise MonitorException("Monitored session {}_{:02d} is no longer in "
