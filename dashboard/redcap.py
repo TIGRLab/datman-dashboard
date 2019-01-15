@@ -64,6 +64,8 @@ def create_from_request(request):
         raise RedcapException("Failed adding record {} from project {} on "
                 "server {}. Reason: {}".format(record, project, url, e))
 
+    monitor_scan_import(session)
+
     return new_record
 
 def set_session(name):
@@ -80,8 +82,7 @@ def set_session(name):
     if not session:
         timepoint = get_timepoint(ident)
         session = timepoint.add_session(num)
-    if not session.scans:
-        monitor_scan_import(session)
+
     return session
 
 def find_study(ident):

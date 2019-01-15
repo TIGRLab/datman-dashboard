@@ -3,6 +3,13 @@
 This script contains a collection of functions that can be given to
 the scheduler to help monitor + respond to data errors (for example, checking
 if data has been received after a certain interval and emailing someone if not)
+
+The general structure for each monitor is:
+    1) A 'monitor' function that gathers input, schedule time, etc. and then
+       adds a job to the scheduler
+    2) A 'check' function that is what actually runs when the scheduler
+       executes the job. This function does the actual work of deciding if
+       an email notification needs to be sent at the time of execution
 """
 import logging
 from uuid import uuid4
@@ -17,12 +24,64 @@ logger = logging.getLogger(__name__)
 class MonitorException(Exception):
     pass
 
-def monitor_scan_import(session):
-    id = uuid4().hex
-    scheduled_time = datetime.now() + timedelta(days=2)
+def add_monitor(check_function, input_args, input_kwargs=None, job_id=None,
+        days=None, hours=None, minutes=None):
+
+    scheduled_time = datetime.now()
+    if days:
+        scheduled_time = scheduled_time + timedelta(days=days)
+    if hours:
+        scheduled_time = scheduled_time + timedelta(hours=hours)
+    if minutes:
+        scheduled_time = scheduled_time + timedelta(minutes=minutes)
+
     extra_args = {'trigger': 'date', 'run_date': scheduled_time,
-            'args': [session.name, session.num]}
-    scheduler.add_job(id, check_scans, **extra_args)
+            'args': input_args}
+    if input_kwargs:
+        extra_args['kwargs'] = input_kwargs
+
+    if not job_id:
+        job_id = uuid4().hex
+
+    return scheduler.add_job(job_id, check_function, **extra_args)
+
+def get_emails(users):
+    """
+    Reads a list of dashboard.models.User instances and returns a list of emails
+    """
+    recipients = []
+    for user in users:
+        if not user.email:
+            logger.error("No email configured for user {} - {}. Cannot enable "
+                    "email notification.".format(user.id, user))
+            continue
+        recipients.append(user.email)
+    return recipients
+
+def monitor_scan_import(session, users=None):
+    if not isinstance(session, Session):
+        raise MonitorException("Must provide an instance of "
+                "dashboard.models.Session to add a scan import monitor. "
+                "Received type {}".format(type(session)))
+
+    if not session.missing_scans():
+        return
+
+    if not users:
+        users = User.query.filter(User.dashboard_admin == True).all()
+        if not users:
+            raise MonitorException("No users given and no dashboard admins "
+                    "found, cant add scan import monitor for {}".format(session))
+
+    recipients = get_emails(users)
+    if not recipients:
+        raise MonitorException("No recipients found to receive scan "
+                "import notifications for {}".format(session))
+
+    args = [session.name, session.num]
+    kwargs = {'recipients': recipients}
+
+    add_monitor(check_scans, args, input_kwargs=kwargs, days=2)
 
 def check_scans(name, num):
     session = Session.query.get((name, num))
@@ -39,7 +98,7 @@ def monitor_redcap_import(name, num, study=None):
         db_study = Study.query.get(study)
     else:
         session = Session.query.get((name, num))
-        db_study = session.timepoint.studies.values()[0]
+        db_study = session.get_study(study_id=study)
 
     contacts = db_study.get_staff_contacts()
     contacts.extend(db_study.get_RAs())
@@ -60,7 +119,17 @@ def monitor_redcap_import(name, num, study=None):
     # Just in case someone has been added twice
     recipients = list(set(recipients))
     id = uuid4().hex
-    scheduled_time = datetime.now() + timedelta(days=2)
+
+
+
+
+    #scheduled_time = datetime.now() + timedelta(days=2)
+    scheduled_time = datetime.now() + timedelta(minutes=2)
+
+
+
+
+
     extra_args = {'trigger': 'date', 'run_date': scheduled_time,
             'args': [session.name, session.num],
             'kwargs': {'recipients': recipients}}
@@ -80,10 +149,4 @@ def check_redcap(name, num, recipients=None):
     if session.redcap_record:
         return
 
-    if not recipients:
-        recipients = ADMINS
-    if not isinstance(recipients, list):
-        recipients = [recipients]
-
-    for email in recipients:
-        missing_redcap_email(str(session), dest_email=email)
+    missing_redcap_email(str(session), dest_emails=recipients)
