@@ -681,7 +681,9 @@ class Timepoint(db.Model):
             return True
         return all(sess.is_qcd() for sess in self.sessions.values())
 
-    def expects_redcap(self, study):
+    def expects_redcap(self, study=None):
+        if not study:
+            study = self.studies.keys()[0]
         return self.site.studies[study].uses_redcap
 
     def needs_redcap_survey(self, study_id):
