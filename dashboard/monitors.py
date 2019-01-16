@@ -140,4 +140,5 @@ def check_redcap(name, num, recipients=None):
     if session.redcap_record:
         return
 
-    missing_redcap_email(str(session), dest_emails=recipients)
+    missing_redcap_email(str(session), session.get_study().id,
+            dest_emails=recipients)

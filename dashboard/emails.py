@@ -75,9 +75,9 @@ def account_rejection_email(user):
             "may have please contact us at {}".format(DASH_SUPPORT)
     send_email(subject, body, recipient=user.email)
 
-def missing_redcap_email(session, dest_emails=None):
-    subject = "'{}' missing redcap scan completed survey".format(session)
-    body = "A 'scan completed' survey is expected for session '{}' but a " \
+def missing_redcap_email(session, study, dest_emails=None):
+    subject = "{}: Missing REDCap Survey".format(study)
+    body = "A 'Scan Completed' survey is expected for session '{}' but a " \
             "survey has not been received. Please remember to fill out the " \
             "survey or let us know if this email is in error.".format(session)
     send_email(subject, body, recipient=dest_emails)
