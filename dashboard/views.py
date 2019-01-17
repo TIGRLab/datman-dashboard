@@ -34,7 +34,7 @@ from .forms import SelectMetricsForm, StudyOverviewForm, \
 from .view_utils import get_user_form, report_form_errors, get_timepoint, \
         get_session, get_scan, handle_issue, get_redcap_record, \
         get_admin_user_form
-from .emails import incidental_finding_email, account_request_email
+from .emails import incidental_finding_email
 
 logger = logging.getLogger(__name__)
 logger.info('Loading views')
