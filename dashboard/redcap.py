@@ -8,7 +8,7 @@ import redcap as REDCAP
 import datman.scanid
 
 from config import REDCAP_TOKEN
-from .models import RedcapRecord, Session
+from .models import RedcapRecord, Session, Timepoint
 from .queries import get_study
 
 logger = logging.getLogger(__name__)
@@ -92,5 +92,7 @@ def get_timepoint(ident):
     timepoint = Timepoint.query.get(ident.get_full_subjectid_with_timepoint())
     if not timepoint:
         study = find_study(ident)
+        if isinstance(study, list):
+            study = study[0].study
         timepoint = study.add_timepoint(ident)
     return timepoint
