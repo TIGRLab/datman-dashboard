@@ -1,7 +1,6 @@
 """Location for utility functions"""
 import logging
 import os
-from subprocess import Popen, STDOUT, PIPE
 
 from github import Github
 
