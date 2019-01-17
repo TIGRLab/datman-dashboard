@@ -7,6 +7,9 @@
   --theme-light: #904B9C;     /* Lighter purple from CAMH palette */
   --alt-theme-main: #00A39B;  /* CAMH teal */
   --alt-theme-light: #7DCBD5; /* Lighter teal from CAMH palette */
+  --bootstrap-success: #5CB85C;
+  --bootstrap-warning: #F0AD4E;
+  --bootstrap-danger: #D9534F;
 }
 
 body {
@@ -32,7 +35,7 @@ thead {
   margin-right: auto;
 }
 
-#find_session_text {
+#search-data-text {
   width: 350px !important;
 }
 
@@ -58,20 +61,61 @@ thead {
   border: 1px solid #D3D3D3;
 }
 
+/* Styling for the session page 'Scan Missing' modal comment box */
+#missing_comment {
+  width: 100% !important;
+  resize: none !important;
+  margin-bottom: 5px !important;
+}
+
 #doc-page {
   margin: 10px;
   margin-left: 0px;
+}
+
+#comment-container {
+  display: inline-block;
+  width: 100%;
+  height: 56px;
+  padding-top: 5px;
+  padding-bottom: 0px;
+}
+
+#scan-qc-comment {
+  display: inline-block;
+  max-height: 56px;
+}
+
+#qc-badge {
+  padding-top: 12px;
+  margin-bottom: 10px;
+}
+
+#scan-qc-status {
+  font-size: 1.5em;
+}
+
+#scan-qc-signature {
+  font-size: .7em;
+}
+
+.approved {
+  color: var(--bootstrap-success);
+}
+
+.flagged {
+  color: var(--bootstrap-warning);
+}
+
+.blacklisted {
+  color: var(--bootstrap-danger);
 }
 
 #viewer-container {
   /* Needs extra space for the buttons that appear above the papaya viewer */
   padding-top: 30px;
   padding-bottom: 10px;
-  margin: 5px 0px;
-}
-
-#scan-nav {
-  padding: 20px 0px;
+  /* margin: 20px 0px; */
 }
 
 .well {
@@ -112,9 +156,156 @@ thead {
   min-width: 100px;
 }
 
-.session-info {
-  width: 80%;
-  margin: 30px 20px 20px 0px;
+.section-separator {
+  margin-top: 5px;
+  border: 0;
+  height: 1px;
+  background: #333;
+  background-image: linear-gradient(to right, #CCC, #333, #CCC);
+}
+
+.section-subheader {
+  font-size: 1.3em;
+}
+
+.delete-session {
+  margin-left: 10px;
+}
+
+/* Make a button slide in on hover */
+.slide-button {
+  overflow: hidden;
+  width: 0;
+  padding: 0;
+  border: none;
+  height: 34px;
+  margin: 0px 10px;
+  transition: 0.2s ease;
+}
+
+/* slide in on scan rows */
+.scan-row:hover .slide-button {
+  padding: 6px 12px;
+  border: 1px solid transparent;
+  width: 46px;
+}
+
+.github-issue {
+  margin-bottom: 15px;
+}
+
+.github-issue .panel {
+  margin-bottom: 0;
+}
+
+.github-issue .issue-header {
+  margin-bottom: 2px;
+}
+
+.github-issue .issue-header .issue-status {
+  text-transform: capitalize;
+  font-weight: 700;
+  padding-right: 10px;
+}
+
+.github-issue .issue-footer {
+  display: inline-block;
+}
+
+.github-issue a {
+  margin-top: 5px;
+}
+
+.review-status {
+  overflow: hidden;
+  margin: 5px 0;
+  line-height: 27px;
+}
+
+.redcap-survey {
+  overflow: hidden;
+  margin: 10px 0;
+}
+
+.redcap-survey .well {
+  margin-bottom: 0px;
+}
+
+.entry-date {
+  font-size: 0.8em;
+}
+
+.redcap-survey a {
+  margin-top: 7px;
+}
+
+#incidental-findings-report {
+  margin-bottom: 40px;
+}
+
+#incidental-findings-report .finding-comment {
+  margin-bottom: 30px;
+}
+
+.scan-table {
+  margin: 10px 0;
+}
+
+.scan-status {
+  text-align: center;
+}
+
+/* style timepoint comments */
+.thumbnail {
+  padding: 0px;
+}
+.comment-display {
+	position:relative;
+}
+
+.comment-display .panel-heading {
+  overflow: hidden;
+  padding: 0;
+  height: 42px;
+  line-height: 42px;
+}
+
+.comment-display .comment-creator {
+  padding: 15px;
+}
+
+.comment-display .btn-group {
+  padding: 4px 5px;
+}
+
+.comment-display > .panel-heading:after, .comment-display > .panel-heading:before {
+	position: absolute;
+	top: 11px;
+  left: -16px;
+	right: 100%;
+	width: 0;
+	height: 0;
+	display: block;
+	content: " ";
+	border-color: transparent;
+	border-style: solid solid outset;
+	pointer-events: none;
+}
+
+.comment-display > .panel-heading:after {
+	border-width: 7px;
+	border-right-color: #f7f7f7;
+	margin-top: 1px;
+	margin-left: 2px;
+}
+.comment-display > .panel-heading:before {
+	border-right-color: #ddd;
+	border-width: 8px;
+}
+
+.timepoint-comment {
+  width: 100% !important;
+  margin-bottom: 5px;
 }
 
 /* Style badge on 'new-qc' labels */
@@ -156,12 +347,192 @@ thead {
   margin: 0px 3px;
 }
 
+.user-request {
+  line-height: 34px;
+  margin: 7px 25px 7px;
+}
+
+/**********************************************
+* User profile styling
+***********************************************/
+#global-permissions {
+  height: 35px;
+  line-height: 35px;
+}
+
+#global-permissions span {
+  margin-right: 52px;
+  margin-bottom: 5px;
+}
+
+#global-permissions label {
+  padding-right: 5px;
+}
+
+/**********************************************
+* User demographics form styling
+***********************************************/
+#user-demo-info label {
+  border-bottom: 1px solid #333;
+  display: block;
+  font-size: 1.25em;
+  margin-bottom: 0px;
+}
+
+#user-demo-info label.col-one-half {
+  float: left;
+  width: 50%;
+}
+
+#user-demo-info label input {
+  background: none;
+  border: none;
+  line-height: 1em;
+  font-weight: 300;
+  padding: 0.125em 0.25em;
+  width: 100%;
+}
+
+#user-demo-info label input:focus {
+  outline: none;
+}
+
+#user-demo-info label .label-text {
+  display: block;
+  font-size: 0.5em;
+  font-weight: bold;
+  padding: 0.15em 0em 0.125em 0.5em;
+  text-transform: uppercase;
+}
+
+#user-demo-info label span.radio-label {
+  display: inline;
+  width: auto;
+  line-height: 1em;
+  font-weight: 300;
+  padding: 0.125em 0.25em;
+}
+
+#user-demo-info label.col-one-half input[type=radio] {
+  display: inline;
+  clear: none;
+  width: auto;
+  border: 1px solid red;
+  margin-top: 0px;
+}
+
+#optional-user-info h3 {
+  margin: 80px 0px 10px 0px;
+}
+
+/**********************************************
+* User permissions form styling
+***********************************************/
+
+#access-table-box {
+  border: 3px solid var(--alt-theme-main);
+  border-radius:10px;
+  background-color: var(--alt-theme-main);
+  margin: 10px 0px;
+}
+
+#user-access-info table {
+  table-layout: fixed;
+  width: 100%;
+  margin: 5px 0px;
+}
+
+#permission-table tbody tr:nth-child(odd) {
+  background-color: white;
+}
+
+#permission-table tbody tr:nth-child(even) {
+  background-color: #bcf4f1;
+}
+
+#user-access-info thead th:nth-child(1) {
+  width: 20%;
+}
+
+#user-access-info thead th:nth-child(2) {
+  width: 30%;
+}
+
+#user-access-info thead th:nth-child(3) {
+  width: 15%;
+}
+
+#user-access-info thead th:nth-child(4) {
+  width: 15%;
+}
+
+#user-access-info thead th:nth-child(5) {
+  width: 20%;
+}
+
+#user-access-info td {
+  padding: 2.5px;
+}
+
+#enable-study-panel {
+  margin: 5px 0px;
+  display: flex;
+  align-items: flex-start;
+}
+
+#enable-study-panel select {
+  width: 150px;
+  margin: 0px 10px;
+}
+
+#enable-study-panel input {
+  align-self: center;
+}
+
+#revoke_all_access {
+  margin: 2px 0px 3px 10px;
+}
+
+.remove-study-btn {
+  margin: 0px 10px;
+}
+
+/**********************************************
+* papaya-nav styling
+***********************************************/
+#papaya-nav {
+  position: absolute;
+  top: 80%;
+  left: 2.5%;
+  width: 160px;
+  height: 208px;
+  display: block;
+}
+
+#loop-series {
+  margin-left: 35px !important;
+}
+
+#papaya-nav > #play-speed-controls {
+  display: none;
+  margin: 10px 0px 20px 0px;
+}
+
+#play-speed-controls > input {
+  display: block;
+  margin-bottom: 5px;
+}
+
+#papaya-nav > #change-volume-controls {
+  margin-top: 20px;
+}
+
 /**********************************************
 * Bootstrap customizations below
 ***********************************************/
 
-/* Add a chevron toggle for panels */
-.panel-heading {
+/* Add a chevron toggle for collapsible headings (e.g panels) */
+.collapsible-heading {
   cursor: pointer;
 }
 
@@ -171,7 +542,7 @@ thead {
   float: right;
 }
 
-.panel-heading.collapsed .chevron-toggle:after {
+.collapsible-heading.collapsed .chevron-toggle:after {
   content: "\e113";       /* Chevron up */
 }
 
@@ -207,6 +578,7 @@ table-striped */
 }
 
 .jumbotron h1 {
+  word-wrap: break-word;
   font-size: 42px;
   color: var(--light-text);
   font-weight: 700;
@@ -239,12 +611,12 @@ as screen size shrinks */
 }
 
 /* Color scheme of navbar, tables and panel-primary to match CAMH scheme */
-#find_session {
+#search-data-btn {
   background-color: var(--theme-main);
   color: var(--light-text);
 }
 
-#find_session:hover {
+#search-data-btn:hover {
   background-color: var(--theme-dark);
 }
 
@@ -350,6 +722,12 @@ as screen size shrinks */
   }
 }
 
+.navbar-nav .badge {
+  background-color: #E60000;
+  margin-left: 2.5px;
+  margin-right: 2.5px;
+}
+
 .panel-primary > .panel-heading {
   color: var(--light-text);
   background-color: var(--theme-main);
@@ -358,14 +736,8 @@ as screen size shrinks */
 
 .panel-primary {
   border-color: var(--theme-main);
-
 }
 
 .panel-primary > .panel-heading:hover {
   background-color: var(--theme-dark);
-}
-
-.hide-dropdown{
-  position: absolute;
-  display: none;
 }

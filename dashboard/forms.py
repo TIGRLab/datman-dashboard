@@ -8,11 +8,13 @@ This allows us to create HTML forms in python without having to worry about
 
 from flask import session
 from flask_wtf import FlaskForm
-from wtforms import StringField, SelectField, SelectMultipleField, HiddenField, SubmitField, FieldList
-from wtforms import TextAreaField, TextField, FormField, BooleanField, RadioField, IntegerField
-from wtforms import Form as BaseForm
-from wtforms.validators import DataRequired, InputRequired, NoneOf, Length, Optional, NumberRange, Email, AnyOf
-from models import Study, Analysis, ScanType, Site, Person, User
+from wtforms import SelectField, SelectMultipleField, HiddenField, SubmitField, \
+        TextAreaField, TextField, FormField, BooleanField, widgets, FieldList, \
+        RadioField
+from wtforms.fields.html5 import EmailField, TelField
+from wtforms.compat import iteritems
+from wtforms.validators import DataRequired, Email
+from models import Study, Analysis
 from wtforms.csrf.session import SessionCSRF
 
 class SelectMetricsForm(FlaskForm):
@@ -41,32 +43,116 @@ class StudyOverviewForm(FlaskForm):
     study_id = HiddenField()
 
 
-class ScanBlacklistForm(FlaskForm):
-    scan_id = HiddenField(id="scan_id")
-    bl_comment = TextField(u'Enter the reason for blacklisting: ',
-                           id="bl_comment",
-                           validators=[DataRequired()])
+class ScanChecklistForm(FlaskForm):
+    comment = TextAreaField('Comment:', id='scan-comment',
+            validators=[DataRequired()],
+            render_kw={'placeholder': 'Add description', 'rows': 12,
+                    'required': True, 'maxlength': '1028'})
     submit = SubmitField('Submit')
-    delete = SubmitField('Delete Entry')
-
-class SessionForm(FlaskForm):
-    cl_comment = TextAreaField(u'Checklist_comment',
-                           validators=[DataRequired()])
 
 
 class UserForm(FlaskForm):
-    user_id = HiddenField()
-    realname = TextField(u'realname',
-                         validators=[DataRequired()])
-    is_admin = BooleanField(u'is_admin', default=False)
-    has_phi = BooleanField(u'has_phi', default=False)
-    studies = SelectMultipleField(u'studies')
+    id = HiddenField()
+    first_name = TextField(u'First Name: ', validators=[DataRequired()],
+            render_kw={'required': True, 'maxlength': '64',
+            'placeholder': 'Jane'})
+    last_name = TextField(u'Last Name: ', validators=[DataRequired()],
+            render_kw={'required': True, 'maxlength': '64', 'placeholder': 'Doe'})
+    email = EmailField(u'Email: ', validators=[DataRequired()],
+            render_kw={'required': True, 'maxlength': '256', 'placeholder': 'Enter email'})
+    provider = RadioField('Account provider: ',
+            validators=[DataRequired()],
+            choices=[(u'github', 'GitHub')], default='github')
+    account = TextField(u'Username: ', validators=[DataRequired()],
+            render_kw={'required': True, 'maxlength': '64', 'placeholder':
+            'Username used on account provider\'s site'})
+    position = TextField(u'Position: ', render_kw={'maxlength': '64',
+            'placeholder': 'Job title or position'})
+    institution = TextField(u'Institution: ', render_kw={'maxlength': '128',
+            'placeholder': 'Full name or acronym for institution'})
+    phone = TelField(u'Phone Number: ', render_kw={'maxlength': '20',
+            'placeholder': '555-555-5555'})
+    ext = TextField(u'Extension: ', render_kw={'maxlength': '10',
+            'placeholder': 'XXXXXXXXXX'})
+    alt_phone = TelField(u'Alt. Phone Number: ', render_kw={'maxlength': '20',
+            'placeholder': '555-555-5555'})
+    alt_ext = TextField(u'Alt. Extension: ', render_kw={'maxlength': '10',
+            'placeholder': 'XXXXXXXXXX'})
+    submit = SubmitField(u'Save Changes')
 
+
+class PermissionRadioField(RadioField):
     def __init__(self, *args, **kwargs):
-        FlaskForm.__init__(self, *args, **kwargs)
-        studies = Study.query.all()
-        study_choices = [(str(study.id), study.nickname) for study in studies]
-        self.studies.choices = study_choices
+        super(PermissionRadioField, self).__init__(**kwargs)
+        self.choices = [(u'False', 'Disabled'), (u'True', 'Enabled')]
+        self.default = u'False'
+
+
+class StudyPermissionsForm(FlaskForm):
+    study_id = HiddenField()
+    user_id = HiddenField()
+    is_admin = PermissionRadioField(label='Study Admin')
+    primary_contact = PermissionRadioField('Primary Contact')
+    kimel_contact = PermissionRadioField('Kimel Contact')
+    study_RA = PermissionRadioField('Study RA')
+    does_qc = PermissionRadioField('Does QC')
+    revoke_access = SubmitField('Remove')
+
+
+class UserAdminForm(UserForm):
+    dashboard_admin = BooleanField(u'Dashboard Admin: ')
+    is_active = BooleanField(u'Active Account: ')
+    studies = FieldList(FormField(StudyPermissionsForm))
+    add_access = SelectMultipleField('Currently disabled studies: ')
+    update_access = SubmitField(label='Enable')
+    revoke_all_access = SubmitField(label='Remove All')
+
+    def process(self, formdata=None, obj=None, data=None, **kwargs):
+        """
+        This is identical to WTForm 2.1's implementation of 'process',
+        but it must pass in the User.studies.values() when it's called with
+        an object instead of just User.studies, since studies is a mapped
+        collection
+        """
+        formdata = self.meta.wrap_formdata(self, formdata)
+
+        if data is not None:
+            # XXX we want to eventually process 'data' as a new entity.
+            #     Temporarily, this can simply be merged with kwargs.
+            kwargs = dict(data, **kwargs)
+
+        for name, field, in iteritems(self._fields):
+            if obj is not None and hasattr(obj, name):
+                ## This if statement is the only change made to the original
+                ## code for BaseForm.process() - Dawn
+                if name == 'studies':
+                    field.process(formdata, obj.studies.values())
+                else:
+                    field.process(formdata, getattr(obj, name))
+            elif name in kwargs:
+                field.process(formdata, kwargs[name])
+            else:
+                field.process(formdata)
+
+    def populate_obj(self, obj):
+        """
+        As with process, this implementation is the same as WTForm 2.1's
+        default with the 'studies' field treated as a special case to
+        account for the fact that it is a mapped collection
+        """
+        for name, field in iteritems(self._fields):
+            if name == 'studies':
+                for study_form in self.studies.entries:
+                    study_form.form.populate_obj(
+                            obj.studies[study_form.study_id.data])
+            else:
+                field.populate_obj(obj, name)
+
+
+class AccessRequestForm(UserForm):
+    studies = FieldList(FormField(StudyPermissionsForm))
+    request_access = SelectMultipleField('Request access to studies: ')
+    send_request = SubmitField(label='Submit Request')
 
 
 class AnalysisForm(FlaskForm):
@@ -77,210 +163,32 @@ class AnalysisForm(FlaskForm):
     software = TextAreaField(u'Software')
 
 
-class ScanCommentForm(FlaskForm):
-    scan_id = HiddenField(id="scan_id")
-    user_id = HiddenField(id="user_id")
-    analyses = SelectField(u'Analysis used:', id="analysis")
-    excluded = BooleanField(u'Was excluded:', id="excluded", default=False)
-    comment = TextField(u'Comment',
-                        id="comment",
-                        validators=[DataRequired()])
-    def __init__(self, *args, **kwargs):
-        FlaskForm.__init__(self, *args, **kwargs)
-        analyses = Analysis.query.all()
-        analysis_choices = [(str(analysis.id), analysis.name)
-                            for analysis in analyses]
-        self.analyses.choices = analysis_choices
+class EmptySessionForm(FlaskForm):
+    comment = TextAreaField(u'Explanation: ', id="missing_comment",
+            validators=[DataRequired()],
+            render_kw={'rows': 4, 'cols': 50, 'required': True,
+                    'placeholder': 'Please describe what happened to this session.',
+                    'maxlength': '2048'})
 
 
-class ScanTypeForm(BaseForm):
-    scantype_name = SelectField(u'Select Scantype',
-        validators=[
-            InputRequired(u'Required Field'),
-        ])
-    patterns = StringField(u'Patterns',
-        validators=[
-            Optional()
-        ])
-    count = IntegerField(u'Count',
-        validators=[
-            Optional(),
-            NumberRange(min=0, message='Count must not be below 0')
-        ])
+class IncidentalFindingsForm(FlaskForm):
+    comment = TextAreaField(u'Description: ', id='finding-description',
+            validators=[DataRequired()], render_kw={'rows': 4, 'cols': 65,
+                    'required': True, 'placeholder': 'Please describe the finding'})
+    submit = SubmitField('Submit')
 
-    def __init__(self, *args, **kwargs):
-        BaseForm.__init__(self, *args, **kwargs)
-        scantypes = ScanType.query.all()
-        scantype_choices = [('', '')] + [(str(scantype.id), str(scantype.name)) for scantype in scantypes]
-        self.scantype_name.choices = sorted(scantype_choices, key=lambda x: x[1])
 
-class NewScantypeForm(FlaskForm):
-    new_scantype_name = StringField(u'New Scantype Name',
-        validators=[
-            NoneOf([], message=u'Scantype already exists'),
-            InputRequired(u'Required Field'),
-            Length(max=64, message=u'Length must be less than 65')
-        ]
-    )
-    submit_scantype = SubmitField(u'Add New Scantype')
+class TimepointCommentsForm(FlaskForm):
+    comment = TextAreaField(validators=[DataRequired()],
+            render_kw={'rows': 5, 'required': True,
+                    'placeholder': 'Add new comment'})
+    submit = SubmitField('Submit')
 
-class SiteForm(BaseForm):
-    site_name = SelectField(u'Select Site', default=' ', choices=[' '],
-        validators=[
-            InputRequired(u'Required Field'),
-        ])
-    site_tags =StringField(u'Site Tags',
-        validators=[
-            Optional()
-        ])
-    xnat_archive = StringField(u'XNAT_Archive',
-        validators=[
-            Optional()
-        ])
-    scantypes = FieldList(FormField(ScanTypeForm, u'Site Scantypes'), min_entries=1)
-    ftpserver = StringField(u'FTPSERVER',
-        description='Overrides the default server usually set ing the site wide config',
-        validators=[
-            Optional()
-        ])
-    ftpport = StringField(u'FTPPORT',
-        description='Allows a site to use a non-standard port for the sftp server',
-        validators=[
-            Optional()
-        ])
-    mrftppass = StringField(u'MRFTPPASS',
-        description='Should be set to the name of the file in the metadata folder that will hold this site\'s sftp account password',
-        validators=[
-            Optional()
-        ])
-    mruser = StringField(u'MRUSER',
-        description='Overrides the default MRUSER for the study',
-        validators=[
-            Optional()
-        ])
-    mrfolder = StringField(u'MRFOLDER',
-        description='Overrides default MRFOLDER for the study',
-        validators=[
-            Optional()
-        ])
-    xnat_source = StringField(u'XNAT Source',
-        description='The URL for the remote XNAT server to pull from',
-        validators=[
-            Optional()
-        ])
-    xnat_source_archive = StringField(u'XNAT Source Archive',
-        description='The Project ID on the XNAT server that holds this site\'s data',
-        validators=[
-            Optional()
-        ])
-    xnat_source_credentials = StringField(u'XNAT Source Credentials',
-        description='The name of the text file in the metadata forlder that will hold the username and password on separate lines (in that order)',
-        validators=[
-            Optional()
-        ])
-    redcap_api = StringField(u'REDCAP API',
-        description='Server that hosts the \'Scan Completed\' surveys (or any other surveys that need to be pulled in',
-        validators=[
-            Optional()
-        ])
 
-    def __init__(self, *args, **kwargs):
-        BaseForm.__init__(self, *args, **kwargs)
-        sites = Site.query.all()
-        site_choices = [('', '')] + [(str(site.id), site.name) for site in sites]
-        self.site_name.choices = sorted(site_choices, key=lambda x: x[1])
-
-class NewSiteForm(FlaskForm):
-    new_site_name = StringField(u'New Site Name',
-        validators=[
-            NoneOf([], message=u'Site already exists'),
-            InputRequired(u'Required Field'),
-            Length(max=64, message=u'Length must be less than 65')
-        ]
-    )
-    submit_site = SubmitField(u'Add New Site')
-
-class StudyForm(FlaskForm):
-    nickname = StringField(u'Nickname',
-        validators=[
-            NoneOf([], message=u'Nickname already exists'),
-            InputRequired(u'Required Field'),
-            Length(max=12, message=u'Length must be less than 13')
-        ])
-    study_name = StringField(u'Name',
-        validators=[
-            InputRequired(u'Required Field'),
-            Length(max=1024, message=u'Length must be less than 1025')
-        ])
-    description = TextAreaField(u'Description',
-        validators=[
-            Optional(),
-            Length(max=1024, message=u'Length must be less than 1025')
-        ])
-    people = SelectField(u'Primary Contact')
-    users = SelectMultipleField(u'Users')
-    sites = FieldList(FormField(SiteForm), u'Sites', min_entries=1)
-    submit_study = SubmitField(u'Add Study')
-
-    def __init__(self, *args, **kwargs):
-        FlaskForm.__init__(self, *args, **kwargs)
-        sites = Site.query.all()
-        people = Person.query.all()
-        person_choices = [('', '')] + [(str(person.id), person.name) for person in people]
-        self.people.choices = sorted(person_choices, key=lambda x: x[1])
-        users = User.query.all()
-        user_choices = [(str(user.id), user.realname) for user in users]
-        self.users.choices = user_choices
-
-class PersonForm(FlaskForm):
-    person_name = StringField(u'Name',
-        validators=[
-            NoneOf([], message=u'PI already exists'),
-            InputRequired(u'Required Field'),
-            Length(max=64, message=u'Length must be less than 65')
-        ])
-    role = StringField(u'Role',
-        validators=[
-            Optional(),
-            Length(max=64, message=u'Length must be less than 65')
-        ])
-    person_email = StringField(u'Email',
-        validators=[
-            Optional(),
-            Email(message='Email is not valid'),
-            Length(max=255, message=u'Length must be less than 256')
-        ])
-    phone1 = StringField(u'Phone1',
-        validators=[
-            Optional(),
-            Length(max=20, message=u'Length must be less than 21')
-        ])
-    phone2 = StringField(u'Phone2',
-        validators=[
-            Optional(),
-            Length(max=20, message=u'Length must be less than 21')
-        ])
-    submit_person = SubmitField(u'Add PI')
-
-class AddUserForm(FlaskForm):
-    realname = StringField(u'Full Name',
-        validators=[
-            NoneOf([], message=u'User already exists'),
-            InputRequired(u'Required Field'),
-            Length(max=64, message=u'Length must be less than 65')
-        ])
-    username = StringField(u'Username',
-        validators=[
-            NoneOf([], message=u'Username already exists'),
-            InputRequired(u'Required Field'),
-            Length(max=64, message=u'Length must be less than 65')
-        ])
-    user_email = StringField(u'Email',
-        validators=[
-            Optional(),
-            Email(message='Email is not valid'),
-            Length(max=120, message=u'Length must be less than 121')
-        ])
-    is_admin = BooleanField(u'Is Admin')
-    has_phi = BooleanField(u'Has Phi')
-    submit_user = SubmitField(u'Add User')
+class NewIssueForm(FlaskForm):
+    title = TextField(u"Title: ", validators=[DataRequired()],
+            render_kw={'required': True})
+    body = TextAreaField(u"Body: ", validators=[DataRequired()],
+            render_kw={'rows': 4, 'cols': 65, 'required': True,
+            'placeholder': 'Enter issue here.'})
+    submit = SubmitField('Create Issue')

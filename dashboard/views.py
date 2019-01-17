@@ -1,30 +1,40 @@
-from functools import wraps
-from flask import render_template, flash, url_for, redirect, request, jsonify, abort, g, make_response, send_file
-from flask import session as flask_session
-from flask_login import login_user, logout_user, current_user, \
-    login_required, fresh_login_required
-from sqlalchemy.exc import SQLAlchemyError
-from dashboard import app, db, lm
-from oauth import OAuthSignIn
-from .queries import query_metric_values_byid, query_metric_types, query_metric_values_byname
-from .models import Study, Site, Session, ScanType, Scan, User, ScanComment, Analysis, IncidentalFinding, Session_Scan, Person
-from .forms import SelectMetricsForm, StudyOverviewForm, SessionForm, ScanBlacklistForm, UserForm, ScanCommentForm, AnalysisForm, StudyForm, PersonForm, AddUserForm, ScanTypeForm, NewScantypeForm, NewSiteForm
-from . import utils
-from . import redcap as REDCAP
 import json
 import csv
 import io
 import os
 import codecs
 import datetime
-import datman as dm
 import shutil
 import logging
-import inspect
-import yaml
-from github import Github, GithubException
-
+from functools import wraps
 from xml.sax.saxutils import escape
+
+from urlparse import urlparse, urljoin
+from flask import session as flask_session
+from flask import render_template, flash, url_for, redirect, request, jsonify, \
+        abort, g, make_response, send_file, send_from_directory
+from flask_login import login_user, logout_user, current_user, \
+        login_required, fresh_login_required, login_fresh
+from sqlalchemy.exc import SQLAlchemyError
+from oauth import OAuthSignIn
+
+from dashboard import app, db, lm
+from . import utils
+from . import redcap as REDCAP
+from .queries import query_metric_values_byid, query_metric_types, \
+        query_metric_values_byname, find_subjects, \
+        find_sessions, find_scans
+from .models import Study, Site, Session, Scantype, Scan, User, \
+        Timepoint, AnalysisComment, Analysis, IncidentalFinding, StudyUser, \
+        SessionRedcap, EmptySession, ScanChecklist, AccountRequest
+from .forms import SelectMetricsForm, StudyOverviewForm, \
+        ScanChecklistForm, UserForm, AnalysisForm, \
+        UserAdminForm, EmptySessionForm, IncidentalFindingsForm, \
+        TimepointCommentsForm, NewIssueForm, AccessRequestForm
+from .view_utils import get_user_form, report_form_errors, get_timepoint, \
+        get_session, get_scan, handle_issue, get_redcap_record, \
+        get_admin_user_form
+from .emails import incidental_finding_email
 
 logger = logging.getLogger(__name__)
 logger.info('Loading views')
@@ -56,24 +66,55 @@ def handle_invalid_usage(error):
 
 @lm.user_loader
 def load_user(id):
-    return User.query.get(id)
+    return User.query.get(int(id))
 
-
-def login_required(f):
+def dashboard_admin_required(f):
     """
-    Checks the requester has a valid authenitcation cookie
+    Verifies a user is a dashboard admin before granting access
     """
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if not current_user.is_authenticated:
-            return redirect(url_for('login', next=request.url))
+        if not current_user.dashboard_admin:
+            flash("Not authorized")
+            return redirect(prev_url())
         return f(*args, **kwargs)
     return decorated_function
 
+def study_admin_required(f):
+    """
+    Verifies a user is a study admin or a dashboard admin. Any view function
+    this wraps must have 'study_id' as an argument
+    """
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_study_admin(kwargs['study_id']):
+            flash("Not authorized.")
+            return redirect(prev_url())
+        return f(*args, **kwargs)
+    return decorated_function
+
+def prev_url():
+    """
+    Returns the referring page if it is safe to do so, otherwise directs
+    the user to the index.
+    """
+    if request.referrer and is_safe_url(request.referrer):
+        return request.referrer
+    return url_for('index')
+
+def is_safe_url(target):
+    ref_url = urlparse(request.host_url)
+    test_url = urlparse(urljoin(request.host_url, target))
+    return test_url.scheme in ('http', 'https') and \
+           ref_url.netloc == test_url.netloc
 
 @app.before_request
 def before_request():
     if current_user.is_authenticated:
+        if not current_user.is_active:
+            logout_user()
+            flash('Your account is disabled. Please contact an administrator.')
+            return
         db.session.add(current_user)
         db.session.commit()
 
@@ -88,511 +129,463 @@ def logout():
 @login_required
 def index():
     """
-    Main landin page
+    Main landing page
     """
-    # studies = db_session.query(Study).order_by(Study.nickname).all()
     studies = current_user.get_studies()
 
-    session_count = Session.query.count()
+    timepoint_count = Timepoint.query.count()
     study_count = Study.query.count()
     site_count = Site.query.count()
     return render_template('index.html',
                            studies=studies,
-                           session_count=session_count,
+                           timepoint_count=timepoint_count,
                            study_count=study_count,
                            site_count=site_count)
-
-@app.route('/sites')
-@login_required
-def sites():
-    pass
-
-
-@app.route('/scantypes')
-@login_required
-def scantypes():
-    pass
-
-@app.route('/users')
-@login_required
-def users():
-    """
-    View that lists all users
-    """
-    if not current_user.is_admin:
-        flash('You are not authorised')
-        return redirect(url_for('user'))
-    users = User.query.all()
-    user_forms = []
-    for user in users:
-        form = UserForm()
-        form.user_id.data = user.id
-        form.realname.data = user.realname
-        form.is_admin.data = user.is_admin
-        form.has_phi.data = user.has_phi
-        study_ids = [str(study.id) for study in user.studies]
-        form.studies.data = study_ids
-        user_forms.append(form)
-    return render_template('users.html',
-                           studies=current_user.get_studies(),
-                           user_forms=user_forms)
 
 @app.route('/user', methods=['GET', 'POST'])
 @app.route('/user/<int:user_id>', methods=['GET', 'POST'])
 @login_required
 def user(user_id=None):
     """
-    View for updating a users information
+    View for updating a user's information
     """
-    form = UserForm()
+
+    if user_id and user_id != current_user.id and not current_user.dashboard_admin:
+        flash("You are not authorized to view other user settings")
+        return redirect(url_for('user'))
+
+    if user_id:
+        user = User.query.get(user_id)
+    else:
+        user = current_user
+
+    form = get_user_form(user, current_user)
 
     if form.validate_on_submit():
-        if form.user_id.data == current_user.id or current_user.is_admin:
-            user = User.query.get(form.user_id.data)
-            user.realname = form.realname.data
-            if current_user.is_admin:
-                # only admins can update this info
-                user.is_admin = form.is_admin.data
-                user.has_phi = form.has_phi.data
-                for study_id in form.studies.data:
-                    study = Study.query.get(int(study_id))
-                    user.studies.append(study)
-            db.session.add(user)
-            db.session.commit()
-            flash('User profile updated')
-            return(redirect(url_for('user', user_id=user_id)))
+        submitted_id = form.id.data
+
+        if submitted_id != current_user.id and not current_user.dashboard_admin:
+            # This catches anyone who tries to modify the user_id submitted
+            # with the form to change other user's settings
+            flash("You are not authorized to update other users' settings.")
+            return redirect(url_for('user'))
+
+        updated_user = User.query.get(submitted_id)
+
+        if form.update_access.data:
+            # Give user access to a new study
+            updated_user.add_studies(form.add_access.data)
+        elif form.revoke_all_access.data:
+            # Revoke access to all enabled studies
+            updated_user.remove_studies(updated_user.studies.values())
         else:
-            flash('You are not authorised to update this')
-            return(redirect(url_for('user')))
-    else:
-        if user_id and current_user.is_admin:
-            user = User.query.get(user_id)
-        else:
-            user = current_user
+            # Update user info
+            form.populate_obj(updated_user)
 
-        user_studyids = [study.id for study in user.studies]
+        removed_studies = [sf.study_id.data for sf in form.studies
+                if sf.revoke_access.data]
+        for study_id in removed_studies:
+            updated_user.remove_studies(study_id)
 
-        form.user_id.data = user.id
-        form.realname.data = user.realname
-        form.is_admin.data = user.is_admin
-        form.has_phi.data = user.has_phi
-        form.studies.data = user_studyids
-        if not current_user.is_admin:
-            # disable some fields
-            form.is_admin(disabled=True)
-            form.has_phi(disabled=True)
-            form.studies(disabled=True)
-    return render_template('user.html',
-                           user=user,
-                           form=form)
+        updated_user.save_changes()
 
-@app.route('/session_by_name')
-@app.route('/session_by_name/<session_name>', methods=['GET'])
+        flash("User profile updated.")
+        return redirect(url_for('user', user_id=submitted_id))
+
+    report_form_errors(form)
+
+    return render_template('users/profile.html', user=user, form=form)
+
+
+@app.route('/manage_users')
+@app.route('/manage_users/<int:user_id>/account/<approve>')
 @login_required
-def session_by_name(session_name=None):
+@dashboard_admin_required
+def manage_users(user_id=None, approve=False):
+    users = User.query.all()
+    # study_requests = []
+
+    if not user_id:
+        return render_template('users/manage_users.html', users=users,
+                account_requests=AccountRequest.query.all())
+
+    if approve == "False":
+        # URL gets parsed into unicode
+        approve = False
+
+    user_request = AccountRequest.query.get(user_id)
+    if not approve:
+        try:
+            user_request.reject()
+        except:
+            flash("Failed while rejecting account request for user {}".format(
+                    user_id))
+        else:
+            flash('Account rejected.')
+        return render_template('users/manage_users.html', users=users,
+                account_requests=AccountRequest.query.all())
+
+    try:
+        user_request.approve()
+    except:
+        flash('Failed while trying to activate account for user {}'.format(
+                user_id))
+    else:
+        flash('Account access for {} enabled'.format(user_id))
+
+    return render_template('users/manage_users.html', users=users,
+            account_requests=AccountRequest.query.all())
+
+
+@app.route('/search_data')
+@app.route('/search_data/<string:search_string>', methods=['GET','POST'])
+@login_required
+def search_data(search_string=None):
     """
-    Basically just a helper view, converts a session name to a sesssion_id
-    and returns the session view
+    Implements the site's search bar.
     """
-    if session_name is None:
-        return redirect('/index')
-    # Strip any file extension or qc_ prefix
-    session_name = session_name.replace('qc_', '')
-    session_name = os.path.splitext(session_name)[0]
+    if not search_string:
+        # We need the URL endpoint without a search string to enable the use of
+        # 'url_for' in the javascript for the 'search' button, but no one should
+        # ever actually access the page this way
+        flash('Please enter a search term.')
+        return redirect('index')
 
-    q = Session.query.filter(Session.name == session_name)
-    if q.count() < 1:
-        flash('Session not found')
-        return redirect(url_for('index'))
+    subjects = find_subjects(search_string)
+    if len(subjects) == 1:
+        study = subjects[0].accessible_study(current_user)
+        if study:
+            return redirect(url_for('timepoint', study_id=study.id,
+                    timepoint_id=subjects[0].name))
+    subjects = [url_for('timepoint', study_id=sub.accessible_study(current_user),
+            timepoint_id=sub.name)
+            for sub in subjects if sub.accessible_study(current_user)]
 
-    session = q.first()
+    sessions = find_sessions(search_string)
+    if len(sessions) == 1:
+        study = sessions[0].timepoint.accessible_study(current_user)
+        if study:
+            return redirect(url_for('timepoint', study_id=study.id,
+                    timepoint_id=sessions[0].timepoint.name,
+                    _anchor="sess" + str(sessions[0].num)))
 
-    if not current_user.has_study_access(session.study):
-        flash('Not authorised')
-        return redirect(url_for('index'))
+    sessions = [url_for('timepoint', study_id=sess.timepoint.accessible_study(current_user),
+            timepoint_id=sess.timepoint.name, _anchor="sess" + str(sess.num))
+            for sess in sessions if sess.timepoint.accessible_study(current_user)]
 
-    return redirect(url_for('session', session_id=session.id))
+    scans = find_scans(search_string)
+    if len(scans) == 1:
+        study = scans[0].session.timepoint.accessible_study(current_user)
+        if study:
+            return redirect(url_for('scan', study_id=study.id,
+                    scan_id=scans[0].id))
+    scans = [url_for('scan', study_id=scan.session.timepoint.accessible_study(current_user),
+             scan_id=scan.id) for scan in scans
+                if scan.session.timepoint.accessible_study(current_user)]
+
+    return render_template('search_results.html', user_search=search_string,
+            subjects=subjects, sessions=sessions, scans=scans)
 
 
-@app.route('/create_issue/<int:session_id>', methods=['GET', 'POST'])
-@app.route('/create_issue/<int:session_id>/<issue_title>/<issue_body>', methods=['GET', 'POST'])
+############## Timepoint view functions ########################################
+# timepoint() is the main view and renders the html users interact with.
+#
+# The other routes all handle different functionality for the timepoint() view
+# and then immediately redirect back to it.
+
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>',
+        methods=['GET', 'POST'])
 @fresh_login_required
-def create_issue(session_id, issue_title="", issue_body=""):
+def timepoint(study_id, timepoint_id):
     """
-    Post a session issue to github, returns to the session view
+    Default view for a single timepoint.
     """
-    session = Session.query.get(session_id)
-    if not current_user.has_study_access(session.study):
-        flash("Not authorised")
-        return redirect(url_for('index'))
+    timepoint = get_timepoint(study_id, timepoint_id, current_user)
 
+    try:
+        token = flask_session['active_token']
+    except KeyError:
+        github_issues = None
+    else:
+        github_issues = utils.search_issues(token, timepoint.name)
+
+    empty_form = EmptySessionForm()
+    findings_form = IncidentalFindingsForm()
+    comments_form = TimepointCommentsForm()
+    new_issue_form = NewIssueForm()
+    new_issue_form.title.data = timepoint.name + " - "
+    return render_template('timepoint/main.html',
+            study_id=study_id,
+            timepoint=timepoint,
+            empty_session_form=empty_form,
+            incidental_findings_form=findings_form,
+            timepoint_comments_form=comments_form,
+            issues=github_issues,
+            issue_form=new_issue_form)
+
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
+        '/sign_off/<int:session_num>', methods=['GET', 'POST'])
+@login_required
+def sign_off(study_id, timepoint_id, session_num):
+    timepoint = get_timepoint(study_id, timepoint_id, current_user)
+    dest_URL = url_for('timepoint', study_id=study_id,
+            timepoint_id=timepoint_id)
+    session = get_session(timepoint, session_num, dest_URL)
+    session.sign_off(current_user.id)
+    # This is temporary until I add some final touches to sign off process
+    for scan in session.scans:
+        if scan.is_new():
+            scan.add_checklist_entry(current_user.id, sign_off=True)
+    return redirect(dest_URL)
+
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
+        '/add_comment', methods=['POST'])
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
+        '/add_comment/<int:comment_id>', methods=['POST', 'GET'])
+@login_required
+def add_comment(study_id, timepoint_id, comment_id=None):
+    timepoint = get_timepoint(study_id, timepoint_id, current_user)
+    dest_URL = url_for('timepoint', study_id=study_id,
+            timepoint_id=timepoint_id)
+
+    form = TimepointCommentsForm()
+    if form.validate_on_submit():
+        if comment_id:
+            try:
+                timepoint.update_comment(current_user.id, comment_id,
+                        form.comment.data)
+            except Exception as e:
+                flash("Failed to update comment. Reason: {}".format(e))
+            else:
+                flash("Updated comment.")
+            return redirect(dest_URL)
+        comment = timepoint.add_comment(current_user.id, form.comment.data)
+    return redirect(dest_URL)
+
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
+        '/delete_comment/<int:comment_id>', methods=['GET'])
+@dashboard_admin_required
+@login_required
+def delete_comment(study_id, timepoint_id, comment_id):
+    timepoint = get_timepoint(study_id, timepoint_id, current_user)
+    dest_URL = url_for('timepoint', study_id=study_id,
+            timepoint_id=timepoint_id)
+    try:
+        timepoint.delete_comment(comment_id)
+    except Exception as e:
+        flash("Failed to delete comment. {}".format(e))
+    return redirect(dest_URL)
+
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
+        '/flag_finding', methods=['POST'])
+@login_required
+def flag_finding(study_id, timepoint_id):
+    timepoint = get_timepoint(study_id, timepoint_id, current_user)
+    dest_URL = url_for('timepoint', study_id=study_id,
+            timepoint_id=timepoint_id)
+
+    form = IncidentalFindingsForm()
+    if form.validate_on_submit():
+        timepoint.report_incidental_finding(current_user.id, form.comment.data)
+        incidental_finding_email(current_user, timepoint.name, form.comment.data)
+        flash("Report submitted.")
+    return redirect(dest_URL)
+
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
+        '/delete', methods=['GET'])
+@study_admin_required
+@login_required
+def delete_timepoint(study_id, timepoint_id):
+    timepoint = get_timepoint(study_id, timepoint_id, current_user)
+    timepoint.delete()
+    flash("{} has been deleted.".format(timepoint))
+    return redirect(url_for('study', study_id=study_id))
+
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
+        '/delete_session/<int:session_num>', methods=['GET'])
+@study_admin_required
+@login_required
+def delete_session(study_id, timepoint_id, session_num):
+    timepoint = get_timepoint(study_id, timepoint_id, current_user)
+    dest_URL = url_for('timepoint', study_id=study_id,
+            timepoint_id=timepoint_id)
+    session = get_session(timepoint, session_num, dest_URL)
+    session.delete()
+    flash("{} has been deleted.".format(session))
+    return redirect(dest_URL)
+
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
+        '/dismiss_redcap/<int:session_num>', methods=['GET', 'POST'])
+@study_admin_required
+@login_required
+def dismiss_redcap(study_id, timepoint_id, session_num):
+    """
+    Dismiss a session's 'missing redcap' error message.
+    """
+    timepoint = get_timepoint(study_id, timepoint_id, current_user)
+    dest_URL = url_for('timepoint', study_id=study_id,
+            timepoint_id=timepoint_id)
+    session = get_session(timepoint, session_num, dest_URL)
+    timepoint.dismiss_redcap_error(session_num)
+    flash("Successfully updated.")
+    return redirect(dest_URL)
+
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
+        '/dismiss_missing/<int:session_num>', methods=['POST'])
+@study_admin_required
+@login_required
+def dismiss_missing(study_id, timepoint_id, session_num):
+    """
+    Dismiss a session's 'missing scans' error message
+    """
+    timepoint = get_timepoint(study_id, timepoint_id, current_user)
+    dest_URL = url_for('timepoint', study_id=study_id,
+            timepoint_id=timepoint_id)
+    session = get_session(timepoint, session_num, dest_URL)
+
+    form = EmptySessionForm()
+    if form.validate_on_submit():
+        timepoint.ignore_missing_scans(session_num, current_user.id,
+                form.comment.data)
+        flash("Succesfully updated.")
+
+    return redirect(dest_URL)
+
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>/create_issue',
+        methods=['POST'])
+@login_required
+def create_issue(study_id, timepoint_id):
+    """
+    Posts a new issue to Github
+    """
+    timepoint = get_timepoint(study_id, timepoint_id, current_user)
+    dest_URL = url_for('timepoint', study_id=study_id,
+            timepoint_id=timepoint_id)
+
+    form = NewIssueForm()
+    if not form.validate_on_submit():
+        report_form_errors(form)
+        return redirect(dest_URL)
     token = flask_session['active_token']
 
-    if issue_title and issue_body:
-        try:
-            gh = Github(token)
-            repo = gh.get_user("TIGRLab").get_repo("Admin")
-            iss = repo.create_issue(issue_title, issue_body)
-            session.gh_issue = iss.number
-            db.session.commit()
-            flash("Issue '{}' created!".format(issue_title))
-        except:
-            flash("Issue '{}' was not created successfully.".format(issue_title))
-    else:
-        flash("Please enter both an issue title and description.")
-    return(redirect(url_for('session', session_id=session.id)))
+    handle_issue(token, form, study_id, timepoint.name)
 
+    return redirect(dest_URL)
 
-@app.route('/session')
-@app.route('/session/<int:session_id>', methods=['GET', 'POST'])
-@app.route('/session/<int:session_id>/delete/<delete>', methods=['GET', 'POST'])
-@app.route('/session/<int:session_id>/flag_finding/<flag_finding>', methods=['GET', 'POST'])
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
+        '/delete_scan/', methods=['GET'])
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
+        '/delete_scan/<int:scan_id>', methods=['GET'])
+@study_admin_required
 @login_required
-def session(session_id=None, delete=False, flag_finding=False):
+def delete_scan(study_id, timepoint_id, scan_id):
+    dest_URL = url_for('timepoint', study_id=study_id, timepoint_id=timepoint_id)
+    scan = get_scan(scan_id, study_id, current_user, dest_URL)
+    scan.delete()
+    return redirect(dest_URL)
+
+############## End of Timepoint View functions #################################
+
+@app.route('/redcap', methods=['GET', 'POST'])
+def redcap():
     """
-    Default view for a single session_id
-    If called as http://srv-dashboard/session/<session_id>/delete/True it will
-    delete the session from the database
-
+    A redcap server can send a notification to this URL when a survey is saved
+    and the record will be retrieved from the redcap server and saved to the
+    database.
     """
-    if session_id is None:
-        return redirect('index')
+    logger.info('Received a query from redcap')
+    if request.method != 'POST':
+        logger.error('Received an invalid redcap request. A REDCAP data '
+                'callback may be misconfigured')
+        raise InvalidUsage('Expected a POST request', status_code=400)
 
-    session = Session.query.get(session_id)
-
-    if session is None:
-        return redirect('index')
-
-
-    if not current_user.has_study_access(session.study):
-        flash('Not authorised')
-        return redirect(url_for('index'))
-
+    logger.debug('Received keys {} from REDcap from URL {}'.format(
+            request.form.keys(), request.form['project_url']))
     try:
-        # Update open issue ID if necessary
-        # this is necessary because GitHub may timeout a user without telling us
-        token = flask_session['active_token']
-    except:
-        flash('It appears you\'ve been idle too long; please sign in again.')
-        return redirect(url_for('login'))
-
-    try:
-        # check to see if any issues have been posted on github for this session
-        gh = Github(token)
-        # Due to the way GitHub search API works, splitting session name into separate search terms will find a session
-        # regardless of repeat number, and will not match other sessions with the same study/site
-
-        open_issues = gh.search_issues("{} in:title repo:TIGRLab/admin state:open".format(str(session.name).replace("_"," ")))
-        if open_issues.totalCount:
-            session.gh_issue = open_issues[0].number
-        else:
-            session.gh_issue = None
-        db.session.commit()
+        REDCAP.create_from_request(request)
     except Exception as e:
-        if not (isinstance(e, GithubException) and e.status==422):
-            flash("Error searching for session's GitHub issue.")
+        logger.error('Failed creating redcap object. Reason: {}'.format(e))
+        raise InvalidUsage(str(e), status_code=400)
+
+    return render_template('200.html'), 200
+
+@app.route('/redcap_redirect/<int:record_id>', methods=['GET'])
+@login_required
+def redcap_redirect(record_id):
+    """
+    Used to provide a link from the session page to a redcap session complete
+    record on the redcap server itself.
+    """
+    record = get_redcap_record(record_id)
+
+    if record.event_id:
+        event_string = "&event_id={}".format(record.event_id)
+    else:
+        event_string = ""
+
+    redcap_url = '{}redcap_v{}/DataEntry/index.php?pid={}&id={}{}&page={}'
+    redcap_url = redcap_url.format(record.url, record.redcap_version,
+            record.project, record.record, event_string, record.instrument)
+
+    return redirect(redcap_url)
+
+@app.route('/study/<string:study_id>/scan/<int:scan_id>', methods=['GET', 'POST'])
+@login_required
+def scan(study_id, scan_id):
+    scan = get_scan(scan_id, study_id, current_user, fail_url=url_for('study',
+            study_id=study_id))
+    checklist_form = ScanChecklistForm(obj=scan.get_checklist_entry())
+    name = os.path.basename(utils.get_nifti_path(scan))
+    return render_template('scan/main.html', scan=scan, study_id=study_id,
+            checklist_form=checklist_form, nifti_name=name)
+
+
+@app.route('/study/<string:study_id>/scan/<int:scan_id>/review',
+        methods=['GET', 'POST'])
+@app.route('/study/<string:study_id>/scan/<int:scan_id>/review/<sign_off>',
+        methods=['GET', 'POST'])
+@app.route('/study/<string:study_id>/scan/<int:scan_id>/delete/<delete>',
+        methods=['GET', 'POST'])
+@app.route('/study/<string:study_id>/scan/<int:scan_id>/update/<update>',
+        methods=['GET', 'POST'])
+@login_required
+def scan_review(study_id, scan_id, sign_off=False, delete=False, update=False):
+    scan = get_scan(scan_id, study_id, current_user, fail_url=url_for('study',
+            study_id=study_id))
+    dest_url = url_for('scan', study_id=study_id, scan_id=scan_id)
 
     if delete:
-        try:
-            if current_user.is_admin:
-                session.delete()
-            else:
-                flash('You dont have permission to do that')
-                raise Exception
-            flash('Deleted session:{}'.format(session.name))
-            return redirect(url_for('study',
-                                    study_id=session.study_id,
-                                    active_tab='qc'))
-        except Exception:
-            flash('Failed to delete session:{}'.format(session.name))
+        entry = scan.get_checklist_entry()
+        entry.delete()
+        return redirect(dest_url)
 
-    if flag_finding:
-        try:
-            incident = IncidentalFinding()
-            incident.session_id = session.id
-            incident.user_id = current_user.id
+    if sign_off:
+        # Just in case the value provided in the URL was not boolean
+        sign_off = True
 
-            db.session.add(incident)
-            db.session.commit()
-            flash('Finding flagged.')
-            return redirect(url_for('session',
-                                    session_id=session.id))
-        except:
-            logger.error('Failed flagging finding for session:{}'
-                         .format(session.id))
-            flash('Failed flagging finding. Admins have been notified')
-
-    studies = current_user.get_studies()
-    form = SessionForm(obj=session)
-
-    # This form deals with the checklist comments.
-    # Updating the checklist in the database causes checklist.csv to be updated
-    # see models.py
-    scancomment_form = ScanCommentForm()
-
-    if form.validate_on_submit():
-        # form has been submitted
-        session.cl_comment = form.cl_comment.data
-        try:
-            db.session.add(session)
-            db.session.commit()
-            flash('Session updated')
-            return redirect(url_for('study',
-                                    study_id=session.study_id,
-                                    active_tab='qc'))
-
-        except SQLAlchemyError as err:
-            logger.error('Session update failed:{}'.format(str(err)))
-            flash('Update failed, admins have been notified, please try again')
-        form.populate_obj(session)
-
-    return render_template('session.html',
-                           studies=studies,
-                           study=session.study,
-                           session=session,
-                           form=form,
-                           scancomment_form=scancomment_form)
-
-
-@app.route('/redcap_redirect/<int:session_id>', methods=['GET'])
-@login_required
-def redcap_redirect(session_id):
-    """
-    Used to provide a link from the session page to a redcap session complete record
-    """
-    session = Session.query.get(session_id)
-    if session.redcap_eventid:
-        redcap_url = '{}redcap_v{}/DataEntry/index.php?pid={}&id={}&event_id={}&page={}'
-        redcap_url = redcap_url.format(session.redcap_url,
-                                       session.redcap_version,
-                                       session.redcap_projectid,
-                                       session.redcap_record,
-                                       session.redcap_eventid,
-                                       session.redcap_instrument)
+    checklist_form = ScanChecklistForm()
+    if checklist_form.is_submitted():
+        if not checklist_form.validate_on_submit():
+            report_form_errors(checklist_form)
+            return redirect(dest_url)
+        comment = checklist_form.comment.data
     else:
-        redcap_url = '{}redcap_v{}/DataEntry/index.php?pid={}&id={}&page={}'
-        redcap_url = redcap_url.format(session.redcap_url,
-                                       session.redcap_version,
-                                       session.redcap_projectid,
-                                       session.redcap_record,
-                                       session.redcap_instrument)
-    return(redirect(redcap_url))
+        comment = None
 
-@app.route('/scan', methods=["GET"])
-@app.route('/scan/<int:session_scan_id>', methods=['GET', 'POST'])
-@login_required
-def scan(session_scan_id=None):
-    """
-    Default view for a single scan
-    This object actually takes an id from the session_scans table and uses
-    that to identify the scan and session
-    """
-    if session_scan_id is None:
-        flash('Invalid scan')
-        return redirect(url_for('index'))
+    if update:
+        # Update is done separately so that a review entry can't accidentally
+        # be changed from 'flagged' to blacklisted. i.e. 'sign_off' isnt changed
+        if comment is None:
+            flash("Cannot update entry with empty comment")
+            return redirect(dest_url)
+        scan.add_checklist_entry(current_user.id, comment)
+        return redirect(dest_url)
 
-    # Check the user has permission to see this study
-    studies = current_user.get_studies()
-    session_scan = Session_Scan.query.get(session_scan_id)
-    scan = session_scan.scan
-    session = session_scan.session
-    if not current_user.has_study_access(session.study):
-        flash('Not authorised')
-        return redirect(url_for('index'))
+    scan.add_checklist_entry(current_user.id, comment, sign_off)
+    return redirect(url_for('scan', study_id=study_id, scan_id=scan_id))
 
-    # form for updating the study blacklist.csv on the filesystem
-    bl_form = ScanBlacklistForm()
-    # form used for updating the analysis comments
-    scancomment_form = ScanCommentForm()
-
-    if not bl_form.is_submitted():
-        # this isn't an update so just populate the blacklist form with current values from the database
-        # these should be the same as in the filesystem
-        bl_form.scan_id = scan.id
-        bl_form.bl_comment.data = scan.bl_comment
-
-    if bl_form.validate_on_submit():
-        # going to make an update to the blacklist
-        # update the scan object in the database with info from the form
-        # updating the databse object automatically syncronises blacklist.csv on the filesystem
-        #   see models.py
-        if bl_form.delete.data:
-            scan.bl_comment = None
-        else:
-            scan.bl_comment = bl_form.bl_comment.data
-
-        try:
-            db.session.add(scan)
-            db.session.commit()
-            flash("Blacklist updated")
-            return redirect(url_for('session', session_id=session.id))
-        except SQLAlchemyError as err:
-            logger.error('Scan blacklist update failed:{}'.format(str(err)))
-            flash('Update failed, admins have been notified, please try again')
-
-
-    return render_template('scan.html',
-                           studies=studies,
-                           scan=scan,
-                           session=session,
-                           session_scan=session_scan,
-                           blacklist_form=bl_form,
-                           scancomment_form=scancomment_form)
-
-
-@app.route('/add_study', methods=['GET', 'POST'])
-@login_required
-def add_study():
-
-    if not current_user.is_admin:
-        flash('You are not authorised')
-        return redirect(url_for('index'))
-
-    study_form = StudyForm()
-    studies = Study.query.all()
-    study_nicknames = [str(study.nickname) for study in studies]
-    study_form.nickname.validators[0].values = study_nicknames
-
-    person_form = PersonForm(name='person')
-    people = Person.query.all()
-    people_names = [str(person.name) for person in people]
-    person_form.person_name.validators[0].values = people_names
-
-    user_form = AddUserForm()
-    users = User.query.all()
-    user_realnames = [str(user.realname) for user in users]
-    user_usernames = [str(user.username) for user in users]
-    user_form.realname.validators[0].values = user_realnames
-    user_form.username.validators[0].values = user_usernames
-
-    new_site_form = NewSiteForm()
-    sites = Site.query.all()
-    site_names = [str(site.name) for site in sites]
-    new_site_form.new_site_name.validators[0].values = site_names
-
-    new_scantype_form = NewScantypeForm()
-    scantypes = ScanType.query.all()
-    scantype_names = [str(scantype.name) for scantype in scantypes]
-    new_scantype_form.new_scantype_name.validators[0].values = scantype_names
-
-    if study_form.submit_study.data and study_form.validate_on_submit():
-        data = dict()
-
-        nickname = str(study_form.nickname.data)
-        data['PROJECTDIR'] = nickname
-
-        study_name = str(study_form.study_name.data)
-        data['FullName'] = study_name
-
-        description = str(study_form.description.data)
-        if description != '':
-            data['Description'] = description
-
-        new_study = Study(
-            nickname=nickname,
-            name=study_name,
-            description=description
-        )
-
-        people_id = str(study_form.people.data)
-        if people_id != '':
-            new_study.primary_contact_id = people_id
-            person = Person.query.filter_by(id=people_id).first()
-            data['PrimaryContact'] = str(person.name)
-
-        for user_id in study_form.users.data:
-            user = User.query.filter_by(id=str(user_id)).first()
-            new_study.users.append(user)
-
-        data['Sites'] = dict()
-        for site_entry in study_form.sites.entries:
-            site_id = str(site_entry.site_name.data)
-            site = Site.query.filter_by(id=site_id).first()
-            new_study.sites.append(site)
-            site_name = str(site.name)
-            data['Sites'][site_name] = dict()
-
-            site_tags = site_entry.site_tags.data.split(',')
-            if len(site_tags) != 0:
-                data['Sites'][site_name]['SITE_TAGS'] = [str(x) for x in site_tags if x != '']
-
-            for k in site_entry.data.keys():
-                if k  in ['csrf_token', 'site_name', 'site_tags']:
-                    continue
-                elif k == 'scantypes':
-                    data['Sites'][site_name]['ExportSettings'] = dict()
-                    for scantype_entry in site_entry.scantypes:
-                        scantype_id = str(scantype_entry.scantype_name.data)
-                        scantype = ScanType.query.filter_by(id=scantype_id).first()
-                        new_study.scantypes.append(scantype)
-                        scantype_name = str(scantype.name)
-                        data['Sites'][site_name]['ExportSettings'][scantype_name] = dict()
-
-                        patterns = scantype_entry.patterns.data.split(',')
-                        if len(patterns) != 0:
-                            data['Sites'][site_name]['ExportSettings'][scantype_name]['Pattern'] =[str(x) for x in patterns if x != '']
-                        if scantype_entry.count.data:
-                            data['Sites'][site_name]['ExportSettings'][scantype_name]['Count'] = scantype_entry.count.data
-                else:
-                    if site_entry.data[k] != '':
-                        data['Sites'][site_name][str(k).upper()] = str(site_entry.data[k])
-
-        db.session.add(new_study)
-        db.session.commit()
-
-        output = make_response(yaml.dump(data, indent=4))
-        output.headers["Content-Disposition"] = "attachment; filename=output.yaml"
-        output.headers["Content-Type"] = "text/yaml"
-        output.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-        output.headers['Pragma'] = 'no-cache'
-        return output
-        return redirect(url_for('add_study'))
-
-    if person_form.submit_person.data and person_form.validate_on_submit():
-        new_person = Person(
-            name=person_form.person_name.data,
-            role=person_form.role.data,
-            email=person_form.person_email.data,
-            phone1=person_form.phone1.data,
-            phone2=person_form.phone2.data
-        )
-        db.session.add(new_person)
-        db.session.commit()
-        return redirect(url_for('add_study'))
-
-    if user_form.submit_user.data and user_form.validate_on_submit():
-        new_user = User(
-            realname=user_form.realname.data,
-            username=user_form.username.data,
-            email=user_form.user_email.data,
-            is_admin=user_form.is_admin.data,
-            has_phi=user_form.has_phi.data
-        )
-        db.session.add(new_user)
-        db.session.commit()
-        return redirect(url_for('add_study'))
-
-    if new_site_form.submit_site.data and new_site_form.validate_on_submit():
-        new_site = Site(
-            name=new_site_form.new_site_name.data.upper()
-        )
-        db.session.add(new_site)
-        db.session.commit()
-        return redirect(url_for('add_study'))
-
-    if new_scantype_form.submit_scantype.data and new_scantype_form.validate_on_submit():
-        new_scantype = ScanType(
-            name=new_scantype_form.new_scantype_name.data.upper()
-        )
-        db.session.add(new_scantype)
-        db.session.commit()
-        return redirect(url_for('add_study'))
-
-    return render_template('add_study.html', study_form=study_form, person_form=person_form, user_form=user_form, new_site_form=new_site_form, new_scantype_form=new_scantype_form)
-
-@app.route('/study')
-@app.route('/study/<int:study_id>', methods=['GET', 'POST'])
-@app.route('/study/<int:study_id>/<active_tab>', methods=['GET', 'POST'])
+@app.route('/study/<string:study_id>', methods=['GET', 'POST'])
+@app.route('/study/<string:study_id>/<active_tab>', methods=['GET', 'POST'])
 @login_required
 def study(study_id=None, active_tab=None):
     """
@@ -600,36 +593,18 @@ def study(study_id=None, active_tab=None):
     The page is a tabulated view, I would have done this differently given
     another chance.
     """
+    if not current_user.has_study_access(study_id):
+        flash('Not authorised')
+        return redirect(url_for('index'))
 
-    if study_id is None:
-        return redirect('/index')
-        #study_id = current_user.get_studies()[0].id
+    # get the list of metrics to be displayed in the graph pages from the study config
+    display_metrics = app.config['DISPLAY_METRICS']
 
     # get the study object from the database
     study = Study.query.get(study_id)
 
-    if not current_user.has_study_access(study):
-        flash('Not authorised')
-        return redirect(url_for('index'))
-
     # this is used to update the readme text file
     form = StudyOverviewForm()
-
-    # load the study config
-    cfg = dm.config.config()
-    try:
-        cfg.set_study(study.nickname)
-    except KeyError:
-        abort(500)
-
-    # Get the contents of the study README.md file from the file system
-    readme_path = os.path.join(cfg.get_study_base(), 'README.md')
-
-    try:
-        with codecs.open(readme_path, encoding='utf-8', mode='r') as myfile:
-            data = myfile.read()
-    except IOError:
-        data = ''
 
     if form.validate_on_submit():
         # form has been submitted check for changes
@@ -638,28 +613,12 @@ def study(study_id=None, active_tab=None):
 
         # also strip blank lines at the start and end as these are
         # automatically stripped when the form is submitted
-        if not form.readme_txt.data.strip() == data.strip():
-            if os.path.exists(readme_path):
-                # form has been updated so make a backup and write back to file
-                timestamp = datetime.datetime.now().strftime('%Y%m%d%H%m')
-                base, ext = os.path.splitext(readme_path)
-                backup_file = base + '_' + timestamp + ext
-                try:
-                    shutil.copyfile(readme_path, backup_file)
-                except (IOError, os.error, shutil.Error), why:
-                    logger.error('Failed to backup readme for study {} with excuse {}'
-                                 .format(study.nickname, why))
-                    abort(500)
+        if not form.readme_txt.data.strip() == study.read_me:
+            study.read_me = form.readme_txt.data
+            study.save()
 
-            with codecs.open(readme_path, encoding='utf-8', mode='w') as myfile:
-                myfile.write(form.readme_txt.data)
-            data = form.readme_txt.data
-
-    form.readme_txt.data = data
+    form.readme_txt.data = study.read_me
     form.study_id.data = study_id
-
-    # get the list of metrics to be displayed in the graph pages from the study config
-    display_metrics = app.config['DISPLAY_METRICS']
 
     return render_template('study.html',
                            metricnames=study.get_valid_metric_names(),
@@ -683,12 +642,11 @@ def person(person_id=None):
 @login_required
 def metricData():
     """
-    This is a generic view for querying the database
-    It allows selection of any combination of metrics and returns the data
-    in csv format suitable for copy / pasting into a spreadsheet
+    This is a generic view for querying the database and allows selection of
+    any combination of metrics and returns the data.
 
     The form is submitted on any change, this allows dynamic updating of the
-    selection boxes displayed in the html (i.e. is SPINS study is selected
+    selection boxes displayed in the html (i.e. if SPINS study is selected
     the sites selector is filtered to only show sites relevent to SPINS).
 
     We only actually query and return the data if the query_complete is defined
@@ -744,8 +702,8 @@ def metricData():
 
     for res in form_vals:
         study_vals.append((res[0].id, res[0].name))
-        site_vals.append((res[1].id, res[1].name))
-        scantype_vals.append((res[2].id, res[2].name))
+        site_vals.append((res[1].name, res[1].name))
+        scantype_vals.append((res[2].tag, res[2].tag))
         metrictype_vals.append((res[3].id, res[3].name))
         # study_vals.append((res.id, res.name))
         # for site in res.sites:
@@ -912,69 +870,6 @@ def metricDataAsJson(format='http'):
         return(json.dumps(objects, indent=4, separators=(',', ': ')))
 
 
-@app.route('/todo')
-@app.route('/todo/<int:study_id>', methods=['GET'])
-@login_required
-def todo(study_id=None):
-    """
-    Runs the datman binary dm-qc-todo.py and returns the results
-    as a json object
-    """
-    if study_id:
-        study = Study.query.get(study_id)
-        study_name = study.nickname
-    else:
-        study_name = None
-
-    if not current_user.has_study_access(study_id):
-        flash('Not authorised')
-        return redirect(url_for('index'))
-
-    # todo_list = utils.get_todo(study_name)
-    try:
-        todo_list = utils.get_todo(study_name)
-    except utils.TimeoutError:
-        # should do something nicer here
-        todo_list = {'error': 'timeout'}
-    except RuntimeError as e:
-        todo_list = {'error': 'runtime:{}'.format(e)}
-    except:
-        todo_list = {'error': 'other'}
-
-    return jsonify(todo_list)
-
-
-@app.route('/redcap', methods=['GET', 'POST'])
-def redcap():
-    """
-    Route used by the redcap ScanCompeted data callback.
-    Basically grabs the redcap record id and updates the database.
-    """
-    logger.info('Recieved a query from redcap')
-    if request.method == 'POST':
-        logger.debug('Recieved keys:{} from REDcap.'.format(request.form.keys()))
-        logger.debug(request.form['project_url'])
-        try:
-            rc = REDCAP.redcap_record(request)
-        except Exception as e:
-            logger.error('Failed creating redcap object:{}'.format(str(e)))
-            logger.debug(str(e))
-            raise InvalidUsage(str(e), status_code=400)
-    else:
-        logger.error('Invalid redcap response')
-        raise InvalidUsage('Expected a POST request', status_code=400)
-    logger.info('Processing query')
-    if rc.instrument_completed:
-        logger.info('Updating db session.')
-        rc.update_db_session()
-    else:
-        logger.info('Instrument not complete, ignoring.')
-
-    rc.get_survey_return_code()
-
-    return render_template('200.html'), 200
-
-
 @app.errorhandler(404)
 def not_found_error(error):
     return render_template('404.html'), 404
@@ -988,116 +883,84 @@ def internal_error(error):
 
 @app.route('/login')
 def login():
+    next_url = request.args.get('next')
+    if next_url:
+        flask_session['next_url'] = next_url
     return render_template('login.html')
 
 
 @app.route('/authorize/<provider>')
 def oauth_authorize(provider):
-    if not current_user.is_anonymous:
-        return redirect(url_for('login'))
+    if not current_user.is_anonymous and login_fresh():
+        return redirect(url_for('index'))
     oauth = OAuthSignIn.get_provider(provider)
     return oauth.authorize()
 
 
 @app.route('/callback/<provider>')
 def oauth_callback(provider):
-    if not current_user.is_anonymous:
+    if not current_user.is_anonymous and login_fresh():
         return redirect(url_for('index'))
+
+    try:
+        dest_page = flask_session['next_url']
+        del flask_session['next_url']
+        if not is_safe_url(dest_page):
+            raise
+    except:
+        dest_page = url_for('index')
+
     oauth = OAuthSignIn.get_provider(provider)
-    access_token, github_user = oauth.callback()
+    access_token, user_info = oauth.callback()
 
     if access_token is None:
         flash('Authentication failed.')
         return redirect(url_for('login'))
 
     if provider == 'github':
-        username = github_user['login']
+        username = "gh_" + user_info['login']
+        avatar_url = user_info['avatar_url']
     elif provider == 'gitlab':
-        username = github_user['username']
+        username = "gl_" + user_info['username']
+        avatar_url = None
 
-    user = User.query.filter_by(username=username).first()
+    user = User.query.filter_by(_username=username).first()
+    user.update_avatar(avatar_url)
+
     if not user:
-        username = User.make_unique_nickname(username)
-        user = User(username=username,
-                    realname=github_user['name'],
-                    email=github_user['email'])
-        db.session.add(user)
-        db.session.commit()
+        flash("No account found. Please submit a request for an account.")
+        return redirect(url_for('new_account'))
 
     login_user(user, remember=True)
+    # Token is needed for access to github issues
     flask_session['active_token'] = access_token
-    return redirect(url_for('index'))
 
-@app.route('/scan_comment', methods=['GET','POST'])
-@app.route('/scan_comment/<scan_link_id>', methods=['GET','POST'])
-@login_required
-def scan_comment(scan_link_id):
-    """
-    View for adding scan comments
-    Comments are specific to a scan and can be seen by all
-    studies linking to that scan.
-    scan_link_id is passed for security checking and to ensure we get the user
-    back to the right place.
+    return redirect(dest_page)
 
-    """
-    scan_link = Session_Scan.query.get(scan_link_id)
-    scan = scan_link.scan
-    session = scan_link.session
+@app.route('/refresh_login')
+def refresh_login():
+    flask_session['_fresh'] = False
+    next_url = request.args.get('next')
+    if next_url:
+        flask_session['next_url'] = next_url
+    return redirect(url_for('login'))
 
-    form = ScanCommentForm()
-    form.user_id = current_user.id
-    form.scan_id = scan.id
-
-    if not current_user.has_study_access(session.study):
-        flash('Not authorised')
-        return redirect(url_for('index'))
-
-    if form.validate_on_submit():
-        try:
-            scancomment = ScanComment()
-            scancomment.scan_id = scan.id
-            scancomment.user_id = current_user.id
-            scancomment.analysis_id = form.analyses.data
-            scancomment.excluded = form.excluded.data
-            scancomment.comment = form.comment.data
-
-            db.session.add(scancomment)
-            db.session.commit()
-            flash('Scan comment added')
-        except Exception as e:
-            assert app.debug==False
-            flash('Failed adding comment')
-
-    return redirect(url_for('session', session_id=session.id))
-
-
-@app.route('/scan_blacklist', methods=['GET','POST'])
-@app.route('/scan_blacklist/<scan_id>', methods=['GET','POST'])
-@login_required
-def scan_blacklist(scan_id):
-    """
-    View for adding scan comments
-    """
-    form = ScanBlacklistForm()
-    form.scan_id = scan_id
-
-    scan = Scan.query.get(scan_id)
-    session = scan.session
-
-    if not current_user.has_study_access(session.study):
-        flash('Not authorised')
-        return redirect(url_for('index'))
-
-    if form.validate_on_submit():
-        try:
-            scan.bl_comment = form.bl_comment.data
-
-            db.session.commit()
-            flash('Scan blacklisted')
-        except:
-            flash('Failed blacklisting scan')
-
-    return redirect(url_for('session', session_id=session.id))
+@app.route('/new_account', methods=['GET', 'POST'])
+def new_account():
+    request_form = UserForm()
+    if request_form.validate_on_submit():
+        first = request_form.first_name.data
+        last = request_form.last_name.data
+        new_user = User(first, last,
+                username=request_form.account.data,
+                provider=request_form.provider.data)
+        new_user.request_account(request_form)
+        flash("Request submitted. Please allow up to 2 days for a response "
+                "before contacting an admin.")
+        return redirect(url_for('login'))
+    if request_form.is_submitted:
+        report_form_errors(request_form)
+    return render_template('users/account_request.html', form=request_form)
 
 
 @app.route('/analysis', methods=['GET','POST'])
@@ -1134,3 +997,31 @@ def analysis(analysis_id=None):
     return render_template('analyses.html',
                            analyses=analyses,
                            form=form)
+
+# These functions serve up static files from the local filesystem
+@app.route('/study/<string:study_id>/data/RESOURCES/<path:tech_notes_path>')
+@app.route('/study/<string:study_id>/qc/<string:timepoint_id>/index.html')
+@app.route('/study/<string:study_id>/qc/<string:timepoint_id>/<regex(".*\.png"):image>')
+@login_required
+def static_qc_page(study_id, timepoint_id=None, image=None, tech_notes_path=None):
+    if tech_notes_path:
+        resources = utils.get_study_path(study_id, 'resources')
+        return send_from_directory(resources, tech_notes_path)
+    timepoint = get_timepoint(study_id, timepoint_id, current_user)
+    if image:
+        qc_dir, _ = os.path.split(timepoint.static_page)
+        return send_from_directory(qc_dir, image)
+    return send_file(timepoint.static_page)
+
+
+# The file name (with correct extension) needs to be last part of the URL or
+# papaya will fail to read the file because it wont figure out on its own
+# whether or not a file needs decompression
+@app.route('/study/<string:study_id>/load_scan/<int:scan_id>/<string:file_name>')
+@login_required
+def load_scan(study_id, scan_id, file_name):
+    scan = get_scan(scan_id, study_id, current_user, fail_url=prev_url())
+    full_path = utils.get_nifti_path(scan)
+    return send_file(full_path, as_attachment=True,
+            attachment_filename=file_name,
+            mimetype="application/gzip")

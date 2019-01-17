@@ -8,6 +8,9 @@ import os
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
+# Timezone offset used for timezone aware timestamps. Default is Eastern time
+# See https://docs.python.org/2/library/datetime.html#datetime.datetime.now
+TZ_OFFSET = os.environ.get('TIMEZONE') or -240
 WTF_CSRF_ENABLED = True
 SECRET_KEY = os.environ.get('FLASK_SECRET_KEY')
 #SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir,'dashboard.sqlite')
@@ -23,6 +26,9 @@ MAIL_SERVER = "smtp.camh.net"
 MAIL_PORT = 25
 MAIL_USERNAME = None
 MAIL_PASSWORD = None
+SENDER = 'no-reply@kimellab.ca'
+DASH_SUPPORT = os.environ.get("DASHBOARD_SUPPORT_EMAIL") or ""
+
 
 # administrator list
 try:
@@ -44,10 +50,10 @@ OAUTH_CREDENTIALS = {'github': {'id': os.environ.get('OAUTH_CLIENT_GITHUB'),
                                 'secret': os.environ.get('OAUTH_SECRET_GITLAB')
                                 }}
 
-# Needed to read and write issues. If the repo is private the owner must be the same 
-# as the owner of the dashboard's repo
+# Github config, needed for issues
 GITHUB_OWNER = os.environ.get('GITHUB_ISSUES_OWNER')
 GITHUB_REPO = os.environ.get('GITHUB_ISSUES_REPO')
+GITHUB_PUBLIC = os.environ.get('GITHUB_ISSUES_PUBLIC') or True
 
 DISPLAY_METRICS = {'phantom': {'t1': ['c1', 'c2', 'c3', 'c4'],
                               'dti': ['AVENyqratio', 'AVE Ave.radpixshift', 'AVE Ave.colpixshift', 'aveSNR_dwi'],

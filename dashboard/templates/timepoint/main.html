@@ -1,0 +1,62 @@
+<!-- Overview of a single timepoint's data -->
+{% extends "base.html" %}
+{% include "flash.html" %}
+{% block content %}
+<div class="container">
+
+  <div class="jumbotron">
+    <h1>{{ timepoint.name }}</h1>
+    {% if timepoint.is_phantom %}
+      <p class="lead">Phantom</p>
+    {% endif %}
+  </div>
+
+  {% if timepoint.incidental_findings %}
+    {% include 'timepoint/incidental_finding_display.html'%}
+  {% endif %}
+
+  <div id="timepoint-reporting" class="row">
+    <div class="col-xs-9">
+      {% include 'timepoint/sub_header.html' %}
+
+      <div id="timepoint-body" style="margin-top:30px;">
+        {% if (timepoint.needs_redcap_survey(study_id)
+               or timepoint.needs_rewrite()
+               or not timepoint.static_page
+               or timepoint.missing_scans()) %}
+          {% include 'timepoint/warnings.html' %}
+        {% endif %}
+
+
+        {% include 'timepoint/github_issues.html' %}
+
+
+        {% include 'timepoint/comments.html' %}
+
+      </div>
+    </div>
+    <div class="col-xs-3">
+      {% include 'timepoint/menu_options.html' %}
+    </div>
+  </div>
+
+  {% if timepoint.static_page %}
+    <a href="{{ url_for('static_qc_page', study_id=study_id, timepoint_id=timepoint.name) }}"
+        class="btn btn-primary pull-right" id="doc-page" target="_blank">
+      <span class="button-text">View QC page</span>
+      <span class="glyphicon glyphicon-share-alt"></span>
+    </a>
+  {% endif %}
+
+  <div id="session-reporting">
+    {% for session in timepoint.sessions.values() %}
+      {% include 'timepoint/sessions/main.html' %}
+    {% endfor %}
+  </div>
+
+  {% include 'timepoint/modals/incidental_findings.html' %}
+  {% include 'timepoint/modals/delete_data.html' %}
+  {% include 'timepoint/modals/new_issue.html' %}
+
+</div>
+{% endblock %}

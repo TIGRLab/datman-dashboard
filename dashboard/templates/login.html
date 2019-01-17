@@ -1,21 +1,44 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 {% include 'flash.html' %}
 {% block content %}
-<div class="jumbotron">
-  <h1>Welcome</h1>
-    <p class="lead"> Please login using the provider listed below</p>
-  </h1>
-</div>
 <div class="container">
-  <h3><p class="bg-danger">
-    Important note: By logging into this system, you agree to not upload/enter any information that has Personally Identifying Information (PHI), such as participant initials or other potentially identifying information. We reserver the right to restrict or terminate your access if misuse is discovered.
-    <br/>
-    We reserve the right to restrict or terminate your access if misuse is discovered.
-  </p>
-  <p>Select an option below to login:</p>
+  <div class="jumbotron">
+    <h1>Welcome</h1>
+      <p class="lead">Please sign in</p>
+    </h1>
+  </div>
+
+  <!-- <div class="row">
+    <div class="col-xs-8 col-xs-offset-2"> -->
+  <div class="panel panel-danger">
+    <div class="panel-heading">
+      User Agreement
+    </div>
+    <div class="panel-body">
+      By logging into this system <strong>you agree to not upload/enter any
+      Personally Identifying Information (PHI)</strong>, such as participant
+      initials or other potentially identifying information. We reserve the
+      right to restrict or terminate your access if misuse is discovered.
+    </div>
+    <div class="panel-footer" style="color: #a94442;">
+      <a href="{{ url_for('new_account') }}" class="btn btn-primary" role="button">
+        <i class="fas fa-id-card-alt fa-lg"></i>
+        Request Account
+      </a>
+      <div class="pull-right">
+        <a href="{{ url_for('oauth_authorize', provider='github') }}"
+            class="btn btn-primary" role="button">
+          <i class="fab fa-github fa-lg"></i>
+          GitHub Login
+        </a>
+        <a href="{{ url_for('oauth_authorize', provider='gitlab') }}"
+            class="btn btn-primary disabled" role="button">
+          <i class="fab fa-gitlab fa-lg"></i>
+          GitLab Login
+        </a>
+      </div>
+    </div>
+  </div>
 </div>
-<div class="container">
-  <a href="{{ url_for('oauth_authorize', provider='github') }}" class="btn btn-info btn-lg" role="button">GitHub</a>
-  <a href="{{ url_for('oauth_authorize', provider='gitlab') }}" class="btn btn-info btn-lg disabled" role="button">GitLab</a>
-</div>
+
 {% endblock %}

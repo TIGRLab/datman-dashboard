@@ -1,3 +1,6 @@
+dashboard/output.csv
+.gitignore
+.gitattributes
 *.pyc
 venv/
 *.sqlite
@@ -7,3 +10,5 @@ dashboard.ini
 dashboard.module
 dashboard_dev.module
 dashboard_env/
+test_run.py
+todo.txt

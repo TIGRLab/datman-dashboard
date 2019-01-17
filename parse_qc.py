@@ -26,7 +26,7 @@ import logging
 import datman.utils
 import datman.config
 import datman.scanid
-from dashboard.docopt import docopt
+from dashboard.docopt import docopt # Note to self: Delete docopt from requirements.txt after update of parse_qc
 from dashboard import db
 from dashboard.models import Study, Session, Scan, MetricType, MetricValue, Session_Scan
 
