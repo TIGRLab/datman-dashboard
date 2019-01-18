@@ -307,7 +307,14 @@ def timepoint(study_id, timepoint_id):
     except KeyError:
         github_issues = None
     else:
-        github_issues = utils.search_issues(token, timepoint.name)
+        try:
+            github_issues = utils.search_issues(token, timepoint.name)
+        except:
+            flash("Github issue access failed. Please contact an admin if "
+                    "this issue persists.")
+            logger.error("Can't search github issues, user {} received "
+                    "access denied.".format(user))
+            github_issues = None
 
     empty_form = EmptySessionForm()
     findings_form = IncidentalFindingsForm()
@@ -914,7 +921,8 @@ def oauth_callback(provider):
     access_token, user_info = oauth.callback()
 
     if access_token is None:
-        flash('Authentication failed.')
+        flash('Authentication failed. Please contact an admin if '
+                'this problem is persistent')
         return redirect(url_for('login'))
 
     if provider == 'github':
