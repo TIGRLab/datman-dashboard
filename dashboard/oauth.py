@@ -41,7 +41,7 @@ class OAuthSignIn(object):
         return self.providers[provider_name]
 
 class GithubSignIn(OAuthSignIn):
-    str_rnd = None
+
     def __init__(self):
         super(GithubSignIn, self).__init__('github')
 
@@ -62,14 +62,14 @@ class GithubSignIn(OAuthSignIn):
         return rnd
 
     def authorize(self):
-        self.str_rnd = self.random_string()
+        session['str_rnd'] = self.random_string()
         if GITHUB_PUBLIC:
             app_scope='user public_repo'
         else:
             app_scope = 'user repo'
         return redirect(self.service.get_authorize_url(
             scope=app_scope,
-            state=self.str_rnd)
+            state=session['str_rnd'])
             )
 
     def callback(self):
@@ -80,7 +80,7 @@ class GithubSignIn(OAuthSignIn):
             returned_state = request.args['state']
         except:
             returned_state = None
-        if not returned_state == self.str_rnd:
+        if not returned_state == session['str_rnd']:
             return None, None
 
         oauth_session = self.service.get_auth_session(
