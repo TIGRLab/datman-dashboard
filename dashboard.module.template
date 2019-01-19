@@ -2,30 +2,33 @@
 module-whatis   "Configures the QC dashboard environment"
 
 # Provide OAuth details
-# Can delete either github or gitlab entries if you dont use it but 
+# Can delete either github or gitlab entries if you dont use it but
 # you need at least one configured
 setenv		OAUTH_SECRET_GITHUB  	<from github>
 setenv		OAUTH_CLIENT_GITHUB  	<from github>
 setenv		OAUTH_SECRET_GITLAB  	<from gitlab>
 setenv		OAUTH_CLIENT_GITLAB  	<from gitlab>
 
-# Provide Github Issues details
-# Used to create / read github issues from a subject's page in the dashboard
-# NOTE: If the issues repo is private, the owner must be the same as the owner
-# of the dashboard app itself or the repo will not be found
-setenv    GITHUB_ISSUES_OWNER   <owner of issues repo>
-setenv    GITHUB_ISSUES_REPO    <name of issues repo>
-
+# Configure github issues
+setenv GITHUB_ISSUES_OWNER      <owner account name for repo that hosts issues>
+setenv GITHUB_ISSUES_REPO       <name of repo that hosts issues>
+setenv GITHUB_ISSUES_PUBLIC     True      # Set to False if repo is private
 
 
 # Provide a secret key for Flask
-# This can be whatever you want, but you should keep it secret and 
+# This can be whatever you want, but you should keep it secret and
 # make it something not easily guessed since it's used to encrypt sessions
 setenv		FLASK_SECRET_KEY	<your secret key here>
 
+# Configure relevant emails
+# Admins receive all error emails, stack traces, and user account requests
+# Support email is just main point of contact for users
+setenv ADMINS                   <single email or comma separated list of emails>
+setenv DASHBOARD_SUPPORT_EMAIL  <single email>
+
 
 # Provide postgres info
-# You can change the postgres user or database name here, just make sure 
+# You can change the postgres user or database name here, just make sure
 # everything is configured correctly in postgres
 setenv		POSTGRES_USER 		web_user
 setenv		POSTGRES_PASS 		<Your password>
@@ -53,4 +56,3 @@ prepend-path	PYTHONPATH         	<path to datman/datman folder>
 # Add dashboard scripts to your path
 prepend-path 	PATH               	<path to dashboard here>
 prepend-path 	PYTHONPATH         	<path to dashboard here>
-

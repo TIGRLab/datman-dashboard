@@ -306,6 +306,7 @@ export POSTGRES_PASS=YOUR-SECRET-HERE
 export POSTGRES_SRVR=YOUR-POSTGRES-SERVERS-IP-HERE
 
 export ADMINS=ADMIN-COMMA-SEPARATED-EMAIL-ADDRESSES-HERE
+export DASHBOARD_SUPPORT_EMAIL=MAIN-CONTACT-EMAIL-HERE
 
 # Provide a redcap token to enable Scan Completed forms to be
 # pulled in. This part is optional but you may have to fill in a fake value

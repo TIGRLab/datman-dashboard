@@ -1,4 +1,4 @@
-<div style="display:none" id='study_name'>{{ study.nickname }}</div>
+<div style="display:none" id='study_name'>{{ study.id }}</div>
 <div style="display:none" id='phantoms'>1</div>
 </br>
 <div class="row">
@@ -8,7 +8,7 @@
       <h4>
       Select sites:
       {% for site in study.sites %}
-        <label>{{ site.name }} <input type="checkbox" aria-label="{{site.name}}" value="{{site.name}}" name="site"/></label>
+        <label>{{ site.site_id }} <input type="checkbox" aria-label="{{site.site_id}}" value="{{site.site_id}}" name="site"/></label>
       {% endfor %}
     </h4>
   </div>
@@ -26,13 +26,14 @@
 
 <div class="btn-group col-md-3" role="group" aria-label="scan tags" id="scantypeselector">Select scan subtype:</br>
   {% for scantype in study.scantypes %}
-    {% if scantype.name in ['T1'] %}
-      <label style="display:none" class="scantype_t1"> {{ scantype.name }}<input type="radio" aria-label="{{scantype.name}}" value="{{scantype.name}}" name="scantype" style="margin-top: 5px;"/></label>
-    {% elif scantype.name.startswith('DTI') %}
-      <label style="display:none" class="scantype_dti"> {{ scantype.name }}<input type="radio" aria-label="{{scantype.name}}" value="{{scantype.name}}" name="scantype" style="margin-top: 5px;"/></label>
+    {% if scantype.tag in ['T1'] %}
+      {% set class = 'scantype_t1' %}
+    {% elif scantype.tag.startswith('DTI') %}
+      {% set class = 'scantype_dti' %}
     {% elif scantype.name in ['RST'] %}
-      <label style="display:none" class="scantype_fmri"> {{ scantype.name }}<input type="radio" aria-label="{{scantype.name}}" value="{{scantype.name}}" name="scantype" style="margin-top: 5px;"/></label>
+      {% set class = 'scantype_fmri' %}
     {% endif %}
+    <label style="display:none" class="{{ class }}"> {{ scantype.tag }}<input type="radio" aria-label="{{scantype.tag}}" value="{{scantype.tag}}" name="scantype" style="margin-top: 5px;"/></label>
   {% endfor %}
 </div>
 

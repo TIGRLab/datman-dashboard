@@ -6,7 +6,7 @@
     <div id="home-body">
       <div class="jumbotron">
         <h1>Kimel TIGR Lab MR Quality Control</h1>
-          <p class="lead"> Monitoring {{ session_count }} Sessions for {{ study_count }} Studies.</p>
+          <p class="lead"> Monitoring {{ timepoint_count }} sessions for {{ study_count }} studies across {{ site_count }} sites.</p>
         </h1>
       </div>
       {% if studies|count > 0 %}
@@ -14,27 +14,26 @@
         <thead>
           <tr>
             <td>Nickname</td>
-            <!-- This empty column is for the 'new QC' labels  -->
-            <td></td>
-            <td>Study Name</td>
+            <td><!-- This empty column is for the 'new QC' labels  --></td>
+            <td style="width: 70%">Study Name</td>
             <td align="right"># of Sessions</td>
-            <!-- This empty column is for the 'View More' indicator so they know rows are clickable  -->
-            <td></td>
+            <td><!-- This empty column is for the 'View More' indicator so they know rows are clickable  --></td>
           </tr>
         </thead>
         <tbody>
           {% for study in studies %}
           <tr class="clickable-row" data-href="{{ url_for('study', study_id=study.id) }}">
-            <td> {{ study.nickname }} </td>
+            <td> {{ study.id }} </td>
             <td>
-              {% if study.new_sessions() %}
+              {% set new_sessions = study.get_new_sessions().count() %}
+              {% if new_sessions %}
                 <span class="label label-primary new-qc">New
-                  <span class="badge">{{ study.new_sessions() }}</span>
+                  <span class="badge">{{ new_sessions }}</span>
                 </span>
               {% endif %}
             </td>
             <td>{{ study.name }}</a></td>
-            <td align="right">{{ study.sessions|count }}</td>
+            <td align="right">{{ study.timepoints.count() }}</td>
             <td class="click-me">
               <span> View More <span class="glyphicon glyphicon-menu-right"></span></span>
             </td>

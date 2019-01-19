@@ -1,0 +1,398 @@
+{% extends "base.html" %}
+{% block content %}
+  {% include 'flash.html' %}
+  <div class="bd-pageheader jumbotron">
+    <h1>Add Study</h1>
+  </div>
+  <div class='container'>
+    <form action='' method='post'>
+      {{ study_form.hidden_tag() }}
+      {% for var in [study_form.nickname, study_form.study_name] %}
+        <p>
+          {{ var.label }}<br>
+          {{ var(size=32) }}
+          {% for error in var.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+          {% endfor %}
+        </p>
+      {% endfor%}
+      <p>
+        {{ study_form.description.label }}<br>
+        {{ study_form.description(rows='3', cols='31') }}
+        {% for error in study_form.description.errors %}
+          <span style="color: red;">[{{ error }}]</span>
+        {% endfor %}
+      </p>
+      <p>
+        {{ study_form.people.label }}<br>
+        {{ study_form.people }}
+        <button type='button' class='btn btn-info btn-sm' data-toggle='modal' data-target='#AddPI'>
+          Add PI
+        </button>
+      </p>
+      <p>
+        {{ study_form.users.label }}<br>
+        {{ study_form.users }}
+        <button type='button' class='btn btn-info btn-sm' data-toggle='modal' data-target='#AddUser'>
+          Add User
+        </button>
+      </p>
+      <p>
+        <div id='fieldset-site' data-toggle='fieldset'>
+          <h4>
+            {{ study_form.sites.label }}
+            <button type='button' id='fieldset-site-add-row' class='btn btn-info btn-sm'>
+              <span class='glyphicon glyphicon-plus'></span>
+            </button>
+          </h4>
+          <div class='row'>
+            <div class='col-lg-6' data-dismiss='false'>
+              <span class='pull-right'>
+                {{ new_site_form.hidden_tag() }}
+                {{ new_site_form.new_site_name.label }}
+                {{ new_site_form.new_site_name }}
+                {{ new_site_form.submit_site() }}
+              </span>
+            </div>
+            <div class='col-lg-6' data-dismiss='false'>
+              <span class='pull-right'>
+                {{ new_scantype_form.hidden_tag() }}
+                {{ new_scantype_form.new_scantype_name.label }}
+                {{ new_scantype_form.new_scantype_name }}
+                {{ new_scantype_form.submit_scantype() }}
+              </span>
+            </div>
+          </div><br>
+          {% for site in study_form.sites %}
+            <div class='form-group site-row panel panel-default' id='sites-row-{{loop.index0}}'>
+              <div class='row' style="padding-bottom: 5px">
+                <div class='col-lg-3'>
+                  <div class="btn-group">
+                    {{ site.site_name.label}}
+                    {{ site.site_name(onfocus='this.oldvalue = this.value', onchange='sync_site_choices(this); this.oldvalue = this.value') }}
+                    {% for error in site.site_name.errors %}
+                      <span style="color: red;">[{{ error }}]</span>
+                    {% endfor %}
+                  </div>
+                </div>
+                <div class='col-lg-4'>
+                  {{ site.site_tags.label }}
+                  {{ site.site_tags }}
+                </div>
+                <div class='col-lg-4'>
+                  {{ site.xnat_archive.label }}
+                  {{ site.xnat_archive }}
+                </div>
+                <div class='col-lg-1'>
+                  <button type='button' class='site-del-btn btn btn-info btn-lg btn-block' >
+                    <span class='glyphicon glyphicon-minus'></span>
+                  </button>
+                </div>
+              </div>
+              <a href='#' class='advanced-options-btn'>Advanced Options</a>
+              <div class='row' id='sites-{{loop.index0}}-advanced-options' style='display: none'>
+                <div class='col-lg-12'>
+                  <div class='row'>
+                    {% for ftp in site.ftpserver, site.ftpport, site.redcap_api %}
+                      <div class='col-lg-4'>
+                        <span class='pull-right'>
+                          {{ ftp.label }}
+                          {{ ftp(title=ftp.description) }}
+                        </span>
+                      </div>
+                    {% endfor %}
+                  </div>
+                  <div class='row'>
+                    {% for mr in site.mrftppass, site.mruser, site.mrfolder %}
+                      <div class='col-lg-4'>
+                        <span class='pull-right'>
+                          {{ mr.label }}
+                          {{ mr(title=mr.description) }}
+                        </span>
+                      </div>
+                    {% endfor %}
+                  </div>
+                  <div class='row'>
+                  {% for xnat in site.xnat_source, site.xnat_source_archive, site.xnat_source_credentials %}
+                    <div class='col-lg-4'>
+                      <span class='pull-right'>
+                        {{ xnat.label }}
+                        {{ xnat(title=xnat.description) }}
+                      </span>
+                    </div>
+                  {% endfor %}
+                </div>
+                </div>
+              </div>
+              <div class='row'>
+                <div class='col-lg-12'>
+                  <button type='button' class='add-scan-type-btn btn btn-info btn-lg btn-block'>
+                    Add Scan Type
+                  </button>
+                </div>
+              </div>
+              <div class='row' id='sites-{{loop.index0}}-scantype-table'>
+                <div class='col-lg-12'>
+                  <div class='row'>
+                    <div class='col-lg-4'>
+                      Scantype
+                    </div>
+                    <div class='col-lg-4'>
+                      Patterns
+                    </div>
+                    <div class='col-lg-3'>
+                      Count
+                    </div>
+                    <div class='col-lg-1'>
+                      Delete
+                    </div>
+                  </div>
+                  {% set outer_loop = loop %}
+                  {% for scantype in site.scantypes %}
+                    <div class='row form-group scantype-row' id='sites-{{outer_loop.index0}}-scantypes-row-{{loop.index0}}'>
+                      <div class='col-lg-4'>
+                        {{ scantype.scantype_name(onfocus='this.oldvalue = this.value', onchange='sync_scantype_choices(this); this.oldvalue = this.value') }}
+                      </div>
+                      <div class='col-lg-4'>
+                        {{ scantype.patterns }}
+                      </div>
+                      <div class='col-lg-3'>
+                        {{ scantype.count }}
+                      </div>
+                      <div class='col-lg-1'>
+                        <button type='button' class='scantype-del-btn btn btn-info btn-lg btn-block' >
+                          <span class='glyphicon glyphicon-minus'></span>
+                        </button>
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </p>
+      <p data-dismiss='false'>
+        {{ study_form.submit_study() }}
+      </p><br>
+    </form>
+  </div>
+  <script type=text/javascript>
+    $('#fieldset-site').on('click', '.advanced-options-btn', function() {
+      var advOptionsRow = '#' +  $(this)[0].nextElementSibling.id
+      console.log($(this)[0].nextElementSibling)
+      if ($(advOptionsRow).is(':hidden')) {
+        $(advOptionsRow).slideDown();
+      } else {
+        $(advOptionsRow).slideUp();
+      }
+    });
+
+    function add_data_modal(head, content, id){
+      var modal_html =
+        "<div class='modal fade' id='"+ id + "' role='dialog'>" +
+          "<div class='modal-dialog' role='document'>" +
+            "<div class='modal-content'>" +
+              "<div class='modal-header'>" +
+                "<h3 class='modal-title'>" + id + "</h3>" +
+                "<button type='button' class='close' data-dismiss='modal' aria-label='Close'>" +
+                  "<span aria-hidden='true'>&times;</span>" +
+                "</button>" +
+              "</div>" +
+              "<div class='modal-body'>" +
+                content +
+              "</div>" +
+              "<div class='modal-footer'>" +
+                "<button type='button' class='btn btn-secondary' data-dismiss='modal'>Close</button>" +
+              "</div>" +
+            "</div>" +
+          "</div>" +
+        "</div>";
+
+      $('body').append(modal_html);
+    }
+
+    $('#fieldset-site').on('click', '.site-del-btn', function(event) {
+      var currRow = $(this).closest('.form-group.site-row');
+      var allRows = $('#fieldset-site').find('.form-group.site-row')
+      if ((allRows.length > 1) && (allRows[0] !== currRow[0])){
+        site_select = currRow.find('[id^=sites-][id$=site_name]')
+        sync_site_choices(site_select[0], deleting = true)
+        currRow.remove();
+      }
+    })
+
+    $('#fieldset-site').on('click', '.scantype-del-btn', function(event) {
+      var site_num = $(this).closest('.site-row')[0].id.replace(/.*-(\d{1,4})/m, '$1')
+      var scantype_table = $(this).closest('[id$=scantype-table]')
+      var currRow = ($(this).closest('[id^=sites][id*=scantypes-row]'))
+      var allRows = (scantype_table.find('[id^=sites][id*=scantypes-row]'))
+      if ((allRows.length > 1) && (allRows[0] !== currRow[0])){
+        scantype_select = currRow.find('[id^=sites-][id$=scantype_name]')
+        sync_choices('sites-' + site_num, 'scantype',scantype_select[0], deleting = true)
+        currRow.remove();
+      }
+    })
+
+    function sync_choices(starts_with, ident, selection, deleting = false) {
+      oldvalue = selection.oldvalue
+      value = selection.value
+
+      all_site_selects = document.querySelectorAll('[id^=' + starts_with + '][id$=' + ident + '_name]')
+      for (i = 0; i < all_site_selects.length; i++) {
+        select = all_site_selects[i]
+        old = select.querySelector('[value="' + oldvalue + '"]')
+
+        if ((oldvalue === value) && (deleting === true)) {
+          old.classList.remove('hide-dropdown')
+        } else{
+          if ((old != null) && (old.value != '')) {
+            old.classList.remove('hide-dropdown')
+          }
+          curr = select.querySelector('[value="' + value + '"]')
+          if ((curr != null) && (curr.value != '')){
+            curr.classList.add('hide-dropdown')
+          }
+        }
+      }
+    }
+
+    function sync_scantype_choices(selection, deleting = false) {
+      var site_num = selection.closest('.site-row').id.replace(/.*-(\d{1,4})/m, '$1')
+      sync_choices('sites-' + site_num,  'scantype', selection, deleting)
+    }
+
+    function sync_site_choices(selection, deleting = false) {
+      sync_choices('sites-', 'site', selection, deleting)
+    }
+
+    function duplicate_row(ident) {
+      var rows = document.querySelectorAll('[id^=' + ident + '-row-]');
+      var lastRow = rows[rows.length - 1];
+      var reg_pattern = '.*' + ident + '-row-(\\d{1,4})'
+      var re = new RegExp(reg_pattern,"m")
+
+      var lastRowID = parseInt(lastRow.id.replace(re, '$1'));
+      var newRow = lastRow.cloneNode(true);
+      newRow.id = ident + '-row-' + (lastRowID + 1);
+
+      ins = []
+      ins[0] = newRow.getElementsByTagName("input")
+      ins[1] = newRow.getElementsByTagName("select")
+      ins[2] = newRow.getElementsByTagName("div")
+      for (j = 0; j < ins.length; j++){
+        inputs = ins[j]
+        for (i = 0; i < inputs.length; i++){
+          input = inputs[i]
+          if (input.id !== '') {
+              input.id = input.id.replace(ident + '-' + (lastRowID), ident + '-' + (lastRowID + 1));
+          }
+          try {
+            input.name = input.name.replace(ident + '-' + (lastRowID), ident + '-' + (lastRowID + 1));
+          } catch(e) {}
+        }
+      }
+      lastRow.after(newRow);
+      return newRow
+    }
+
+    $('#fieldset-site-add-row').on('click', function() {
+      var newSite = duplicate_row('sites')
+      scantypes_name_selects = newSite.querySelectorAll('[id*=scantypes][id$=scantype_name]')
+      for (i=0; i< scantypes_name_selects.length; i++) {
+        select = scantypes_name_selects[i]
+        for (j=0; j< select.length; j++) {
+          option = select[j]
+          option.classList.remove('hide-dropdown')
+        }
+      }
+    })
+
+    $('#fieldset-site').on('click', '.add-scan-type-btn', function(e) {
+      var site_row = $(this).closest('.site-row')[0]
+      var scantype_table = site_row.querySelector('[id$=scantype-table]')
+      site_num = scantype_table.id.replace(/.*sites-(\d{1,4})-scantype-table/m, '$1')
+
+      if (scantype_table.style['display'] == '') {
+        var newScantype = duplicate_row('sites-' + site_num + '-scantypes')
+      } else if (scantype_table.querySelectorAll('[id^=sites][id*=scantypes-row]').length == 1) {
+        scantype_table.style['display'] = ''
+      }
+    })
+
+    function add_new_option(option_type, value, ident) {
+      value = value.toUpperCase()
+      if (value !== '') {
+        all_selects = document.querySelectorAll(ident)
+        all_values = all_selects[0].innerText.split('\n')
+        if ($.inArray(value, all_values) === -1) {
+          for (i=0; i < all_selects.length; i++) {
+            new_option = document.createElement('option')
+            new_option.text = value
+            new_option.value = all_values.length + 1
+            all_selects[i].add(new_option)
+          $.ajax({
+            type : 'POST',
+            url : "/add_study",
+            data: {
+              'type': option_type,
+              'text': value,
+              'value': all_values.length + 1
+            }})
+          }
+        }
+      }
+    }
+
+    $('#new-site-btn').on('click', function() {
+      new_site = document.getElementById('new_site')
+      // add_new_option('site', new_site.value, '[id^=sites][id$=site_name]')
+    })
+
+    $('#new-scantype-btn').on('click', function() {
+      new_scantype = document.getElementById('new_scantype')
+      // add_new_option('scantype', new_scantype.value, '[id*=scantypes][id$=scantype_name]')
+    })
+
+  $(document).ready(function() {
+    add_data_modal('Add New PI',
+        '<form action="" method="post" id="add_pi_form">' +
+                    '{{ person_form.hidden_tag() }}' +
+                    '{% for var in [person_form.person_name, person_form.role, person_form.person_email, person_form.phone1, person_form.phone2] %}' +
+                      '<p>' +
+                        '{{ var.label }}<br>' +
+                        '{{ var(size=32) }}' +
+                        '{% for error in var.errors %}' +
+                          '<span style="color: red;">[{{ error }}]</span>' +
+                        '{% endfor %}' +
+                      '</p>' +
+                    '{% endfor%}' +
+                    '<p>' +
+                      '{{ person_form.submit_person() }}' +
+                    '</p>' +
+                  '</form>',
+          'AddPI'
+      );
+    add_data_modal('Add New User',
+      '<form action="" method="post" id="add_user_form">' +
+                '{{ user_form.hidden_tag() }}' +
+                '{% for var in [user_form.realname, user_form.username, user_form.user_email, user_form.is_admin, user_form.has_phi] %}' +
+                  '<p>' +
+                    '{{ var.label }}<br>' +
+                    '{{ var(size=32) }}' +
+                    '{% for error in var.errors %}' +
+                      '<span style="color: red;">[{{ error }}]</span>' +
+                    '{% endfor %}' +
+                  '</p>' +
+                '{% endfor%}' +
+                '<p>' +
+                  '{{ user_form.submit_user() }}' +
+                '</p>' +
+              '</form>',
+          'AddUser'
+    );
+  });
+
+  </script>
+
+{% endblock %}
