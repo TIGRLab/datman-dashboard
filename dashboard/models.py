@@ -846,7 +846,7 @@ class Session(db.Model):
 
     def add_redcap(self, record_num, project, url, instrument=None, date=None,
             rc_user=None, comment=None, version=None, event_id=None):
-        if self.redcap_record:
+        if self.redcap_record and self.redcap_record.record is not None:
             rc_record = self.redcap_record.record
             if (rc_record.record != record_num or
                     str(rc_record.project) != project or
@@ -858,7 +858,13 @@ class Session(db.Model):
             db.session.add(rc_record)
             # Flush to get an ID assigned
             db.session.flush()
-            self.redcap_record = SessionRedcap(self.name, self.num, rc_record.id)
+            if self.redcap_record:
+                logger.error("Found redcap record for {} after it was marked "
+                        "as not expecting a record. Adding record.".format(self))
+                self.redcap_record.record = rc_record
+            else:
+                self.redcap_record = SessionRedcap(self.name, self.num,
+                        rc_record.id)
             self.save()
 
         if instrument:
