@@ -803,7 +803,7 @@ class Session(db.Model):
             back_populates='sessions_reviewed')
     timepoint = db.relationship('Timepoint', uselist=False,
             back_populates='sessions')
-    scans = db.relationship('Scan', cascade='all, delete')
+    scans = db.relationship('Scan', cascade='all, delete', order_by="Scan.series")
     empty_session = db.relationship('EmptySession', uselist=False,
             back_populates='session', cascade='all, delete')
     redcap_record = db.relationship('SessionRedcap', back_populates='session',
