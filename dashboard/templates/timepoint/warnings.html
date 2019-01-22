@@ -40,7 +40,7 @@
 
     {% set needs_redcap = timepoint.needs_redcap_survey(study_id) %}
     {% for session in timepoint.sessions.values() %}
-      {% if needs_redcap and not session.redcap_record.record %}
+      {% if needs_redcap and not session.redcap_record %}
         <!-- The missing redcap survey warning(s) -->
         <div>
           <h4 style="display: inline-block;">
