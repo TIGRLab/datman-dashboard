@@ -49,7 +49,7 @@ class ScanChecklistForm(FlaskForm):
             render_kw={'placeholder': 'Add description', 'rows': 12,
                     'required': True, 'maxlength': '1028'})
     submit = SubmitField('Submit')
-    
+
 
 class UserForm(FlaskForm):
     id = HiddenField()
@@ -153,6 +153,7 @@ class AccessRequestForm(UserForm):
     studies = FieldList(FormField(StudyPermissionsForm))
     request_access = SelectMultipleField('Request access to studies: ')
     send_request = SubmitField(label='Submit Request')
+
 
 class AnalysisForm(FlaskForm):
     name = TextField(u'Brief name',

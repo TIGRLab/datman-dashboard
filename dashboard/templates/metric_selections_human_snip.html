@@ -31,7 +31,7 @@
         {% for scantype in study.scantypes %}
           {% if scantype.tag.startswith('DTI') %}
             {% set class = 'scantype_dti' %}
-          {% elif scantype.tag in ['IMI', 'RST', 'EMP', 'OBS', 'SPRL', 'VN-SPRL', 'MID', 'SID', 'NBK'] %}
+          {% elif scantype.tag in ['IMI', 'RST', 'EMP', 'OBS', 'SPRL-COMB', 'VN-SPRL-COMB', 'VN', 'MID', 'SID', 'NBK', 'TRG', 'GNG', 'TS-FMRI'] %}
             {% set class = 'scantype_fmri' %}
           {% endif %}
           <label style="display:none" class="{{ class }}"> {{ scantype.tag }}<input type="checkbox" aria-label="{{scantype.name}}" value="{{scantype.name}}" name="scantype" style="margin-top: 5px;"/></label>
