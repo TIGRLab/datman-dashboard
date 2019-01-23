@@ -690,6 +690,9 @@ class Timepoint(db.Model):
         return any(sess.missing_scans() for sess in self.sessions.values())
 
     def dismiss_redcap_error(self, session_num):
+        existing = SessionRedcap.query.get((self.name, session_num))
+        if existing:
+            return
         session_redcap = SessionRedcap(self.name, session_num)
         db.session.add(session_redcap)
         db.session.commit()
