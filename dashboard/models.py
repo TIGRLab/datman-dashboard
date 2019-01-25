@@ -615,15 +615,24 @@ class Timepoint(db.Model):
         self.static_page = static_page
 
     def add_session(self, num, date=None):
+        try:
+            self.sessions[num]
+        except KeyError:
+            # Session doesnt exist yet so it's safe to proceed
+            pass
+        else:
+            raise InvalidDataException("Session {} of timepoint {} already "
+                    "exists.".format(num, self.name))
+
+        if self.is_phantom and num > 1:
+            raise InvalidDataException("Cannot add repeat session {} to "
+                    "phantom {}".format(num, self.name))
+
         session = Session(self.name, num, date=date)
         self.sessions[num] = session
         try:
             db.session.add(self)
             db.session.commit()
-        except AssertionError as e:
-            db.session.rollback()
-            raise InvalidDataException("Session {} of timepoint {} already "
-                    "exists".format(num, self.name))
         except Exception as e:
             db.session.rollback()
             e.message = "Failed to add session {} to timepoint {}. Reason: " \
