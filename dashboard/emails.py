@@ -8,13 +8,13 @@ from dashboard import app, mail, SENDER, ADMINS, DASH_SUPPORT
 
 logger = logging.getLogger(__name__)
 
-def async(f):
+def async_exec(f):
     def wrapper(*args, **kwargs):
         thr = Thread(target=f, args=args, kwargs=kwargs)
         thr.start()
     return wrapper
 
-@async
+@async_exec
 def send_async_email(app, email):
     with app.app_context():
         mail.send(email)
