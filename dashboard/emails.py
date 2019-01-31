@@ -74,3 +74,22 @@ def account_rejection_email(user):
             "and unfortunately it has been rejected. For any questions you "\
             "may have please contact us at {}".format(DASH_SUPPORT)
     send_email(subject, body, recipient=user.email)
+
+def missing_redcap_email(session, study, dest_emails=None):
+    subject = "{}: Missing REDCap Survey".format(study)
+    body = "A 'Scan Completed' survey is expected for session '{}' but a " \
+            "survey has not been received. Please remember to fill out the " \
+            "survey or let us know if this email is in error.".format(session)
+    send_email(subject, body, recipient=dest_emails)
+
+def missing_session_data_email(session, dest_emails=None):
+    subject = "No data received for '{}'".format(session)
+    body = "It has been 48hrs since a redcap scan completed survey was " \
+            "received for {} but no scan data has been found.".format(session)
+    send_email(subject, body, recipient=dest_emails)
+
+def unsent_notification_email(user, type, unsent_body):
+    subject = "Unable to send '{}' notification to user {}".format(type, user)
+    body = "Failed to send email to user {} with body: \n\n {}".format(user.id,
+            unsent_body)
+    send_email(subject, body)

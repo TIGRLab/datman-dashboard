@@ -247,6 +247,7 @@ class User(UserMixin, db.Model):
     def __str__(self):
         return "{} {}".format(self.first_name, self.last_name)
 
+
 class AccountRequest(db.Model):
     __tablename__ = 'account_requests'
 
@@ -296,6 +297,7 @@ class AccountRequest(db.Model):
                     self.user_id)
         return result
 
+
 class Study(db.Model):
     __tablename__ = 'studies'
 
@@ -344,6 +346,7 @@ class Study(db.Model):
             e.message = "Failed to add timepoint {}. Reason: {}".format(
                     timepoint, e)
             raise
+
         return timepoint
 
     def num_timepoints(self, type=''):
@@ -537,10 +540,19 @@ class Study(db.Model):
                 if study_user.primary_contact]
         return contacts
 
+    def get_staff_contacts(self):
+        return [su.user for su in self.users if su.kimel_contact]
+
+    def get_RAs(self):
+        return [su.user for su in self.users if su.study_RA]
+
+    def get_QCers(self):
+        return [su.user for su in self.users if su.does_qc]
+
     def choose_staff_contact(self):
-        kimel_contacts = [su.user for su in self.users if su.kimel_contact]
-        if len(kimel_contacts) >= 1:
-            user = self.select_next(kimel_contacts)
+        contacts = self.get_staff_contacts()
+        if len(contacts) >= 1:
+            user = self.select_next(contacts)
         else:
             user = None
         return user
@@ -631,6 +643,26 @@ class Timepoint(db.Model):
             raise
         return session
 
+    def get_study(self, study_id=None):
+        """
+        Most timepoints only ever have one study and this will just return
+        the first one found. If 'id' is given it will either return the study
+        object or raise an exception if this timepoint doesnt belong to that
+        study
+        """
+        if study_id:
+            try:
+                return self.studies[study_id]
+            except KeyError:
+                raise InvalidDataException("Timepoint {} does not belong to "
+                        "study {}".format(self, study_id))
+        try:
+            study = self.studies.values()[0]
+        except IndexError:
+            raise InvalidDataException("Timepoint {} does not have any studies "
+                    "configured.".format(self))
+        return study
+
     def get_blacklist_entries(self):
         """
         Returns any ScanChecklist entries for blacklisted scans for
@@ -669,7 +701,9 @@ class Timepoint(db.Model):
             return True
         return all(sess.is_qcd() for sess in self.sessions.values())
 
-    def expects_redcap(self, study):
+    def expects_redcap(self, study=None):
+        if not study:
+            study = self.studies.keys()[0]
         return self.site.studies[study].uses_redcap
 
     def needs_redcap_survey(self, study_id):
@@ -817,6 +851,9 @@ class Session(db.Model):
         self.signed_off = signed_off
         self.reviewer_id = reviewer_id
         self.review_date = review_date
+
+    def get_study(self, study_id=None):
+        return self.timepoint.get_study(study_id=study_id)
 
     def add_scan(self, name, series, tag, description=None, source_id=None):
         scan = Scan(name, self.name, self.num, series, tag, description,
@@ -1032,6 +1069,9 @@ class Scan(db.Model):
         self.tag = tag
         self.description = description
         self.source_id = source_id
+
+    def get_study(self, study_id=None):
+        return self.session.get_study(study_id=study_id)
 
     def get_checklist_entry(self):
         if self.is_linked():

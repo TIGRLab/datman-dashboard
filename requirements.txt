@@ -38,3 +38,10 @@ sqlalchemy-migrate==0.10.0
 sqlparse==0.2.2
 uWSGI==2.0.14
 wsgiref==0.1.2
+apscheduler==3.5.3
+flask-apscheduler==1.11.0
+futures==3.2.0
+python-dateutil==2.7.5
+pytz==2018.9
+tzlocal==1.5.1
+pyyaml==3.13
