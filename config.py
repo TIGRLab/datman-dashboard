@@ -5,6 +5,7 @@ In production environment variables are defined in:
 """
 
 import os
+from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
@@ -21,14 +22,29 @@ SQLALCHEMY_DATABASE_URI = 'postgresql://{user}:{pwd}@{srvr}/{db}'.format(user=os
 SQLALCHEMY_MIGRATE_REPO = os.path.join(basedir, 'migrations')
 SQLALCHEMY_TRACK_MODIFICATIONS = True #This should be turned off after development
 
-# mail server settings
-MAIL_SERVER = "smtp.camh.net"
-MAIL_PORT = 25
-MAIL_USERNAME = None
-MAIL_PASSWORD = None
-SENDER = 'no-reply@kimellab.ca'
-DASH_SUPPORT = os.environ.get("DASHBOARD_SUPPORT_EMAIL") or ""
+# mail server settings (For emails to dashboard users)
+# These dont need to be imported anywhere, they're read when
+# app.config.from_object('config') is run in init, and read by the flask_mail
+# extension when Mail(app) is run
+MAIL_SERVER = os.environ.get("DASHBOARD_MAIL_SERVER") or "smtp.gmail.com"
+MAIL_PORT = os.environ.get("DASHBOARD_MAIL_PORT") or 465
+MAIL_USERNAME = os.environ.get("DASHBOARD_MAIL_UNAME") or None
+MAIL_PASSWORD = os.environ.get("DASHBOARD_MAIL_PASS") or None
+DASH_SUPPORT = os.environ.get("DASHBOARD_SUPPORT_EMAIL") or MAIL_USERNAME
+SENDER = DASH_SUPPORT or MAIL_USERNAME or "no-reply@kimellab.ca"
+MAIL_USE_SSL = True
 
+# mail server settings (for the logger / error emails to dashboard admins)
+LOG_MAIL_SERVER = os.environ.get("DASH_LOG_EMAIL") or 'smtp.camh.net'
+LOG_MAIL_PORT = os.environ.get("DASH_LOG_PORT") or 25
+LOG_MAIL_USER = None
+LOG_MAIL_PASS = None
+
+# Scheduler settings
+SCHEDULER_JOBSTORES = {
+        'default': SQLAlchemyJobStore(url=SQLALCHEMY_DATABASE_URI)
+}
+SCHEDULER_API_ENABLED = False
 
 # administrator list
 try:
