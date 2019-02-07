@@ -17,6 +17,7 @@ from sqlalchemy import and_, exists, func
 from sqlalchemy.orm import deferred
 from sqlalchemy.schema import UniqueConstraint, ForeignKeyConstraint
 from sqlalchemy.orm.collections import attribute_mapped_collection
+from sqlalchemy.orm.exc import FlushError
 from sqlalchemy.exc import IntegrityError
 from psycopg2.tz import FixedOffsetTimezone
 
@@ -914,6 +915,8 @@ class Session(db.Model):
             rc_record.comment = comment
         if version:
             rc_record.version = version
+        if event_id:
+            rc_record.event_id = event_id
         db.session.add(rc_record)
         db.session.commit()
         return rc_record
