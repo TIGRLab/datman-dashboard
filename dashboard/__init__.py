@@ -10,7 +10,9 @@ from werkzeug.routing import BaseConverter
 from config import basedir, ADMINS, LOG_MAIL_SERVER, LOG_MAIL_PORT, \
         LOG_MAIL_USER, LOG_MAIL_PASS, MAIL_SERVER, MAIL_PORT, MAIL_USERNAME, \
         MAIL_PASSWORD, SENDER, DASH_SUPPORT, LOGSERVER, GITHUB_OWNER, \
-        GITHUB_REPO, GITHUB_PUBLIC, TZ_OFFSET
+        GITHUB_REPO, GITHUB_PUBLIC, TZ_OFFSET, SCHEDULER_ENABLED, \
+        SCHEDULER_API_ENABLED, SCHEDULER_SERVER_URL, SCHEDULER_USER, \
+        SCHEDULER_PASS
 
 """
 Main init script, creates the app object and sets up logging
@@ -25,9 +27,19 @@ lm = LoginManager(app)
 lm.login_view = 'login'
 lm.refresh_view = 'refresh_login'
 mail = Mail(app)
-scheduler = APScheduler()
-scheduler.init_app(app)
-scheduler.start()
+if SCHEDULER_ENABLED:
+    scheduler = APScheduler()
+    scheduler.init_app(app)
+    scheduler.start()
+    if SCHEDULER_API_ENABLED:
+        @scheduler.authenticate
+        def authenticate(auth):
+            return auth['username'] == SCHEDULER_USER and auth['password'] == SCHEDULER_PASS
+else:
+    from .task_scheduler import RemoteScheduler
+    scheduler = RemoteScheduler(SCHEDULER_USER, SCHEDULER_PASS,
+            SCHEDULER_SERVER_URL)
+
 
 ################################################################################
 # These settings should only be uncommented for development instances of the
@@ -59,20 +71,20 @@ if not app.debug:
                                 ADMINS,
                                 'Dashboard failure',
                                 credentials)
-    base_dir = os.path.dirname(os.path.realpath(__file__))
-    base_dir = os.path.realpath(os.path.join(base_dir, '..'))
-
-    file_handler = RotatingFileHandler(os.path.join(base_dir,
-                                                    'logs/dashboard.log'),
-                                       'a',
-                                       1 * 1024 * 1024,
-                                       10)
-    file_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
+    # base_dir = os.path.dirname(os.path.realpath(__file__))
+    # base_dir = os.path.realpath(os.path.join(base_dir, '..'))
+    #
+    # file_handler = RotatingFileHandler(os.path.join(base_dir,
+    #                                                 'logs/dashboard.log'),
+    #                                    'a',
+    #                                    1 * 1024 * 1024,
+    #                                    10)
+    # file_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
 
     logserver_handler = SocketHandler(LOGSERVER, DEFAULT_TCP_LOGGING_PORT)
 
     app.logger.setLevel(logging.DEBUG)
-    file_handler.setLevel(logging.DEBUG)
+    # file_handler.setLevel(logging.DEBUG)
     logserver_handler.setLevel(logging.DEBUG)
     mail_handler.setLevel(logging.ERROR)
     app.logger.addHandler(mail_handler)
