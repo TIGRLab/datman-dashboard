@@ -70,11 +70,11 @@ MAIL_USERNAME = os.environ.get("DASHBOARD_MAIL_UNAME") or None
 MAIL_PASSWORD = os.environ.get("DASHBOARD_MAIL_PASS") or None
 DASH_SUPPORT = os.environ.get("DASHBOARD_SUPPORT_EMAIL") or MAIL_USERNAME
 SENDER = DASH_SUPPORT or MAIL_USERNAME or "no-reply@kimellab.ca"
-MAIL_USE_SSL = os.environ.get("DASHBOARD_MAIL_SSL")
+MAIL_USE_SSL = read_boolean("DASHBOARD_MAIL_SSL", default=True)
 
 ################################################################################
 ## Logging settings ############################################################
-LOGSERVER = '172.26.216.101'
+LOGSERVER = os.environ.get("DASHBOARD_LOG_SERVER")
 
 LOG_MAIL_SERVER = os.environ.get("DASH_LOG_EMAIL") or 'smtp.camh.net'
 LOG_MAIL_PORT = os.environ.get("DASH_LOG_PORT") or 25
