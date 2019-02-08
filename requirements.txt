@@ -44,4 +44,4 @@ futures==3.2.0
 python-dateutil==2.7.5
 pytz==2018.9
 tzlocal==1.5.1
-pyyaml==3.13
+pyyaml
