@@ -8,7 +8,6 @@ from dashboard import GITHUB_OWNER, GITHUB_REPO
 import datman.config
 
 logger = logging.getLogger(__name__)
-logger.info('loading utils')
 
 class TimeoutError(Exception):
     pass
