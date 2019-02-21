@@ -37,7 +37,6 @@ from .view_utils import get_user_form, report_form_errors, get_timepoint, \
 from .emails import incidental_finding_email
 
 logger = logging.getLogger(__name__)
-logger.info('Loading views')
 
 
 class InvalidUsage(Exception):

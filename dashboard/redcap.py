@@ -10,6 +10,7 @@ import datman.scanid
 from config import REDCAP_TOKEN
 from .models import RedcapRecord, Session, Timepoint
 from .queries import get_study
+from .monitors import monitor_scan_import
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +64,8 @@ def create_from_request(request):
         raise RedcapException("Failed adding record {} from project {} on "
                 "server {}. Reason: {}".format(record, project, url, e))
 
+    monitor_scan_import(session)
+
     return new_record
 
 def set_session(name):
@@ -79,6 +82,7 @@ def set_session(name):
     if not session:
         timepoint = get_timepoint(ident)
         session = timepoint.add_session(num)
+
     return session
 
 def find_study(ident):
