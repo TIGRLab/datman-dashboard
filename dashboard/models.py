@@ -949,8 +949,12 @@ class Session(db.Model):
             rc_record.version = version
         if event_id:
             rc_record.event_id = event_id
-        db.session.add(rc_record)
-        db.session.commit()
+        try:
+            self.save()
+        except Exception as e:
+            logger.error("Unable to save redcap record {} for {} to database. "
+                    "Reason: {}".format(rc_record.record, self, e))
+            db.session.rollback()
         return rc_record
 
     def is_qcd(self):
