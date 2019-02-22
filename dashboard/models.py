@@ -951,6 +951,10 @@ class Session(db.Model):
             rc_record.event_id = event_id
         try:
             self.save()
+        except IntegrityError as e:
+            logger.error("Can't update redcap record {}. Reason: {}".format(
+                    rc_record.id, e))
+            db.session.rollback()
         except Exception as e:
             logger.error("Unable to save redcap record {} for {} to database. "
                     "Reason: {}".format(rc_record.record, self, e))
