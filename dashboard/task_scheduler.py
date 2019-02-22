@@ -24,12 +24,19 @@ class RemoteScheduler(object):
 
     def __init__(self, user, password, scheduler_server):
         self.auth = (user, password)
-        if not (scheduler_server.startswith("https://") or
-                scheduler_server.startswith("http://")):
-            scheduler_server = "http://" + scheduler_server
-        self.url = scheduler_server + '/scheduler'
+        if scheduler_server:
+            if not (scheduler_server.startswith("https://") or
+                    scheduler_server.startswith("http://")):
+                scheduler_server = "http://" + scheduler_server
+            self.url = scheduler_server + "/scheduler"
+        else:
+            self.url = ""
 
     def add_job(self, job_id, job_function, **extra_args):
+        if not self.url:
+            logger.error("Can't submit job {}, scheduler URL not set".format(
+                    job_id))
+            return
         api_url = self.url + "/jobs"
         job_str = format_job_function(job_function)
         extra_args['id'] = job_id

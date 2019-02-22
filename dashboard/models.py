@@ -627,16 +627,45 @@ class Timepoint(db.Model):
         self.is_phantom = is_phantom
         self.static_page = static_page
 
+    def get_study(self, study_id=None):
+        """
+        Most timepoints only ever have one study and this will just return
+        the first one found. If 'id' is given it will either return the study
+        object or raise an exception if this timepoint doesnt belong to that
+        study
+        """
+        if study_id:
+            try:
+                return self.studies[study_id]
+            except KeyError:
+                raise InvalidDataException("Timepoint {} does not belong to "
+                        "study {}".format(self, study_id))
+        try:
+            study = self.studies.values()[0]
+        except IndexError:
+            raise InvalidDataException("Timepoint {} does not have any studies "
+                    "configured.".format(self))
+        return study
+
     def add_session(self, num, date=None):
+        try:
+            self.sessions[num]
+        except KeyError:
+            # Session doesnt exist yet so it's safe to proceed
+            pass
+        else:
+            raise InvalidDataException("Session {} of timepoint {} already "
+                    "exists.".format(num, self.name))
+
+        if self.is_phantom and num > 1:
+            raise InvalidDataException("Cannot add repeat session {} to "
+                    "phantom {}".format(num, self.name))
+
         session = Session(self.name, num, date=date)
         self.sessions[num] = session
         try:
             db.session.add(self)
             db.session.commit()
-        except AssertionError as e:
-            db.session.rollback()
-            raise InvalidDataException("Session {} of timepoint {} already "
-                    "exists".format(num, self.name))
         except Exception as e:
             db.session.rollback()
             e.message = "Failed to add session {} to timepoint {}. Reason: " \
@@ -703,13 +732,13 @@ class Timepoint(db.Model):
         return all(sess.is_qcd() for sess in self.sessions.values())
 
     def expects_redcap(self, study=None):
+        if self.is_phantom:
+            return False
         if not study:
             study = self.studies.keys()[0]
         return self.site.studies[study].uses_redcap
 
     def needs_redcap_survey(self, study_id):
-        if self.is_phantom:
-            return False
         uses_redcap = self.expects_redcap(study_id)
         return uses_redcap and any(not sess.redcap_record
                 for sess in self.sessions.values())
@@ -725,6 +754,9 @@ class Timepoint(db.Model):
         return any(sess.missing_scans() for sess in self.sessions.values())
 
     def dismiss_redcap_error(self, session_num):
+        existing = SessionRedcap.query.get((self.name, session_num))
+        if existing:
+            return
         session_redcap = SessionRedcap(self.name, session_num)
         db.session.add(session_redcap)
         db.session.commit()
@@ -917,8 +949,16 @@ class Session(db.Model):
             rc_record.version = version
         if event_id:
             rc_record.event_id = event_id
-        db.session.add(rc_record)
-        db.session.commit()
+        try:
+            self.save()
+        except IntegrityError as e:
+            logger.error("Can't update redcap record {}. Reason: {}".format(
+                    rc_record.id, e))
+            db.session.rollback()
+        except Exception as e:
+            logger.error("Unable to save redcap record {} for {} to database. "
+                    "Reason: {}".format(rc_record.record, self, e))
+            db.session.rollback()
         return rc_record
 
     def is_qcd(self):
