@@ -97,7 +97,8 @@ def check_scans(name, num, recipients=None):
                 "received".format(name, num))
     if session.scans:
         return
-    missing_session_data_email(str(session), dest_emails=None)
+    missing_session_data_email(str(session), study=session.get_study().id,
+            dest_emails=None)
 
 def monitor_redcap_import(name, num, users=None, study=None):
     session = Session.query.get((name, num))
