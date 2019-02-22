@@ -17,7 +17,7 @@
               {{ scan.description }}
             </a>
             {% if scan.source_id %}
-              <a href="{{ url_for('scan', study_id=study_id, scan_id=scan.source_id) }}">
+              <a href="{{ url_for('scan', study_id=scan.source_data.get_study().id, scan_id=scan.source_id) }}">
                 <span class="badge" title="Click to visit source scan">
                   linked scan
                 </span>
