@@ -14,6 +14,7 @@ from random import randint
 
 from flask_login import UserMixin
 from sqlalchemy import and_, exists, func
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import deferred
 from sqlalchemy.schema import UniqueConstraint, ForeignKeyConstraint
 from sqlalchemy.orm.collections import attribute_mapped_collection
@@ -604,6 +605,7 @@ class Timepoint(db.Model):
             nullable=False)
     is_phantom = db.Column('is_phantom', db.Boolean, nullable=False,
             default=False)
+    header_diffs = db.Column('header_diffs', JSONB)
     # These columns should be removed when the static QC pages are made obsolete
     last_qc_repeat_generated =  db.Column('last_qc_generated', db.Integer,
             nullable=False, default=1)
@@ -702,6 +704,14 @@ class Timepoint(db.Model):
         for session in self.sessions.values():
             entries.extend(session.get_blacklist_entries())
         return entries
+
+    def add_header_diffs(self, json_diffs):
+        self.header_diffs = json_diffs
+        try:
+            self.save()
+        except Exception as e:
+            raise InvalidDataException("Can't add header diffs to {}. "
+                    "Reason: {}".format(self, e))
 
     def belongs_to(self, study):
         """
@@ -1013,6 +1023,7 @@ class Session(db.Model):
     def __str__(self):
         return "{}_{:02}".format(self.name, self.num)
 
+
 class EmptySession(db.Model):
     """
     This table exists solely so QCers can dismiss errors about empty sessions
@@ -1072,6 +1083,7 @@ class SessionRedcap(db.Model):
     def __repr__(self):
         return "<SessionRedcap {}, {} - record {}>".format(self.name,
                 self.num, self.record_id)
+
 
 class Scan(db.Model):
     __tablename__ = 'scans'
