@@ -112,6 +112,29 @@
   </div>
 </div>
 
+{% set diffs = scan.get_header_diffs() %}
+{% if diffs != {} %}
+<table class="table table-striped collapsible-heading" data-toggle="collapse"
+    data-target="#scan-diffs">
+  <thead>
+    <tr>
+      <td class="col-md-4">Header Field</td>
+      <td class="col-md-4">Expected Value</td>
+      <td class="col-md-4">Actual Value</td>
+    </tr>
+  </thead>
+  <tbody id="scan-diffs" class="collapse in">
+    {% for field in diffs %}
+      <tr>
+        <td>{{ field }}</td>
+        <td>{{ diffs[field]['expected'] }}</td>
+        <td>{{ diffs[field]['actual'] }}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
 <!-- Clamp lets us vertically truncate text and end it with an ellipsis if it's
  too long. Source: https://github.com/jmenglis/clamp-js-main -->
 <script src="/static/js/clamp.js"></script>

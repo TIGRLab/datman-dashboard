@@ -5,7 +5,8 @@
       <th class="col-md-1">Tag</th>
       <th class="col-md-3">Description</th>
       <th class="col-md-1">Status</th>
-      <th class="col-md-6">Comment</th>
+      <th class="col-md-1">Warnings</th>
+      <th class="col-md-5">Comment</th>
     </thead>
     <tbody>
       {% for scan in session.scans %}
@@ -39,6 +40,14 @@
             {% else %}
               <span class="approved" title="Passed review.">
                 <i class="fas fa-check-circle"></i>
+              </span>
+            {% endif %}
+          </td>
+
+          <td>
+            {% if timepoint.header_diffs[scan.name] %}
+              <span class="badge" style="background-color: var(--bootstrap-danger);">
+                Header field mismatch
               </span>
             {% endif %}
           </td>
