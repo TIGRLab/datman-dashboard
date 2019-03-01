@@ -1175,6 +1175,13 @@ class Scan(db.Model):
     def list_children(self):
         return [link.name for link in self.links]
 
+    def get_header_diffs(self):
+        try:
+            diffs = self.session.timepoint.header_diffs[self.name]
+        except:
+            diffs = {}
+        return diffs
+
     def delete(self):
         db.session.delete(self)
         db.session.commit()
