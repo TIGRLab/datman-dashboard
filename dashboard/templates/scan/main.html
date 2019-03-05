@@ -7,6 +7,12 @@
     <div class="row">
       {% include 'scan/header.html' %}
     </div>
+    {% set diffs = scan.get_header_diffs() %}
+    {% if diffs != {} %}
+      <div class="row" style="margin-top: 20px;">
+        {% include 'scan/header_diffs.html' %}
+      </div>
+    {% endif %}
     <div class="row">
       {% if not scan.tag in ['T1','T2'] %}
           {% include 'scan/papaya_nav.html' %}
