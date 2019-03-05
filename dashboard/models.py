@@ -675,25 +675,6 @@ class Timepoint(db.Model):
             raise
         return session
 
-    def get_study(self, study_id=None):
-        """
-        Most timepoints only ever have one study and this will just return
-        the first one found. If 'id' is given it will either return the study
-        object or raise an exception if this timepoint doesnt belong to that
-        study
-        """
-        if study_id:
-            try:
-                return self.studies[study_id]
-            except KeyError:
-                raise InvalidDataException("Timepoint {} does not belong to "
-                        "study {}".format(self, study_id))
-        try:
-            study = self.studies.values()[0]
-        except IndexError:
-            raise InvalidDataException("Timepoint {} does not have any studies "
-                    "configured.".format(self))
-        return study
 
     def get_blacklist_entries(self):
         """
