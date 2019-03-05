@@ -29,10 +29,6 @@ formatter = logging.Formatter('%(asctime)s [%(name)s] %(levelname)s - %(message)
 dash_logger = logging.getLogger('dashboard')
 dash_logger.setLevel(logging.DEBUG)
 
-# This silences log messages from datman
-datman_logger = logging.getLogger('datman')
-datman_logger.setLevel(logging.CRITICAL)
-
 # app.logger handles messages from Flask. This includes messages about exceptions
 # raised by the dashboard but wont grab logging messages from it (hence the 'extra'
 # logger above)
