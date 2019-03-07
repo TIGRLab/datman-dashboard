@@ -1061,6 +1061,22 @@ class SessionRedcap(db.Model):
         self.num = num
         self.record_id = record_id
 
+    def share_record(self, target_session):
+        """
+        Shares an existing redcap record with another session that represents
+        an alternate ID for the original participant
+        """
+        target_session.redcap_record = SessionRedcap(target_session.name,
+                target_session.num, self.record_id)
+        db.session.add(target_session)
+        try:
+            db.session.commit()
+        except Exception as e:
+            raise InvalidDataException("Failed to share redcap record {} with "
+                    "session {}".format(self.record_id, target_session))
+            return None
+        return target_session.redcap_record
+
     def __repr__(self):
         return "<SessionRedcap {}, {} - record {}>".format(self.name,
                 self.num, self.record_id)
