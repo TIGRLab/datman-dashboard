@@ -937,7 +937,7 @@ class Session(db.Model):
         if comment:
             rc_record.comment = comment
         if version:
-            rc_record.version = version
+            rc_record.redcap_version = version
         if event_id:
             rc_record.event_id = event_id
         try:
