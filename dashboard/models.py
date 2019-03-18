@@ -544,8 +544,16 @@ class Study(db.Model):
     def get_staff_contacts(self):
         return [su.user for su in self.users if su.kimel_contact]
 
-    def get_RAs(self):
-        return [su.user for su in self.users if su.study_RA]
+    def get_RAs(self, site=None):
+        if site:
+            # Get all users who are an RA for this specific site or
+            # an RA for the whole study
+            RAs = [su.user for su in self.users
+                    if su.study_RA and (not su.site or su.site == site)]
+        else:
+            # Get all RAs for the study
+            RAs = [su.user for su in self.users if su.study_RA]
+        return RAs
 
     def get_QCers(self):
         return [su.user for su in self.users if su.does_qc]
@@ -1313,6 +1321,7 @@ class StudyUser(db.Model):
             nullable=False, primary_key=True)
     user_id = db.Column('user_id', db.Integer, db.ForeignKey('users.id'),
             nullable=False, primary_key=True)
+    site = db.Column('site_only', db.String(32), db.ForeignKey('sites.name'))
     is_admin = db.Column('is_admin', db.Boolean, default=False)
     primary_contact = db.Column('primary_contact', db.Boolean, default=False)
     kimel_contact = db.Column('kimel_contact', db.Boolean, default=False)

@@ -110,7 +110,8 @@ def monitor_redcap_import(name, num, users=None, study=None):
 
     if not users:
         users = db_study.get_staff_contacts()
-        users.extend(db_study.get_RAs())
+        site = session.timepoint.site.name
+        users.extend(db_study.get_RAs(site=site))
         if not users:
             raise MonitorException("No users found to receive redcap import "
                     "notifications for {}".format(session))
