@@ -9,7 +9,7 @@ import logging
 from functools import wraps
 from xml.sax.saxutils import escape
 
-from urlparse import urlparse, urljoin
+from urllib.parse import urlparse, urljoin
 from flask import session as flask_session
 from flask import render_template, flash, url_for, redirect, request, jsonify, \
         abort, g, make_response, send_file, send_from_directory
