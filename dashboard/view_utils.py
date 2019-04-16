@@ -48,7 +48,7 @@ def handle_issue(token, issue_form, study_id, timepoint):
 
     staff_member = study.choose_staff_contact()
     if staff_member:
-        assigned_user = staff_member.github_name
+        assigned_user = staff_member.username
     else:
         assigned_user = None
 
