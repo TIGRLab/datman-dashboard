@@ -311,8 +311,8 @@ def timepoint(study_id, timepoint_id):
         except:
             flash("Github issue access failed. Please contact an admin if "
                     "this issue persists.")
-            logger.error("Can't search github issues, user {} received "
-                    "access denied.".format(user))
+            logger.debug("Can't search github issues, user {} received "
+                    "access denied.".format(current_user))
             github_issues = None
 
     empty_form = EmptySessionForm()
