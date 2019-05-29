@@ -932,12 +932,12 @@ def oauth_callback(provider):
         avatar_url = None
 
     user = User.query.filter_by(_username=username).first()
-    user.update_avatar(avatar_url)
 
     if not user:
         flash("No account found. Please submit a request for an account.")
         return redirect(url_for('new_account'))
 
+    user.update_avatar(avatar_url)
     login_user(user, remember=True)
     # Token is needed for access to github issues
     flask_session['active_token'] = access_token
