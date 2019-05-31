@@ -1029,6 +1029,12 @@ def static_qc_page(study_id, timepoint_id=None, image=None, tech_notes_path=None
 def load_scan(study_id, scan_id, file_name):
     scan = get_scan(scan_id, study_id, current_user, fail_url=prev_url())
     full_path = utils.get_nifti_path(scan)
-    return send_file(full_path, as_attachment=True,
+    try:
+        result = send_file(full_path, as_attachment=True,
             attachment_filename=file_name,
             mimetype="application/gzip")
+    except IOError as e:
+        logger.error("Couldnt find file {} to load scan view for user "
+                "{}".format(full_path, current_user))
+        result = not_found_error(e)
+    return result
