@@ -311,8 +311,8 @@ def timepoint(study_id, timepoint_id):
         except:
             flash("Github issue access failed. Please contact an admin if "
                     "this issue persists.")
-            logger.error("Can't search github issues, user {} received "
-                    "access denied.".format(user))
+            logger.debug("Can't search github issues, user {} received "
+                    "access denied.".format(current_user))
             github_issues = None
 
     empty_form = EmptySessionForm()
@@ -932,12 +932,12 @@ def oauth_callback(provider):
         avatar_url = None
 
     user = User.query.filter_by(_username=username).first()
-    user.update_avatar(avatar_url)
 
     if not user:
         flash("No account found. Please submit a request for an account.")
         return redirect(url_for('new_account'))
 
+    user.update_avatar(avatar_url)
     login_user(user, remember=True)
     # Token is needed for access to github issues
     flask_session['active_token'] = access_token
@@ -1029,6 +1029,12 @@ def static_qc_page(study_id, timepoint_id=None, image=None, tech_notes_path=None
 def load_scan(study_id, scan_id, file_name):
     scan = get_scan(scan_id, study_id, current_user, fail_url=prev_url())
     full_path = utils.get_nifti_path(scan)
-    return send_file(full_path, as_attachment=True,
+    try:
+        result = send_file(full_path, as_attachment=True,
             attachment_filename=file_name,
             mimetype="application/gzip")
+    except IOError as e:
+        logger.error("Couldnt find file {} to load scan view for user "
+                "{}".format(full_path, current_user))
+        result = not_found_error(e)
+    return result
