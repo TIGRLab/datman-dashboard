@@ -14,6 +14,7 @@
         <thead>
           <tr>
             <td>Nickname</td>
+            <td><!-- This empty column is for the is_open labels --></td>
             <td><!-- This empty column is for the 'new QC' labels  --></td>
             <td style="width: 70%">Study Name</td>
             <td align="right"># of Sessions</td>
@@ -24,6 +25,13 @@
           {% for study in studies %}
           <tr class="clickable-row" data-href="{{ url_for('study', study_id=study.id) }}">
             <td> {{ study.id }} </td>
+            <td align="center">
+              {% if study.is_open %}
+                <span class="label label-alt-theme-light">Open</span>
+              {% else %}
+                <span class="label label-default">Closed</span>
+              {% endif %}
+            </td>
             <td>
               {% set new_sessions = study.get_new_sessions().count() %}
               {% if new_sessions %}
