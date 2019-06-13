@@ -307,6 +307,7 @@ class Study(db.Model):
     name = db.Column('name', db.String(1024))
     description = db.Column('description', db.Text)
     read_me = deferred(db.Column('read_me', db.Text))
+    is_open = db.Column('is_open', db.Boolean)
 
     users = db.relationship('StudyUser', back_populates='study')
     sites = db.relationship('StudySite', back_populates='study',
@@ -316,11 +317,12 @@ class Study(db.Model):
     scantypes = db.relationship('Scantype', secondary=study_scantype_table,
             back_populates='studies')
 
-    def __init__(self, study_id, full_name=None, description=None, read_me=None):
+    def __init__(self, study_id, full_name=None, description=None, read_me=None, is_open=None):
         self.id = study_id
         self.full_name = full_name
         self.description = description
         self.read_me = read_me
+        self.is_open = is_open
 
     def add_timepoint(self, timepoint):
         if isinstance(timepoint, scanid.Identifier):
