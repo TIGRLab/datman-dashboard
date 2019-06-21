@@ -248,7 +248,6 @@ to your projects. Here's an example template to use:
 ```
 SystemSettings:
     YOUR_SYSTEM_NAME_HERE:
-      hostname: 'yourdomainname'
       DATMAN_PROJECTSDIR: '/path/to/your/datman/archive'
       DATMAN_ASSETSDIR: '/path/to/your/datman/assets'
       CONFIG_DIR: '/path/to/your/config/files/folder'
