@@ -20,6 +20,10 @@
 {% block body_content %}
     {% include 'timepoint/sessions/review_status.html' %}
 
+    {% if session.task_files %}
+      {% include 'timepoint/sessions/task_files.html' %}
+    {% endif %}
+
     {% if session.redcap_record %}
       {% include 'timepoint/sessions/redcap_report.html' %}
     {% endif %}

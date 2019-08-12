@@ -45,3 +45,4 @@ python-dateutil
 pytz
 tzlocal
 pyyaml
+wrapt

@@ -307,6 +307,7 @@ class Study(db.Model):
     name = db.Column('name', db.String(1024))
     description = db.Column('description', db.Text)
     read_me = deferred(db.Column('read_me', db.Text))
+    is_open = db.Column('is_open', db.Boolean)
 
     users = db.relationship('StudyUser', back_populates='study')
     sites = db.relationship('StudySite', back_populates='study',
@@ -316,11 +317,12 @@ class Study(db.Model):
     scantypes = db.relationship('Scantype', secondary=study_scantype_table,
             back_populates='studies')
 
-    def __init__(self, study_id, full_name=None, description=None, read_me=None):
+    def __init__(self, study_id, full_name=None, description=None, read_me=None, is_open=None):
         self.id = study_id
         self.full_name = full_name
         self.description = description
         self.read_me = read_me
+        self.is_open = is_open
 
     def add_timepoint(self, timepoint):
         if isinstance(timepoint, scanid.Identifier):
@@ -874,6 +876,7 @@ class Session(db.Model):
             back_populates='session', cascade='all, delete')
     redcap_record = db.relationship('SessionRedcap', back_populates='session',
             uselist=False, cascade='all, delete')
+    task_files = db.relationship('TaskFile', cascade='all, delete')
 
     def __init__(self, name, num, date=None, signed_off=False, reviewer_id=None,
             review_date=None):
@@ -1005,6 +1008,21 @@ class Session(db.Model):
     def save(self):
         db.session.add(self)
         db.session.commit()
+
+    def add_task(self, file_path, name=None):
+        for item in self.task_files:
+            if file_path == item.file_path:
+                return item
+        new_task = TaskFile(self.name, self.num, file_path, file_name=name)
+        self.task_files.append(new_task)
+        try:
+            self.save()
+        except Exception as e:
+            logger.error("Unable to add task file {}. Reason: {}".format(
+                    file_path, e))
+            db.session.rollback()
+            return None
+        return new_task
 
     def __repr__(self):
         return "<Session {}, {}>".format(self.name, self.num)
@@ -1325,6 +1343,34 @@ class Metrictype(db.Model):
     def __repr__(self):
         return('<MetricType {}>'.format(self.name))
 
+class TaskFile(db.Model):
+    __tablename__ = 'session_tasks'
+
+    id = db.Column('id', db.Integer, primary_key=True)
+    timepoint = db.Column('timepoint', db.String(64), nullable=False)
+    repeat = db.Column('repeat', db.Integer, nullable=False)
+    file_name = db.Column('task_fname', db.String(256), nullable=False)
+    file_path = db.Column('task_file_path', db.String(2048), nullable=False)
+
+    session = db.relationship('Session', uselist=False,
+            back_populates='task_files')
+
+    __table_args__ = (ForeignKeyConstraint(['timepoint', 'repeat'],
+            ['sessions.name', 'sessions.num']),
+            UniqueConstraint(file_path))
+
+    def __init__(self, timepoint, repeat, file_path, file_name=None):
+        self.timepoint = timepoint
+        self.repeat = repeat
+        self.file_path = file_path
+        if not file_name:
+            self.file_name = os.path.basename(self.file_path)
+        else:
+            self.file_name = file_name
+
+    def __repr__(self):
+        return "<TaskFile {}>".format(self.file_path)
+
 
 ################################################################################
 # Association Objects (i.e. many to many relationships with attributes/columns
@@ -1337,7 +1383,8 @@ class StudyUser(db.Model):
             nullable=False, primary_key=True)
     user_id = db.Column('user_id', db.Integer, db.ForeignKey('users.id'),
             nullable=False, primary_key=True)
-    site = db.Column('site_only', db.String(32), db.ForeignKey('sites.name'))
+    site = db.Column('site_only', db.String(32), db.ForeignKey('sites.name'),
+            primary_key=True)
     is_admin = db.Column('is_admin', db.Boolean, default=False)
     primary_contact = db.Column('primary_contact', db.Boolean, default=False)
     kimel_contact = db.Column('kimel_contact', db.Boolean, default=False)
