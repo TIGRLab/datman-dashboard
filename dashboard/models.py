@@ -1377,6 +1377,10 @@ class StudySite(db.Model):
 
     site = db.relationship('Site', back_populates='studies')
     study = db.relationship('Study', back_populates='sites')
+    alt_codes = db.relationship('AltStudyCode', back_populates='study_site',
+            cascade='all, delete', lazy='joined')
+
+    __table_args__ = (UniqueConstraint(study_id, site_id),)
 
     def __init__(self, study_id, site_id, uses_redcap=False, code=None):
         self.study_id = study_id
@@ -1386,6 +1390,39 @@ class StudySite(db.Model):
 
     def __repr__(self):
         return "<StudySite {} - {}>".format(self.study_id, self.site_id)
+
+class AltStudyCode(db.Model):
+    # stupid prelapse
+    __tablename__ = 'alt_study_codes'
+
+    # This isnt a true primary key. But that's ok,
+    # it's really not meant to be queried by primary key, sqlalchemy just
+    # forces it to have one
+    study_id = db.Column('study', db.String(32), primary_key=True)
+    site_id = db.Column('site', db.String(32), primary_key=True)
+    code = db.Column('code', db.String(32), primary_key=True)
+
+    study_site = db.relationship('StudySite', uselist=False,
+            back_populates='alt_codes', lazy='joined')
+
+    @property
+    def site(self):
+        return study_site.site
+
+    @property
+    def study(self):
+        return study_site.study
+
+    @property
+    def uses_redcap(self):
+        return study_site.uses_redcap
+
+    __table_args__ = (ForeignKeyConstraint(['study', 'site'],
+            ['study_sites.study', 'study_sites.site']),)
+
+    def __repr__(self):
+        return "<AltStudyCode {}, {} - {}>".format(self.study_id, self.site_id,
+                self.code)
 
 class AnalysisComment(db.Model):
     __tablename__ = 'analysis_comments'
