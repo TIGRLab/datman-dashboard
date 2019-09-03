@@ -15,11 +15,12 @@ from random import randint
 from flask_login import UserMixin
 from sqlalchemy import and_, exists, func
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import deferred
+from sqlalchemy.orm import deferred, backref
 from sqlalchemy.schema import UniqueConstraint, ForeignKeyConstraint
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.orm.exc import FlushError
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.associationproxy import association_proxy
 from psycopg2.tz import FixedOffsetTimezone
 
 from dashboard import db, TZ_OFFSET
@@ -36,12 +37,6 @@ class InvalidDataException(Exception):
 
 ################################################################################
 # Association tables (i.e. basic many to many relationships)
-
-study_scantype_table = db.Table('study_scantypes',
-        db.Column('study', db.String(32), db.ForeignKey('studies.id'),
-                nullable=False),
-        db.Column('scantype', db.String(64), db.ForeignKey('scantypes.tag'),
-                nullable=False))
 
 study_timepoints_table = db.Table('study_timepoints',
         db.Column('study', db.String(32), db.ForeignKey('studies.id'),
@@ -312,10 +307,9 @@ class Study(db.Model):
     users = db.relationship('StudyUser', back_populates='study')
     sites = db.relationship('StudySite', back_populates='study',
             collection_class=attribute_mapped_collection('site_id'))
+    scantypes = association_proxy('study_scantypes', 'scantype')
     timepoints = db.relationship('Timepoint', secondary=study_timepoints_table,
             back_populates='studies', lazy='dynamic')
-    scantypes = db.relationship('Scantype', secondary=study_scantype_table,
-            back_populates='studies')
 
     def __init__(self, study_id, full_name=None, description=None, read_me=None, is_open=None):
         self.id = study_id
@@ -615,7 +609,6 @@ class Timepoint(db.Model):
             nullable=False)
     is_phantom = db.Column('is_phantom', db.Boolean, nullable=False,
             default=False)
-    header_diffs = db.Column('header_diffs', JSONB)
     # These columns should be removed when the static QC pages are made obsolete
     last_qc_repeat_generated =  db.Column('last_qc_generated', db.Integer,
             nullable=False, default=1)
@@ -685,7 +678,6 @@ class Timepoint(db.Model):
             raise
         return session
 
-
     def get_blacklist_entries(self):
         """
         Returns any ScanChecklist entries for blacklisted scans for
@@ -695,14 +687,6 @@ class Timepoint(db.Model):
         for session in self.sessions.values():
             entries.extend(session.get_blacklist_entries())
         return entries
-
-    def add_header_diffs(self, json_diffs):
-        self.header_diffs = json_diffs
-        try:
-            self.save()
-        except Exception as e:
-            raise InvalidDataException("Can't add header diffs to {}. "
-                    "Reason: {}".format(self, e))
 
     def belongs_to(self, study):
         """
@@ -1103,6 +1087,8 @@ class Scan(db.Model):
     tag = db.Column('tag', db.String(64), db.ForeignKey('scantypes.tag'),
             nullable=False)
     description = db.Column('description', db.String(128))
+    json_contents = db.Column('json_contents', JSONB)
+    json_created = db.Column('json_created', db.DateTime(timezone=True))
     # If a scan is a link, this will hold the id of the source scan
     source_id = db.Column('source_data', db.Integer, db.ForeignKey(id))
 
@@ -1260,8 +1246,7 @@ class Scantype(db.Model):
     tag = db.Column('tag', db.String(64), primary_key=True)
 
     scans = db.relationship('Scan', back_populates='scantype')
-    studies = db.relationship('Study', secondary=study_scantype_table,
-            back_populates='scantypes')
+    studies = association_proxy('study_scantypes', 'study')
     metrictypes = db.relationship('Metrictype', back_populates='scantype')
 
     def __init__(self, tag):
@@ -1270,6 +1255,29 @@ class Scantype(db.Model):
     def __repr__(self):
         return "<Scantype {}>".format(self.tag)
 
+# class ScanGoldStandard(db.Model):
+#     __tablename__ = 'scan_gold_standard'
+
+class GoldStandard(db.Model):
+    __tablename__ = 'gold_standards'
+
+    id = db.Column('id', db.Integer, primary_key=True)
+    study = db.Column('study', db.String(32), nullable=False)
+    site = db.Column('site', db.String(32), nullable=False)
+    scantype = db.Column('scantype', db.String(64), nullable=False)
+    date_added = db.Column('added', db.DateTime(timezone=True))
+    contents = db.Column('contents', JSONB)
+    file_name = db.Column('file_name', db.String(1028))
+
+    study_site = db.relationship('StudySite', uselist=False,
+            back_populates='standards', viewonly=True)
+    study_scantype = db.relationship('StudyScantype', uselist=False,
+            back_populates='standards', viewonly=True)
+
+    __table_args__ = (ForeignKeyConstraint(['study', 'scantype'],
+                ['study_scantypes.study', 'study_scantypes.scantype']),
+            ForeignKeyConstraint(['study', 'site'],
+                ['study_sites.study', 'study_sites.site']))
 
 class RedcapRecord(db.Model):
     __tablename__ = 'redcap_records'
@@ -1379,6 +1387,7 @@ class StudySite(db.Model):
     study = db.relationship('Study', back_populates='sites')
     alt_codes = db.relationship('AltStudyCode', back_populates='study_site',
             cascade='all, delete', lazy='joined')
+    standards = db.relationship('GoldStandard', back_populates='study_site')
 
     __table_args__ = (UniqueConstraint(study_id, site_id),)
 
@@ -1423,6 +1432,23 @@ class AltStudyCode(db.Model):
     def __repr__(self):
         return "<AltStudyCode {}, {} - {}>".format(self.study_id, self.site_id,
                 self.code)
+
+class StudyScantype(db.Model):
+    __tablename__ = 'study_scantypes'
+
+    study_id = db.Column('study', db.String(32), db.ForeignKey('studies.id'),
+            primary_key=True)
+    scantype_id = db.Column('scantype', db.String(64),
+            db.ForeignKey('scantypes.tag'), primary_key=True)
+
+    study = db.relationship(Study, backref=backref('study_scantypes',
+            cascade="all, delete-orphan"))
+    scantype = db.relationship(Scantype, backref=backref('study_scantypes',
+            cascade="all, delete-orphan"))
+    standards = db.relationship('GoldStandard', back_populates='study_scantype')
+
+    def __repr__(self):
+        return "<StudyScantype {} - {}>".format(self.study_id, self.scantype_id)
 
 class AnalysisComment(db.Model):
     __tablename__ = 'analysis_comments'
