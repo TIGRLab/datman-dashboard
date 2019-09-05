@@ -23,7 +23,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.associationproxy import association_proxy
 from psycopg2.tz import FixedOffsetTimezone
 
-from dashboard import db, TZ_OFFSET
+from dashboard import db, TZ_OFFSET, utils
 from dashboard.emails import account_request_email, account_activation_email, \
         account_rejection_email
 from datman import scanid
@@ -244,7 +244,6 @@ class User(UserMixin, db.Model):
     def __str__(self):
         return "{} {}".format(self.first_name, self.last_name)
 
-
 class AccountRequest(db.Model):
     __tablename__ = 'account_requests'
 
@@ -293,7 +292,6 @@ class AccountRequest(db.Model):
             result = "User with ID {} requests dashboard access".format(
                     self.user_id)
         return result
-
 
 class Study(db.Model):
     __tablename__ = 'studies'
@@ -582,7 +580,6 @@ class Study(db.Model):
     def __repr__(self):
         return "<Study {}>".format(self.id)
 
-
 class Site(db.Model):
     __tablename__ = 'sites'
 
@@ -599,7 +596,6 @@ class Site(db.Model):
 
     def __repr__(self):
         return "<Site {}>".format(self.name)
-
 
 class Timepoint(db.Model):
     __tablename__ = 'timepoints'
@@ -801,7 +797,6 @@ class Timepoint(db.Model):
     def __str__(self):
         return self.name
 
-
 class TimepointComment(db.Model):
     __tablename__ = 'timepoint_comments'
 
@@ -998,7 +993,6 @@ class Session(db.Model):
     def __str__(self):
         return "{}_{:02}".format(self.name, self.num)
 
-
 class EmptySession(db.Model):
     """
     This table exists solely so QCers can dismiss errors about empty sessions
@@ -1029,7 +1023,6 @@ class EmptySession(db.Model):
 
     def __repr__(self):
         return "<EmptySession {}, {}>".format(self.name, self.num)
-
 
 class SessionRedcap(db.Model):
     # Using a class instead of an association table here to let us know when an
@@ -1075,7 +1068,6 @@ class SessionRedcap(db.Model):
         return "<SessionRedcap {}, {} - record {}>".format(self.name,
                 self.num, self.record_id)
 
-
 class Scan(db.Model):
     __tablename__ = 'scans'
 
@@ -1103,6 +1095,8 @@ class Scan(db.Model):
     scantype = db.relationship('Scantype', uselist=False, back_populates='scans')
     analysis_comments = db.relationship('AnalysisComment', cascade='all, delete')
     metric_values = db.relationship('MetricValue', cascade='all, delete-orphan')
+    header_diffs = db.relationship('ScanGoldStandard', cascade='all',
+            order_by='desc(ScanGoldStandard.date_added)', back_populates='scan')
 
     __table_args__ = (ForeignKeyConstraint(['timepoint', 'session'],
             ['sessions.name', 'sessions.num']),
@@ -1168,12 +1162,46 @@ class Scan(db.Model):
     def list_children(self):
         return [link.name for link in self.links]
 
-    def get_header_diffs(self):
+    @property
+    def gold_standards(self):
+        found_standards =  GoldStandard.query\
+                .filter(GoldStandard.study == self.session.get_study().id)\
+                .filter(GoldStandard.site == self.session.timepoint.site_id)\
+                .filter(GoldStandard.tag == self.tag)\
+                .order_by(GoldStandard.date_added.desc())
+        return found_standards.all()
+
+    @property
+    def active_gold_standard(self):
+        if self.header_diffs:
+            return self.header_diffs.gold_standard
+
         try:
-            diffs = self.session.timepoint.header_diffs[self.name]
+            gs = self.gold_standards[0]
         except:
-            diffs = {}
-        return diffs
+            return None
+
+        return gs
+
+    def get_header_diffs(self):
+        if not self.header_diffs:
+            return {}
+        return self.header_diffs.diffs
+
+    def update_json(self, json_file, timestamp=None):
+        self.json_contents = utils.read_json(json_file)
+
+        if timestamp:
+            self.json_created = timestamp
+        else:
+            self.json_created = utils.file_timestamp(json_file)
+
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            raise InvalidDataException("Failed to update scan {} json contents "
+                    "from file {}. Reason: {}".format(self, json_file, e))
 
     def delete(self):
         db.session.delete(self)
@@ -1190,7 +1218,6 @@ class Scan(db.Model):
     def __str__(self):
         return self.name
 
-
 class ScanChecklist(db.Model):
     __tablename__ = 'scan_checklist'
 
@@ -1206,7 +1233,6 @@ class ScanChecklist(db.Model):
     scan = db.relationship('Scan', uselist=False, back_populates='qc_review')
     user = db.relationship('User', uselist=False,
             back_populates='scan_comments')
-
 
     __table_args__ = (UniqueConstraint(scan_id),)
 
@@ -1255,16 +1281,13 @@ class Scantype(db.Model):
     def __repr__(self):
         return "<Scantype {}>".format(self.tag)
 
-# class ScanGoldStandard(db.Model):
-#     __tablename__ = 'scan_gold_standard'
-
 class GoldStandard(db.Model):
     __tablename__ = 'gold_standards'
 
     id = db.Column('id', db.Integer, primary_key=True)
     study = db.Column('study', db.String(32), nullable=False)
     site = db.Column('site', db.String(32), nullable=False)
-    scantype = db.Column('scantype', db.String(64), nullable=False)
+    tag = db.Column('scantype', db.String(64), nullable=False)
     date_added = db.Column('added', db.DateTime(timezone=True))
     contents = db.Column('contents', JSONB)
     file_name = db.Column('file_name', db.String(1028))
@@ -1273,11 +1296,25 @@ class GoldStandard(db.Model):
             back_populates='standards', viewonly=True)
     study_scantype = db.relationship('StudyScantype', uselist=False,
             back_populates='standards', viewonly=True)
+    scans = association_proxy('scan_gold_standard', 'scan')
 
     __table_args__ = (ForeignKeyConstraint(['study', 'scantype'],
                 ['study_scantypes.study', 'study_scantypes.scantype']),
             ForeignKeyConstraint(['study', 'site'],
                 ['study_sites.study', 'study_sites.site']))
+
+    def __init__(self, study, gs_json):
+        ident, tag, _, _ = scanid.parse_filename(gs_json)
+        self.study = study
+        self.site = ident.site
+        self.tag = tag
+        self.date_added = utils.file_timestamp(gs_json)
+        self.contents = utils.read_json(gs_json)
+        self.file_name = os.path.basename(os.path.splitext(gs_json)[0])
+
+    def __repr__(self):
+        return "<GoldStandard {}, {} - {}>".format(self.study, self.site,
+                self.tag)
 
 class RedcapRecord(db.Model):
     __tablename__ = 'redcap_records'
@@ -1306,7 +1343,6 @@ class RedcapRecord(db.Model):
     def __repr__(self):
         return "<RedcapRecord {}: record {} project {} url {}>".format(self.id,
                 self.record, self.project, self.url)
-
 
 class Analysis(db.Model):
     __tablename__ = 'analyses'
@@ -1372,7 +1408,6 @@ class StudyUser(db.Model):
         return "<StudyUser {} User: {}>".format(self.study_id,
                 self.user_id)
 
-
 class StudySite(db.Model):
     __tablename__ = 'study_sites'
 
@@ -1416,15 +1451,15 @@ class AltStudyCode(db.Model):
 
     @property
     def site(self):
-        return study_site.site
+        return self.study_site.site
 
     @property
     def study(self):
-        return study_site.study
+        return self.study_site.study
 
     @property
     def uses_redcap(self):
-        return study_site.uses_redcap
+        return self.study_site.uses_redcap
 
     __table_args__ = (ForeignKeyConstraint(['study', 'site'],
             ['study_sites.study', 'study_sites.site']),)
@@ -1449,6 +1484,23 @@ class StudyScantype(db.Model):
 
     def __repr__(self):
         return "<StudyScantype {} - {}>".format(self.study_id, self.scantype_id)
+
+class ScanGoldStandard(db.Model):
+    __tablename__ = 'scan_gold_standard'
+
+    scan_id = db.Column('scan', db.Integer, db.ForeignKey('scans.id'),
+            primary_key=True)
+    gold_standard_id = db.Column('gold_standard', db.Integer,
+            db.ForeignKey('gold_standards.id'), primary_key=True)
+    diffs = db.Column('header_diffs', JSONB)
+    date_added = db.Column('date_added', db.DateTime(timezone=True))
+    gold_version = db.Column('gold_version', db.String(128))
+    scan_version = db.Column('scan_version', db.String(128))
+
+    scan = db.relationship('Scan', back_populates='header_diffs',
+            uselist=False)
+    gold_standard = db.relationship(GoldStandard,
+            backref=backref('scan_gold_standard'), cascade='all')
 
 class AnalysisComment(db.Model):
     __tablename__ = 'analysis_comments'

@@ -1,6 +1,8 @@
 """Location for utility functions"""
-import logging
 import os
+import json
+import time
+import logging
 
 from github import Github
 
@@ -88,3 +90,12 @@ def get_nifti_path(scan):
         full_path = full_path.replace(".nii.gz", ".nii")
 
     return full_path
+
+def read_json(json_file):
+    with open(json_file, "r") as fp:
+        contents = json.load(fp)
+    return contents
+
+def file_timestamp(file_path):
+    epoch_time = os.path.getctime(file_path)
+    return time.ctime(epoch_time)
