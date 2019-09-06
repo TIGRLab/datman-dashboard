@@ -40,6 +40,12 @@ def get_session(name, num):
     """
     return Session.query.get((name, num))
 
+def get_timepoint(name):
+    """
+    Used by datman. Return one timepoint or None
+    """
+    return Timepoint.query.get(name)
+
 
 def find_sessions(search_str):
     """

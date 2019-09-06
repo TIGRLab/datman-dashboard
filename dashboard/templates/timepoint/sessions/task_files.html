@@ -1,0 +1,8 @@
+<div class="task-files">
+  <span class="section-subheader">Task Files</span>
+  <div class="well">
+    {% for task in session.task_files %}
+        <div>{{ task.file_path }}</div>
+    {% endfor %}
+  </div>
+</div>

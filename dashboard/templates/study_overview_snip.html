@@ -7,8 +7,50 @@
   </div>
   <div class="panel-body collapse in" id="studyInfo">
     {% for contact in study.get_primary_contacts() %}
-      <div>Primary Investigator: {{ contact.first_name }} {{ contact.last_name }}</div>
+      <div><strong>Primary Investigator</strong>: {{ contact.first_name }} {{ contact.last_name }}</div>
     {% endfor %}
+
+    {% set staff_contacts = study.get_staff_contacts() %}
+    {% if staff_contacts %}
+      <div><strong>Staff Contact(s)</strong>:
+        <ul>
+          {% for contact in staff_contacts %}
+            <li>
+              {{ contact.first_name }} {{ contact.last_name }}
+              {% if contact.email %}
+                / <a href="mailto:{{ contact.email }}?subject={{ study.id }}">{{ contact.email }}</a>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
+    {% set study_ras = study.get_RAs() %}
+    {% if study_ras %}
+      <div>Study RAs:
+        <ul>
+          {% for ra in study_ras %}
+            <li>
+              {{ ra.first_name }} {{ ra.last_name }}
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
+    {% set qcers = study.get_QCers() %}
+    {% if qcers %}
+      <div><strong>Quality Control</strong>:
+        <ul>
+          {% for qcer in qcers %}
+            <li>
+              {{ qcer.first_name }} {{ qcer.last_name }}
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
   </div>
 </div>
 
