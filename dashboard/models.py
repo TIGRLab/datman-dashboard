@@ -1199,10 +1199,26 @@ class Scan(db.Model):
 
         return gs
 
-    def get_header_diffs(self):
-        if not self.header_diffs:
-            return {}
-        return self.header_diffs.diffs
+    def update_header_diffs(self, diffs):
+        if type(diffs) != dict:
+            raise InvalidDataException("Header diffs must be given as a "
+                    "dictionary")
+        gs = self.active_gold_standard
+        diffs = ScanGoldStandard(self.id, gs.id, diffs,
+                gold_version=utils.get_software_version(gs.json_contents),
+                scan_version=utils.get_software_version(self.json_contents))
+        try:
+            db.session.add(diffs)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            raise InvalidDataException("Failed to update header diffs. Reason: "
+                    "{}".format(self, e))
+
+    # def get_header_diffs(self):
+    #     if not self.header_diffs:
+    #         return {}
+    #     return self.header_diffs.diffs
 
     def update_json(self, json_file, timestamp=None):
         self.json_contents = utils.read_json(json_file)
@@ -1305,7 +1321,7 @@ class GoldStandard(db.Model):
     site = db.Column('site', db.String(32), nullable=False)
     tag = db.Column('scantype', db.String(64), nullable=False)
     date_added = db.Column('added', db.DateTime(timezone=True))
-    contents = db.Column('contents', JSONB)
+    json_contents = db.Column('contents', JSONB)
     file_name = db.Column('file_name', db.String(1028))
 
     study_site = db.relationship('StudySite', uselist=False,
@@ -1537,7 +1553,8 @@ class ScanGoldStandard(db.Model):
     gold_standard_id = db.Column('gold_standard', db.Integer,
             db.ForeignKey('gold_standards.id'), primary_key=True)
     diffs = db.Column('header_diffs', JSONB)
-    date_added = db.Column('date_added', db.DateTime(timezone=True))
+    date_added = db.Column('date_added', db.DateTime(timezone=True),
+            server_default=func.now())
     gold_version = db.Column('gold_version', db.String(128))
     scan_version = db.Column('scan_version', db.String(128))
 
@@ -1545,6 +1562,20 @@ class ScanGoldStandard(db.Model):
             uselist=False)
     gold_standard = db.relationship(GoldStandard,
             backref=backref('scan_gold_standard'), cascade='all')
+
+    def __init__(self, scan_id, gold_standard_id, diffs, gold_version,
+            scan_version, timestamp=None):
+        self.scan_id = scan_id
+        self.gold_standard_id = gold_standard_id
+        self.diffs = diffs
+        self.gold_version = gold_version
+        self.scan_version = scan_version
+        if timestamp:
+            self.date_added = timestamp
+
+    def __repr__(self):
+        return "<HeaderDiffs for Scan {} and GS {}>".format(self.scan_id,
+                self.gold_standard_id)
 
 class AnalysisComment(db.Model):
     __tablename__ = 'analysis_comments'
