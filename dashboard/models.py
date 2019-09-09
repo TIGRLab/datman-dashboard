@@ -26,7 +26,7 @@ from psycopg2.tz import FixedOffsetTimezone
 from dashboard import db, TZ_OFFSET, utils
 from dashboard.emails import account_request_email, account_activation_email, \
         account_rejection_email
-from datman import scanid
+from datman import scanid, header_checks
 
 logger = logging.getLogger(__name__)
 
@@ -1221,22 +1221,46 @@ class Scan(db.Model):
 
         return gs
 
-    def update_header_diffs(self, diffs):
-        if type(diffs) != dict:
-            raise InvalidDataException("Header diffs must be given as a "
-                    "dictionary")
-        gs = self.active_gold_standard
-        diffs = ScanGoldStandard(self.id, gs.id, diffs,
-                gold_version=utils.get_software_version(gs.json_contents),
-                scan_version=utils.get_software_version(self.json_contents))
+    def update_header_diffs(self, standard=None, ignore=None, tolerance=None,
+            bvals=False):
+        if standard:
+            if type(standard) != GoldStandard:
+                raise InvalidDataException("Must be given a "
+                        "'dashboard.models.GoldStandard' instance")
+            gs = standard
+        else:
+            gs = self.active_gold_standard
+
+        if not gs:
+            raise InvalidDataException("No gold standard available for "
+                    "comparison")
+
+        diffs = header_checks.compare_headers(self.json_contents,
+                gs.json_contents, ignore=ignore, tolerance=tolerance)
+        if bvals:
+            diffs['bvals'] = header_checks.check_bvals(self.json_path,
+                    gs.json_path)
+
+        found = False
+        if self.header_diffs:
+            found = [item for item in self.header_diffs
+                    if item.gold_standard.id == gs.id]
+            if found:
+                new_diffs = found[0]
+                new_diffs.diffs = diffs
+
+        if not found:
+            new_diffs = ScanGoldStandard(self.id, gs.id, diffs,
+                    gold_version=utils.get_software_version(gs.json_contents),
+                    scan_version=utils.get_software_version(self.json_contents))
         try:
-            db.session.add(diffs)
+            db.session.add(new_diffs)
             db.session.commit()
         except Exception as e:
             db.session.rollback()
-            raise InvalidDataException("Failed to update header diffs. Reason: "
-                    "{}".format(self, e))
-        return diffs
+            raise InvalidDataException("Failed to update header diffs for {}. "
+                    "Reason: {}".format(self, e))
+        return new_diffs
 
     def get_header_diffs(self):
         if not self.header_diffs:
@@ -1374,8 +1398,8 @@ class GoldStandard(db.Model):
         self.json_path = gs_json
 
     def __repr__(self):
-        return "<GoldStandard {}, {} - {}>".format(self.study, self.site,
-                self.tag)
+        return "<GoldStandard {} for {}, {} - {}>".format(self.id, self.study,
+                self.site, self.tag)
 
 class RedcapRecord(db.Model):
     __tablename__ = 'redcap_records'
@@ -1605,6 +1629,9 @@ class ScanGoldStandard(db.Model):
     def __repr__(self):
         return "<HeaderDiffs for Scan {} and GS {}>".format(self.scan_id,
                 self.gold_standard_id)
+
+    def __str__(self):
+        return self.__repr__()
 
 class AnalysisComment(db.Model):
     __tablename__ = 'analysis_comments'
