@@ -345,6 +345,26 @@ class Study(db.Model):
 
         return timepoint
 
+    def add_gold_standard(self, gs_file):
+        try:
+            new_gs = GoldStandard(self.id, gs_file)
+        except OSError:
+            raise InvalidDataException("Can't add gold standard, file not "
+                    "readable: {}".format(gs_file))
+        try:
+            db.session.add(new_gs)
+            db.session.commit()
+        except IntegrityError as e:
+            db.session.rollback()
+            str_err = str(e)
+            if 'study_scantypes' in str_err:
+                raise InvalidDataException("Attempted to add gold standard for "
+                "invalid study / scan type - {}".format(gs_file))
+            elif 'study_sites' in str_err:
+                raise InvalidDataException("Attempted to add gold standard for "
+                        "invalid study / site - {}".format(gs_file))
+        return new_gs
+
     def num_timepoints(self, type=''):
         if type.lower() == 'human':
             timepoints = [timepoint for timepoint in self.timepoints
@@ -605,6 +625,7 @@ class Timepoint(db.Model):
             nullable=False)
     is_phantom = db.Column('is_phantom', db.Boolean, nullable=False,
             default=False)
+    header_diffs = db.Column('header_diffs', JSONB)
     # These columns should be removed when the static QC pages are made obsolete
     last_qc_repeat_generated =  db.Column('last_qc_generated', db.Integer,
             nullable=False, default=1)
@@ -1095,6 +1116,7 @@ class Scan(db.Model):
     tag = db.Column('tag', db.String(64), db.ForeignKey('scantypes.tag'),
             nullable=False)
     description = db.Column('description', db.String(128))
+    json_path = db.Column('json_path', db.String(1028))
     json_contents = db.Column('json_contents', JSONB)
     json_created = db.Column('json_created', db.DateTime(timezone=True))
     # If a scan is a link, this will hold the id of the source scan
@@ -1190,7 +1212,7 @@ class Scan(db.Model):
     @property
     def active_gold_standard(self):
         if self.header_diffs:
-            return self.header_diffs.gold_standard
+            return self.header_diffs[0].gold_standard
 
         try:
             gs = self.gold_standards[0]
@@ -1214,14 +1236,16 @@ class Scan(db.Model):
             db.session.rollback()
             raise InvalidDataException("Failed to update header diffs. Reason: "
                     "{}".format(self, e))
+        return diffs
 
-    # def get_header_diffs(self):
-    #     if not self.header_diffs:
-    #         return {}
-    #     return self.header_diffs.diffs
+    def get_header_diffs(self):
+        if not self.header_diffs:
+            return {}
+        return self.header_diffs[0].diffs
 
     def update_json(self, json_file, timestamp=None):
         self.json_contents = utils.read_json(json_file)
+        self.json_path = json_file
 
         if timestamp:
             self.json_created = timestamp
@@ -1322,7 +1346,7 @@ class GoldStandard(db.Model):
     tag = db.Column('scantype', db.String(64), nullable=False)
     date_added = db.Column('added', db.DateTime(timezone=True))
     json_contents = db.Column('contents', JSONB)
-    file_name = db.Column('file_name', db.String(1028))
+    json_path = db.Column('json_path', db.String(1028))
 
     study_site = db.relationship('StudySite', uselist=False,
             back_populates='standards', viewonly=True)
@@ -1336,13 +1360,18 @@ class GoldStandard(db.Model):
                 ['study_sites.study', 'study_sites.site']))
 
     def __init__(self, study, gs_json):
-        ident, tag, _, _ = scanid.parse_filename(gs_json)
+        try:
+            ident, tag, _, _ = scanid.parse_filename(gs_json)
+        except:
+            raise InvalidDataException("Can't parse site and scan tag info "
+                    "from gold standard file name. Please provide a datman "
+                    "named file")
         self.study = study
         self.site = ident.site
         self.tag = tag
         self.date_added = utils.file_timestamp(gs_json)
-        self.contents = utils.read_json(gs_json)
-        self.file_name = os.path.basename(os.path.splitext(gs_json)[0])
+        self.json_contents = utils.read_json(gs_json)
+        self.json_path = gs_json
 
     def __repr__(self):
         return "<GoldStandard {}, {} - {}>".format(self.study, self.site,
