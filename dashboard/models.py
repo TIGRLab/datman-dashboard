@@ -1368,7 +1368,7 @@ class GoldStandard(db.Model):
     study = db.Column('study', db.String(32), nullable=False)
     site = db.Column('site', db.String(32), nullable=False)
     tag = db.Column('scantype', db.String(64), nullable=False)
-    date_added = db.Column('added', db.DateTime(timezone=True))
+    json_created = db.Column('added', db.DateTime(timezone=True))
     json_contents = db.Column('contents', JSONB)
     json_path = db.Column('json_path', db.String(1028))
 
@@ -1393,7 +1393,7 @@ class GoldStandard(db.Model):
         self.study = study
         self.site = ident.site
         self.tag = tag
-        self.date_added = utils.file_timestamp(gs_json)
+        self.json_created = utils.file_timestamp(gs_json)
         self.json_contents = utils.read_json(gs_json)
         self.json_path = gs_json
 
