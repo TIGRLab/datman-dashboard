@@ -1206,7 +1206,7 @@ class Scan(db.Model):
                 .filter(GoldStandard.study == self.session.get_study().id)\
                 .filter(GoldStandard.site == self.session.timepoint.site_id)\
                 .filter(GoldStandard.tag == self.tag)\
-                .order_by(GoldStandard.date_added.desc())
+                .order_by(GoldStandard.json_created.desc())
         return found_standards.all()
 
     @property
