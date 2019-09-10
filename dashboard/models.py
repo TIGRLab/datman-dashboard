@@ -1223,6 +1223,9 @@ class Scan(db.Model):
 
     def update_header_diffs(self, standard=None, ignore=None, tolerance=None,
             bvals=False):
+        if not self.json_contents:
+            raise InvalidDataException("No JSON data found for series {}"
+                    "".format(self.name))
         if standard:
             if type(standard) != GoldStandard:
                 raise InvalidDataException("Must be given a "
