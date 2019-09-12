@@ -1403,6 +1403,9 @@ class GoldStandard(db.Model):
         return "<GoldStandard {} for {}, {} - {}>".format(self.id, self.study,
                 self.site, self.tag)
 
+    def __str__(self):
+        return os.path.basename(self.json_path)
+
 class RedcapRecord(db.Model):
     __tablename__ = 'redcap_records'
 
@@ -1627,6 +1630,10 @@ class ScanGoldStandard(db.Model):
         self.scan_version = scan_version
         if timestamp:
             self.date_added = timestamp
+
+    @property
+    def timestamp(self):
+        return self.date_added.strftime('%I:%M %p, %Y-%m-%d')
 
     def __repr__(self):
         return "<HeaderDiffs for Scan {} and GS {}>".format(self.scan_id,
