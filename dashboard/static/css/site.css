@@ -516,8 +516,8 @@ thead {
 ***********************************************/
 #papaya-nav {
   position: absolute;
-  top: 80%;
-  left: 2.5%;
+  padding-top: 200px;
+  left: 30%;
   width: 160px;
   height: 208px;
   display: block;
