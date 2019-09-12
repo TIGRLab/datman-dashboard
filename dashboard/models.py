@@ -1240,8 +1240,10 @@ class Scan(db.Model):
         diffs = header_checks.compare_headers(self.json_contents,
                 gs.json_contents, ignore=ignore, tolerance=tolerance)
         if bvals:
-            diffs['bvals'] = header_checks.check_bvals(self.json_path,
+            result = header_checks.check_bvals(self.json_path,
                     gs.json_path)
+            if result:
+                diffs['bvals'] = result
 
         found = False
         if self.header_diffs:
