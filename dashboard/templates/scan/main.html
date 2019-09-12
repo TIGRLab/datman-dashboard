@@ -32,6 +32,14 @@
         var frame = $("#viewer");
         frame.contentWindow.location.reload();
       });
+      // Give focus to the iframe when mouse is over it so papaya keybindings
+      // still work
+      $("#viewer").mouseover(function() {
+        this.focus();
+      });
+      $("#viewer").mouseout(function() {
+        window.focus();
+      });
     </script>
 </div>
 
