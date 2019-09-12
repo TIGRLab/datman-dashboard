@@ -45,7 +45,7 @@
           </td>
 
           <td>
-            {% if timepoint.header_diffs[scan.name] %}
+            {% if scan.get_header_diffs() %}
               <span class="badge" style="background-color: var(--bootstrap-danger);">
                 Header field mismatch
               </span>
