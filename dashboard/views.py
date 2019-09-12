@@ -541,9 +541,17 @@ def scan(study_id, scan_id):
     scan = get_scan(scan_id, study_id, current_user, fail_url=url_for('study',
             study_id=study_id))
     checklist_form = ScanChecklistForm(obj=scan.get_checklist_entry())
-    name = os.path.basename(utils.get_nifti_path(scan))
+    # name = os.path.basename(utils.get_nifti_path(scan))
     return render_template('scan/main.html', scan=scan, study_id=study_id,
-            checklist_form=checklist_form, nifti_name=name)
+            checklist_form=checklist_form)
+
+@app.route('/study/<string:study_id>/papaya/<int:scan_id>', methods=['GET'])
+@login_required
+def papaya(study_id, scan_id):
+    scan = get_scan(scan_id, study_id, current_user, fail_url=url_for('study',
+            study_id=study_id))
+    name = os.path.basename(utils.get_nifti_path(scan))
+    return render_template('scan/viewer.html', study_id=study_id, scan_id=scan_id, nifti_name=name)
 
 
 @app.route('/study/<string:study_id>/scan/<int:scan_id>/review',

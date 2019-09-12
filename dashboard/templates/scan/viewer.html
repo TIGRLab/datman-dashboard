@@ -1,12 +1,18 @@
-<div id="viewer-container">
-  <script type="text/javascript">
-      var params = [];
-      params["worldSpace"] = true;
-      params["images"] = ["{{ url_for('load_scan', study_id=study_id, scan_id=scan.id, file_name=nifti_name) }}"];
-      params["mainView"] = 'coronal';
-      params["interpolation"] = true;
-  </script>
+<!DOCTYPE html>
+<html lang="en">
+  <div id="viewer-container">
+    <script type="text/javascript">
+        var params = [];
+        params["worldSpace"] = true;
+        params["images"] = ["{{ url_for('load_scan', study_id=study_id, scan_id=scan_id, file_name=nifti_name) }}"];
+        params["mainView"] = 'coronal';
+        params["interpolation"] = true;
+    </script>
 
-  <div class="papaya" data-params="params"></div>
+    <div class="papaya" data-params="params"></div>
 
-</div>
+    <link rel="stylesheet" type="text/css" href="/static/css/papaya.css" />
+    <script type="text/javascript" src="/static/js/papaya.js"></script>
+
+  </div>
+</html>

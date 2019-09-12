@@ -17,11 +17,24 @@
       {% if not scan.tag in ['T1','T2'] %}
           {% include 'scan/papaya_nav.html' %}
       {% endif %}
-      {% include 'scan/viewer.html' %}
+      <div class="embed-responsive embed-responsive-4by3">
+        <!-- The viewer is in an iframe to stop every little page change from
+        breaking papaya's UI -_- -->
+        <iframe id="viewer" class="embed-responsive-item"
+            src="{{ url_for('papaya', study_id=study_id, scan_id=scan.id) }}">
+        </iframe>
+      </div>
     </div>
+    <script type="text/javascript">
+      // This is needed to fix a firefox issue which
+      // causes iframes to become blank on page reload
+      $(document).ready(function() {
+        var frame = $("#viewer");
+        frame.contentWindow.location.reload();
+      });
+    </script>
 </div>
 
-<link rel="stylesheet" type="text/css" href="/static/css/papaya.css" />
-<script type="text/javascript" src="/static/js/papaya.js"></script>
+
 
 {% endblock %}
