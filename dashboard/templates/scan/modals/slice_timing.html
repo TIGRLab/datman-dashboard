@@ -1,0 +1,29 @@
+<div id="slice_timing_modal" class="modal fade" role="dialog">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">
+          <i class="fas fa-times"></i>
+        </button>
+        <h4>Update Slice Timing</h4>
+      </div>
+      <div class="modal-body">
+        <form action="{{ url_for('fix_slice_timing', study_id=study_id, scan_id=scan.id) }}"
+            method="post" name="sliceTiming" class="form" id="slice-timing-form">
+          Make changes to the slice timings for this scan
+          {{ slice_timing_form.hidden_tag() }}
+          {{ slice_timing_form.timings() }}
+          <div>
+            {{ slice_timing_form.submit(class_="btn btn-primary") }}
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary"
+            data-dismiss="modal">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
