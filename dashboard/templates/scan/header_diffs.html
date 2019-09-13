@@ -20,7 +20,17 @@
       <tr>
         <td>{{ field }}</td>
         <td>{{ diffs[field]['expected'] }}</td>
-        <td>{{ diffs[field]['actual'] }}</td>
+        <td>
+          {{ diffs[field]['actual'] }}
+          {% if field == 'SliceTiming' %}
+            <a id="header-rewrite" class="button btn btn-danger"
+                style="position: relative; left: 90%;"
+                data-toggle="modal" href="#slice_timing_modal">
+              Overwrite
+            </a>
+            {% include 'scan/modals/slice_timing.html' %}
+          {% endif %}
+        </td>
       </tr>
     {% endfor %}
   </tbody>

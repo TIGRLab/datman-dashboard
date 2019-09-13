@@ -43,6 +43,10 @@ class StudyOverviewForm(FlaskForm):
     study_id = HiddenField()
 
 
+class SliceTimingForm(FlaskForm):
+    timings = TextAreaField('NewTimings', id="new_timings")
+    submit = SubmitField("Update")
+
 class ScanChecklistForm(FlaskForm):
     comment = TextAreaField('Comment:', id='scan-comment',
             validators=[DataRequired()],

@@ -1291,6 +1291,10 @@ class Scan(db.Model):
         db.session.delete(self)
         db.session.commit()
 
+    def save(self):
+        db.session.add(self)
+        db.session.commit()
+
     def __repr__(self):
         if self.source_id:
             repr = "<Scan {}: {} link to scan {}>".format(self.id, self.name,
