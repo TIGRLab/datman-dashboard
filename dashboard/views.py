@@ -577,6 +577,9 @@ def fix_slice_timing(study_id, scan_id, auto=False, delete=False):
             flash("Failed to update slice timings")
             return redirect(dest_url)
         new_json["SliceTiming"] = new_timings.timings.data
+    
+    utils.update_json(scan, new_json) # Update file system json
+    utils.update_header_diffs(scan)
 
     scan.json_contents = new_json
     try:
@@ -587,11 +590,6 @@ def fix_slice_timing(study_id, scan_id, auto=False, delete=False):
         flash("Failed during slice timing update. Please contact an admin for "
                 "help")
         return redirect(dest_url)
-
-    # Todo:
-    # Fire off background task to write updated json into 'updated_jsons' folder
-    # Remove original json and replace with (relative) link to the updated json
-    # Update header diffs -> do deleted fields cause exceptions?
 
     return redirect(dest_url)
 

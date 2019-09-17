@@ -3,7 +3,6 @@ import os
 import json
 import time
 import logging
-from threading import Thread
 
 from github import Github
 
@@ -11,12 +10,6 @@ from dashboard import GITHUB_OWNER, GITHUB_REPO
 import datman.config
 
 logger = logging.getLogger(__name__)
-
-def async_exec(f):
-    def wrapper(*args, **kwargs):
-        thr = Thread(target=f, args=args, kwargs=kwargs)
-        thr.start()
-    return wrapper
 
 class TimeoutError(Exception):
     pass
@@ -118,7 +111,6 @@ def get_software_version(json_contents):
         software_version = "Version Not Available"
     return software_name + " - " + software_version
 
-@async_exec
 def update_json(scan, contents):
     updated_jsons = get_study_path(scan.get_study().id, "jsons")
     json_folder = os.path.join(updated_jsons, scan.timepoint)
@@ -148,3 +140,27 @@ def update_json(scan, contents):
         return False
 
     return True
+
+def update_header_diffs(scan):
+    site = scan.session.timepoint.site_id
+    config = datman.config.config(study=scan.get_study().id)
+
+    try:
+        tolerance = config.get_key("HeaderFieldTolerance", site=site)
+    except:
+        tolerance = {}
+    try:
+        ignore = config.get_key("IgnoreHeaderFields", site=site)
+    except:
+        ignore = []
+
+    tags = config.get_tags(site=site)
+    try:
+        qc_type = tags.get(scan.tag, "qc_type")
+    except KeyError:
+        check_bvals = False
+    else:
+        check_bvals = qc_type == 'dti'
+
+    scan.update_header_diffs(ignore=ignore, tolerance=tolerance,
+                             bvals=check_bvals)
