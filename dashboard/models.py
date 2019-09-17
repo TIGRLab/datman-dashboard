@@ -1271,7 +1271,7 @@ class Scan(db.Model):
             return {}
         return self.header_diffs[0].diffs
 
-    def update_json(self, json_file, timestamp=None):
+    def add_json(self, json_file, timestamp=None):
         self.json_contents = utils.read_json(json_file)
         self.json_path = json_file
 

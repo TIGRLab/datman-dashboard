@@ -3,6 +3,7 @@ import os
 import json
 import time
 import logging
+from threading import Thread
 
 from github import Github
 
@@ -10,6 +11,12 @@ from dashboard import GITHUB_OWNER, GITHUB_REPO
 import datman.config
 
 logger = logging.getLogger(__name__)
+
+def async_exec(f):
+    def wrapper(*args, **kwargs):
+        thr = Thread(target=f, args=args, kwargs=kwargs)
+        thr.start()
+    return wrapper
 
 class TimeoutError(Exception):
     pass
@@ -110,3 +117,34 @@ def get_software_version(json_contents):
     except KeyError:
         software_version = "Version Not Available"
     return software_name + " - " + software_version
+
+@async_exec
+def update_json(scan, contents):
+    updated_jsons = get_study_path(scan.get_study().id, "jsons")
+    json_folder = os.path.join(updated_jsons, scan.timepoint)
+    try:
+        os.makedirs(json_folder)
+    except:
+        pass
+    new_json = os.path.join(json_folder, os.path.basename(scan.json_path))
+
+    try:
+        with open(new_json, "w") as out:
+            json.dump(contents, out)
+    except Exception as e:
+        logger.error("Failed updating json for {}. Reason - {} {}".format(
+                scan, type(e).__name__, e))
+        return False
+
+    try:
+        os.remove(scan.json_path)
+        os.symlink(os.path.join(os.path.relpath(json_folder,
+                                                os.path.dirname(scan.json_path)),
+                                os.path.basename(scan.json_path)),
+                   scan.json_path)
+    except Exception as e:
+        logger.error("Failed making symlink to updated json {}. Reason - "
+                "{} {}".format(new_json, type(e).__name__, e))
+        return False
+
+    return True
