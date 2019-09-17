@@ -554,20 +554,30 @@ def papaya(study_id, scan_id):
     name = os.path.basename(utils.get_nifti_path(scan))
     return render_template('scan/viewer.html', study_id=study_id, scan_id=scan_id, nifti_name=name)
 
-@app.route('/study/<string:study_id>/slice-timing/<int:scan_id>', methods=['POST'])
+@app.route('/study/<string:study_id>/slice-timing/<int:scan_id>',
+           methods=['POST'])
+@app.route('/study/<string:study_id>/slice-timing/<int:scan_id>/auto/<auto>',
+           methods=['GET'])
+@app.route('/study/<string:study_id>/slice-timing/<int:scan_id>/delete/<delete>')
 @login_required
-def fix_slice_timing(study_id, scan_id):
+def fix_slice_timing(study_id, scan_id, auto=False, delete=False):
     dest_url = url_for('scan', study_id=study_id, scan_id=scan_id)
-
-    new_timings = SliceTimingForm()
-    if not new_timings.validate_on_submit():
-        flash("Failed to update slice timings")
-        return redirect(dest_url)
 
     scan = get_scan(scan_id, study_id, current_user)
     # Need a new dictionary to get the changes to actually save
     new_json = dict(scan.json_contents)
-    new_json["SliceTiming"] = new_timings.timings.data
+
+    if auto:
+        new_json["SliceTiming"] = scan.get_header_diffs()["SliceTiming"]["expected"]
+    elif delete:
+        del new_json["SliceTiming"]
+    else:
+        new_timings = SliceTimingForm()
+        if not new_timings.validate_on_submit():
+            flash("Failed to update slice timings")
+            return redirect(dest_url)
+        new_json["SliceTiming"] = new_timings.timings.data
+
     scan.json_contents = new_json
     try:
         scan.save()
@@ -581,7 +591,7 @@ def fix_slice_timing(study_id, scan_id):
     # Todo:
     # Fire off background task to write updated json into 'updated_jsons' folder
     # Remove original json and replace with (relative) link to the updated json
-    # Update header diffs
+    # Update header diffs -> do deleted fields cause exceptions?
 
     return redirect(dest_url)
 

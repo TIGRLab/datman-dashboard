@@ -18,18 +18,33 @@
   <tbody id="scan-diffs" class="collapse in">
     {% for field in diffs %}
       <tr>
-        <td>{{ field }}</td>
+        <td>
+          {{ field }}
+          {% if field == 'SliceTiming' %}
+            <br>
+            <br>
+            <div class="btn-group-vertical" role="group">
+              {% if "RepetitionTime" not in diffs and diffs[field]["actual"]|length == diffs[field]["expected"]|length %}
+                <a class="button btn btn-danger"
+                   href="{{ url_for('fix_slice_timing', study_id=study_id, scan_id=scan.id, auto=True) }}">
+                   Use Standard Timing
+                </a>
+              {% endif %}
+              <a id="header-rewrite" class="button btn btn-danger"
+                 data-toggle="modal" href="#slice_timing_modal">
+                Manual Edit
+              </a>
+              <a class="button btn btn-danger"
+                 href="{{ url_for('fix_slice_timing', study_id=study_id, scan_id=scan.id, delete=True) }}">
+                Delete Field
+              </a>
+            </div>
+            {% include 'scan/modals/slice_timing.html' %}
+          {% endif %}
+        </td>
         <td>{{ diffs[field]['expected'] }}</td>
         <td>
           {{ diffs[field]['actual'] }}
-          {% if field == 'SliceTiming' %}
-            <a id="header-rewrite" class="button btn btn-danger"
-                style="position: relative; left: 90%;"
-                data-toggle="modal" href="#slice_timing_modal">
-              Overwrite
-            </a>
-            {% include 'scan/modals/slice_timing.html' %}
-          {% endif %}
         </td>
       </tr>
     {% endfor %}

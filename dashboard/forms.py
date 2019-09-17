@@ -44,7 +44,8 @@ class StudyOverviewForm(FlaskForm):
 
 
 class SliceTimingForm(FlaskForm):
-    timings = TextAreaField('NewTimings', id="new_timings")
+    timings = TextAreaField('NewTimings', id="new_timings",
+                            render_kw={'rows': 4, 'cols': 65})
     submit = SubmitField("Update")
 
 class ScanChecklistForm(FlaskForm):
