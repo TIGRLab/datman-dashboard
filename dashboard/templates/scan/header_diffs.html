@@ -1,12 +1,15 @@
 <div class="text-muted">
-  <span class="pull-right"> Headers compared at {{ scan.header_diffs[0].timestamp }}</span>
-</div>
-<div class="text-muted">
   Scan converted with {{ scan.header_diffs[0].scan_version }}
 </div>
-<div class="text-muted">
-  Gold standard converted with {{ scan.header_diffs[0].gold_version }}
+<div class="row">
+  <div class="col-md-8 text-muted">
+    Gold standard converted with {{ scan.header_diffs[0].gold_version }}
+  </div>
+  <div class="col-md-4 text-muted">
+    <span class="pull-right"> Headers compared at {{ scan.header_diffs[0].timestamp }}</span>
+  </div>
 </div>
+
 <table class="table table-striped">
   <thead class="collapsible-heading" data-target="#scan-diffs" data-toggle="collapse">
     <tr>
