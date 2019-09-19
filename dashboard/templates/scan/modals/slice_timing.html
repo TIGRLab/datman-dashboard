@@ -11,9 +11,27 @@
         <form action="{{ url_for('fix_slice_timing', study_id=study_id, scan_id=scan.id) }}"
             method="post" name="sliceTiming" class="form" id="slice-timing-form">
           Make changes to the slice timings for this scan
+          <div class="container-fluid" style="margin-top: 10px; margin-bottom: 10px;">
+            <div class="row">
+              <div class="col-md-6">
+                <div><strong>Gold Standard Timings</strong></div>
+                <div class="slice-timing">{{ diffs["SliceTiming"]["expected"] }}</div>
+              </div>
+              <div class="col-md-6">
+                <div><strong>Actual Slice Timings</strong></div>
+                <div class="slice-timing">{{ diffs["SliceTiming"]["actual"] }}</div>
+              </div>
+            </div>
+            <br>
+            <div class="row">
+              <div class="col-md-6">
+                <strong>TR:</strong> <span id="current_tr">{{ scan.json_contents["RepetitionTime"] }}</span>
+              </div>
+            </div>
+          </div>
           {{ slice_timing_form.hidden_tag() }}
           {{ slice_timing_form.timings() }}
-          <div>
+          <div style="margin-top: 5px;">
             {{ slice_timing_form.submit(class_="btn btn-primary") }}
           </div>
         </form>
@@ -27,3 +45,34 @@
     </div>
   </div>
 </div>
+
+<script type="text/javascript">
+  var tr = parseFloat($("#current_tr")[0].textContent);
+  var submitButton = $("#submit_timings");
+  var textBox = $("#new_timings")[0];
+
+  submitButton.on("click", function() {
+    textBox.setCustomValidity("");
+    if (!textBox.validity.valid) {
+      // Dont change the message if the contents are invalid for a reason
+      // handled by the built in validators
+      return;
+    }
+    var newTimings = $("#new_timings").val().trim().split(",");
+    for (num = 0; num < newTimings.length; num++) {
+      current = parseFloat(newTimings[num]);
+      if (isNaN(current)) {
+        textBox.setCustomValidity("Only numeric entries allowed");
+        break;
+      } else if (current > tr) {
+        textBox.setCustomValidity("Entries must not be greater than the scan's TR");
+        break;
+      } else if (current < 0) {
+        textBox.setCustomValidity("Entries must be non-negative");
+        break;
+      }
+    }
+    textBox.reportValidity();
+  });
+
+</script>

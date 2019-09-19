@@ -577,7 +577,7 @@ def fix_slice_timing(study_id, scan_id, auto=False, delete=False):
             flash("Failed to update slice timings")
             return redirect(dest_url)
         new_json["SliceTiming"] = new_timings.timings.data
-    
+
     utils.update_json(scan, new_json) # Update file system json
     utils.update_header_diffs(scan)
 
@@ -590,6 +590,8 @@ def fix_slice_timing(study_id, scan_id, auto=False, delete=False):
         flash("Failed during slice timing update. Please contact an admin for "
                 "help")
         return redirect(dest_url)
+
+    flash("Update successful")
 
     return redirect(dest_url)
 
