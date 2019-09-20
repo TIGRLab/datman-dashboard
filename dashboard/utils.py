@@ -112,6 +112,9 @@ def get_software_version(json_contents):
     return software_name + " - " + software_version
 
 def update_json(scan, contents):
+    scan.json_contents = contents
+    scan.save()
+
     updated_jsons = get_study_path(scan.get_study().id, "jsons")
     json_folder = os.path.join(updated_jsons, scan.timepoint)
     try:
@@ -120,26 +123,14 @@ def update_json(scan, contents):
         pass
     new_json = os.path.join(json_folder, os.path.basename(scan.json_path))
 
-    try:
-        with open(new_json, "w") as out:
-            json.dump(contents, out)
-    except Exception as e:
-        logger.error("Failed updating json for {}. Reason - {} {}".format(
-                scan, type(e).__name__, e))
-        return False
+    with open(new_json, "w") as out:
+        json.dump(contents, out)
 
-    try:
-        os.remove(scan.json_path)
-        os.symlink(os.path.join(os.path.relpath(json_folder,
-                                                os.path.dirname(scan.json_path)),
-                                os.path.basename(scan.json_path)),
-                   scan.json_path)
-    except Exception as e:
-        logger.error("Failed making symlink to updated json {}. Reason - "
-                "{} {}".format(new_json, type(e).__name__, e))
-        return False
-
-    return True
+    os.remove(scan.json_path)
+    os.symlink(os.path.join(os.path.relpath(json_folder,
+                                            os.path.dirname(scan.json_path)),
+                            os.path.basename(scan.json_path)),
+               scan.json_path)
 
 def update_header_diffs(scan):
     site = scan.session.timepoint.site_id

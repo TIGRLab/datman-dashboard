@@ -572,18 +572,18 @@ def fix_slice_timing(study_id, scan_id, auto=False, delete=False):
     elif delete:
         del new_json["SliceTiming"]
     else:
-        new_timings = SliceTimingForm()
-        if not new_timings.validate_on_submit():
+        timing_form = SliceTimingForm()
+        if not timing_form.validate_on_submit():
             flash("Failed to update slice timings")
             return redirect(dest_url)
-        new_json["SliceTiming"] = new_timings.timings.data
 
-    utils.update_json(scan, new_json) # Update file system json
-    utils.update_header_diffs(scan)
+        new_timings = timing_form.timings.data
+        new_timings = new_timings.replace("[", "").replace("]", "")
+        new_json["SliceTiming"] = [float(item.strip())
+                                   for item in new_timings.split(",")]
 
-    scan.json_contents = new_json
     try:
-        scan.save()
+        utils.update_json(scan, new_json)
     except Exception as e:
         logger.error("Failed updating slice timings for scan {}. Reason {} "
                 "{}".format(scan_id, type(e).__name__, e))
@@ -591,10 +591,10 @@ def fix_slice_timing(study_id, scan_id, auto=False, delete=False):
                 "help")
         return redirect(dest_url)
 
+    utils.update_header_diffs(scan)
     flash("Update successful")
 
     return redirect(dest_url)
-
 
 @app.route('/study/<string:study_id>/scan/<int:scan_id>/review',
         methods=['GET', 'POST'])
