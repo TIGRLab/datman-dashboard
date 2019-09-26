@@ -15,17 +15,18 @@ from random import randint
 from flask_login import UserMixin
 from sqlalchemy import and_, exists, func
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import deferred
+from sqlalchemy.orm import deferred, backref
 from sqlalchemy.schema import UniqueConstraint, ForeignKeyConstraint
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.orm.exc import FlushError
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.associationproxy import association_proxy
 from psycopg2.tz import FixedOffsetTimezone
 
-from dashboard import db, TZ_OFFSET
+from dashboard import db, TZ_OFFSET, utils
 from dashboard.emails import account_request_email, account_activation_email, \
         account_rejection_email
-from datman import scanid
+from datman import scanid, header_checks
 
 logger = logging.getLogger(__name__)
 
@@ -36,12 +37,6 @@ class InvalidDataException(Exception):
 
 ################################################################################
 # Association tables (i.e. basic many to many relationships)
-
-study_scantype_table = db.Table('study_scantypes',
-        db.Column('study', db.String(32), db.ForeignKey('studies.id'),
-                nullable=False),
-        db.Column('scantype', db.String(64), db.ForeignKey('scantypes.tag'),
-                nullable=False))
 
 study_timepoints_table = db.Table('study_timepoints',
         db.Column('study', db.String(32), db.ForeignKey('studies.id'),
@@ -249,7 +244,6 @@ class User(UserMixin, db.Model):
     def __str__(self):
         return "{} {}".format(self.first_name, self.last_name)
 
-
 class AccountRequest(db.Model):
     __tablename__ = 'account_requests'
 
@@ -299,7 +293,6 @@ class AccountRequest(db.Model):
                     self.user_id)
         return result
 
-
 class Study(db.Model):
     __tablename__ = 'studies'
 
@@ -312,10 +305,9 @@ class Study(db.Model):
     users = db.relationship('StudyUser', back_populates='study')
     sites = db.relationship('StudySite', back_populates='study',
             collection_class=attribute_mapped_collection('site_id'))
+    scantypes = association_proxy('study_scantypes', 'scantype')
     timepoints = db.relationship('Timepoint', secondary=study_timepoints_table,
             back_populates='studies', lazy='dynamic')
-    scantypes = db.relationship('Scantype', secondary=study_scantype_table,
-            back_populates='studies')
 
     def __init__(self, study_id, full_name=None, description=None, read_me=None, is_open=None):
         self.id = study_id
@@ -352,6 +344,26 @@ class Study(db.Model):
             raise
 
         return timepoint
+
+    def add_gold_standard(self, gs_file):
+        try:
+            new_gs = GoldStandard(self.id, gs_file)
+        except OSError:
+            raise InvalidDataException("Can't add gold standard, file not "
+                    "readable: {}".format(gs_file))
+        try:
+            db.session.add(new_gs)
+            db.session.commit()
+        except IntegrityError as e:
+            db.session.rollback()
+            str_err = str(e)
+            if 'study_scantypes' in str_err:
+                raise InvalidDataException("Attempted to add gold standard for "
+                "invalid study / scan type - {}".format(gs_file))
+            elif 'study_sites' in str_err:
+                raise InvalidDataException("Attempted to add gold standard for "
+                        "invalid study / site - {}".format(gs_file))
+        return new_gs
 
     def num_timepoints(self, type=''):
         if type.lower() == 'human':
@@ -588,7 +600,6 @@ class Study(db.Model):
     def __repr__(self):
         return "<Study {}>".format(self.id)
 
-
 class Site(db.Model):
     __tablename__ = 'sites'
 
@@ -606,7 +617,6 @@ class Site(db.Model):
     def __repr__(self):
         return "<Site {}>".format(self.name)
 
-
 class Timepoint(db.Model):
     __tablename__ = 'timepoints'
 
@@ -616,7 +626,6 @@ class Timepoint(db.Model):
             nullable=False)
     is_phantom = db.Column('is_phantom', db.Boolean, nullable=False,
             default=False)
-    header_diffs = db.Column('header_diffs', JSONB)
     # These columns should be removed when the static QC pages are made obsolete
     last_qc_repeat_generated =  db.Column('last_qc_generated', db.Integer,
             nullable=False, default=1)
@@ -690,7 +699,6 @@ class Timepoint(db.Model):
             raise
         return session
 
-
     def get_blacklist_entries(self):
         """
         Returns any ScanChecklist entries for blacklisted scans for
@@ -700,14 +708,6 @@ class Timepoint(db.Model):
         for session in self.sessions.values():
             entries.extend(session.get_blacklist_entries())
         return entries
-
-    def add_header_diffs(self, json_diffs):
-        self.header_diffs = json_diffs
-        try:
-            self.save()
-        except Exception as e:
-            raise InvalidDataException("Can't add header diffs to {}. "
-                    "Reason: {}".format(self, e))
 
     def belongs_to(self, study):
         """
@@ -822,7 +822,6 @@ class Timepoint(db.Model):
     def __str__(self):
         return self.name
 
-
 class TimepointComment(db.Model):
     __tablename__ = 'timepoint_comments'
 
@@ -881,6 +880,7 @@ class Session(db.Model):
             back_populates='session', cascade='all, delete')
     redcap_record = db.relationship('SessionRedcap', back_populates='session',
             uselist=False, cascade='all, delete')
+    task_files = db.relationship('TaskFile', cascade='all, delete')
 
     def __init__(self, name, num, date=None, signed_off=False, reviewer_id=None,
             review_date=None):
@@ -1013,12 +1013,26 @@ class Session(db.Model):
         db.session.add(self)
         db.session.commit()
 
+    def add_task(self, file_path, name=None):
+        for item in self.task_files:
+            if file_path == item.file_path:
+                return item
+        new_task = TaskFile(self.name, self.num, file_path, file_name=name)
+        self.task_files.append(new_task)
+        try:
+            self.save()
+        except Exception as e:
+            logger.error("Unable to add task file {}. Reason: {}".format(
+                    file_path, e))
+            db.session.rollback()
+            return None
+        return new_task
+
     def __repr__(self):
         return "<Session {}, {}>".format(self.name, self.num)
 
     def __str__(self):
         return "{}_{:02}".format(self.name, self.num)
-
 
 class EmptySession(db.Model):
     """
@@ -1050,7 +1064,6 @@ class EmptySession(db.Model):
 
     def __repr__(self):
         return "<EmptySession {}, {}>".format(self.name, self.num)
-
 
 class SessionRedcap(db.Model):
     # Using a class instead of an association table here to let us know when an
@@ -1096,7 +1109,6 @@ class SessionRedcap(db.Model):
         return "<SessionRedcap {}, {} - record {}>".format(self.name,
                 self.num, self.record_id)
 
-
 class Scan(db.Model):
     __tablename__ = 'scans'
 
@@ -1109,6 +1121,9 @@ class Scan(db.Model):
     tag = db.Column('tag', db.String(64), db.ForeignKey('scantypes.tag'),
             nullable=False)
     description = db.Column('description', db.String(128))
+    json_path = db.Column('json_path', db.String(1028))
+    json_contents = db.Column('json_contents', JSONB)
+    json_created = db.Column('json_created', db.DateTime(timezone=True))
     # If a scan is a link, this will hold the id of the source scan
     source_id = db.Column('source_data', db.Integer, db.ForeignKey(id))
 
@@ -1123,6 +1138,8 @@ class Scan(db.Model):
     scantype = db.relationship('Scantype', uselist=False, back_populates='scans')
     analysis_comments = db.relationship('AnalysisComment', cascade='all, delete')
     metric_values = db.relationship('MetricValue', cascade='all, delete-orphan')
+    header_diffs = db.relationship('ScanGoldStandard', cascade='all',
+            order_by='desc(ScanGoldStandard.date_added)', back_populates='scan')
 
     __table_args__ = (ForeignKeyConstraint(['timepoint', 'session'],
             ['sessions.name', 'sessions.num']),
@@ -1198,15 +1215,100 @@ class Scan(db.Model):
     def list_children(self):
         return [link.name for link in self.links]
 
-    def get_header_diffs(self):
+    @property
+    def gold_standards(self):
+        found_standards =  GoldStandard.query\
+                .filter(GoldStandard.study == self.session.get_study().id)\
+                .filter(GoldStandard.site == self.session.timepoint.site_id)\
+                .filter(GoldStandard.tag == self.tag)\
+                .order_by(GoldStandard.json_created.desc())
+        return found_standards.all()
+
+    @property
+    def active_gold_standard(self):
+        if self.header_diffs:
+            return self.header_diffs[0].gold_standard
+
         try:
-            diffs = self.session.timepoint.header_diffs[self.name]
+            gs = self.gold_standards[0]
         except:
-            diffs = {}
-        return diffs
+            return None
+
+        return gs
+
+    def update_header_diffs(self, standard=None, ignore=None, tolerance=None,
+            bvals=False):
+        if not self.json_contents:
+            raise InvalidDataException("No JSON data found for series {}"
+                    "".format(self.name))
+        if standard:
+            if type(standard) != GoldStandard:
+                raise InvalidDataException("Must be given a "
+                        "'dashboard.models.GoldStandard' instance")
+            gs = standard
+        else:
+            gs = self.active_gold_standard
+
+        if not gs:
+            raise InvalidDataException("No gold standard available for "
+                    "comparison")
+
+        diffs = header_checks.compare_headers(self.json_contents,
+                gs.json_contents, ignore=ignore, tolerance=tolerance)
+        if bvals:
+            result = header_checks.check_bvals(self.json_path,
+                    gs.json_path)
+            if result:
+                diffs['bvals'] = result
+
+        found = False
+        if self.header_diffs:
+            found = [item for item in self.header_diffs
+                    if item.gold_standard.id == gs.id]
+            if found:
+                new_diffs = found[0]
+                new_diffs.diffs = diffs
+
+        if not found:
+            new_diffs = ScanGoldStandard(self.id, gs.id, diffs,
+                    gold_version=utils.get_software_version(gs.json_contents),
+                    scan_version=utils.get_software_version(self.json_contents))
+        try:
+            db.session.add(new_diffs)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            raise InvalidDataException("Failed to update header diffs for {}. "
+                    "Reason: {}".format(self, e))
+        return new_diffs
+
+    def get_header_diffs(self):
+        if not self.header_diffs:
+            return {}
+        return self.header_diffs[0].diffs
+
+    def add_json(self, json_file, timestamp=None):
+        self.json_contents = utils.read_json(json_file)
+        self.json_path = json_file
+
+        if timestamp:
+            self.json_created = timestamp
+        else:
+            self.json_created = utils.file_timestamp(json_file)
+
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            raise InvalidDataException("Failed to update scan {} json contents "
+                    "from file {}. Reason: {}".format(self, json_file, e))
 
     def delete(self):
         db.session.delete(self)
+        db.session.commit()
+
+    def save(self):
+        db.session.add(self)
         db.session.commit()
 
     def __repr__(self):
@@ -1219,7 +1321,6 @@ class Scan(db.Model):
 
     def __str__(self):
         return self.name
-
 
 class ScanChecklist(db.Model):
     __tablename__ = 'scan_checklist'
@@ -1236,7 +1337,6 @@ class ScanChecklist(db.Model):
     scan = db.relationship('Scan', uselist=False, back_populates='qc_review')
     user = db.relationship('User', uselist=False,
             back_populates='scan_comments')
-
 
     __table_args__ = (UniqueConstraint(scan_id),)
 
@@ -1276,8 +1376,7 @@ class Scantype(db.Model):
     tag = db.Column('tag', db.String(64), primary_key=True)
 
     scans = db.relationship('Scan', back_populates='scantype')
-    studies = db.relationship('Study', secondary=study_scantype_table,
-            back_populates='scantypes')
+    studies = association_proxy('study_scantypes', 'study')
     metrictypes = db.relationship('Metrictype', back_populates='scantype')
 
     def __init__(self, tag):
@@ -1286,6 +1385,48 @@ class Scantype(db.Model):
     def __repr__(self):
         return "<Scantype {}>".format(self.tag)
 
+class GoldStandard(db.Model):
+    __tablename__ = 'gold_standards'
+
+    id = db.Column('id', db.Integer, primary_key=True)
+    study = db.Column('study', db.String(32), nullable=False)
+    site = db.Column('site', db.String(32), nullable=False)
+    tag = db.Column('scantype', db.String(64), nullable=False)
+    json_created = db.Column('added', db.DateTime(timezone=True))
+    json_contents = db.Column('contents', JSONB)
+    json_path = db.Column('json_path', db.String(1028))
+
+    study_site = db.relationship('StudySite', uselist=False,
+            back_populates='standards', viewonly=True)
+    study_scantype = db.relationship('StudyScantype', uselist=False,
+            back_populates='standards', viewonly=True)
+    scans = association_proxy('scan_gold_standard', 'scan')
+
+    __table_args__ = (ForeignKeyConstraint(['study', 'scantype'],
+                ['study_scantypes.study', 'study_scantypes.scantype']),
+            ForeignKeyConstraint(['study', 'site'],
+                ['study_sites.study', 'study_sites.site']))
+
+    def __init__(self, study, gs_json):
+        try:
+            ident, tag, _, _ = scanid.parse_filename(gs_json)
+        except:
+            raise InvalidDataException("Can't parse site and scan tag info "
+                    "from gold standard file name. Please provide a datman "
+                    "named file")
+        self.study = study
+        self.site = ident.site
+        self.tag = tag
+        self.json_created = utils.file_timestamp(gs_json)
+        self.json_contents = utils.read_json(gs_json)
+        self.json_path = gs_json
+
+    def __repr__(self):
+        return "<GoldStandard {} for {}, {} - {}>".format(self.id, self.study,
+                self.site, self.tag)
+
+    def __str__(self):
+        return os.path.basename(self.json_path)
 
 class RedcapRecord(db.Model):
     __tablename__ = 'redcap_records'
@@ -1315,7 +1456,6 @@ class RedcapRecord(db.Model):
         return "<RedcapRecord {}: record {} project {} url {}>".format(self.id,
                 self.record, self.project, self.url)
 
-
 class Analysis(db.Model):
     __tablename__ = 'analyses'
 
@@ -1342,6 +1482,34 @@ class Metrictype(db.Model):
 
     def __repr__(self):
         return('<MetricType {}>'.format(self.name))
+
+class TaskFile(db.Model):
+    __tablename__ = 'session_tasks'
+
+    id = db.Column('id', db.Integer, primary_key=True)
+    timepoint = db.Column('timepoint', db.String(64), nullable=False)
+    repeat = db.Column('repeat', db.Integer, nullable=False)
+    file_name = db.Column('task_fname', db.String(256), nullable=False)
+    file_path = db.Column('task_file_path', db.String(2048), nullable=False)
+
+    session = db.relationship('Session', uselist=False,
+            back_populates='task_files')
+
+    __table_args__ = (ForeignKeyConstraint(['timepoint', 'repeat'],
+            ['sessions.name', 'sessions.num']),
+            UniqueConstraint(file_path))
+
+    def __init__(self, timepoint, repeat, file_path, file_name=None):
+        self.timepoint = timepoint
+        self.repeat = repeat
+        self.file_path = file_path
+        if not file_name:
+            self.file_name = os.path.basename(self.file_path)
+        else:
+            self.file_name = file_name
+
+    def __repr__(self):
+        return "<TaskFile {}>".format(self.file_path)
 
 
 ################################################################################
@@ -1380,7 +1548,6 @@ class StudyUser(db.Model):
         return "<StudyUser {} User: {}>".format(self.study_id,
                 self.user_id)
 
-
 class StudySite(db.Model):
     __tablename__ = 'study_sites'
 
@@ -1393,6 +1560,11 @@ class StudySite(db.Model):
 
     site = db.relationship('Site', back_populates='studies')
     study = db.relationship('Study', back_populates='sites')
+    alt_codes = db.relationship('AltStudyCode', back_populates='study_site',
+            cascade='all, delete', lazy='joined')
+    standards = db.relationship('GoldStandard', back_populates='study_site')
+
+    __table_args__ = (UniqueConstraint(study_id, site_id),)
 
     def __init__(self, study_id, site_id, uses_redcap=False, code=None):
         self.study_id = study_id
@@ -1402,6 +1574,95 @@ class StudySite(db.Model):
 
     def __repr__(self):
         return "<StudySite {} - {}>".format(self.study_id, self.site_id)
+
+class AltStudyCode(db.Model):
+    # stupid prelapse
+    __tablename__ = 'alt_study_codes'
+
+    # This isnt a true primary key. But that's ok,
+    # it's really not meant to be queried by primary key, sqlalchemy just
+    # forces it to have one
+    study_id = db.Column('study', db.String(32), primary_key=True)
+    site_id = db.Column('site', db.String(32), primary_key=True)
+    code = db.Column('code', db.String(32), primary_key=True)
+
+    study_site = db.relationship('StudySite', uselist=False,
+            back_populates='alt_codes', lazy='joined')
+
+    @property
+    def site(self):
+        return self.study_site.site
+
+    @property
+    def study(self):
+        return self.study_site.study
+
+    @property
+    def uses_redcap(self):
+        return self.study_site.uses_redcap
+
+    __table_args__ = (ForeignKeyConstraint(['study', 'site'],
+            ['study_sites.study', 'study_sites.site']),)
+
+    def __repr__(self):
+        return "<AltStudyCode {}, {} - {}>".format(self.study_id, self.site_id,
+                self.code)
+
+class StudyScantype(db.Model):
+    __tablename__ = 'study_scantypes'
+
+    study_id = db.Column('study', db.String(32), db.ForeignKey('studies.id'),
+            primary_key=True)
+    scantype_id = db.Column('scantype', db.String(64),
+            db.ForeignKey('scantypes.tag'), primary_key=True)
+
+    study = db.relationship(Study, backref=backref('study_scantypes',
+            cascade="all, delete-orphan"))
+    scantype = db.relationship(Scantype, backref=backref('study_scantypes',
+            cascade="all, delete-orphan"))
+    standards = db.relationship('GoldStandard', back_populates='study_scantype')
+
+    def __repr__(self):
+        return "<StudyScantype {} - {}>".format(self.study_id, self.scantype_id)
+
+class ScanGoldStandard(db.Model):
+    __tablename__ = 'scan_gold_standard'
+
+    scan_id = db.Column('scan', db.Integer, db.ForeignKey('scans.id'),
+            primary_key=True)
+    gold_standard_id = db.Column('gold_standard', db.Integer,
+            db.ForeignKey('gold_standards.id'), primary_key=True)
+    diffs = db.Column('header_diffs', JSONB)
+    date_added = db.Column('date_added', db.DateTime(timezone=True),
+            server_default=func.now())
+    gold_version = db.Column('gold_version', db.String(128))
+    scan_version = db.Column('scan_version', db.String(128))
+
+    scan = db.relationship('Scan', back_populates='header_diffs',
+            uselist=False)
+    gold_standard = db.relationship(GoldStandard,
+            backref=backref('scan_gold_standard'), cascade='all')
+
+    def __init__(self, scan_id, gold_standard_id, diffs, gold_version,
+            scan_version, timestamp=None):
+        self.scan_id = scan_id
+        self.gold_standard_id = gold_standard_id
+        self.diffs = diffs
+        self.gold_version = gold_version
+        self.scan_version = scan_version
+        if timestamp:
+            self.date_added = timestamp
+
+    @property
+    def timestamp(self):
+        return self.date_added.strftime('%I:%M %p, %Y-%m-%d')
+
+    def __repr__(self):
+        return "<HeaderDiffs for Scan {} and GS {}>".format(self.scan_id,
+                self.gold_standard_id)
+
+    def __str__(self):
+        return self.__repr__()
 
 class AnalysisComment(db.Model):
     __tablename__ = 'analysis_comments'

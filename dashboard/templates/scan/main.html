@@ -3,25 +3,53 @@
 {% include 'flash.html' %}
 {% block content %}
 
-<div class="container">
+<div class="fluid-container">
     <div class="row">
-      {% include 'scan/header.html' %}
+      <div class="col-md-8 col-md-offset-2">
+        {% include 'scan/header.html' %}
+      </div>
     </div>
     {% set diffs = scan.get_header_diffs() %}
     {% if diffs != {} %}
       <div class="row" style="margin-top: 20px;">
-        {% include 'scan/header_diffs.html' %}
+        <div class="col-md-8 col-md-offset-2">
+          {% include 'scan/header_diffs.html' %}
+        </div>
       </div>
     {% endif %}
     <div class="row">
-      {% if not scan.tag in ['T1','T2'] %}
-          {% include 'scan/papaya_nav.html' %}
-      {% endif %}
-      {% include 'scan/viewer.html' %}
+      <div class="col-md-2">
+        {% if not scan.tag in ['T1','T2'] %}
+            {% include 'scan/papaya_nav.html' %}
+        {% endif %}
+      </div>
+      <div class="col-md-8">
+        <div class="embed-responsive embed-responsive-4by3">
+            <!-- The viewer is in an iframe to stop every little page change from
+            breaking papaya's UI -_- -->
+            <iframe id="viewer" class="embed-responsive-item"
+                src="{{ url_for('papaya', study_id=study_id, scan_id=scan.id) }}">
+            </iframe>
+          </div>
+        </div>
     </div>
 </div>
 
-<link rel="stylesheet" type="text/css" href="/static/css/papaya.css" />
-<script type="text/javascript" src="/static/js/papaya.js"></script>
+<script type="text/javascript">
+  // This is needed to fix a firefox issue which
+  // causes iframes to become blank on page reload
+  $(document).ready(function() {
+    var iframe = document.getElementById("viewer");
+    iframe.parentNode.replaceChild(iframe.cloneNode(), iframe);
+  });
+  // Give focus to the iframe when mouse is over it so papaya keybindings
+  // still work
+  $("#viewer").mouseover(function() {
+    this.focus();
+  });
+  $("#viewer").mouseout(function() {
+    window.focus();
+  });
+</script>
 
 {% endblock %}
