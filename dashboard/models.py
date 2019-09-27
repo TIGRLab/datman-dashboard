@@ -1115,6 +1115,7 @@ class Scan(db.Model):
     tag = db.Column('tag', db.String(64), db.ForeignKey('scantypes.tag'),
             nullable=False)
     description = db.Column('description', db.String(128))
+    conv_errors = db.Column('conversion_errors', db.Text)
     json_path = db.Column('json_path', db.String(1028))
     json_contents = db.Column('json_contents', JSONB)
     json_created = db.Column('json_created', db.DateTime(timezone=True))
@@ -1286,6 +1287,15 @@ class Scan(db.Model):
             db.session.rollback()
             raise InvalidDataException("Failed to update scan {} json contents "
                     "from file {}. Reason: {}".format(self, json_file, e))
+
+    def add_error(self, error_message):
+        self.conv_errors = error_message
+        try:
+            self.save()
+        except Exception as e:
+            db.session.rollback()
+            raise InvalidDataException("Failed to add conversion error message "
+                    "for {}. Reason: {}".format(self, e))
 
     def delete(self):
         db.session.delete(self)

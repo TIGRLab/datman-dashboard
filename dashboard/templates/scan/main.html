@@ -9,6 +9,9 @@
         {% include 'scan/header.html' %}
       </div>
     </div>
+    {% if scan.conv_errors %}
+      {% include 'scan/dcm2niix_details.html' %}
+    {% endif %}
     {% set diffs = scan.get_header_diffs() %}
     {% if diffs != {} %}
       <div class="row" style="margin-top: 20px;">
