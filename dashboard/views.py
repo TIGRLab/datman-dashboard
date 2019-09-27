@@ -30,7 +30,8 @@ from .models import Study, Site, Session, Scantype, Scan, User, \
 from .forms import SelectMetricsForm, StudyOverviewForm, \
         ScanChecklistForm, UserForm, AnalysisForm, \
         UserAdminForm, EmptySessionForm, IncidentalFindingsForm, \
-        TimepointCommentsForm, NewIssueForm, AccessRequestForm
+        TimepointCommentsForm, NewIssueForm, AccessRequestForm, \
+        SliceTimingForm
 from .view_utils import get_user_form, report_form_errors, get_timepoint, \
         get_session, get_scan, handle_issue, get_redcap_record, \
         get_admin_user_form
@@ -541,10 +542,59 @@ def scan(study_id, scan_id):
     scan = get_scan(scan_id, study_id, current_user, fail_url=url_for('study',
             study_id=study_id))
     checklist_form = ScanChecklistForm(obj=scan.get_checklist_entry())
-    name = os.path.basename(utils.get_nifti_path(scan))
+    slice_timing_form = SliceTimingForm()
     return render_template('scan/main.html', scan=scan, study_id=study_id,
-            checklist_form=checklist_form, nifti_name=name)
+            checklist_form=checklist_form, slice_timing_form=slice_timing_form)
 
+@app.route('/study/<string:study_id>/papaya/<int:scan_id>', methods=['GET'])
+@login_required
+def papaya(study_id, scan_id):
+    scan = get_scan(scan_id, study_id, current_user, fail_url=url_for('study',
+            study_id=study_id))
+    name = os.path.basename(utils.get_nifti_path(scan))
+    return render_template('scan/viewer.html', study_id=study_id, scan_id=scan_id, nifti_name=name)
+
+@app.route('/study/<string:study_id>/slice-timing/<int:scan_id>',
+           methods=['POST'])
+@app.route('/study/<string:study_id>/slice-timing/<int:scan_id>/auto/<auto>',
+           methods=['GET'])
+@app.route('/study/<string:study_id>/slice-timing/<int:scan_id>/delete/<delete>')
+@login_required
+def fix_slice_timing(study_id, scan_id, auto=False, delete=False):
+    dest_url = url_for('scan', study_id=study_id, scan_id=scan_id)
+
+    scan = get_scan(scan_id, study_id, current_user)
+    # Need a new dictionary to get the changes to actually save
+    new_json = dict(scan.json_contents)
+
+    if auto:
+        new_json["SliceTiming"] = scan.get_header_diffs()["SliceTiming"]["expected"]
+    elif delete:
+        del new_json["SliceTiming"]
+    else:
+        timing_form = SliceTimingForm()
+        if not timing_form.validate_on_submit():
+            flash("Failed to update slice timings")
+            return redirect(dest_url)
+
+        new_timings = timing_form.timings.data
+        new_timings = new_timings.replace("[", "").replace("]", "")
+        new_json["SliceTiming"] = [float(item.strip())
+                                   for item in new_timings.split(",")]
+
+    try:
+        utils.update_json(scan, new_json)
+    except Exception as e:
+        logger.error("Failed updating slice timings for scan {}. Reason {} "
+                "{}".format(scan_id, type(e).__name__, e))
+        flash("Failed during slice timing update. Please contact an admin for "
+                "help")
+        return redirect(dest_url)
+
+    utils.update_header_diffs(scan)
+    flash("Update successful")
+
+    return redirect(dest_url)
 
 @app.route('/study/<string:study_id>/scan/<int:scan_id>/review',
         methods=['GET', 'POST'])

@@ -8,7 +8,7 @@ from sqlalchemy import and_, func
 
 from dashboard import db
 from .models import Timepoint, Session, Scan, Study, Site, Metrictype, \
-    MetricValue, Scantype, StudySite, User
+    MetricValue, Scantype, StudySite, AltStudyCode, User
 import datman.scanid as scanid
 
 logger = logging.getLogger(__name__)
@@ -19,8 +19,12 @@ def get_study(name=None, tag=None, site=None):
     studies = StudySite.query.filter(StudySite.code == tag)
     if site:
         studies = studies.filter(StudySite.site_id == site)
+    if not studies.all():
+        studies = AltStudyCode.query.filter(AltStudyCode.code == tag)
+        if site:
+            studies = studies.filter(AltStudyCode.site_id == site)
     return studies.all()
-
+    
 def find_subjects(search_str):
     """
     Used by the dashboard's search bar

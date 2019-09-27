@@ -43,6 +43,12 @@ class StudyOverviewForm(FlaskForm):
     study_id = HiddenField()
 
 
+class SliceTimingForm(FlaskForm):
+    timings = TextAreaField('NewTimings', id="new_timings",
+                            render_kw={'rows': 4, 'cols': 65, 'required': True,
+                            'placeholder': "Enter comma separated slice timings"})
+    submit = SubmitField("Update", id="submit_timings")
+
 class ScanChecklistForm(FlaskForm):
     comment = TextAreaField('Comment:', id='scan-comment',
             validators=[DataRequired()],
