@@ -739,6 +739,16 @@ class Timepoint(db.Model):
             return True
         return all(sess.is_qcd() for sess in self.sessions.values())
 
+    def reviewer(self):
+        """
+        Returns a string mapping each QC'd session to the name of the QC reviewer.
+        """
+        if not self.is_qcd():
+            return ''
+        reviewers = ["{} - {}".format(sess.num, sess.reviewer)
+                     for sess in self.sessions.values() if sess.signed_off]
+        return ", ".join(reviewers)
+
     def expects_redcap(self, study=None):
         if self.is_phantom:
             return False
