@@ -622,6 +622,7 @@ class Timepoint(db.Model):
 
     name = db.Column('name', db.String(64), primary_key=True)
     bids_name = db.Column('bids_name', db.Text)
+    bids_session = db.Column('bids_sess', db.String(2))
     site_id = db.Column('site', db.String(32), db.ForeignKey('sites.name'),
             nullable=False)
     is_phantom = db.Column('is_phantom', db.Boolean, nullable=False,
@@ -649,8 +650,9 @@ class Timepoint(db.Model):
         self.is_phantom = is_phantom
         self.static_page = static_page
 
-    def add_bids(self, name):
+    def add_bids(self, name, session):
         self.bids_name = name
+        self.bids_session = session
         self.save()
 
     def get_study(self, study_id=None):
