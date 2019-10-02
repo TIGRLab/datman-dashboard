@@ -8,7 +8,7 @@ from sqlalchemy import and_, func
 
 from dashboard import db
 from .models import Timepoint, Session, Scan, Study, Site, Metrictype, \
-    MetricValue, Scantype, StudySite, AltStudyCode, User
+    MetricValue, Scantype, StudySite, AltStudyCode, User, study_timepoints_table
 import datman.scanid as scanid
 
 logger = logging.getLogger(__name__)
@@ -51,7 +51,7 @@ def get_timepoint(name, bids_ses=None, study=None):
                         .filter(Timepoint.bids_session == bids_ses)
     if study:
         query = query.join(study_timepoints_table,
-                and_(study_timepoints_table.c.timepoint == Timepoints.name,
+                and_(study_timepoints_table.c.timepoint == Timepoint.name,
                      study_timepoints_table.c.study == study))
     return query.first()
 
