@@ -921,7 +921,7 @@ class Session(db.Model):
             rc_record = self.redcap_record.record
             if (rc_record.record != record_num or
                     str(rc_record.project) != project or
-                    rc_record.url != url):
+                    str(rc_record.url) != str(url)):
                 raise InvalidDataException("Existing record already found. "
                     "Please remove the old record before adding a new one.")
         else:
