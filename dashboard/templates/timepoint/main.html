@@ -6,9 +6,14 @@
 
   <div class="jumbotron">
     <h1>{{ timepoint.name }}</h1>
-    {% if timepoint.is_phantom %}
-      <p class="lead">Phantom</p>
-    {% endif %}
+    <p class="lead">
+      {% if timepoint.bids_name %}
+        BIDS: {{ timepoint.bids_name }}<br>
+      {% endif %}
+      {% if timepoint.is_phantom %}
+        Phantom
+      {% endif %}
+    </p>
   </div>
 
   {% if timepoint.incidental_findings %}

@@ -621,6 +621,8 @@ class Timepoint(db.Model):
     __tablename__ = 'timepoints'
 
     name = db.Column('name', db.String(64), primary_key=True)
+    bids_name = db.Column('bids_name', db.Text)
+    bids_session = db.Column('bids_sess', db.String(2))
     site_id = db.Column('site', db.String(32), db.ForeignKey('sites.name'),
             nullable=False)
     is_phantom = db.Column('is_phantom', db.Boolean, nullable=False,
@@ -647,6 +649,11 @@ class Timepoint(db.Model):
         self.site_id = site
         self.is_phantom = is_phantom
         self.static_page = static_page
+
+    def add_bids(self, name, session):
+        self.bids_name = name
+        self.bids_session = session
+        self.save()
 
     def get_study(self, study_id=None):
         """
@@ -731,6 +738,16 @@ class Timepoint(db.Model):
         if self.is_phantom:
             return True
         return all(sess.is_qcd() for sess in self.sessions.values())
+
+    @property
+    def reviewer(self):
+        """
+        Returns the name of the first session's qc reviewer as this timepoint's
+        reviewer
+        """
+        if not self.is_qcd():
+            return ''
+        return self.sessions.values()[0].reviewer
 
     def expects_redcap(self, study=None):
         if self.is_phantom:
@@ -1109,6 +1126,7 @@ class Scan(db.Model):
 
     id = db.Column('id', db.Integer, primary_key=True)
     name = db.Column('name', db.String(128), nullable=False)
+    bids_name = db.Column('bids_name', db.Text)
     timepoint = db.Column('timepoint', db.String(64), nullable=False)
     repeat = db.Column('session', db.Integer, nullable=False)
     series = db.Column('series', db.Integer, nullable=False)
@@ -1149,6 +1167,16 @@ class Scan(db.Model):
         self.tag = tag
         self.description = description
         self.source_id = source_id
+
+    def add_bids(self, name):
+        self.bids_name = name
+        try:
+            db.session.add(self)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            raise InvalidDataException("Failed to add bids name {} to scan {}. "
+                    "Reason: {}".format(name, self.id, e))
 
     def get_study(self, study_id=None):
         return self.session.get_study(study_id=study_id)

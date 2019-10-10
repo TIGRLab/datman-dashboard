@@ -8,7 +8,7 @@ from sqlalchemy import and_, func
 
 from dashboard import db
 from .models import Timepoint, Session, Scan, Study, Site, Metrictype, \
-    MetricValue, Scantype, StudySite, AltStudyCode, User
+    MetricValue, Scantype, StudySite, AltStudyCode, User, study_timepoints_table
 import datman.scanid as scanid
 
 logger = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ def get_study(name=None, tag=None, site=None):
         if site:
             studies = studies.filter(AltStudyCode.site_id == site)
     return studies.all()
-    
+
 def find_subjects(search_str):
     """
     Used by the dashboard's search bar
@@ -40,12 +40,20 @@ def get_session(name, num):
     """
     return Session.query.get((name, num))
 
-def get_timepoint(name):
+def get_timepoint(name, bids_ses=None, study=None):
     """
     Used by datman. Return one timepoint or None
     """
-    return Timepoint.query.get(name)
+    if not bids_ses:
+        return Timepoint.query.get(name)
 
+    query = Timepoint.query.filter(Timepoint.bids_name == name)\
+                        .filter(Timepoint.bids_session == bids_ses)
+    if study:
+        query = query.join(study_timepoints_table,
+                and_(study_timepoints_table.c.timepoint == Timepoint.name,
+                     study_timepoints_table.c.study == study))
+    return query.first()
 
 def find_sessions(search_str):
     """
@@ -74,11 +82,15 @@ def find_sessions(search_str):
     return query.all()
 
 
-def get_scan(scan_name, timepoint=None, session=None):
+def get_scan(scan_name, timepoint=None, session=None, bids=False):
     """
     Used by datman. Return a list of matching scans or an empty list
     """
-    query = Scan.query.filter(Scan.name == scan_name)
+    if bids:
+        query = Scan.query.filter(Scan.bids_name == scan_name)
+    else:
+        query = Scan.query.filter(Scan.name == scan_name)
+
     if timepoint:
         query = query.filter(Scan.timepoint == timepoint)
     if session:
