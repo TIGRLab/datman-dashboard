@@ -421,11 +421,15 @@ class Study(db.Model):
     def get_new_sessions(self):
         # Doing this 'manually' to prevent SQLAlchemy from sending one query per
         # timepoint per study
-        new = db.session.query(Session).filter(Session.signed_off == False) \
-                .join(Timepoint).filter(Timepoint.is_phantom == False) \
+        new = db.session.query(Session.name) \
+                .join(Timepoint) \
                 .join(study_timepoints_table,
-                        and_(study_timepoints_table.c.timepoint == Timepoint.name,
-                        study_timepoints_table.c.study == self.id))
+                      and_(study_timepoints_table.c.timepoint == Timepoint.name,
+                           study_timepoints_table.c.study == self.id)) \
+                .filter(Session.signed_off == False) \
+                .filter(Timepoint.is_phantom == False) \
+                .group_by(Session.name)
+
         return new
 
     def get_sessions_using_redcap(self):
