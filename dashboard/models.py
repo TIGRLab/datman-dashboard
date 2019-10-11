@@ -16,7 +16,7 @@ from flask_login import UserMixin
 from sqlalchemy import and_, exists, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import deferred, backref
-from sqlalchemy.schema import UniqueConstraint, ForeignKeyConstraint
+from sqlalchemy.schema import UniqueConstraint, ForeignKeyConstraint, Index
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.orm.exc import FlushError
 from sqlalchemy.exc import IntegrityError
@@ -68,7 +68,8 @@ class User(UserMixin, db.Model):
 
     studies = db.relationship('StudyUser', back_populates='user',
             order_by='StudyUser.study_id',
-            collection_class=attribute_mapped_collection('study_id'))
+            collection_class=attribute_mapped_collection('study_id'),
+            cascade="all, delete-orphan")
     incidental_findings = db.relationship('IncidentalFinding')
     scan_comments = db.relationship('ScanChecklist')
     timepoint_comments = db.relationship('TimepointComment')
@@ -1522,7 +1523,7 @@ class StudyUser(db.Model):
     user_id = db.Column('user_id', db.Integer, db.ForeignKey('users.id'),
             nullable=False, primary_key=True)
     site = db.Column('site_only', db.String(32), db.ForeignKey('sites.name'),
-            primary_key=True)
+            nullable=True)
     is_admin = db.Column('is_admin', db.Boolean, default=False)
     primary_contact = db.Column('primary_contact', db.Boolean, default=False)
     kimel_contact = db.Column('kimel_contact', db.Boolean, default=False)
@@ -1532,10 +1533,20 @@ class StudyUser(db.Model):
     study = db.relationship('Study', back_populates='users')
     user = db.relationship('User', back_populates='studies')
 
-    def __init__(self, study_id, user_id, admin=False, is_primary_contact=False,
-            is_kimel_contact=False, is_study_RA=False, does_qc=False):
+    # Needed for the partial unique index to work correctly
+    __table_args__ = (Index('study_users_study_user_site_unique_key',
+                            study_id,
+                            user_id,
+                            site,
+                            unique=True,
+                            postgresql_where=(site != None)),)
+
+    def __init__(self, study_id, user_id, site=None, admin=False,
+                 is_primary_contact=False, is_kimel_contact=False,
+                 is_study_RA=False, does_qc=False):
         self.study_id = study_id
         self.user_id = user_id
+        self.site = site
         self.is_admin = admin
         self.primary_contact = is_primary_contact
         self.kimel_contact = is_kimel_contact
