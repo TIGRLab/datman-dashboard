@@ -33,8 +33,7 @@ from .forms import SelectMetricsForm, StudyOverviewForm, \
         TimepointCommentsForm, NewIssueForm, AccessRequestForm, \
         SliceTimingForm
 from .view_utils import get_user_form, report_form_errors, get_timepoint, \
-        get_session, get_scan, handle_issue, get_redcap_record, \
-        get_admin_user_form
+        get_session, get_scan, handle_issue, get_redcap_record
 from .emails import incidental_finding_email
 
 logger = logging.getLogger(__name__)
@@ -172,6 +171,8 @@ def user(user_id=None):
 
         updated_user = User.query.get(submitted_id)
 
+
+
         if form.update_access.data:
             # Give user access to a new study
             updated_user.add_studies(form.add_access.data)
@@ -182,10 +183,11 @@ def user(user_id=None):
             # Update user info
             form.populate_obj(updated_user)
 
+
         removed_studies = [sf.study_id.data for sf in form.studies
                 if sf.revoke_access.data]
-        for study_id in removed_studies:
-            updated_user.remove_studies(study_id)
+        if removed_studies:
+            updated_user.remove_studies(removed_studies)
 
         updated_user.save_changes()
 
