@@ -171,6 +171,8 @@ def user(user_id=None):
 
         updated_user = User.query.get(submitted_id)
 
+
+
         if form.update_access.data:
             # Give user access to a new study
             updated_user.add_studies(form.add_access.data)
@@ -181,10 +183,11 @@ def user(user_id=None):
             # Update user info
             form.populate_obj(updated_user)
 
+
         removed_studies = [sf.study_id.data for sf in form.studies
                 if sf.revoke_access.data]
-        for study_id in removed_studies:
-            updated_user.remove_studies(study_id)
+        if removed_studies:
+            updated_user.remove_studies(removed_studies)
 
         updated_user.save_changes()
 
