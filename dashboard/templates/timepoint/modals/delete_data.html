@@ -11,7 +11,11 @@
         <p><span style="color: red;"><strong>WARNING: </strong></span>
           <span id="delete-message"></span>
           <div style="text-align: center;">Continue?</div>
-        <form id="deleteOptions" action="#" method="post">
+        <form id="delete-options" action="#" method="post" style="display: none;">
+          <br>
+          <strong>Choose items to delete</strong>
+          <br>
+          <br>
           {{ delete_form.hidden_tag() }}
           <div class="form-group">
             {{ delete_form.database_records(checked=True) }}
@@ -21,17 +25,22 @@
             {{ delete_form.raw_data(checked=True) }}
             {{ delete_form.raw_data.label }}
           </div>
-          <div id="pipelineOption" class="form-group">
+          <div id="pipeline-option" class="form-group">
             {{ delete_form.pipeline_data(checked=True) }}
             {{ delete_form.pipeline_data.label }}
           </div>
         </form>
       </div>
       <div class="modal-footer">
-        <a type="button" id="delete-submit" class="btn btn-primary pull-left"
-            onclick="document.getElementById('deleteOptions').submit();">
-          Delete
-        </a>
+        <span class="btn-group pull-left">
+          <a type="button" id="delete-submit" class="btn btn-primary"
+              onclick="document.getElementById('delete-options').submit();">
+            Delete
+          </a>
+          <button type="button" id="delete-options-button" class="btn btn-default">
+            Options
+          </button>
+        </span>
         <button type="button" class="btn btn-default" data-dismiss="modal">
           Cancel
         </button>
@@ -45,10 +54,10 @@
 function updateDeleteModal(session_num, scan_id, scan_name, scan_children) {
   var name = "{{ timepoint.name }}";
   var warningBox = $("#delete-message");
-  var deleteForm = $("#deleteOptions");
+  var deleteForm = $("#delete-options");
 
   // Reset to defaults every time the modal is opened
-  var checkboxes = $("#deleteOptions input[type=checkbox]")
+  var checkboxes = $("#delete-options input[type=checkbox]")
   for (var i = 0; i < checkboxes.length; i++) {
     checkboxes[i].checked = true;
   }
@@ -65,9 +74,9 @@ function updateDeleteModal(session_num, scan_id, scan_name, scan_children) {
     // since we dont have a way to track which outputs are linked with
     // which scans
     $("#pipeline_data")[0].checked = false;
-    $("#pipelineOption").hide();
+    $("#pipeline-option").hide();
   } else {
-    $("#pipelineOption").show();
+    $("#pipeline-option").show();
   }
 }
 
@@ -87,6 +96,10 @@ $('.delete-scan').on('click', function() {
   var name = this.getAttribute('data-scan-name');
   var children = this.getAttribute('data-links');
   updateDeleteModal(session, scan, name, children);
+});
+
+$("#delete-options-button").on("click", function() {
+  $("#delete-options").toggle();
 });
 
 function getModalChanges(session_num, scan_id, scan_name, scan_children) {
