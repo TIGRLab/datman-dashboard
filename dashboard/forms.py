@@ -206,6 +206,10 @@ class TimepointCommentsForm(FlaskForm):
                     'placeholder': 'Add new comment'})
     submit = SubmitField('Submit')
 
+class DataDeletionForm(FlaskForm):
+    raw_data = BooleanField(u'Raw Data')
+    pipeline_data = BooleanField(u'Pipeline Outputs')
+    database_records = BooleanField(u'Database Records')
 
 class NewIssueForm(FlaskForm):
     title = TextField(u"Title: ", validators=[DataRequired()],

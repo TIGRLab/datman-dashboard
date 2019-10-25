@@ -12,10 +12,25 @@
           <span id="delete-message"></span>
           <div style="text-align: center;">Continue?</div>
         </p>
+        <form id="deleteOptions" action="#" method="post">
+          {{ delete_form.hidden_tag() }}
+          <div class="form-group">
+            {{ delete_form.database_records(checked=True) }}
+            {{ delete_form.database_records.label }}
+          </div>
+          <div class="form-group">
+            {{ delete_form.raw_data(checked=True) }}
+            {{ delete_form.raw_data.label }}
+          </div>
+          <div id="pipelineOption" class="form-group">
+            {{ delete_form.pipeline_data(checked=True) }}
+            {{ delete_form.pipeline_data.label }}
+          </div>
+        </form>
       </div>
       <div class="modal-footer">
         <a type="button" id="delete-submit" class="btn btn-primary pull-left"
-            href="#">
+            onclick="document.getElementById('deleteOptions').submit();">
           Delete
         </a>
         <button type="button" class="btn btn-default" data-dismiss="modal">
@@ -31,7 +46,14 @@
 function updateDeleteModal(session_num, scan_id, scan_name, scan_children) {
   var name = "{{ timepoint.name }}";
   var warningBox = $("#delete-message");
-  var submitButton = $("#delete-submit");
+  var deleteForm = $("#deleteOptions");
+
+  // Reset to defaults every time the modal is opened
+  var checkboxes = $("#deleteOptions input[type=checkbox]")
+  for (var i = 0; i < checkboxes.length; i++) {
+    checkboxes[i].checked = true;
+  }
+
   if (session_num && scan_id) {
     var message = "Scan '" + scan_name + "' will be deleted. Any metrics " +
         "associated with it will also be deleted. If data is left on the " +
@@ -62,8 +84,18 @@ function updateDeleteModal(session_num, scan_id, scan_name, scan_children) {
       "later, but any associated comments will disappear forever.";
     var destURL = "{{ url_for('delete_timepoint', study_id=study_id, timepoint_id=timepoint.name)}}";
   }
+
   warningBox.html(message);
-  submitButton.attr("href", destURL);
+  deleteForm.attr("action", destURL);
+  if (scan_id) {
+    // We only want to offer pipeline output cleanup at the timepoint/session level
+    // since we dont have a way to track which outputs are linked with
+    // which scans
+    $("#pipeline_data")[0].checked = false;
+    $("#pipelineOption").hide();
+  } else {
+    $("#pipelineOption").show();
+  }
 }
 
 // Set up listeners on the buttons that use this modal
