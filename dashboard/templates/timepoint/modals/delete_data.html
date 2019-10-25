@@ -52,15 +52,16 @@
 <script type="text/javascript">
 
 function updateDeleteModal(session_num, scan_id, scan_name, scan_children) {
-  var name = "{{ timepoint.name }}";
   var warningBox = $("#delete-message");
   var deleteForm = $("#delete-options");
 
-  // Reset to defaults every time the modal is opened
+  // Reset form every time the modal is opened so repeat openings on the
+  // same page dont interfere with each other
   var checkboxes = $("#delete-options input[type=checkbox]")
   for (var i = 0; i < checkboxes.length; i++) {
     checkboxes[i].checked = true;
   }
+  deleteForm.hide();
 
   var currentModal = getModalChanges(session_num, scan_id, scan_name,
                                      scan_children);
@@ -103,14 +104,16 @@ $("#delete-options-button").on("click", function() {
 });
 
 function getModalChanges(session_num, scan_id, scan_name, scan_children) {
+  var name = "{{ timepoint.name }}";
+
   if (session_num && scan_id) {
     var message = "Scan '" + scan_name + "' will be deleted. Any metrics " +
-        "associated with it will also be deleted. If data is left on the " +
-        "filesystem it will regenerate but any related comments or QC status " +
-        "will be lost forever.";
+        "associated with it will also be deleted. Any related comments or QC " +
+        "status will be lost forever.";
     if (scan_children) {
-      message = message + "<br><br>This scan data is linked under other names. If " +
-        "deleted, the following scans entries will also be removed:<br><br>" +
+      message = message + "<br><br>This scan data is linked under other " +
+        "names. If deleted, the following scan entries and filesystem links " +
+        "will also be removed:<br><br>" +
         "<div style='text-align:center;'>" + scan_children + "</div><br><br>";
     }
     // Done manually for same reason as below
@@ -118,9 +121,7 @@ function getModalChanges(session_num, scan_id, scan_name, scan_children) {
   }else if (session_num) {
     var message = "Session " + session_num + " from " + name +
       " will be deleted and everything associated with it will be purged " +
-      "from the database (i.e. all scans, blacklist comments, metrics, etc.). " +
-      "Everything except comments will be regenerated if the data is left on " +
-      "the filesystem.";
+      "from the database and filesystem.";
     // Session_num is appended manually because the value of the variable isnt
     // known until run time when a button is clicked. By this point the template
     // has already been rendered.
@@ -128,9 +129,8 @@ function getModalChanges(session_num, scan_id, scan_name, scan_children) {
         session_num;
   } else {
     var message = name + " will be deleted. " +
-      "Everything associated with this ID will be purged from the database. " +
-      "If the original data is left on the filesystem it will be re-added " +
-      "later, but any associated comments will disappear forever.";
+      "Everything associated with this ID will be purged from the database " +
+      "and file system. Any associated comments and QC will disappear forever.";
     var destURL = "{{ url_for('delete_timepoint', study_id=study_id, timepoint_id=timepoint.name)}}";
   }
 
