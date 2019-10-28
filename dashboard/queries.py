@@ -2,7 +2,6 @@
 Database queries used by the app
 """
 import logging
-import utils
 
 from sqlalchemy import and_, func
 

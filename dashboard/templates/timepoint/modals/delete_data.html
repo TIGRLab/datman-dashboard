@@ -70,8 +70,8 @@ function updateDeleteModal(session_num, scan_id, scan_name, scan_children) {
 
   warningBox.html(message);
   deleteForm.attr("action", destURL);
-  if (scan_id) {
-    // We only want to offer pipeline output cleanup at the timepoint/session level
+  if (session_num || scan_id) {
+    // We only want to offer pipeline output cleanup at the timepoint level
     // since we dont have a way to track which outputs are linked with
     // which scans
     $("#pipeline_data")[0].checked = false;
