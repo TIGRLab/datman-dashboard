@@ -208,7 +208,6 @@ class TimepointCommentsForm(FlaskForm):
 
 class DataDeletionForm(FlaskForm):
     raw_data = BooleanField(u'Raw Data')
-    pipeline_data = BooleanField(u'Pipeline Outputs')
     database_records = BooleanField(u'Database Records')
 
 class NewIssueForm(FlaskForm):

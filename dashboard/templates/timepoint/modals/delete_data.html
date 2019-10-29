@@ -25,10 +25,6 @@
             {{ delete_form.raw_data(checked=True) }}
             {{ delete_form.raw_data.label }}
           </div>
-          <div id="pipeline-option" class="form-group">
-            {{ delete_form.pipeline_data(checked=True) }}
-            {{ delete_form.pipeline_data.label }}
-          </div>
         </form>
       </div>
       <div class="modal-footer">
@@ -70,15 +66,6 @@ function updateDeleteModal(session_num, scan_id, scan_name, scan_children) {
 
   warningBox.html(message);
   deleteForm.attr("action", destURL);
-  if (session_num || scan_id) {
-    // We only want to offer pipeline output cleanup at the timepoint level
-    // since we dont have a way to track which outputs are linked with
-    // which scans
-    $("#pipeline_data")[0].checked = false;
-    $("#pipeline-option").hide();
-  } else {
-    $("#pipeline-option").show();
-  }
 }
 
 // Set up listeners on the buttons that use this modal
@@ -107,9 +94,8 @@ function getModalChanges(session_num, scan_id, scan_name, scan_children) {
   var name = "{{ timepoint.name }}";
 
   if (session_num && scan_id) {
-    var message = "Scan '" + scan_name + "' will be deleted. Any metrics " +
-        "associated with it will also be deleted. Any related comments or QC " +
-        "status will be lost forever.";
+    var message = "Scan '" + scan_name + "' will be deleted. Any related " +
+        "comments or QC status will be lost forever.";
     if (scan_children) {
       message = message + "<br><br>This scan data is linked under other " +
         "names. If deleted, the following scan entries and filesystem links " +
