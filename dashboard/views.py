@@ -402,6 +402,7 @@ def flag_finding(study_id, timepoint_id):
         flash("Report submitted.")
     return redirect(dest_URL)
 
+
 @app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' +
            '/delete', methods=['POST'])
 @study_admin_required
@@ -432,7 +433,7 @@ def delete_timepoint(study_id, timepoint_id):
 def delete_session(study_id, timepoint_id, session_num):
     timepoint = get_timepoint(study_id, timepoint_id, current_user)
     dest_URL = url_for('timepoint', study_id=study_id,
-            timepoint_id=timepoint_id)
+                       timepoint_id=timepoint_id)
     session = get_session(timepoint, session_num, dest_URL)
 
     form = DataDeletionForm()
@@ -455,14 +456,15 @@ def delete_session(study_id, timepoint_id, session_num):
 
 # The route without a scanid never actually receives requests but is
 # needed for the url_for call to work when scan id wont be known until later
-@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
-        '/delete_scan/', methods=['POST'])
-@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
-        '/delete_scan/<int:scan_id>', methods=['POST'])
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>'
+           '/delete_scan/', methods=['POST'])
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>'
+           '/delete_scan/<int:scan_id>', methods=['POST'])
 @study_admin_required
 @login_required
 def delete_scan(study_id, timepoint_id, scan_id):
-    dest_URL = url_for('timepoint', study_id=study_id, timepoint_id=timepoint_id)
+    dest_URL = url_for('timepoint', study_id=study_id,
+                       timepoint_id=timepoint_id)
     scan = get_scan(scan_id, study_id, current_user, dest_URL)
 
     form = DataDeletionForm()
