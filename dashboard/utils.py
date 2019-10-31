@@ -186,15 +186,14 @@ def delete_session(session):
         return
 
     for scan in session.scans:
-        delete_bids(config, timepoint.bids_name, timepoint.bids_session,
-                    files=scan)
+        delete_bids(config, timepoint.bids_name, timepoint.bids_session, scan)
 
 
 def delete_scan(scan):
-    config = datman.config.config(study=scan.timepoint.get_study().id)
+    config = datman.config.config(study=scan.get_study().id)
 
     for path_key in ['dcm', 'nii', 'mnc', 'nrrd', 'jsons']:
-        delete(config, path_key, folder=str(scan.timepoint) files=[scan.name])
+        delete(config, path_key, folder=str(scan.timepoint), files=[scan.name])
 
     if not scan.bids_name:
         return
@@ -220,7 +219,7 @@ def delete_timepoint(timepoint):
 
 
 def delete(config, key, folder=None, files=None):
-    if not isinstance(files, list):
+    if files and not isinstance(files, list):
         files = [files]
 
     try:
@@ -241,7 +240,7 @@ def delete(config, key, folder=None, files=None):
     for item in files:
         matches = glob.glob(os.path.join(path, item + "*"))
         for match in matches:
-            print("Deleting {}".format(full_path))
+            print("Deleting {}".format(match))
 
     if not os.listdir(path):
         print("Deleting empty directory {}".format(path))
@@ -262,11 +261,15 @@ def delete_bids(config, subject, session, scan=None):
             print("Deleting {}".format(bids_folder))
         return
 
+    if not scan.bids_name:
+        return
+
     bids_file = datman.scanid.parse_bids_filename(scan.bids_name)
-    for path, _, files in os.walk(bids_file):
+    for path, _, files in os.walk(bids_folder):
         for item in files:
             if bids_file == item:
-                print("Deleting {}".format(item))
+                full_path = os.path.join(path, item)
+                print("Deleting {}".format(full_path))
 
     if not os.listdir(bids_folder):
         print("Deleting empty directory {}".format(bids_folder))
