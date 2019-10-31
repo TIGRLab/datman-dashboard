@@ -235,7 +235,7 @@ def delete(config, key, folder=None, files=None):
 
     try:
         path = config.get_path(key)
-    except Exception as e:
+    except Exception:
         return
 
     if folder:
@@ -260,7 +260,7 @@ def delete(config, key, folder=None, files=None):
 def delete_bids(config, subject, session, scan=None):
     try:
         bids = config.get_path('bids')
-    except Exception as e:
+    except Exception:
         return
 
     bids_folder = os.path.join(bids,
