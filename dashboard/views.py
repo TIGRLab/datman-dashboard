@@ -30,10 +30,10 @@ from .models import Study, Site, Session, Scantype, Scan, User, \
 from .forms import SelectMetricsForm, StudyOverviewForm, \
         ScanChecklistForm, UserForm, AnalysisForm, \
         UserAdminForm, EmptySessionForm, IncidentalFindingsForm, \
-        TimepointCommentsForm, NewIssueForm, AccessRequestForm
+        TimepointCommentsForm, NewIssueForm, AccessRequestForm, \
+        SliceTimingForm, DataDeletionForm
 from .view_utils import get_user_form, report_form_errors, get_timepoint, \
-        get_session, get_scan, handle_issue, get_redcap_record, \
-        get_admin_user_form
+        get_session, get_scan, handle_issue, get_redcap_record
 from .emails import incidental_finding_email
 
 logger = logging.getLogger(__name__)
@@ -171,6 +171,8 @@ def user(user_id=None):
 
         updated_user = User.query.get(submitted_id)
 
+
+
         if form.update_access.data:
             # Give user access to a new study
             updated_user.add_studies(form.add_access.data)
@@ -181,10 +183,11 @@ def user(user_id=None):
             # Update user info
             form.populate_obj(updated_user)
 
+
         removed_studies = [sf.study_id.data for sf in form.studies
                 if sf.revoke_access.data]
-        for study_id in removed_studies:
-            updated_user.remove_studies(study_id)
+        if removed_studies:
+            updated_user.remove_studies(removed_studies)
 
         updated_user.save_changes()
 
@@ -319,6 +322,7 @@ def timepoint(study_id, timepoint_id):
     findings_form = IncidentalFindingsForm()
     comments_form = TimepointCommentsForm()
     new_issue_form = NewIssueForm()
+    delete_form = DataDeletionForm()
     new_issue_form.title.data = timepoint.name + " - "
     return render_template('timepoint/main.html',
             study_id=study_id,
@@ -327,7 +331,8 @@ def timepoint(study_id, timepoint_id):
             incidental_findings_form=findings_form,
             timepoint_comments_form=comments_form,
             issues=github_issues,
-            issue_form=new_issue_form)
+            issue_form=new_issue_form,
+            delete_form=delete_form)
 
 @app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
         '/sign_off/<int:session_num>', methods=['GET', 'POST'])
@@ -397,18 +402,39 @@ def flag_finding(study_id, timepoint_id):
         flash("Report submitted.")
     return redirect(dest_URL)
 
-@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
-        '/delete', methods=['GET'])
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' +
+           '/delete', methods=['POST'])
 @study_admin_required
 @login_required
 def delete_timepoint(study_id, timepoint_id):
     timepoint = get_timepoint(study_id, timepoint_id, current_user)
-    timepoint.delete()
-    flash("{} has been deleted.".format(timepoint))
-    return redirect(url_for('study', study_id=study_id))
 
-@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
-        '/delete_session/<int:session_num>', methods=['GET'])
+    form = DataDeletionForm()
+    if not form.validate_on_submit():
+        flash("Deletion failed. Please contact an administrator")
+        return redirect(url_for('timepoint', study_id=study_id,
+                                timepoint_id=timepoint_id))
+
+    flash("Received form with {} {} {}".format(form.database_records.data,
+            form.raw_data.data, form.pipeline_data.data))
+
+    if form.raw_data.data:
+        flash("Deleting raw data")
+
+    if form.pipeline_data.data:
+        flash("Deleting pipeline data")
+
+    if form.database_records.data:
+        flash("Deleting database records")
+
+    # timepoint.delete()
+    flash("{} has been deleted.".format(timepoint))
+    # return redirect(url_for('study', study_id=study_id))
+    return redirect(url_for('timepoint', study_id=study_id,
+                            timepoint_id=timepoint_id))
+
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' +
+           '/delete_session/<int:session_num>', methods=['POST'])
 @study_admin_required
 @login_required
 def delete_session(study_id, timepoint_id, session_num):
@@ -416,7 +442,7 @@ def delete_session(study_id, timepoint_id, session_num):
     dest_URL = url_for('timepoint', study_id=study_id,
             timepoint_id=timepoint_id)
     session = get_session(timepoint, session_num, dest_URL)
-    session.delete()
+    # session.delete()
     flash("{} has been deleted.".format(session))
     return redirect(dest_URL)
 
@@ -478,16 +504,25 @@ def create_issue(study_id, timepoint_id):
 
     return redirect(dest_URL)
 
+# The route without a scanid never actually receives requests but is
+# needed for the url_for call to work when scan id wont be known until later
 @app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
-        '/delete_scan/', methods=['GET'])
+        '/delete_scan/', methods=['POST'])
 @app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
-        '/delete_scan/<int:scan_id>', methods=['GET'])
+        '/delete_scan/<int:scan_id>', methods=['POST'])
 @study_admin_required
 @login_required
 def delete_scan(study_id, timepoint_id, scan_id):
     dest_URL = url_for('timepoint', study_id=study_id, timepoint_id=timepoint_id)
     scan = get_scan(scan_id, study_id, current_user, dest_URL)
-    scan.delete()
+
+    form = DataDeletionForm()
+    if not form.validate_on_submit():
+        flash("Deletion failed. Please contact an admin")
+        return
+    flash("{} {} {}".format(form.raw_data.data, form.database_records.data,
+          form.pipeline_data.data))
+    # scan.delete()
     return redirect(dest_URL)
 
 ############## End of Timepoint View functions #################################
@@ -541,10 +576,59 @@ def scan(study_id, scan_id):
     scan = get_scan(scan_id, study_id, current_user, fail_url=url_for('study',
             study_id=study_id))
     checklist_form = ScanChecklistForm(obj=scan.get_checklist_entry())
-    name = os.path.basename(utils.get_nifti_path(scan))
+    slice_timing_form = SliceTimingForm()
     return render_template('scan/main.html', scan=scan, study_id=study_id,
-            checklist_form=checklist_form, nifti_name=name)
+            checklist_form=checklist_form, slice_timing_form=slice_timing_form)
 
+@app.route('/study/<string:study_id>/papaya/<int:scan_id>', methods=['GET'])
+@login_required
+def papaya(study_id, scan_id):
+    scan = get_scan(scan_id, study_id, current_user, fail_url=url_for('study',
+            study_id=study_id))
+    name = os.path.basename(utils.get_nifti_path(scan))
+    return render_template('scan/viewer.html', study_id=study_id, scan_id=scan_id, nifti_name=name)
+
+@app.route('/study/<string:study_id>/slice-timing/<int:scan_id>',
+           methods=['POST'])
+@app.route('/study/<string:study_id>/slice-timing/<int:scan_id>/auto/<auto>',
+           methods=['GET'])
+@app.route('/study/<string:study_id>/slice-timing/<int:scan_id>/delete/<delete>')
+@login_required
+def fix_slice_timing(study_id, scan_id, auto=False, delete=False):
+    dest_url = url_for('scan', study_id=study_id, scan_id=scan_id)
+
+    scan = get_scan(scan_id, study_id, current_user)
+    # Need a new dictionary to get the changes to actually save
+    new_json = dict(scan.json_contents)
+
+    if auto:
+        new_json["SliceTiming"] = scan.get_header_diffs()["SliceTiming"]["expected"]
+    elif delete:
+        del new_json["SliceTiming"]
+    else:
+        timing_form = SliceTimingForm()
+        if not timing_form.validate_on_submit():
+            flash("Failed to update slice timings")
+            return redirect(dest_url)
+
+        new_timings = timing_form.timings.data
+        new_timings = new_timings.replace("[", "").replace("]", "")
+        new_json["SliceTiming"] = [float(item.strip())
+                                   for item in new_timings.split(",")]
+
+    try:
+        utils.update_json(scan, new_json)
+    except Exception as e:
+        logger.error("Failed updating slice timings for scan {}. Reason {} "
+                "{}".format(scan_id, type(e).__name__, e))
+        flash("Failed during slice timing update. Please contact an admin for "
+                "help")
+        return redirect(dest_url)
+
+    utils.update_header_diffs(scan)
+    flash("Update successful")
+
+    return redirect(dest_url)
 
 @app.route('/study/<string:study_id>/scan/<int:scan_id>/review',
         methods=['GET', 'POST'])
@@ -932,12 +1016,12 @@ def oauth_callback(provider):
         avatar_url = None
 
     user = User.query.filter_by(_username=username).first()
-    user.update_avatar(avatar_url)
 
     if not user:
         flash("No account found. Please submit a request for an account.")
         return redirect(url_for('new_account'))
 
+    user.update_avatar(avatar_url)
     login_user(user, remember=True)
     # Token is needed for access to github issues
     flask_session['active_token'] = access_token
@@ -1029,6 +1113,12 @@ def static_qc_page(study_id, timepoint_id=None, image=None, tech_notes_path=None
 def load_scan(study_id, scan_id, file_name):
     scan = get_scan(scan_id, study_id, current_user, fail_url=prev_url())
     full_path = utils.get_nifti_path(scan)
-    return send_file(full_path, as_attachment=True,
+    try:
+        result = send_file(full_path, as_attachment=True,
             attachment_filename=file_name,
             mimetype="application/gzip")
+    except IOError as e:
+        logger.error("Couldnt find file {} to load scan view for user "
+                "{}".format(full_path, current_user))
+        result = not_found_error(e)
+    return result

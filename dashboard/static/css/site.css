@@ -111,13 +111,6 @@ thead {
   color: var(--bootstrap-danger);
 }
 
-#viewer-container {
-  /* Needs extra space for the buttons that appear above the papaya viewer */
-  padding-top: 30px;
-  padding-bottom: 10px;
-  /* margin: 20px 0px; */
-}
-
 .well {
   margin-bottom: 10px;
 }
@@ -306,6 +299,27 @@ thead {
 .timepoint-comment {
   width: 100% !important;
   margin-bottom: 5px;
+}
+
+/* labels in CAMH colours */
+.label-theme-main {
+  background-color: var(--theme-main);
+}
+
+.label-theme-dark {
+  background-color: var(--theme-dark);
+}
+
+.label-theme-light {
+  background-color: var(--theme-light);
+}
+
+.label-alt-theme-main {
+  background-color: var(--alt-theme-main);
+}
+
+.label-alt-theme-light {
+  background-color: var(--alt-theme-light);
 }
 
 /* Style badge on 'new-qc' labels */
@@ -502,8 +516,8 @@ thead {
 ***********************************************/
 #papaya-nav {
   position: absolute;
-  top: 80%;
-  left: 2.5%;
+  padding-top: 200px;
+  left: 30%;
   width: 160px;
   height: 208px;
   display: block;

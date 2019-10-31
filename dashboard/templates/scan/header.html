@@ -1,6 +1,9 @@
 <div class="jumbotron">
   <h1>{{ scan.name }}</h1>
   <p class="lead">
+    {% if scan.bids_name %}
+      BIDS: {{ scan.bids_name }}<br>
+    {% endif %}
     {% if scan.session.is_phantom %}
       Phantom Data
     {% else %}
