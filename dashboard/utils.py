@@ -1,16 +1,21 @@
 """Location for utility functions"""
-import logging
+
 import os
+import glob
+import logging
 
 from github import Github
 
 from dashboard import GITHUB_OWNER, GITHUB_REPO
 import datman.config
+import datman.scanid
 
 logger = logging.getLogger(__name__)
 
+
 class TimeoutError(Exception):
     pass
+
 
 def search_issues(token, timepoint):
     search_string = "{} repo:{}/{}".format(timepoint, GITHUB_OWNER, GITHUB_REPO)
@@ -20,6 +25,7 @@ def search_issues(token, timepoint):
         return None
     result = sorted(issues, key=lambda x: x.created_at)
     return result
+
 
 def get_issue(token, issue_num=None):
     if not issue_num:
@@ -31,6 +37,7 @@ def get_issue(token, issue_num=None):
         logger.error("Can't retrieve issue {}. Reason: {}".format(issue_num, e))
         issue = None
     return issue
+
 
 def create_issue(token, title, body, assign=None):
     try:
@@ -47,12 +54,14 @@ def create_issue(token, title, body, assign=None):
                 e))
     return issue
 
+
 def get_issues_repo(token):
     try:
         repo = Github(token).get_user(GITHUB_OWNER).get_repo(GITHUB_REPO)
     except Exception as e:
         raise Exception("Can't retrieve github issues repo. {}".format(e))
     return repo
+
 
 def get_study_path(study, folder=None):
     """
@@ -78,6 +87,7 @@ def get_study_path(study, folder=None):
         path = None
     return path
 
+
 def get_nifti_path(scan):
     study = scan.get_study().id
     nii_folder = get_study_path(study, folder='nii')
@@ -88,3 +98,104 @@ def get_nifti_path(scan):
         full_path = full_path.replace(".nii.gz", ".nii")
 
     return full_path
+
+
+def delete_session(session):
+    config = datman.config.config(study=session.get_study().id)
+
+    files = [scan.name for scan in session.scans]
+    for path_key in ['dcm', 'nii', 'mnc', 'nrrd', 'jsons']:
+        delete(config, path_key, folder=str(session.timepoint), files=files)
+
+    delete(config, 'dicom', files=['{}.zip'.format(str(session))])
+    delete(config, 'resources', folder=str(session))
+
+    timepoint = session.timepoint
+    if not timepoint.bids_name:
+        return
+
+    for scan in session.scans:
+        delete_bids(config, timepoint.bids_name, timepoint.bids_session,
+                    files=scan)
+
+
+def delete_scan(scan):
+    config = datman.config.config(study=scan.timepoint.get_study().id)
+
+    for path_key in ['dcm', 'nii', 'mnc', 'nrrd', 'jsons']:
+        delete(config, path_key, folder=str(scan.timepoint) files=[scan.name])
+
+    if not scan.bids_name:
+        return
+
+    timepoint = scan.session.timepoint
+    delete_bids(config, timepoint.bids_name, timepoint.bids_session, scan)
+
+
+def delete_timepoint(timepoint):
+    config = datman.config.config(study=timepoint.get_study().id)
+
+    for path_key in ['dcm', 'nii', 'mnc', 'nrrd', 'jsons', 'qc']:
+        delete(config, path_key, folder=str(timepoint))
+
+    for num in timepoint.sessions:
+        delete(config, 'dicom', folder=str(timepoint.sessions[num]))
+        delete(config, 'resources', folder=str(timepoint.sessions[num]))
+
+    if not timepoint.bids_name:
+        return
+
+    delete_bids(config, timepoint.bids_name, timepoint.bids_session)
+
+
+def delete(config, key, folder=None, files=None):
+    if not isinstance(files, list):
+        files = [files]
+
+    try:
+        path = config.get_path(key)
+    except:
+        return
+
+    if folder:
+        path = os.path.join(path, folder)
+
+    if not os.path.exists(path):
+        return
+
+    if not files:
+        print("Deleting {}".format(path))
+        return
+
+    for item in files:
+        matches = glob.glob(os.path.join(path, item + "*"))
+        for match in matches:
+            print("Deleting {}".format(full_path))
+
+    if not os.listdir(path):
+        print("Deleting empty directory {}".format(path))
+
+
+def delete_bids(config, subject, session, scan=None):
+    try:
+        bids = config.get_path('bids')
+    except:
+        return
+
+    bids_folder = os.path.join(bids,
+                               'sub-{}'.format(subject),
+                               'ses-{}'.format(session))
+
+    if not scan:
+        if os.path.exists(bids_folder):
+            print("Deleting {}".format(bids_folder))
+        return
+
+    bids_file = datman.scanid.parse_bids_filename(scan.bids_name)
+    for path, _, files in os.walk(bids_file):
+        for item in files:
+            if bids_file == item:
+                print("Deleting {}".format(item))
+
+    if not os.listdir(bids_folder):
+        print("Deleting empty directory {}".format(bids_folder))
