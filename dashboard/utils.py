@@ -4,6 +4,7 @@ import json
 import time
 import glob
 import logging
+from threading import Thread
 
 from github import Github
 
@@ -16,6 +17,13 @@ logger = logging.getLogger(__name__)
 
 class TimeoutError(Exception):
     pass
+
+
+def async_exec(f):
+    def wrapper(*args, **kwargs):
+        thr = Thread(target=f, args=args, kwargs=kwargs)
+        thr.start()
+    return wrapper
 
 
 def search_issues(token, timepoint):
@@ -171,6 +179,7 @@ def update_header_diffs(scan):
                              bvals=check_bvals)
 
 
+@async_exec
 def delete_session(session):
     config = datman.config.config(study=session.get_study().id)
 
@@ -189,6 +198,7 @@ def delete_session(session):
         delete_bids(config, timepoint.bids_name, timepoint.bids_session, scan)
 
 
+@async_exec
 def delete_scan(scan):
     config = datman.config.config(study=scan.get_study().id)
 
@@ -202,6 +212,7 @@ def delete_scan(scan):
     delete_bids(config, timepoint.bids_name, timepoint.bids_session, scan)
 
 
+@async_exec
 def delete_timepoint(timepoint):
     config = datman.config.config(study=timepoint.get_study().id)
 
