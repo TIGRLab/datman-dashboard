@@ -3,6 +3,7 @@ import os
 import json
 import time
 import glob
+import shutil
 import logging
 from threading import Thread
 
@@ -17,13 +18,6 @@ logger = logging.getLogger(__name__)
 
 class TimeoutError(Exception):
     pass
-
-
-def async_exec(f):
-    def wrapper(*args, **kwargs):
-        thr = Thread(target=f, args=args, kwargs=kwargs)
-        thr.start()
-    return wrapper
 
 
 def search_issues(token, timepoint):
@@ -179,7 +173,6 @@ def update_header_diffs(scan):
                              bvals=check_bvals)
 
 
-@async_exec
 def delete_session(session):
     config = datman.config.config(study=session.get_study().id)
 
@@ -198,7 +191,6 @@ def delete_session(session):
         delete_bids(config, timepoint.bids_name, timepoint.bids_session, scan)
 
 
-@async_exec
 def delete_scan(scan):
     config = datman.config.config(study=scan.get_study().id)
 
@@ -212,7 +204,6 @@ def delete_scan(scan):
     delete_bids(config, timepoint.bids_name, timepoint.bids_session, scan)
 
 
-@async_exec
 def delete_timepoint(timepoint):
     config = datman.config.config(study=timepoint.get_study().id)
 
@@ -220,7 +211,8 @@ def delete_timepoint(timepoint):
         delete(config, path_key, folder=str(timepoint))
 
     for num in timepoint.sessions:
-        delete(config, 'dicom', folder=str(timepoint.sessions[num]))
+        delete(config, 'dicom',
+               files=['{}.zip'.format(str(timepoint.sessions[num]))])
         delete(config, 'resources', folder=str(timepoint.sessions[num]))
 
     if not timepoint.bids_name:
@@ -245,16 +237,16 @@ def delete(config, key, folder=None, files=None):
         return
 
     if not files:
-        print("Deleting {}".format(path))
+        shutil.rmtree(path)
         return
 
     for item in files:
         matches = glob.glob(os.path.join(path, item + "*"))
         for match in matches:
-            print("Deleting {}".format(match))
+            os.remove(match)
 
     if not os.listdir(path):
-        print("Deleting empty directory {}".format(path))
+        os.rmdir(path)
 
 
 def delete_bids(config, subject, session, scan=None):
@@ -263,24 +255,35 @@ def delete_bids(config, subject, session, scan=None):
     except Exception:
         return
 
-    bids_folder = os.path.join(bids,
-                               'sub-{}'.format(subject),
-                               'ses-{}'.format(session))
+    subject_folder = os.path.join(bids, 'sub-{}'.format(subject))
+    session_folder = os.path.join(subject_folder, 'ses-{}'.format(session))
 
     if not scan:
-        if os.path.exists(bids_folder):
-            print("Deleting {}".format(bids_folder))
+        if os.path.exists(session_folder):
+            shutil.rmtree(session_folder)
+            if not os.listdir(subject_folder):
+                os.rmdir(subject_folder)
         return
 
     if not scan.bids_name:
         return
 
     bids_file = datman.scanid.parse_bids_filename(scan.bids_name)
-    for path, _, files in os.walk(bids_folder):
+    sub_dirs = []
+    sub_dirs.append(subject_folder)
+    sub_dirs.append(session_folder)
+    for path, dirs, files in os.walk(session_folder):
+        for dir in dirs:
+            sub_dirs.append(os.path.join(path, dir))
+
         for item in files:
             if bids_file == item:
                 full_path = os.path.join(path, item)
-                print("Deleting {}".format(full_path))
+                os.remove(full_path)
 
-    if not os.listdir(bids_folder):
-        print("Deleting empty directory {}".format(bids_folder))
+    # Clean up any folders that may now be empty
+    for dir in reversed(sub_dirs):
+        try:
+            os.rmdir(dir)
+        except OSError:
+            pass
