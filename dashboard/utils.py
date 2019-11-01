@@ -5,7 +5,6 @@ import time
 import glob
 import shutil
 import logging
-from threading import Thread
 
 from github import Github
 

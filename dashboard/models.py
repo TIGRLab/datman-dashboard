@@ -1156,10 +1156,11 @@ class Scan(db.Model):
     scantype = db.relationship('Scantype', uselist=False, back_populates='scans')
     analysis_comments = db.relationship('AnalysisComment', cascade='all, delete')
     metric_values = db.relationship('MetricValue', cascade='all, delete-orphan')
-    header_diffs = db.relationship('ScanGoldStandard',
-                                   cascade='all',
-                                   order_by='desc(ScanGoldStandard.date_added)',
-                                   back_populates='scan')
+    header_diffs = db.relationship(
+                        'ScanGoldStandard',
+                        cascade='all',
+                        order_by='desc(ScanGoldStandard.date_added)',
+                        back_populates='scan')
 
     __table_args__ = (ForeignKeyConstraint(['timepoint', 'session'],
             ['sessions.name', 'sessions.num']),
