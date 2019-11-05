@@ -207,6 +207,11 @@ class TimepointCommentsForm(FlaskForm):
     submit = SubmitField('Submit')
 
 
+class DataDeletionForm(FlaskForm):
+    raw_data = BooleanField(u'Raw Data')
+    database_records = BooleanField(u'Database Records')
+
+
 class NewIssueForm(FlaskForm):
     title = TextField(u"Title: ", validators=[DataRequired()],
             render_kw={'required': True})

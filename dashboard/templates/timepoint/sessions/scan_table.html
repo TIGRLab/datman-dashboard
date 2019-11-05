@@ -1,12 +1,14 @@
 <div class="table-responsive scan-table">
   <table class="ui table">
     <thead>
-      <th class="col-md-1">Series</th>
-      <th class="col-md-1">Tag</th>
-      <th class="col-md-3">Description</th>
-      <th class="col-md-1">Status</th>
-      <th class="col-md-1">Warnings</th>
-      <th class="col-md-5">Comment</th>
+      <tr>
+        <th class="col-md-1">Series</th>
+        <th class="col-md-1">Tag</th>
+        <th class="col-md-3">Description</th>
+        <th class="col-md-1">Status</th>
+        <th class="col-md-1">Warnings</th>
+        <th class="col-md-5">Comment</th>
+      </tr>
     </thead>
     <tbody>
       {% for scan in session.scans %}

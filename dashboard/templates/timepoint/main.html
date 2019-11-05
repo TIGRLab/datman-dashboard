@@ -8,7 +8,8 @@
     <h1>{{ timepoint.name }}</h1>
     <p class="lead">
       {% if timepoint.bids_name %}
-        BIDS: {{ timepoint.bids_name }}<br>
+        BIDS Subject: {{ timepoint.bids_name }}<br>
+        BIDS Session: {{ timepoint.bids_session }}<br>
       {% endif %}
       {% if timepoint.is_phantom %}
         Phantom

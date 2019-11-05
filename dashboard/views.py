@@ -31,7 +31,7 @@ from .forms import SelectMetricsForm, StudyOverviewForm, \
         ScanChecklistForm, UserForm, AnalysisForm, \
         UserAdminForm, EmptySessionForm, IncidentalFindingsForm, \
         TimepointCommentsForm, NewIssueForm, AccessRequestForm, \
-        SliceTimingForm
+        SliceTimingForm, DataDeletionForm
 from .view_utils import get_user_form, report_form_errors, get_timepoint, \
         get_session, get_scan, handle_issue, get_redcap_record
 from .emails import incidental_finding_email
@@ -322,6 +322,7 @@ def timepoint(study_id, timepoint_id):
     findings_form = IncidentalFindingsForm()
     comments_form = TimepointCommentsForm()
     new_issue_form = NewIssueForm()
+    delete_form = DataDeletionForm()
     new_issue_form.title.data = timepoint.name + " - "
     return render_template('timepoint/main.html',
             study_id=study_id,
@@ -330,7 +331,8 @@ def timepoint(study_id, timepoint_id):
             incidental_findings_form=findings_form,
             timepoint_comments_form=comments_form,
             issues=github_issues,
-            issue_form=new_issue_form)
+            issue_form=new_issue_form,
+            delete_form=delete_form)
 
 @app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
         '/sign_off/<int:session_num>', methods=['GET', 'POST'])
@@ -400,28 +402,84 @@ def flag_finding(study_id, timepoint_id):
         flash("Report submitted.")
     return redirect(dest_URL)
 
-@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
-        '/delete', methods=['GET'])
+
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' +
+           '/delete', methods=['POST'])
 @study_admin_required
 @login_required
 def delete_timepoint(study_id, timepoint_id):
     timepoint = get_timepoint(study_id, timepoint_id, current_user)
-    timepoint.delete()
+
+    form = DataDeletionForm()
+    if not form.validate_on_submit():
+        flash("Deletion failed. Please contact an administrator")
+        return redirect(url_for('timepoint', study_id=study_id,
+                                timepoint_id=timepoint_id))
+
+    if form.raw_data.data:
+        utils.delete_timepoint(timepoint)
+
+    if form.database_records.data:
+        timepoint.delete()
+
     flash("{} has been deleted.".format(timepoint))
     return redirect(url_for('study', study_id=study_id))
 
-@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
-        '/delete_session/<int:session_num>', methods=['GET'])
+
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' +
+           '/delete_session/<int:session_num>', methods=['POST'])
 @study_admin_required
 @login_required
 def delete_session(study_id, timepoint_id, session_num):
     timepoint = get_timepoint(study_id, timepoint_id, current_user)
     dest_URL = url_for('timepoint', study_id=study_id,
-            timepoint_id=timepoint_id)
+                       timepoint_id=timepoint_id)
     session = get_session(timepoint, session_num, dest_URL)
-    session.delete()
+
+    form = DataDeletionForm()
+    if not form.validate_on_submit():
+        flash("Deletion failed. Please contact an administrator")
+        return redirect(dest_URL)
+
+    if form.raw_data.data:
+        if len(timepoint.sessions) == 1:
+            utils.delete_timepoint(timepoint)
+        else:
+            utils.delete_session(session)
+
+    if form.database_records.data:
+        session.delete()
+
     flash("{} has been deleted.".format(session))
     return redirect(dest_URL)
+
+
+# The route without a scanid never actually receives requests but is
+# needed for the url_for call to work when scan id wont be known until later
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>'
+           '/delete_scan/', methods=['POST'])
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>'
+           '/delete_scan/<int:scan_id>', methods=['POST'])
+@study_admin_required
+@login_required
+def delete_scan(study_id, timepoint_id, scan_id):
+    dest_URL = url_for('timepoint', study_id=study_id,
+                       timepoint_id=timepoint_id)
+    scan = get_scan(scan_id, study_id, current_user, dest_URL)
+
+    form = DataDeletionForm()
+    if not form.validate_on_submit():
+        flash("Deletion failed. Please contact an admin")
+        return redirect(dest_URL)
+
+    if form.raw_data.data:
+        utils.delete_scan(scan)
+
+    if form.database_records.data:
+        scan.delete()
+
+    return redirect(dest_URL)
+
 
 @app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
         '/dismiss_redcap/<int:session_num>', methods=['GET', 'POST'])
@@ -481,17 +539,6 @@ def create_issue(study_id, timepoint_id):
 
     return redirect(dest_URL)
 
-@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
-        '/delete_scan/', methods=['GET'])
-@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
-        '/delete_scan/<int:scan_id>', methods=['GET'])
-@study_admin_required
-@login_required
-def delete_scan(study_id, timepoint_id, scan_id):
-    dest_URL = url_for('timepoint', study_id=study_id, timepoint_id=timepoint_id)
-    scan = get_scan(scan_id, study_id, current_user, dest_URL)
-    scan.delete()
-    return redirect(dest_URL)
 
 ############## End of Timepoint View functions #################################
 
