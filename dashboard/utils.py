@@ -181,6 +181,7 @@ def delete_session(session):
 
     delete(config, 'dicom', files=['{}.zip'.format(str(session))])
     delete(config, 'resources', folder=str(session))
+    delete(config, 'std', files=files)
 
     timepoint = session.timepoint
     if not timepoint.bids_name:
@@ -195,6 +196,8 @@ def delete_scan(scan):
 
     for path_key in ['dcm', 'nii', 'mnc', 'nrrd', 'jsons']:
         delete(config, path_key, folder=str(scan.timepoint), files=[scan.name])
+
+    delete(config, 'std', files=[scan.name])
 
     if not scan.bids_name:
         return
@@ -213,6 +216,8 @@ def delete_timepoint(timepoint):
         delete(config, 'dicom',
                files=['{}.zip'.format(str(timepoint.sessions[num]))])
         delete(config, 'resources', folder=str(timepoint.sessions[num]))
+        delete(config, 'std', files=[scan.name for scan
+                                     in timepoint.sessions[num].scans])
 
     if not timepoint.bids_name:
         return
