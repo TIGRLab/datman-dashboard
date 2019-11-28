@@ -1554,7 +1554,7 @@ class StudyUser(db.Model):
     user_id = db.Column('user_id', db.Integer, db.ForeignKey('users.id'),
             nullable=False, primary_key=True)
     site = db.Column('site_only', db.String(32), db.ForeignKey('sites.name'),
-            nullable=True)
+            nullable=True, primary_key=True)
     is_admin = db.Column('is_admin', db.Boolean, default=False)
     primary_contact = db.Column('primary_contact', db.Boolean, default=False)
     kimel_contact = db.Column('kimel_contact', db.Boolean, default=False)
