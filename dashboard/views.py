@@ -25,7 +25,7 @@ from .queries import query_metric_values_byid, query_metric_types, \
         query_metric_values_byname, find_subjects, \
         find_sessions, find_scans
 from .models import Study, Site, Session, Scantype, Scan, User, \
-        Timepoint, AnalysisComment, Analysis, IncidentalFinding, StudyUser, \
+        Timepoint, AnalysisComment, Analysis, IncidentalFinding, \
         SessionRedcap, EmptySession, ScanChecklist, AccountRequest
 from .forms import SelectMetricsForm, StudyOverviewForm, \
         ScanChecklistForm, UserForm, AnalysisForm, \
