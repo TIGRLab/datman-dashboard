@@ -11,11 +11,10 @@ from config import REDCAP_TOKEN
 from .models import RedcapRecord, Session, Timepoint
 from .queries import get_study
 from .monitors import monitor_scan_import
+from .exceptions import RedcapException
 
 logger = logging.getLogger(__name__)
 
-class RedcapException(Exception):
-    """Generic error for recap interface"""
 
 def create_from_request(request):
     try:
