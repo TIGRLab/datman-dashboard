@@ -18,11 +18,10 @@ from datetime import datetime, timedelta
 from dashboard import scheduler, ADMINS
 from .models import Session, User, Study
 from .emails import missing_session_data_email, missing_redcap_email
+from .exceptions import MonitorException
 
 logger = logging.getLogger(__name__)
 
-class MonitorException(Exception):
-    pass
 
 def add_monitor(check_function, input_args, input_kwargs=None, job_id=None,
         days=None, hours=None, minutes=None):

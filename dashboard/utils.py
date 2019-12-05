@@ -15,8 +15,6 @@ import datman.scanid
 logger = logging.getLogger(__name__)
 
 
-class TimeoutError(Exception):
-    pass
 
 
 def search_issues(token, timepoint):

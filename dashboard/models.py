@@ -27,13 +27,9 @@ from dashboard import db, TZ_OFFSET, utils
 from dashboard.emails import account_request_email, account_activation_email, \
         account_rejection_email
 from datman import scanid, header_checks
+from .exceptions import InvalidDataException
 
 logger = logging.getLogger(__name__)
-
-class InvalidDataException(Exception):
-    """
-    Default exception when user tries to insert something obviously wrong.
-    """
 
 ################################################################################
 # Association tables (i.e. basic many to many relationships)
@@ -364,6 +360,10 @@ class Study(db.Model):
             elif 'study_sites' in str_err:
                 raise InvalidDataException("Attempted to add gold standard for "
                         "invalid study / site - {}".format(gs_file))
+            elif 'gold_standards_json_path_contents_constraint' in str_err:
+                raise InvalidDataException("Failed to add gold standard {}. "
+                        " record already exists "
+                        " in database - {}".format(gs_file, e))
         return new_gs
 
     def num_timepoints(self, type=''):
