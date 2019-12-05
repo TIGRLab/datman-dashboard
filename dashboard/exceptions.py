@@ -6,11 +6,14 @@ class InvalidDataException(Exception):
 class RedcapException(Exception):
     """Generic error for recap interface"""
 
+
 class MonitorException(Exception):
     pass
 
+
 class SchedulerException(Exception):
     pass
+
 
 class InvalidUsage(Exception):
     """
@@ -29,6 +32,7 @@ class InvalidUsage(Exception):
         rv = dict(self.payload or ())
         rv['message'] = self.message
         return rv
+
 
 class TimeoutError(Exception):
     pass
