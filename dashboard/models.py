@@ -361,8 +361,9 @@ class Study(db.Model):
                 raise InvalidDataException("Attempted to add gold standard for "
                         "invalid study / site - {}".format(gs_file))
             elif 'gold_standards_json_path_contents_constraint' in str_err:
-                raise InvalidDataException("Failed to add gold standard {}."
-                        " record already exists in database - {}".format(gs_file, e))
+                raise InvalidDataException("Failed to add gold standard {}. "
+                        " record already exists "
+                        " in database - {}".format(gs_file, e))
         return new_gs
 
     def num_timepoints(self, type=''):
