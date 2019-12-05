@@ -3,6 +3,7 @@ class InvalidDataException(Exception):
     Default exception when user tries to insert something obviously wrong.
     """
 
+
 class RedcapException(Exception):
     """Generic error for recap interface"""
 
