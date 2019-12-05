@@ -11,7 +11,6 @@ from github import Github
 from dashboard import GITHUB_OWNER, GITHUB_REPO
 import datman.config
 import datman.scanid
-from .exceptions import TimeoutError
 
 logger = logging.getLogger(__name__)
 
