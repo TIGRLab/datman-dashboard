@@ -26,9 +26,9 @@
       </div>
     {% endif %}
 
-    {% set study_ras = study.get_RAs() %}
+    {% set study_ras = study.get_RAs(unique=True) %}
     {% if study_ras %}
-      <div>Study RAs:
+      <div><strong>Study RAs</strong>:
         <ul>
           {% for ra in study_ras %}
             <li>
