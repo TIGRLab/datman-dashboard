@@ -26,7 +26,7 @@ itsdangerous
 lxml
 mock
 nose
-oauthlib
+numpy
 paramiko
 pbr
 pyasn1
