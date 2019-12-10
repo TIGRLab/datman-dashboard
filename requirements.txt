@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 psycopg2
 PyCap
 future

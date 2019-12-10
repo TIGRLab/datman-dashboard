@@ -43,6 +43,12 @@ class StudyOverviewForm(FlaskForm):
     study_id = HiddenField()
 
 
+class SliceTimingForm(FlaskForm):
+    timings = TextAreaField('NewTimings', id="new_timings",
+                            render_kw={'rows': 4, 'cols': 65, 'required': True,
+                            'placeholder': "Enter comma separated slice timings"})
+    submit = SubmitField("Update", id="submit_timings")
+
 class ScanChecklistForm(FlaskForm):
     comment = TextAreaField('Comment:', id='scan-comment',
             validators=[DataRequired()],
@@ -84,14 +90,30 @@ class UserForm(FlaskForm):
 class PermissionRadioField(RadioField):
     def __init__(self, *args, **kwargs):
         super(PermissionRadioField, self).__init__(**kwargs)
+        # These boolean values need to be represented as strings
+        #       1. To display correctly in all browsers
+        #       2. To actually update correctly when part of a nested form
+        # Change data types at your own risk
         self.choices = [(u'False', 'Disabled'), (u'True', 'Enabled')]
         self.default = u'False'
+
+    def populate_obj(self, obj, name):
+        """
+        This overrides the default function from wtforms.core.Field to
+        ensure the database models receive boolean values and not strings of
+        booleans
+        """
+        if self.data.lower() == 'true':
+            data = True
+        else:
+            data = False
+        setattr(obj, name, data)
 
 
 class StudyPermissionsForm(FlaskForm):
     study_id = HiddenField()
     user_id = HiddenField()
-    is_admin = PermissionRadioField(label='Study Admin')
+    is_admin = PermissionRadioField('Study Admin')
     primary_contact = PermissionRadioField('Primary Contact')
     kimel_contact = PermissionRadioField('Kimel Contact')
     study_RA = PermissionRadioField('Study RA')
@@ -183,6 +205,11 @@ class TimepointCommentsForm(FlaskForm):
             render_kw={'rows': 5, 'required': True,
                     'placeholder': 'Add new comment'})
     submit = SubmitField('Submit')
+
+
+class DataDeletionForm(FlaskForm):
+    raw_data = BooleanField(u'Raw Data')
+    database_records = BooleanField(u'Database Records')
 
 
 class NewIssueForm(FlaskForm):

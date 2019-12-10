@@ -7,10 +7,10 @@ from requests import ConnectionError
 
 from flask_apscheduler import APScheduler
 
+from .exceptions import SchedulerException
+
 logger = logging.getLogger(__name__)
 
-class SchedulerException(Exception):
-    pass
 
 class RemoteScheduler(object):
     """

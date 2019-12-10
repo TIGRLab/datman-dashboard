@@ -1,0 +1,16 @@
+<div class="row" style="margin-top: 15px;">
+  <div class="col-md-8 col-md-offset-2">
+    <div id="conversion_error_details" class="panel panel-danger">
+      <div class="panel-heading collapsible-heading" data-toggle="collapse" data-target="#niixMessage">
+        <h3 class="panel-title chevron-toggle">
+          <i class="fas fa-exclamation-triangle"></i>
+          dcm2niix conversion error
+          <i class="fas fa-exclamation-triangle"></i>
+        </h3>
+      </div>
+      <div class="panel-body collapse in" id="niixMessage">
+        {{ scan.conv_errors.replace("\n", "<br>")|safe }}
+      </div>
+    </div>
+  </div>
+</div>

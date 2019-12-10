@@ -13,11 +13,11 @@
 
     <div id="change-volume-controls">
       <button id="prev-series" class="btn btn-primary pull-left"
-          onclick="papayaContainers[0].viewer.decrementSeriesPoint();">
+          onclick="document.getElementById('viewer').contentWindow.papayaContainers[0].viewer.decrementSeriesPoint();">
         <i class="fas fa-backward"></i> Prev
       </button>
       <button id="next-series" class="btn btn-primary pull-right"
-          onclick="papayaContainers[0].viewer.incrementSeriesPoint();">
+          onclick="document.getElementById('viewer').contentWindow.papayaContainers[0].viewer.incrementSeriesPoint();">
         Next <i class="fas fa-forward"></i>
       </button>
     </div>
@@ -38,7 +38,7 @@ function loopSeries() {
   }
 
   try {
-    var viewer = papayaContainers[0].viewer;
+    var viewer = document.getElementById("viewer").contentWindow.papayaContainers[0].viewer;
   } catch(err) {
     return
   }
