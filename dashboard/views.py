@@ -16,11 +16,11 @@ from flask import render_template, flash, url_for, redirect, request, jsonify, \
 from flask_login import login_user, logout_user, current_user, \
         login_required, fresh_login_required, login_fresh
 from sqlalchemy.exc import SQLAlchemyError
-from oauth import OAuthSignIn
 
 from dashboard import app, db, lm
 from . import utils
 from . import redcap as REDCAP
+from .oauth import OAuthSignIn
 from .queries import query_metric_values_byid, query_metric_types, \
         query_metric_values_byname, find_subjects, \
         find_sessions, find_scans
