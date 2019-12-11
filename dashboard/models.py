@@ -164,7 +164,7 @@ class User(UserMixin, db.Model):
 
     def remove_studies(self, study_ids):
         if not isinstance(study_ids, list):
-            study_ids = [study_ids]
+            study_ids = list(study_ids)
         for study in study_ids:
             if isinstance(study, StudyUser):
                 study = study.study_id
