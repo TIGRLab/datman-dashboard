@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 def add_monitor(check_function, input_args, input_kwargs=None, job_id=None,
-        days=None, hours=None, minutes=None):
+                days=None, hours=None, minutes=None):
 
     scheduled_time = datetime.now()
     if days:
@@ -34,8 +34,9 @@ def add_monitor(check_function, input_args, input_kwargs=None, job_id=None,
     if minutes:
         scheduled_time = scheduled_time + timedelta(minutes=minutes)
 
-    extra_args = {'trigger': 'date', 'run_date': scheduled_time,
-            'args': input_args}
+    extra_args = {'trigger': 'date',
+                  'run_date': scheduled_time,
+                  'args': input_args}
     if input_kwargs:
         extra_args['kwargs'] = input_kwargs
 
@@ -44,35 +45,40 @@ def add_monitor(check_function, input_args, input_kwargs=None, job_id=None,
 
     return scheduler.add_job(job_id, check_function, **extra_args)
 
+
 def get_emails(users):
     """
-    Reads a list of dashboard.models.User instances and returns a list of emails
+    Reads a list of dashboard.models.User instances and returns a list of
+    emails
     """
     recipients = []
     for user in users:
         if not user.email:
             logger.error("No email configured for user {} - {}. Cannot enable "
-                    "email notification.".format(user.id, user))
+                         "email notification.".format(user.id, user))
             continue
         if user.email in recipients:
             continue
         recipients.append(user.email)
     return recipients
 
+
 def monitor_scan_import(session, users=None):
     if not isinstance(session, Session):
         raise MonitorException("Must provide an instance of "
-                "dashboard.models.Session to add a scan import monitor. "
-                "Received type {}".format(type(session)))
+                               "dashboard.models.Session to add a scan "
+                               "import monitor. Received type {}".format(
+                                        type(session)))
 
     if not session.missing_scans():
         return
 
     if not users:
-        users = User.query.filter(User.dashboard_admin == True).all()
+        users = User.query.filter(User.dashboard_admin == True).all()  # noqa: E712
         if not users:
             raise MonitorException("No users given and no dashboard admins "
-                    "found, cant add scan import monitor for {}".format(session))
+                                   "found, cant add scan import monitor for "
+                                   "{}".format(session))
 
     if not isinstance(users, list):
         users = [users]
@@ -80,24 +86,26 @@ def monitor_scan_import(session, users=None):
     recipients = get_emails(users)
     if not recipients:
         raise MonitorException("None of the users {} expected to receive scan "
-                "import notifications for {} have an email address "
-                "configured.".format(users, session))
+                               "import notifications for {} have an email "
+                               "address configured.".format(users, session))
 
     args = [session.name, session.num]
     kwargs = {'recipients': recipients}
 
     add_monitor(check_scans, args, input_kwargs=kwargs, days=2)
 
+
 def check_scans(name, num, recipients=None):
     session = Session.query.get((name, num))
     if not session:
         raise MonitorException("Monitored session {}_{:02d} is no "
-                "longer in database. Cannot verify whether scan data was "
-                "received".format(name, num))
+                               "longer in database. Cannot verify whether "
+                               "scan data was received".format(name, num))
     if session.scans:
         return
     missing_session_data_email(str(session), study=session.get_study().id,
-            dest_emails=None)
+                               dest_emails=None)
+
 
 def monitor_redcap_import(name, num, users=None, study=None):
     session = Session.query.get((name, num))
@@ -113,7 +121,7 @@ def monitor_redcap_import(name, num, users=None, study=None):
         users.extend(db_study.get_RAs(site=site))
         if not users:
             raise MonitorException("No users found to receive redcap import "
-                    "notifications for {}".format(session))
+                                   "notifications for {}".format(session))
 
     if not isinstance(users, list):
         users = [users]
@@ -121,12 +129,13 @@ def monitor_redcap_import(name, num, users=None, study=None):
     recipients = get_emails(users)
     if not recipients:
         raise MonitorException("None of the expected users {} have an email "
-                "address configured. Cannot send redcap import notifications "
-                "for {}".format(users, session))
+                               "address configured. Cannot send redcap import "
+                               "notifications for {}".format(users, session))
 
     args = [session.name, session.num]
     kwargs = {'recipients': recipients}
     add_monitor(check_redcap, args, input_kwargs=kwargs, days=2)
+
 
 def check_redcap(name, num, recipients=None):
     """
@@ -135,11 +144,11 @@ def check_redcap(name, num, recipients=None):
     session = Session.query.get((name, num))
     if not session:
         raise MonitorException("Monitored session {}_{:02d} is no longer in "
-                "database. Cannot verify whether redcap record was "
-                "received.".format(name, num))
+                               "database. Cannot verify whether redcap record "
+                               "was received.".format(name, num))
 
     if session.redcap_record:
         return
 
     missing_redcap_email(str(session), session.get_study().id,
-            dest_emails=recipients)
+                         dest_emails=recipients)
