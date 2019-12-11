@@ -26,22 +26,27 @@ from psycopg2.tz import FixedOffsetTimezone
 from dashboard import db, TZ_OFFSET, utils
 from dashboard.emails import account_request_email, account_activation_email, \
         account_rejection_email
-from datman import scanid, header_checks
 from .exceptions import InvalidDataException
+from datman import scanid, header_checks
 
 logger = logging.getLogger(__name__)
 
-################################################################################
+###############################################################################
 # Association tables (i.e. basic many to many relationships)
 
 study_timepoints_table = db.Table('study_timepoints',
-        db.Column('study', db.String(32), db.ForeignKey('studies.id'),
-                nullable=False),
-        db.Column('timepoint', db.String(64), db.ForeignKey('timepoints.name'),
-                nullable=False),
-        UniqueConstraint('study', 'timepoint'))
+                                  db.Column('study',
+                                            db.String(32),
+                                            db.ForeignKey('studies.id'),
+                                            nullable=False),
+                                  db.Column('timepoint',
+                                            db.String(64),
+                                            db.ForeignKey('timepoints.name'),
+                                            nullable=False),
+                                  UniqueConstraint('study', 'timepoint'))
 
-################################################################################
+
+###############################################################################
 # Plain entities
 
 class User(UserMixin, db.Model):
@@ -62,22 +67,25 @@ class User(UserMixin, db.Model):
     dashboard_admin = db.Column('dashboard_admin', db.Boolean, default=False)
     is_active = db.Column('account_active', db.Boolean, default=False)
 
-    studies = db.relationship('StudyUser', back_populates='user',
-            order_by='StudyUser.study_id',
-            collection_class=attribute_mapped_collection('study_id'),
-            cascade="all, delete-orphan")
+    studies = db.relationship('StudyUser',
+                              back_populates='user',
+                              order_by='StudyUser.study_id',
+                              collection_class=attribute_mapped_collection(
+                                               'study_id'),
+                              cascade="all, delete-orphan")
     incidental_findings = db.relationship('IncidentalFinding')
     scan_comments = db.relationship('ScanChecklist')
     timepoint_comments = db.relationship('TimepointComment')
     analysis_comments = db.relationship('AnalysisComment')
     sessions_reviewed = db.relationship('Session')
-    pending_approval = db.relationship('AccountRequest', uselist=False,
-            cascade="all, delete")
+    pending_approval = db.relationship('AccountRequest',
+                                       uselist=False,
+                                       cascade="all, delete")
 
-    def __init__(self, first, last, username=None, provider='github',email=None,
-            position=None, institution=None, phone=None, ext=None,
-            alt_phone=None, alt_ext=None, picture=None,
-            dashboard_admin=False, account_active=False):
+    def __init__(self, first, last, username=None, provider='github',
+                 email=None, position=None, institution=None, phone=None,
+                 ext=None, alt_phone=None, alt_ext=None, picture=None,
+                 dashboard_admin=False, account_active=False):
         self.first_name = first
         self.last_name = last
         self.email = email
@@ -177,7 +185,7 @@ class User(UserMixin, db.Model):
         """
         Get a list of Study objects the user does NOT have access to.
         """
-        enabled_studies = self.studies.keys()
+        enabled_studies = list(self.studies.keys())
 
         if enabled_studies:
             disabled_studies = Study.query.filter(
@@ -236,17 +244,17 @@ class User(UserMixin, db.Model):
 
     def __repr__(self):
         return "<User {}: {} {}>".format(self.id, self.first_name,
-                self.last_name)
+                                         self.last_name)
 
     def __str__(self):
         return "{} {}".format(self.first_name, self.last_name)
+
 
 class AccountRequest(db.Model):
     __tablename__ = 'account_requests'
 
     user_id = db.Column('user_id', db.Integer, db.ForeignKey("users.id"),
-            primary_key=True)
-
+                        primary_key=True)
     user = db.relationship('User', uselist=False)
 
     def __init__(self, user_id):
@@ -260,7 +268,7 @@ class AccountRequest(db.Model):
         except Exception as e:
             db.session.rollback()
             logger.error("Account activation failed for user {}. Reason: "
-                    "{}".format(self.user_id, e))
+                         "{}".format(self.user_id, e))
             raise e
         else:
             account_activation_email(self.user)
@@ -272,7 +280,7 @@ class AccountRequest(db.Model):
         except Exception as e:
             db.session.rollback()
             logger.error("Account request rejection failed for user {}. "
-                    "Reason: {}".format(self.user_id, e))
+                         "Reason: {}".format(self.user_id, e))
             raise e
         else:
             account_rejection_email(self.user)
@@ -290,6 +298,7 @@ class AccountRequest(db.Model):
                     self.user_id)
         return result
 
+
 class Study(db.Model):
     __tablename__ = 'studies'
 
@@ -300,13 +309,18 @@ class Study(db.Model):
     is_open = db.Column('is_open', db.Boolean)
 
     users = db.relationship('StudyUser', back_populates='study')
-    sites = db.relationship('StudySite', back_populates='study',
-            collection_class=attribute_mapped_collection('site_id'))
+    sites = db.relationship('StudySite',
+                            back_populates='study',
+                            collection_class=attribute_mapped_collection(
+                                             'site_id'))
     scantypes = association_proxy('study_scantypes', 'scantype')
-    timepoints = db.relationship('Timepoint', secondary=study_timepoints_table,
-            back_populates='studies', lazy='dynamic')
+    timepoints = db.relationship('Timepoint',
+                                 secondary=study_timepoints_table,
+                                 back_populates='studies',
+                                 lazy='dynamic')
 
-    def __init__(self, study_id, full_name=None, description=None, read_me=None, is_open=None):
+    def __init__(self, study_id, full_name=None, description=None,
+                 read_me=None, is_open=None):
         self.id = study_id
         self.full_name = full_name
         self.description = description
@@ -315,17 +329,20 @@ class Study(db.Model):
 
     def add_timepoint(self, timepoint):
         if isinstance(timepoint, scanid.Identifier):
-            timepoint = Timepoint(timepoint.get_full_subjectid_with_timepoint(),
+            timepoint = Timepoint(
+                    timepoint.get_full_subjectid_with_timepoint(),
                     timepoint.site, is_phantom=scanid.is_phantom(timepoint))
 
         if not isinstance(timepoint, Timepoint):
-            raise InvalidDataException("Invalid input to 'add_timepoint()': "
+            raise InvalidDataException(
+                    "Invalid input to 'add_timepoint()': "
                     "instance of dashboard.models.Timepoint or "
                     "datman.scanid.Identifier expected")
 
         if timepoint.site_id not in self.sites.keys():
             raise InvalidDataException("Timepoint's site {} is not configured "
-                    "for study {}".format(timepoint.site_id, self.id))
+                                       "for study {}".format(timepoint.site_id,
+                                                             self.id))
         self.timepoints.append(timepoint)
         try:
             db.session.add(self)
@@ -333,7 +350,7 @@ class Study(db.Model):
         except FlushError as e:
             db.session.rollback()
             raise InvalidDataException("Can't add timepoint {}. Already "
-                    "exists.".format(timepoint))
+                                       "exists.".format(timepoint))
         except Exception as e:
             db.session.rollback()
             e.message = "Failed to add timepoint {}. Reason: {}".format(
@@ -347,7 +364,7 @@ class Study(db.Model):
             new_gs = GoldStandard(self.id, gs_file)
         except OSError:
             raise InvalidDataException("Can't add gold standard, file not "
-                    "readable: {}".format(gs_file))
+                                       "readable: {}".format(gs_file))
         try:
             db.session.add(new_gs)
             db.session.commit()
@@ -355,24 +372,27 @@ class Study(db.Model):
             db.session.rollback()
             str_err = str(e)
             if 'study_scantypes' in str_err:
-                raise InvalidDataException("Attempted to add gold standard for "
-                "invalid study / scan type - {}".format(gs_file))
+                raise InvalidDataException(
+                        "Attempted to add gold standard for "
+                        "invalid study / scan type - {}".format(gs_file))
             elif 'study_sites' in str_err:
-                raise InvalidDataException("Attempted to add gold standard for "
+                raise InvalidDataException(
+                        "Attempted to add gold standard for "
                         "invalid study / site - {}".format(gs_file))
             elif 'gold_standards_json_path_contents_constraint' in str_err:
                 raise InvalidDataException("Failed to add gold standard {}. "
-                        " record already exists "
-                        " in database - {}".format(gs_file, e))
+                                           "Record already exists "
+                                           "in database - {}".format(gs_file,
+                                                                     e))
         return new_gs
 
     def num_timepoints(self, type=''):
         if type.lower() == 'human':
             timepoints = [timepoint for timepoint in self.timepoints
-                    if not timepoint.is_phantom]
+                          if not timepoint.is_phantom]
         elif type.lower() == 'phantom':
             timepoints = [timepoint for timepoint in self.timepoints
-                    if timepoint.is_phantom]
+                          if timepoint.is_phantom]
         else:
             timepoints = self.timepoints
         return len(timepoints)
@@ -381,28 +401,30 @@ class Study(db.Model):
         # use from_self to get a tuple of Session.name, Session.num like from
         # the other queries
         new_sessions = self.get_new_sessions().from_self(Session.name,
-                Session.num).all()
+                                                         Session.num).all()
         need_rewrite = self.needs_rewrite()
         missing_redcap = self.get_missing_redcap()
         missing_scans = self.get_missing_scans()
 
         new_label = '<td class="col-xs-2"><span class="fa-layers fa-fw" ' + \
-                'style="font-size: 28px;"><i class="fas ' + \
-                'fa-certificate" style="color: tomato"></i>' + \
-                '<span class="fa-layers-text fa-inverse" ' + \
-                'data-fa-transform="shrink-11.5 rotate--30" ' + \
-                'style="font-weight:900">NEW</span></span></td>'
+                    'style="font-size: 28px;"><i class="fas ' + \
+                    'fa-certificate" style="color: tomato"></i>' + \
+                    '<span class="fa-layers-text fa-inverse" ' + \
+                    'data-fa-transform="shrink-11.5 rotate--30" ' + \
+                    'style="font-weight:900">NEW</span></span></td>'
         rewrite_label = '<td class="col-xs-2"><span class="label ' + \
-                'qc-warnings label-danger" title="Repeat session not on QC ' + \
-                'page. Regenerate page by running dm_qc_report.py with the ' + \
-                '--rewrite flag">Needs Rewrite</span></td>'
-        scans_label = '<td class="col-xs-2"><span class="label qc-warnings ' + \
-                'label-warning" title="Participant exists in REDCap but ' + \
-                'does not have scans">Missing Scans</span></td>'
+                        'qc-warnings label-danger" title="Repeat session ' + \
+                        'not on QC page. Regenerate page by running ' + \
+                        'dm_qc_report.py with the --rewrite flag">Needs ' + \
+                        'Rewrite</span></td>'
+        scans_label = '<td class="col-xs-2"><span class="label ' + \
+                      'qc-warnings label-warning" title="Participant ' + \
+                      'exists in REDCap but does not have scans">Missing ' + \
+                      'Scans</span></td>'
         redcap_label = '<td class="col-xs-2"><span class="label ' + \
-                'qc-warnings label-info" title="Participant ' + \
-                'does not have a REDCap survey even though this scan ' + \
-                'site collects them">Missing REDCap</span></td>'
+                       'qc-warnings label-info" title="Participant ' + \
+                       'does not have a REDCap survey even though this ' + \
+                       'scan site collects them">Missing REDCap</span></td>'
 
         issues = {}
         # Using default_row[:] in setdefault() to make sure each row has its
@@ -420,16 +442,17 @@ class Study(db.Model):
         return issues
 
     def get_new_sessions(self):
-        # Doing this 'manually' to prevent SQLAlchemy from sending one query per
-        # timepoint per study
+        # Doing this 'manually' to prevent SQLAlchemy from sending one query
+        # per timepoint per study
         new = db.session.query(Session.name) \
                 .join(Timepoint) \
                 .join(study_timepoints_table,
-                      and_(study_timepoints_table.c.timepoint == Timepoint.name,
+                      and_((study_timepoints_table.c.timepoint ==
+                            Timepoint.name),
                            study_timepoints_table.c.study == self.id)) \
                 .filter(Session.signed_off == False) \
                 .filter(Timepoint.is_phantom == False) \
-                .group_by(Session.name)
+                .group_by(Session.name)  # noqa: E712
 
         return new
 
@@ -444,16 +467,18 @@ class Study(db.Model):
         study page loaded. So it's way uglier, but way faster. Sorry :(
         """
         uses_redcap = db.session.query(Session, SessionRedcap) \
-                .outerjoin(SessionRedcap) \
-                .join(Timepoint) \
-                .join(study_timepoints_table,
-                        and_(study_timepoints_table.c.timepoint == Timepoint.name,
-                        study_timepoints_table.c.study == self.id)) \
-                .join(StudySite,
-                        and_(StudySite.site_id == Timepoint.site_id,
-                        StudySite.study_id == study_timepoints_table.c.study)) \
-                .filter(Timepoint.is_phantom == False) \
-                .filter(StudySite.uses_redcap == True)
+                        .outerjoin(SessionRedcap) \
+                        .join(Timepoint) \
+                        .join(study_timepoints_table,
+                              and_((study_timepoints_table.c.timepoint ==
+                                    Timepoint.name),
+                                   study_timepoints_table.c.study == self.id))\
+                        .join(StudySite,
+                              and_(StudySite.site_id == Timepoint.site_id,
+                                   (StudySite.study_id ==
+                                    study_timepoints_table.c.study))) \
+                        .filter(Timepoint.is_phantom == False) \
+                        .filter(StudySite.uses_redcap == True)  # noqa: E712
 
         return uses_redcap
 
@@ -463,8 +488,8 @@ class Study(db.Model):
         that are expecting a redcap survey but dont yet have one.
         """
         uses_redcap = self.get_sessions_using_redcap()
-        sessions = uses_redcap.filter(SessionRedcap.name == None)\
-                .from_self(Session.name, Session.num)
+        sessions = uses_redcap.filter(SessionRedcap.name == None) \
+                    .from_self(Session.name, Session.num)  # noqa: E711
         return sessions.all()
 
     def get_missing_scans(self):
@@ -475,11 +500,14 @@ class Study(db.Model):
         """
         uses_redcap = self.get_sessions_using_redcap()
         sessions = uses_redcap.filter(SessionRedcap.record_id != None)\
-                .filter(~exists().where(and_(Scan.timepoint == Session.name,
-                        Scan.repeat == Session.num))) \
-                .filter(~exists().where(and_(Session.name == EmptySession.name,
-                        Session.num == EmptySession.num))) \
-                .from_self(Session.name, Session.num)
+                    .filter(~exists().where(and_((Scan.timepoint ==
+                                                  Session.name),
+                                                 Scan.repeat == Session.num)))\
+                    .filter(~exists().where(and_((Session.name ==
+                                                  EmptySession.name),
+                                                 (Session.num ==
+                                                 EmptySession.num)))) \
+                    .from_self(Session.name, Session.num)  # noqa: E711
         return sessions.all()
 
     def needs_rewrite(self):
@@ -489,48 +517,54 @@ class Study(db.Model):
         pages to be rewritten).
         """
         repeated = db.session.query(Session.name,
-                        func.count(Session.name).label('num')) \
-                .join(Timepoint) \
-                .group_by(Session.name) \
-                .having(func.count(Session.name) > 1).subquery()
+                                    func.count(Session.name).label('num')) \
+                             .join(Timepoint) \
+                             .group_by(Session.name) \
+                             .having(func.count(Session.name) > 1).subquery()
 
-        need_rewrite = db.session.query(Session) \
-                .join(Timepoint) \
-                .join(study_timepoints_table,
-                        and_(study_timepoints_table.c.timepoint == Timepoint.name,
-                        study_timepoints_table.c.study == self.id)) \
-                .join(repeated) \
-                .filter(Timepoint.static_page != None) \
-                .filter(Timepoint.last_qc_repeat_generated < repeated.c.num) \
-                .filter(Session.num > Timepoint.last_qc_repeat_generated) \
-                .from_self(Session.name, Session.num)
+        need_rewrite = db.session.query(Session)\
+                                 .join(Timepoint)\
+                                 .join(study_timepoints_table,
+                                       and_(study_timepoints_table.c.timepoint
+                                            == Timepoint.name,
+                                            study_timepoints_table.c.study
+                                            == self.id))\
+                                 .join(repeated)\
+                                 .filter(Timepoint.static_page != None)\
+                                 .filter(Timepoint.last_qc_repeat_generated <
+                                         repeated.c.num) \
+                                 .filter(Session.num >
+                                         Timepoint.last_qc_repeat_generated) \
+                                 .from_self(Session.name, Session.num)  # noqa: E711
 
         return need_rewrite.all()
 
     def get_blacklisted_scans(self):
         query = self._get_checklist()
-        blacklisted_scans =  query.filter(and_(ScanChecklist.approved == False,
-                ScanChecklist.comment is not None))
+        blacklisted_scans = query.filter(and_(ScanChecklist.approved == False,
+                                              ScanChecklist.comment != None))  # noqa: E712, E711
         return blacklisted_scans.all()
 
     def get_flagged_scans(self):
         query = self._get_checklist()
         flagged_scans = query.filter(and_(ScanChecklist.approved == True,
-                ScanChecklist.comment != None))
+                                          ScanChecklist.comment != None))  # noqa: E712, E711
         return flagged_scans.all()
 
     def get_qced_scans(self):
         query = self._get_checklist()
         reviewed_scans = query.filter(and_(ScanChecklist.approved == True,
-                ScanChecklist.comment == None))
+                                           ScanChecklist.comment == None))  # noqa: E712, E711
         return reviewed_scans.all()
 
     def _get_checklist(self):
         query = db.session.query(ScanChecklist) \
-            .join(Scan) \
-            .join(study_timepoints_table,
-                    and_(study_timepoints_table.c.timepoint == Scan.timepoint,
-                    study_timepoints_table.c.study == self.id))
+                          .join(Scan) \
+                          .join(study_timepoints_table,
+                                and_((study_timepoints_table.c.timepoint ==
+                                      Scan.timepoint),
+                                     (study_timepoints_table.c.study ==
+                                      self.id)))
         return query
 
     def get_valid_metric_names(self):
@@ -542,7 +576,8 @@ class Study(db.Model):
         instead (and store it in the database). For now I just got it
         working with the new schema - Dawn
         """
-        valid_fmri_scantypes = ['IMI', 'RST', 'EMP', 'OBS', 'SPRL-COMB', 'VN-SPRL-COMB']
+        valid_fmri_scantypes = ['IMI', 'RST', 'EMP', 'OBS', 'SPRL-COMB',
+                                'VN-SPRL-COMB']
         names = []
         for scantype in self.scantypes:
             for metrictype in scantype.metrictypes:
@@ -558,7 +593,7 @@ class Study(db.Model):
 
     def get_primary_contacts(self):
         contacts = [study_user.user for study_user in self.users
-                if study_user.primary_contact]
+                    if study_user.primary_contact]
         return contacts
 
     def get_staff_contacts(self):
@@ -569,7 +604,7 @@ class Study(db.Model):
             # Get all users who are an RA for this specific site or
             # an RA for the whole study
             RAs = [su.user for su in self.users
-                    if su.study_RA and (not su.site or su.site == site)]
+                   if su.study_RA and (not su.site or su.site == site)]
         else:
             # Get all RAs for the study
             RAs = [su.user for su in self.users if su.study_RA]
@@ -605,14 +640,17 @@ class Study(db.Model):
     def __repr__(self):
         return "<Study {}>".format(self.id)
 
+
 class Site(db.Model):
     __tablename__ = 'sites'
 
     name = db.Column('name', db.String(32), primary_key=True)
     description = db.Column('description', db.Text)
 
-    studies = db.relationship('StudySite', back_populates='site',
-            collection_class=attribute_mapped_collection('study.id'))
+    studies = db.relationship('StudySite',
+                              back_populates='site',
+                              collection_class=attribute_mapped_collection(
+                                                'study.id'))
     timepoints = db.relationship('Timepoint')
 
     def __init__(self, site_name, description=None):
@@ -622,32 +660,44 @@ class Site(db.Model):
     def __repr__(self):
         return "<Site {}>".format(self.name)
 
+
 class Timepoint(db.Model):
     __tablename__ = 'timepoints'
 
     name = db.Column('name', db.String(64), primary_key=True)
     bids_name = db.Column('bids_name', db.Text)
     bids_session = db.Column('bids_sess', db.String(48))
-    site_id = db.Column('site', db.String(32), db.ForeignKey('sites.name'),
-            nullable=False)
-    is_phantom = db.Column('is_phantom', db.Boolean, nullable=False,
-            default=False)
-    # These columns should be removed when the static QC pages are made obsolete
-    last_qc_repeat_generated =  db.Column('last_qc_generated', db.Integer,
-            nullable=False, default=1)
+    site_id = db.Column('site',
+                        db.String(32),
+                        db.ForeignKey('sites.name'),
+                        nullable=False)
+    is_phantom = db.Column('is_phantom',
+                           db.Boolean,
+                           nullable=False,
+                           default=False)
+    # Delete these columns when the static QC pages are made obsolete
+    last_qc_repeat_generated = db.Column('last_qc_generated',
+                                         db.Integer,
+                                         nullable=False,
+                                         default=1)
     static_page = db.Column('static_page', db.String(1028))
 
     site = db.relationship('Site', uselist=False, back_populates='timepoints')
-    studies = db.relationship('Study', secondary=study_timepoints_table,
-            back_populates='timepoints',
-            collection_class=attribute_mapped_collection('id'))
-    sessions = db.relationship('Session', lazy='joined',
-            collection_class=attribute_mapped_collection('num'),
-            cascade='all, delete')
-    comments = db.relationship('TimepointComment', cascade='all, delete',
-            order_by='TimepointComment._timestamp')
+    studies = db.relationship('Study',
+                              secondary=study_timepoints_table,
+                              back_populates='timepoints',
+                              collection_class=attribute_mapped_collection(
+                                               'id'))
+    sessions = db.relationship('Session',
+                               lazy='joined',
+                               collection_class=attribute_mapped_collection(
+                                                'num'),
+                               cascade='all, delete')
+    comments = db.relationship('TimepointComment',
+                               cascade='all, delete',
+                               order_by='TimepointComment._timestamp')
     incidental_findings = db.relationship('IncidentalFinding',
-            cascade='all, delete')
+                                          cascade='all, delete')
 
     def __init__(self, name, site, is_phantom=False, static_page=None):
         self.name = name
@@ -672,12 +722,12 @@ class Timepoint(db.Model):
                 return self.studies[study_id]
             except KeyError:
                 raise InvalidDataException("Timepoint {} does not belong to "
-                        "study {}".format(self, study_id))
+                                           "study {}".format(self, study_id))
         try:
-            study = self.studies.values()[0]
+            study = list(self.studies.values())[0]
         except IndexError:
-            raise InvalidDataException("Timepoint {} does not have any studies "
-                    "configured.".format(self))
+            raise InvalidDataException("Timepoint {} does not have any "
+                                       "studies configured.".format(self))
         return study
 
     def add_session(self, num, date=None):
@@ -688,11 +738,11 @@ class Timepoint(db.Model):
             pass
         else:
             raise InvalidDataException("Session {} of timepoint {} already "
-                    "exists.".format(num, self.name))
+                                       "exists.".format(num, self.name))
 
         if self.is_phantom and num > 1:
             raise InvalidDataException("Cannot add repeat session {} to "
-                    "phantom {}".format(num, self.name))
+                                       "phantom {}".format(num, self.name))
 
         session = Session(self.name, num, date=date)
         self.sessions[num] = session
@@ -702,7 +752,7 @@ class Timepoint(db.Model):
         except Exception as e:
             db.session.rollback()
             e.message = "Failed to add session {} to timepoint {}. Reason: " \
-                    "{}".format(num, self.name, e)
+                        "{}".format(num, self.name, e)
             raise
         return session
 
@@ -731,8 +781,8 @@ class Timepoint(db.Model):
 
     def accessible_study(self, user):
         """
-        Returns a study that the timepoint belongs to and the user has access to
-        if one exists.
+        Returns a study that the timepoint belongs to and the user has access
+        to if one exists.
         """
         for study_name in self.studies:
             if user.has_study_access(study_name):
@@ -752,22 +802,23 @@ class Timepoint(db.Model):
         """
         if not self.is_qcd():
             return ''
-        return self.sessions.values()[0].reviewer
+        return list(self.sessions.values())[0].reviewer
 
     def expects_redcap(self, study=None):
         if self.is_phantom:
             return False
         if not study:
-            study = self.studies.keys()[0]
+            study = list(self.studies.keys())[0]
         return self.site.studies[study].uses_redcap
 
     def needs_redcap_survey(self, study_id):
         uses_redcap = self.expects_redcap(study_id)
         return uses_redcap and any(not sess.redcap_record
-                for sess in self.sessions.values())
+                                   for sess in self.sessions.values())
 
     def needs_rewrite(self):
-        if self.static_page and (self.last_qc_repeat_generated < len(self.sessions)):
+        if self.static_page and (self.last_qc_repeat_generated <
+                                 len(self.sessions)):
             return True
         return False
 
@@ -820,7 +871,7 @@ class Timepoint(db.Model):
 
     def get_comment(self, comment_id):
         match = [comment for comment in self.comments
-                if comment.id == comment_id]
+                 if comment.id == comment_id]
         if not match:
             raise Exception('Comment not found.')
         return match[0]
@@ -839,29 +890,38 @@ class Timepoint(db.Model):
     def __str__(self):
         return self.name
 
+
 class TimepointComment(db.Model):
     __tablename__ = 'timepoint_comments'
 
     id = db.Column('id', db.Integer, primary_key=True)
-    timepoint_id = db.Column('timepoint', db.String(64),
-            db.ForeignKey('timepoints.name'), nullable=False)
-    user_id = db.Column('user_id', db.Integer, db.ForeignKey('users.id'),
-            nullable=False)
-    _timestamp = db.Column('comment_timestamp', db.DateTime(timezone=True),
-            nullable=False)
+    timepoint_id = db.Column('timepoint',
+                             db.String(64),
+                             db.ForeignKey('timepoints.name'),
+                             nullable=False)
+    user_id = db.Column('user_id',
+                        db.Integer,
+                        db.ForeignKey('users.id'),
+                        nullable=False)
+    _timestamp = db.Column('comment_timestamp',
+                           db.DateTime(timezone=True),
+                           nullable=False)
     comment = db.Column('comment', db.Text, nullable=False)
     modified = db.Column('modified', db.Boolean, default=False)
 
-    user = db.relationship('User', uselist=False,
-            back_populates='timepoint_comments')
-    timepoint = db.relationship('Timepoint', uselist=False,
-            back_populates='comments')
+    user = db.relationship('User',
+                           uselist=False,
+                           back_populates='timepoint_comments')
+    timepoint = db.relationship('Timepoint',
+                                uselist=False,
+                                back_populates='comments')
 
     def __init__(self, timepoint_id, user_id, comment):
         self.timepoint_id = timepoint_id
         self.user_id = user_id
         self.comment = comment
-        self._timestamp = datetime.datetime.now(FixedOffsetTimezone(offset=TZ_OFFSET))
+        self._timestamp = datetime.datetime.now(FixedOffsetTimezone(
+                                                    offset=TZ_OFFSET))
 
     def update(self, new_text):
         self.comment = new_text
@@ -874,33 +934,45 @@ class TimepointComment(db.Model):
         return self._timestamp.strftime('%I:%M %p, %Y-%m-%d')
 
     def __repr__(self):
-        return "<TimepointComment for {} by user {}>".format(self.timepoint_id,
-                self.user_id)
+        return "<TimepointComment for {} by user {}>".format(
+                        self.timepoint_id,
+                        self.user_id)
+
 
 class Session(db.Model):
     __tablename__ = 'sessions'
 
-    name = db.Column('name', db.String(64), db.ForeignKey('timepoints.name'),
-            primary_key=True)
+    name = db.Column('name',
+                     db.String(64),
+                     db.ForeignKey('timepoints.name'),
+                     primary_key=True)
     num = db.Column('num', db.Integer, primary_key=True)
     date = db.Column('date', db.DateTime)
     signed_off = db.Column('signed_off', db.Boolean, default=False)
     reviewer_id = db.Column('reviewer', db.Integer, db.ForeignKey('users.id'))
     review_date = db.Column('review_date', db.DateTime(timezone=True))
 
-    reviewer = db.relationship('User', uselist=False,
-            back_populates='sessions_reviewed')
-    timepoint = db.relationship('Timepoint', uselist=False,
-            back_populates='sessions')
-    scans = db.relationship('Scan', cascade='all, delete', order_by="Scan.series")
-    empty_session = db.relationship('EmptySession', uselist=False,
-            back_populates='session', cascade='all, delete')
-    redcap_record = db.relationship('SessionRedcap', back_populates='session',
-            uselist=False, cascade='all, delete')
+    reviewer = db.relationship('User',
+                               uselist=False,
+                               back_populates='sessions_reviewed')
+    timepoint = db.relationship('Timepoint',
+                                uselist=False,
+                                back_populates='sessions')
+    scans = db.relationship('Scan',
+                            cascade='all, delete',
+                            order_by="Scan.series")
+    empty_session = db.relationship('EmptySession',
+                                    uselist=False,
+                                    back_populates='session',
+                                    cascade='all, delete')
+    redcap_record = db.relationship('SessionRedcap',
+                                    back_populates='session',
+                                    uselist=False,
+                                    cascade='all, delete')
     task_files = db.relationship('TaskFile', cascade='all, delete')
 
-    def __init__(self, name, num, date=None, signed_off=False, reviewer_id=None,
-            review_date=None):
+    def __init__(self, name, num, date=None, signed_off=False,
+                 reviewer_id=None, review_date=None):
         self.name = name
         self.num = num
         self.date = date
@@ -913,7 +985,7 @@ class Session(db.Model):
 
     def add_scan(self, name, series, tag, description=None, source_id=None):
         scan = Scan(name, self.name, self.num, series, tag, description,
-                source_id)
+                    source_id)
         self.scans.append(scan)
         try:
             db.session.add(self)
@@ -921,7 +993,7 @@ class Session(db.Model):
         except Exception as e:
             db.session.rollback()
             raise InvalidDataException("Failed to add scan {}. Reason: "
-                    "{}".format(name, e))
+                                       "{}".format(name, e))
         return scan
 
     def delete_scan(self, name):
@@ -933,19 +1005,21 @@ class Session(db.Model):
             db.session.commit()
         except Exception as e:
             db.session.rollback()
-            e.message = "Could not delete scan {}. Reason: {}".format(name,
-                    e.message)
+            e.message = "Could not delete scan {}. Reason: {}".format(
+                            name,
+                            e.message)
             raise e
 
     def add_redcap(self, record_num, project, url, instrument=None, date=None,
-            rc_user=None, comment=None, version=None, event_id=None):
+                   rc_user=None, comment=None, version=None, event_id=None):
         if self.redcap_record and self.redcap_record.record is not None:
             rc_record = self.redcap_record.record
             if (rc_record.record != record_num or
                     str(rc_record.project) != project or
                     str(rc_record.url) != str(url)):
                 raise InvalidDataException("Existing record already found. "
-                    "Please remove the old record before adding a new one.")
+                                           "Please remove the old record "
+                                           "before adding a new one.")
         else:
             rc_record = RedcapRecord(record_num, project, url)
             db.session.add(rc_record)
@@ -953,11 +1027,12 @@ class Session(db.Model):
             db.session.flush()
             if self.redcap_record:
                 logger.error("Found redcap record for {} after it was marked "
-                        "as not expecting a record. Adding record.".format(self))
+                             "as not expecting a record. Adding "
+                             "record.".format(self))
                 self.redcap_record.record = rc_record
             else:
                 self.redcap_record = SessionRedcap(self.name, self.num,
-                        rc_record.id)
+                                                   rc_record.id)
             self.save()
 
         if instrument:
@@ -980,7 +1055,7 @@ class Session(db.Model):
             db.session.rollback()
         except Exception as e:
             logger.error("Unable to save redcap record {} for {} to database. "
-                    "Reason: {}".format(rc_record.record, self, e))
+                         "Reason: {}".format(rc_record.record, self, e))
             db.session.rollback()
         return rc_record
 
@@ -997,7 +1072,8 @@ class Session(db.Model):
     def sign_off(self, user_id):
         self.signed_off = True
         self.reviewer_id = user_id
-        self.review_date = datetime.datetime.now(FixedOffsetTimezone(offset=TZ_OFFSET))
+        self.review_date = datetime.datetime.now(FixedOffsetTimezone(
+                                                    offset=TZ_OFFSET))
         db.session.add(self)
         db.session.commit()
 
@@ -1051,6 +1127,7 @@ class Session(db.Model):
     def __str__(self):
         return "{}_{:02}".format(self.name, self.num)
 
+
 class EmptySession(db.Model):
     """
     This table exists solely so QCers can dismiss errors about empty sessions
@@ -1061,45 +1138,55 @@ class EmptySession(db.Model):
     name = db.Column('name', db.String(64), primary_key=True, nullable=False)
     num = db.Column('num', db.Integer, primary_key=True, nullable=False)
     comment = db.Column('comment', db.String(2048), nullable=False)
-    user_id = db.Column('reviewer', db.Integer, db.ForeignKey('users.id'),
-            nullable=False)
+    user_id = db.Column('reviewer',
+                        db.Integer,
+                        db.ForeignKey('users.id'),
+                        nullable=False)
     date_added = db.Column('date_added', db.DateTime(timezone=True))
 
-    session = db.relationship('Session', uselist=False,
-            back_populates='empty_session')
-    reviewer = db.relationship('User', uselist=False, lazy='joined')
+    session = db.relationship('Session',
+                              uselist=False,
+                              back_populates='empty_session')
+    reviewer = db.relationship('User',
+                               uselist=False,
+                               lazy='joined')
 
     __table_args__ = (ForeignKeyConstraint(['name', 'num'],
-            ['sessions.name', 'sessions.num']),)
+                                           ['sessions.name', 'sessions.num']),)
 
     def __init__(self, name, num, user_id, comment):
         self.name = name
         self.num = num
         self.user_id = user_id
         self.comment = comment
-        self.date_added = datetime.datetime.now(FixedOffsetTimezone(offset=TZ_OFFSET))
+        self.date_added = datetime.datetime.now(FixedOffsetTimezone(
+                                                    offset=TZ_OFFSET))
 
     def __repr__(self):
         return "<EmptySession {}, {}>".format(self.name, self.num)
 
+
 class SessionRedcap(db.Model):
     # Using a class instead of an association table here to let us know when an
-    # entry has been added without a redcap record (i.e. when a user has let us know
-    # that a session is never going to get a redcap record)
+    # entry has been added without a redcap record (i.e. when a user has let us
+    # know that a session is never going to get a redcap record)
     __tablename__ = 'session_redcap'
 
     name = db.Column('name', db.String(64), primary_key=True, nullable=False)
     num = db.Column('num', db.Integer, primary_key=True, nullable=False)
-    record_id = db.Column('record_id', db.Integer,
-            db.ForeignKey('redcap_records.id'))
+    record_id = db.Column('record_id',
+                          db.Integer,
+                          db.ForeignKey('redcap_records.id'))
 
-    session = db.relationship('Session', back_populates='redcap_record',
-            uselist=False)
-    record = db.relationship('RedcapRecord', back_populates='sessions',
-            uselist=False)
+    session = db.relationship('Session',
+                              back_populates='redcap_record',
+                              uselist=False)
+    record = db.relationship('RedcapRecord',
+                             back_populates='sessions',
+                             uselist=False)
 
     __table_args__ = (ForeignKeyConstraint(['name', 'num'],
-            ['sessions.name', 'sessions.num']),)
+                                           ['sessions.name', 'sessions.num']),)
 
     def __init__(self, name, num, record_id=None):
         self.name = name
@@ -1112,19 +1199,23 @@ class SessionRedcap(db.Model):
         an alternate ID for the original participant
         """
         target_session.redcap_record = SessionRedcap(target_session.name,
-                target_session.num, self.record_id)
+                                                     target_session.num,
+                                                     self.record_id)
         db.session.add(target_session)
         try:
             db.session.commit()
         except Exception as e:
             raise InvalidDataException("Failed to share redcap record {} with "
-                    "session {}".format(self.record_id, target_session))
+                                       "session {}".format(self.record_id,
+                                                           target_session))
             return None
         return target_session.redcap_record
 
     def __repr__(self):
         return "<SessionRedcap {}, {} - record {}>".format(self.name,
-                self.num, self.record_id)
+                                                           self.num,
+                                                           self.record_id)
+
 
 class Scan(db.Model):
     __tablename__ = 'scans'
@@ -1135,8 +1226,10 @@ class Scan(db.Model):
     timepoint = db.Column('timepoint', db.String(64), nullable=False)
     repeat = db.Column('session', db.Integer, nullable=False)
     series = db.Column('series', db.Integer, nullable=False)
-    tag = db.Column('tag', db.String(64), db.ForeignKey('scantypes.tag'),
-            nullable=False)
+    tag = db.Column('tag',
+                    db.String(64),
+                    db.ForeignKey('scantypes.tag'),
+                    nullable=False)
     description = db.Column('description', db.String(128))
     conv_errors = db.Column('conversion_errors', db.Text)
     json_path = db.Column('json_path', db.String(1028))
@@ -1146,16 +1239,25 @@ class Scan(db.Model):
     source_id = db.Column('source_data', db.Integer, db.ForeignKey(id))
 
     # If a scan has any symbolic links pointing to it 'links' will be a list
-    # of them. If a scan is just a link pointing to some other data 'source_data'
-    # will point to this original data.
-    links = db.relationship('Scan', cascade='all, delete',
-        backref=db.backref('source_data', remote_side=[id]))
-    qc_review = db.relationship('ScanChecklist', uselist=False,
-            back_populates='scan', cascade='all, delete', lazy='joined')
+    # of them. If a scan is just a link pointing to some other data
+    # 'source_data' will point to this original data.
+    links = db.relationship('Scan',
+                            cascade='all, delete',
+                            backref=db.backref('source_data',
+                                               remote_side=[id]))
+    qc_review = db.relationship('ScanChecklist',
+                                uselist=False,
+                                back_populates='scan',
+                                cascade='all, delete',
+                                lazy='joined')
     session = db.relationship('Session', uselist=False, back_populates='scans')
-    scantype = db.relationship('Scantype', uselist=False, back_populates='scans')
-    analysis_comments = db.relationship('AnalysisComment', cascade='all, delete')
-    metric_values = db.relationship('MetricValue', cascade='all, delete-orphan')
+    scantype = db.relationship('Scantype',
+                               uselist=False,
+                               back_populates='scans')
+    analysis_comments = db.relationship('AnalysisComment',
+                                        cascade='all, delete')
+    metric_values = db.relationship('MetricValue',
+                                    cascade='all, delete-orphan')
     header_diffs = db.relationship(
         'ScanGoldStandard',
         cascade='all',
@@ -1163,11 +1265,11 @@ class Scan(db.Model):
         back_populates='scan')
 
     __table_args__ = (ForeignKeyConstraint(['timepoint', 'session'],
-            ['sessions.name', 'sessions.num']),
-            UniqueConstraint(name))
+                                           ['sessions.name', 'sessions.num']),
+                      UniqueConstraint(name))
 
     def __init__(self, name, timepoint, repeat, series, tag, description=None,
-            source_id=None):
+                 source_id=None):
         self.name = name
         self.timepoint = timepoint
         self.repeat = repeat
@@ -1183,8 +1285,10 @@ class Scan(db.Model):
             db.session.commit()
         except Exception as e:
             db.session.rollback()
-            raise InvalidDataException("Failed to add bids name {} to scan {}. "
-                    "Reason: {}".format(name, self.id, e))
+            raise InvalidDataException("Failed to add bids name {} to scan "
+                                       "{}. Reason: {}".format(name,
+                                                               self.id,
+                                                               e))
 
     def get_study(self, study_id=None):
         return self.session.get_study(study_id=study_id)
@@ -1213,19 +1317,23 @@ class Scan(db.Model):
 
     def is_new(self):
         checklist = self.get_checklist_entry()
-        return checklist is None or (not checklist.comment and not checklist.approved)
+        return checklist is None or (not checklist.comment and
+                                     not checklist.approved)
 
     def signed_off(self):
         checklist = self.get_checklist_entry()
-        return checklist is not None and checklist.approved and not checklist.comment
+        return checklist is not None and (checklist.approved and
+                                          not checklist.comment)
 
     def flagged(self):
         checklist = self.get_checklist_entry()
-        return checklist is not None and checklist.approved and checklist.comment is not None
+        return checklist is not None and (checklist.approved and
+                                          checklist.comment is not None)
 
     def blacklisted(self):
         checklist = self.get_checklist_entry()
-        return checklist is not None and checklist.comment is not None and not checklist.approved
+        return checklist is not None and (checklist.comment is not None and
+                                          not checklist.approved)
 
     def get_comment(self):
         checklist = self.get_checklist_entry()
@@ -1238,11 +1346,14 @@ class Scan(db.Model):
 
     @property
     def gold_standards(self):
-        found_standards =  GoldStandard.query\
-                .filter(GoldStandard.study == self.session.get_study().id)\
-                .filter(GoldStandard.site == self.session.timepoint.site_id)\
-                .filter(GoldStandard.tag == self.tag)\
-                .order_by(GoldStandard.json_created.desc())
+        found_standards = GoldStandard.query\
+                                      .filter(GoldStandard.study ==
+                                              self.session.get_study().id)\
+                                      .filter(GoldStandard.site ==
+                                              self.session.timepoint.site_id)\
+                                      .filter(GoldStandard.tag == self.tag)\
+                                      .order_by(
+                                            GoldStandard.json_created.desc())
         return found_standards.all()
 
     @property
@@ -1252,55 +1363,62 @@ class Scan(db.Model):
 
         try:
             gs = self.gold_standards[0]
-        except:
+        except IndexError:
             return None
 
         return gs
 
     def update_header_diffs(self, standard=None, ignore=None, tolerance=None,
-            bvals=False):
+                            bvals=False):
         if not self.json_contents:
             raise InvalidDataException("No JSON data found for series {}"
-                    "".format(self.name))
+                                       "".format(self.name))
         if standard:
             if type(standard) != GoldStandard:
                 raise InvalidDataException("Must be given a "
-                        "'dashboard.models.GoldStandard' instance")
+                                           "'dashboard.models.GoldStandard' "
+                                           "instance")
             gs = standard
         else:
             gs = self.active_gold_standard
 
         if not gs:
             raise InvalidDataException("No gold standard available for "
-                    "comparison")
+                                       "comparison")
 
         diffs = header_checks.compare_headers(self.json_contents,
-                gs.json_contents, ignore=ignore, tolerance=tolerance)
+                                              gs.json_contents,
+                                              ignore=ignore,
+                                              tolerance=tolerance)
         if bvals:
             result = header_checks.check_bvals(self.json_path,
-                    gs.json_path)
+                                               gs.json_path)
             if result:
                 diffs['bvals'] = result
 
         found = False
         if self.header_diffs:
             found = [item for item in self.header_diffs
-                    if item.gold_standard.id == gs.id]
+                     if item.gold_standard.id == gs.id]
             if found:
                 new_diffs = found[0]
                 new_diffs.diffs = diffs
 
         if not found:
-            new_diffs = ScanGoldStandard(self.id, gs.id, diffs,
+            new_diffs = ScanGoldStandard(
+                    self.id,
+                    gs.id,
+                    diffs,
                     gold_version=utils.get_software_version(gs.json_contents),
-                    scan_version=utils.get_software_version(self.json_contents))
+                    scan_version=utils.get_software_version(
+                                        self.json_contents))
         try:
             db.session.add(new_diffs)
             db.session.commit()
         except Exception as e:
             db.session.rollback()
             raise InvalidDataException("Failed to update header diffs for {}. "
-                    "Reason: {}".format(self, e))
+                                       "Reason: {}".format(self, e))
         return new_diffs
 
     def get_header_diffs(self):
@@ -1321,8 +1439,9 @@ class Scan(db.Model):
             db.session.commit()
         except Exception as e:
             db.session.rollback()
-            raise InvalidDataException("Failed to update scan {} json contents "
-                    "from file {}. Reason: {}".format(self, json_file, e))
+            raise InvalidDataException("Failed to update scan {} json "
+                                       "contents from file {}. Reason: "
+                                       "{}".format(self, json_file, e))
 
     def add_error(self, error_message):
         self.conv_errors = error_message
@@ -1330,8 +1449,9 @@ class Scan(db.Model):
             self.save()
         except Exception as e:
             db.session.rollback()
-            raise InvalidDataException("Failed to add conversion error message "
-                    "for {}. Reason: {}".format(self, e))
+            raise InvalidDataException("Failed to add conversion error "
+                                       "message for {}. Reason: {}".format(
+                                            self, e))
 
     def delete(self):
         db.session.delete(self)
@@ -1343,8 +1463,9 @@ class Scan(db.Model):
 
     def __repr__(self):
         if self.source_id:
-            repr = "<Scan {}: {} link to scan {}>".format(self.id, self.name,
-                    self.source_id)
+            repr = "<Scan {}: {} link to scan {}>".format(self.id,
+                                                          self.name,
+                                                          self.source_id)
         else:
             repr = "<Scan {}: {}>".format(self.id, self.name)
         return repr
@@ -1352,21 +1473,30 @@ class Scan(db.Model):
     def __str__(self):
         return self.name
 
+
 class ScanChecklist(db.Model):
     __tablename__ = 'scan_checklist'
 
     id = db.Column('id', db.Integer, primary_key=True)
-    scan_id = db.Column('scan_id', db.Integer, db.ForeignKey('scans.id'),
-            nullable=False)
-    user_id = db.Column('user_id', db.Integer, db.ForeignKey('users.id'),
-            nullable=False)
+    scan_id = db.Column('scan_id',
+                        db.Integer,
+                        db.ForeignKey('scans.id'),
+                        nullable=False)
+    user_id = db.Column('user_id',
+                        db.Integer,
+                        db.ForeignKey('users.id'),
+                        nullable=False)
     _timestamp = db.Column('review_timestamp', db.DateTime(timezone=True))
     comment = db.Column('comment', db.String(1028))
-    approved = db.Column('signed_off', db.Boolean, nullable=False, default=False)
+    approved = db.Column('signed_off',
+                         db.Boolean,
+                         nullable=False,
+                         default=False)
 
     scan = db.relationship('Scan', uselist=False, back_populates='qc_review')
-    user = db.relationship('User', uselist=False,
-            back_populates='scan_comments')
+    user = db.relationship('User',
+                           uselist=False,
+                           back_populates='scan_comments')
 
     __table_args__ = (UniqueConstraint(scan_id),)
 
@@ -1386,7 +1516,8 @@ class ScanChecklist(db.Model):
         if comment is not None:
             self.comment = comment
         self.user_id = user_id
-        self._timestamp = datetime.datetime.now(FixedOffsetTimezone(offset=TZ_OFFSET))
+        self._timestamp = datetime.datetime.now(FixedOffsetTimezone(
+                                                    offset=TZ_OFFSET))
 
     def save(self):
         db.session.add(self)
@@ -1398,7 +1529,8 @@ class ScanChecklist(db.Model):
 
     def __repr__(self):
         return "<ScanChecklist for {} by user {}>".format(self.scan_id,
-                self.user_id)
+                                                          self.user_id)
+
 
 class Scantype(db.Model):
     __tablename__ = 'scantypes'
@@ -1415,6 +1547,7 @@ class Scantype(db.Model):
     def __repr__(self):
         return "<Scantype {}>".format(self.tag)
 
+
 class GoldStandard(db.Model):
     __tablename__ = 'gold_standards'
 
@@ -1426,24 +1559,30 @@ class GoldStandard(db.Model):
     json_contents = db.Column('contents', JSONB)
     json_path = db.Column('json_path', db.String(1028))
 
-    study_site = db.relationship('StudySite', uselist=False,
-            back_populates='standards', viewonly=True)
-    study_scantype = db.relationship('StudyScantype', uselist=False,
-            back_populates='standards', viewonly=True)
+    study_site = db.relationship('StudySite',
+                                 uselist=False,
+                                 back_populates='standards',
+                                 viewonly=True)
+    study_scantype = db.relationship('StudyScantype',
+                                     uselist=False,
+                                     back_populates='standards',
+                                     viewonly=True)
     scans = association_proxy('scan_gold_standard', 'scan')
 
     __table_args__ = (ForeignKeyConstraint(['study', 'scantype'],
-                ['study_scantypes.study', 'study_scantypes.scantype']),
-            ForeignKeyConstraint(['study', 'site'],
-                ['study_sites.study', 'study_sites.site']))
+                                           ['study_scantypes.study',
+                                            'study_scantypes.scantype']),
+                      ForeignKeyConstraint(['study', 'site'],
+                                           ['study_sites.study',
+                                            'study_sites.site']))
 
     def __init__(self, study, gs_json):
         try:
             ident, tag, _, _ = scanid.parse_filename(gs_json)
-        except:
+        except scanid.ParseException:
             raise InvalidDataException("Can't parse site and scan tag info "
-                    "from gold standard file name. Please provide a datman "
-                    "named file")
+                                       "from gold standard file name. Please "
+                                       "provide a datman named file")
         self.study = study
         self.site = ident.site
         self.tag = tag
@@ -1452,11 +1591,14 @@ class GoldStandard(db.Model):
         self.json_path = gs_json
 
     def __repr__(self):
-        return "<GoldStandard {} for {}, {} - {}>".format(self.id, self.study,
-                self.site, self.tag)
+        return "<GoldStandard {} for {}, {} - {}>".format(self.id,
+                                                          self.study,
+                                                          self.site,
+                                                          self.tag)
 
     def __str__(self):
         return os.path.basename(self.json_path)
+
 
 class RedcapRecord(db.Model):
     __tablename__ = 'redcap_records'
@@ -1469,7 +1611,9 @@ class RedcapRecord(db.Model):
     date = db.Column('entry_date', db.Date)
     user = db.Column('redcap_user', db.Integer)
     comment = db.Column('comment', db.Text)
-    redcap_version = db.Column('redcap_version', db.String(10), default='7.4.2')
+    redcap_version = db.Column('redcap_version',
+                               db.String(10),
+                               default='7.4.2')
     event_id = db.Column('event_id', db.Integer)
 
     sessions = db.relationship('SessionRedcap', back_populates='record')
@@ -1483,8 +1627,9 @@ class RedcapRecord(db.Model):
         self.event_id = event_id
 
     def __repr__(self):
-        return "<RedcapRecord {}: record {} project {} url {}>".format(self.id,
-                self.record, self.project, self.url)
+        return "<RedcapRecord {}: record {} project {} url {}>".format(
+                    self.id, self.record, self.project, self.url)
+
 
 class Analysis(db.Model):
     __tablename__ = 'analyses'
@@ -1499,19 +1644,23 @@ class Analysis(db.Model):
     def __repr__(self):
         return('<Analysis {}: {}>'.format(self.id, self.name))
 
+
 class Metrictype(db.Model):
     __tablename__ = 'metrictypes'
 
     id = db.Column('id', db.Integer, primary_key=True)
     name = db.Column('name', db.String(64), nullable=False)
-    scantype_id = db.Column('scantype', db.String(64),
-            db.ForeignKey('scantypes.tag'), nullable=False)
+    scantype_id = db.Column('scantype',
+                            db.String(64),
+                            db.ForeignKey('scantypes.tag'),
+                            nullable=False)
 
     scantype = db.relationship('Scantype', back_populates='metrictypes')
     metric_values = db.relationship('MetricValue')
 
     def __repr__(self):
         return('<MetricType {}>'.format(self.name))
+
 
 class TaskFile(db.Model):
     __tablename__ = 'session_tasks'
@@ -1522,12 +1671,13 @@ class TaskFile(db.Model):
     file_name = db.Column('task_fname', db.String(256), nullable=False)
     file_path = db.Column('task_file_path', db.String(2048), nullable=False)
 
-    session = db.relationship('Session', uselist=False,
-            back_populates='task_files')
+    session = db.relationship('Session',
+                              uselist=False,
+                              back_populates='task_files')
 
     __table_args__ = (ForeignKeyConstraint(['timepoint', 'repeat'],
-            ['sessions.name', 'sessions.num']),
-            UniqueConstraint(file_path))
+                                           ['sessions.name', 'sessions.num']),
+                      UniqueConstraint(file_path))
 
     def __init__(self, timepoint, repeat, file_path, file_name=None):
         self.timepoint = timepoint
@@ -1542,19 +1692,28 @@ class TaskFile(db.Model):
         return "<TaskFile {}>".format(self.file_path)
 
 
-################################################################################
+###############################################################################
 # Association Objects (i.e. many to many relationships with attributes/columns
 # of their own).
 
 class StudyUser(db.Model):
     __tablename__ = 'study_users'
 
-    study_id = db.Column('study_id', db.String(32), db.ForeignKey('studies.id'),
-            nullable=False, primary_key=True)
-    user_id = db.Column('user_id', db.Integer, db.ForeignKey('users.id'),
-            nullable=False, primary_key=True)
-    site = db.Column('site_only', db.String(32), db.ForeignKey('sites.name'),
-            nullable=True, primary_key=True)
+    study_id = db.Column('study_id',
+                         db.String(32),
+                         db.ForeignKey('studies.id'),
+                         nullable=False,
+                         primary_key=True)
+    user_id = db.Column('user_id',
+                        db.Integer,
+                        db.ForeignKey('users.id'),
+                        nullable=False,
+                        primary_key=True)
+    site = db.Column('site_only',
+                     db.String(32),
+                     db.ForeignKey('sites.name'),
+                     nullable=True,
+                     primary_key=True)
     is_admin = db.Column('is_admin', db.Boolean, default=False)
     primary_contact = db.Column('primary_contact', db.Boolean, default=False)
     kimel_contact = db.Column('kimel_contact', db.Boolean, default=False)
@@ -1570,7 +1729,7 @@ class StudyUser(db.Model):
                             user_id,
                             site,
                             unique=True,
-                            postgresql_where=(site != None)),)
+                            postgresql_where=(site != None)),)  # noqa: E711
 
     def __init__(self, study_id, user_id, site=None, admin=False,
                  is_primary_contact=False, is_kimel_contact=False,
@@ -1586,22 +1745,29 @@ class StudyUser(db.Model):
 
     def __repr__(self):
         return "<StudyUser {} User: {}>".format(self.study_id,
-                self.user_id)
+                                                self.user_id)
+
 
 class StudySite(db.Model):
     __tablename__ = 'study_sites'
 
-    study_id = db.Column('study', db.String(32), db.ForeignKey('studies.id'),
-            primary_key=True)
-    site_id = db.Column('site', db.String(32), db.ForeignKey('sites.name'),
-            primary_key=True)
+    study_id = db.Column('study',
+                         db.String(32),
+                         db.ForeignKey('studies.id'),
+                         primary_key=True)
+    site_id = db.Column('site',
+                        db.String(32),
+                        db.ForeignKey('sites.name'),
+                        primary_key=True)
     uses_redcap = db.Column('uses_redcap', db.Boolean, default=False)
     code = db.Column('code', db.String(32))
 
     site = db.relationship('Site', back_populates='studies')
     study = db.relationship('Study', back_populates='sites')
-    alt_codes = db.relationship('AltStudyCode', back_populates='study_site',
-            cascade='all, delete', lazy='joined')
+    alt_codes = db.relationship('AltStudyCode',
+                                back_populates='study_site',
+                                cascade='all, delete',
+                                lazy='joined')
     standards = db.relationship('GoldStandard', back_populates='study_site')
 
     __table_args__ = (UniqueConstraint(study_id, site_id),)
@@ -1615,6 +1781,7 @@ class StudySite(db.Model):
     def __repr__(self):
         return "<StudySite {} - {}>".format(self.study_id, self.site_id)
 
+
 class AltStudyCode(db.Model):
     # stupid prelapse
     __tablename__ = 'alt_study_codes'
@@ -1626,8 +1793,10 @@ class AltStudyCode(db.Model):
     site_id = db.Column('site', db.String(32), primary_key=True)
     code = db.Column('code', db.String(32), primary_key=True)
 
-    study_site = db.relationship('StudySite', uselist=False,
-            back_populates='alt_codes', lazy='joined')
+    study_site = db.relationship('StudySite',
+                                 uselist=False,
+                                 back_populates='alt_codes',
+                                 lazy='joined')
 
     @property
     def site(self):
@@ -1642,49 +1811,67 @@ class AltStudyCode(db.Model):
         return self.study_site.uses_redcap
 
     __table_args__ = (ForeignKeyConstraint(['study', 'site'],
-            ['study_sites.study', 'study_sites.site']),)
+                                           ['study_sites.study',
+                                            'study_sites.site']),)
 
     def __repr__(self):
-        return "<AltStudyCode {}, {} - {}>".format(self.study_id, self.site_id,
-                self.code)
+        return "<AltStudyCode {}, {} - {}>".format(self.study_id,
+                                                   self.site_id,
+                                                   self.code)
+
 
 class StudyScantype(db.Model):
     __tablename__ = 'study_scantypes'
 
-    study_id = db.Column('study', db.String(32), db.ForeignKey('studies.id'),
-            primary_key=True)
-    scantype_id = db.Column('scantype', db.String(64),
-            db.ForeignKey('scantypes.tag'), primary_key=True)
+    study_id = db.Column('study',
+                         db.String(32),
+                         db.ForeignKey('studies.id'),
+                         primary_key=True)
+    scantype_id = db.Column('scantype',
+                            db.String(64),
+                            db.ForeignKey('scantypes.tag'),
+                            primary_key=True)
 
-    study = db.relationship(Study, backref=backref('study_scantypes',
-            cascade="all, delete-orphan"))
-    scantype = db.relationship(Scantype, backref=backref('study_scantypes',
-            cascade="all, delete-orphan"))
-    standards = db.relationship('GoldStandard', back_populates='study_scantype')
+    study = db.relationship(Study,
+                            backref=backref('study_scantypes',
+                                            cascade="all, delete-orphan"))
+    scantype = db.relationship(Scantype,
+                               backref=backref('study_scantypes',
+                                               cascade="all, delete-orphan"))
+    standards = db.relationship('GoldStandard',
+                                back_populates='study_scantype')
 
     def __repr__(self):
-        return "<StudyScantype {} - {}>".format(self.study_id, self.scantype_id)
+        return "<StudyScantype {} - {}>".format(self.study_id,
+                                                self.scantype_id)
+
 
 class ScanGoldStandard(db.Model):
     __tablename__ = 'scan_gold_standard'
 
-    scan_id = db.Column('scan', db.Integer, db.ForeignKey('scans.id'),
-            primary_key=True)
-    gold_standard_id = db.Column('gold_standard', db.Integer,
-            db.ForeignKey('gold_standards.id'), primary_key=True)
+    scan_id = db.Column('scan',
+                        db.Integer,
+                        db.ForeignKey('scans.id'),
+                        primary_key=True)
+    gold_standard_id = db.Column('gold_standard',
+                                 db.Integer,
+                                 db.ForeignKey('gold_standards.id'),
+                                 primary_key=True)
     diffs = db.Column('header_diffs', JSONB)
-    date_added = db.Column('date_added', db.DateTime(timezone=True),
-            server_default=func.now())
+    date_added = db.Column('date_added',
+                           db.DateTime(timezone=True),
+                           server_default=func.now())
     gold_version = db.Column('gold_version', db.String(128))
     scan_version = db.Column('scan_version', db.String(128))
 
-    scan = db.relationship('Scan', back_populates='header_diffs',
+    scan = db.relationship('Scan',
+                           back_populates='header_diffs',
                            uselist=False)
     gold_standard = db.relationship(GoldStandard,
                                     backref=backref('scan_gold_standard'))
 
     def __init__(self, scan_id, gold_standard_id, diffs, gold_version,
-            scan_version, timestamp=None):
+                 scan_version, timestamp=None):
         self.scan_id = scan_id
         self.gold_standard_id = gold_standard_id
         self.diffs = diffs
@@ -1698,11 +1885,13 @@ class ScanGoldStandard(db.Model):
         return self.date_added.strftime('%I:%M %p, %Y-%m-%d')
 
     def __repr__(self):
-        return "<HeaderDiffs for Scan {} and GS {}>".format(self.scan_id,
-                self.gold_standard_id)
+        return "<HeaderDiffs for Scan {} and GS {}>".format(
+                    self.scan_id,
+                    self.gold_standard_id)
 
     def __str__(self):
         return self.__repr__()
+
 
 class AnalysisComment(db.Model):
     __tablename__ = 'analysis_comments'
@@ -1710,56 +1899,71 @@ class AnalysisComment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     scan_id = db.Column(db.Integer, db.ForeignKey('scans.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    analysis_id = db.Column(db.Integer, db.ForeignKey('analyses.id'),
-            nullable=False)
+    analysis_id = db.Column(db.Integer,
+                            db.ForeignKey('analyses.id'),
+                            nullable=False)
     excluded = db.Column(db.Boolean, default=False)
     comment = db.Column(db.String(4096), nullable=False)
 
-    scan = db.relationship('Scan', uselist=False,
-            back_populates="analysis_comments")
-    analysis = db.relationship('Analysis', uselist=False,
-            back_populates="analysis_comments")
-    user = db.relationship('User', uselist=False,
-            back_populates="analysis_comments")
+    scan = db.relationship('Scan',
+                           uselist=False,
+                           back_populates="analysis_comments")
+    analysis = db.relationship('Analysis',
+                               uselist=False,
+                               back_populates="analysis_comments")
+    user = db.relationship('User',
+                           uselist=False,
+                           back_populates="analysis_comments")
 
     def __repr__(self):
-        return "<ScanComment {}: Analysis {} comment on scan {} by user {}>".format(
-                self.id, self.analysis_id, self.scan_id, self.user_id)
+        return "<ScanComment {}: Analysis {} comment on scan {} by user "\
+               "{}>".format(self.id, self.analysis_id, self.scan_id,
+                            self.user_id)
+
 
 class IncidentalFinding(db.Model):
     __tablename__ = 'incidental_findings'
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'),
-            nullable=False)
-    timepoint_id = db.Column(db.String(64), db.ForeignKey('timepoints.name'),
-            nullable=False)
+    user_id = db.Column(db.Integer,
+                        db.ForeignKey('users.id'),
+                        nullable=False)
+    timepoint_id = db.Column(db.String(64),
+                             db.ForeignKey('timepoints.name'),
+                             nullable=False)
     description = db.Column(db.Text, nullable=False)
-    timestamp = db.Column('date_reported', db.DateTime(timezone=True),
-            nullable=False)
+    timestamp = db.Column('date_reported',
+                          db.DateTime(timezone=True),
+                          nullable=False)
 
-    session = db.relationship('Timepoint', uselist=False,
-            back_populates="incidental_findings")
-    user = db.relationship('User', uselist=False,
-            back_populates="incidental_findings")
+    session = db.relationship('Timepoint',
+                              uselist=False,
+                              back_populates="incidental_findings")
+    user = db.relationship('User',
+                           uselist=False,
+                           back_populates="incidental_findings")
 
     def __init__(self, user_id, timepoint_id, description):
         self.user_id = user_id
         self.timepoint_id = timepoint_id
         self.description = description
-        self.timestamp = datetime.datetime.now(FixedOffsetTimezone(offset=TZ_OFFSET))
+        self.timestamp = datetime.datetime.now(FixedOffsetTimezone(
+                                                    offset=TZ_OFFSET))
 
     def __repr__(self):
         return "<IncidentalFinding {} for {} found by User {}>".format(
                 self.id, self.timepoint_id, self.user_id)
+
 
 class MetricValue(db.Model):
     __tablename__ = 'scan_metrics'
 
     id = db.Column(db.Integer, primary_key=True)
     scan_id = db.Column(db.Integer, db.ForeignKey('scans.id'), nullable=False)
-    metrictype_id = db.Column('metric_type', db.Integer,
-            db.ForeignKey('metrictypes.id'), nullable=False)
+    metrictype_id = db.Column('metric_type',
+                              db.Integer,
+                              db.ForeignKey('metrictypes.id'),
+                              nullable=False)
     _value = db.Column('value', db.Text)
 
     scan = db.relationship('Scan', back_populates="metric_values")
@@ -1803,4 +2007,5 @@ class MetricValue(db.Model):
 
     def __repr__(self):
         return('<Scan {}: Metric {}: Value {}>'.format(self.scan.name,
-                self.metrictype.name, self.value))
+                                                       self.metrictype.name,
+                                                       self.value))
