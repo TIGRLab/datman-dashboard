@@ -599,7 +599,14 @@ class Study(db.Model):
     def get_staff_contacts(self):
         return [su.user for su in self.users if su.kimel_contact]
 
-    def get_RAs(self, site=None):
+    def get_RAs(self, site=None, unique=False):
+        """
+        Get a list of all RAs for the study, or all RAs for a given site.
+
+        The 'unique' flag can be used to ensure RAs are only in the list once
+        if they happen to be an RA for multiple sites. Pretty much only useful
+        for printing the list.
+        """
         if site:
             # Get all users who are an RA for this specific site or
             # an RA for the whole study
@@ -608,6 +615,11 @@ class Study(db.Model):
         else:
             # Get all RAs for the study
             RAs = [su.user for su in self.users if su.study_RA]
+        if unique:
+            found = {}
+            for user in RAs:
+                found[str(user)] = user
+            RAs = [found[key] for key in found]
         return RAs
 
     def get_QCers(self):
