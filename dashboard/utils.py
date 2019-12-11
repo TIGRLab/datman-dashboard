@@ -15,13 +15,13 @@ import datman.scanid
 logger = logging.getLogger(__name__)
 
 
-
-
 def search_issues(token, timepoint):
-    search_string = "{} repo:{}/{}".format(timepoint, GITHUB_OWNER, GITHUB_REPO)
+    search_string = "{} repo:{}/{}".format(timepoint,
+                                           GITHUB_OWNER,
+                                           GITHUB_REPO)
     try:
         issues = Github(token).search_issues(search_string)
-    except:
+    except Exception:
         return None
     result = sorted(issues, key=lambda x: x.created_at)
     return result
@@ -34,7 +34,8 @@ def get_issue(token, issue_num=None):
         repo = get_issues_repo(token)
         issue = repo.get_issue(issue_num)
     except Exception as e:
-        logger.error("Can't retrieve issue {}. Reason: {}".format(issue_num, e))
+        logger.error("Can't retrieve issue {}. Reason: {}".format(issue_num,
+                                                                  e))
         issue = None
     return issue
 
@@ -45,13 +46,14 @@ def create_issue(token, title, body, assign=None):
         if assign:
             issue = repo.create_issue(title, body, assignee=assign)
         else:
-            # I thought a default of None would be a clever way to avoid needing
-            # an if/else here but it turns out 'assignee' will raise a
+            # I thought a default of None would be a clever way to avoid
+            # needing an if/else here but it turns out 'assignee' will raise a
             # mysterious exception when set to None :( So... here we are
             issue = repo.create_issue(title, body)
     except Exception as e:
-        raise Exception("Can't create new issue '{}'. Reason: {}".format(title,
-                e))
+        raise Exception("Can't create new issue '{}'. Reason: {}".format(
+                            title,
+                            e))
     return issue
 
 
@@ -76,7 +78,7 @@ def get_study_path(study, folder=None):
             path = cfg.get_path(folder, study)
         except Exception as e:
             logger.error("Failed to find folder {} for study {}. Reason: {}"
-                    "".format(folder, study, e))
+                         "".format(folder, study, e))
             path = None
         return path
 
@@ -131,7 +133,7 @@ def update_json(scan, contents):
     json_folder = os.path.join(updated_jsons, scan.timepoint)
     try:
         os.makedirs(json_folder)
-    except:
+    except FileExistsError:
         pass
     new_json = os.path.join(json_folder, os.path.basename(scan.json_path))
 
@@ -151,11 +153,11 @@ def update_header_diffs(scan):
 
     try:
         tolerance = config.get_key("HeaderFieldTolerance", site=site)
-    except:
+    except Exception:
         tolerance = {}
     try:
         ignore = config.get_key("IgnoreHeaderFields", site=site)
-    except:
+    except Exception:
         ignore = []
 
     tags = config.get_tags(site=site)
