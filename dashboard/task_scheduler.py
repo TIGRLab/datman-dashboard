@@ -44,25 +44,28 @@ class RemoteScheduler(object):
         extra_args['func'] = job_str
         json_payload = json.dumps(extra_args)
         try:
-            response = requests.post(api_url, data=json_payload, auth=self.auth)
+            response = requests.post(api_url,
+                                     data=json_payload,
+                                     auth=self.auth)
         except ConnectionError:
             raise SchedulerException("Scheduler API is not available at {}"
-                    "".format(self.url))
+                                     "".format(self.url))
         if response.status_code == 401:
-            raise SchedulerException("Can't submit job, access "
-                    "denied. Check that username and password are correctly "
-                    "configured")
+            raise SchedulerException("Can't submit job, access denied. Check "
+                                     "that username and password are "
+                                     "correctly configured")
         if response.status_code != 200:
             raise SchedulerException("Failed to submit job to scheduler. "
-                    "Received status code {} and response {}".format(
-                    response.status_code, response.content))
+                                     "Received status code {} and response "
+                                     "{}".format(response.status_code,
+                                                 response.content))
 
         # If we later intend to do anything with the jobs this should
         # be updated to return a proper apscheduler.Job instance (like the
-        # 'real' scheduler), but for now its fine to return the string formatted
-        # dictionary the server gives us
+        # 'real' scheduler), but for now its fine to return the string
+        # formatted dictionary the server gives us
         return response.content
 
 
 def format_job_function(job_function):
-    return job_function.__module__ + ":" + job_function.func_name
+    return job_function.__module__ + ":" + job_function.__name__
