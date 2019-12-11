@@ -11,10 +11,11 @@ from xml.sax.saxutils import escape
 
 from urllib.parse import urlparse, urljoin
 from flask import session as flask_session
-from flask import render_template, flash, url_for, redirect, request, jsonify, \
-        abort, g, make_response, send_file, send_from_directory
+from flask import render_template, flash, url_for, redirect, request, \
+                  jsonify, abort, g, make_response, send_file, \
+                  send_from_directory
 from flask_login import login_user, logout_user, current_user, \
-        login_required, fresh_login_required, login_fresh
+                        login_required, fresh_login_required, login_fresh
 from sqlalchemy.exc import SQLAlchemyError
 
 from dashboard import app, db, lm
@@ -22,22 +23,23 @@ from . import utils
 from . import redcap as REDCAP
 from .oauth import OAuthSignIn
 from .queries import query_metric_values_byid, query_metric_types, \
-        query_metric_values_byname, find_subjects, \
-        find_sessions, find_scans
+                     query_metric_values_byname, find_subjects, \
+                     find_sessions, find_scans
 from .models import Study, Site, Session, Scantype, Scan, User, \
-        Timepoint, AnalysisComment, Analysis, IncidentalFinding, \
-        SessionRedcap, EmptySession, ScanChecklist, AccountRequest
+                    Timepoint, AnalysisComment, Analysis, IncidentalFinding, \
+                    SessionRedcap, EmptySession, ScanChecklist, AccountRequest
 from .forms import SelectMetricsForm, StudyOverviewForm, \
-        ScanChecklistForm, UserForm, AnalysisForm, \
-        UserAdminForm, EmptySessionForm, IncidentalFindingsForm, \
-        TimepointCommentsForm, NewIssueForm, AccessRequestForm, \
-        SliceTimingForm, DataDeletionForm
+                   ScanChecklistForm, UserForm, AnalysisForm, \
+                   UserAdminForm, EmptySessionForm, IncidentalFindingsForm, \
+                   TimepointCommentsForm, NewIssueForm, AccessRequestForm, \
+                   SliceTimingForm, DataDeletionForm
 from .view_utils import get_user_form, report_form_errors, get_timepoint, \
-        get_session, get_scan, handle_issue, get_redcap_record
+                        get_session, get_scan, handle_issue, get_redcap_record
 from .emails import incidental_finding_email
 from .exceptions import InvalidUsage
 
 logger = logging.getLogger(__name__)
+
 
 @app.errorhandler(InvalidUsage)
 def handle_invalid_usage(error):
@@ -45,9 +47,11 @@ def handle_invalid_usage(error):
     response.status_code = error.status_code
     return response
 
+
 @lm.user_loader
 def load_user(id):
     return User.query.get(int(id))
+
 
 def dashboard_admin_required(f):
     """
@@ -60,6 +64,7 @@ def dashboard_admin_required(f):
             return redirect(prev_url())
         return f(*args, **kwargs)
     return decorated_function
+
 
 def study_admin_required(f):
     """
@@ -74,6 +79,7 @@ def study_admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+
 def prev_url():
     """
     Returns the referring page if it is safe to do so, otherwise directs
@@ -83,11 +89,13 @@ def prev_url():
         return request.referrer
     return url_for('index')
 
+
 def is_safe_url(target):
     ref_url = urlparse(request.host_url)
     test_url = urlparse(urljoin(request.host_url, target))
-    return test_url.scheme in ('http', 'https') and \
-           ref_url.netloc == test_url.netloc
+    return (test_url.scheme in ('http', 'https') and
+            ref_url.netloc == test_url.netloc)
+
 
 @app.before_request
 def before_request():
@@ -99,11 +107,13 @@ def before_request():
         db.session.add(current_user)
         db.session.commit()
 
+
 @app.route('/logout')
 def logout():
     logout_user()
     flash('You have been logged out.')
     return redirect(url_for('login'))
+
 
 @app.route('/')
 @app.route('/index')
@@ -123,6 +133,7 @@ def index():
                            study_count=study_count,
                            site_count=site_count)
 
+
 @app.route('/user', methods=['GET', 'POST'])
 @app.route('/user/<int:user_id>', methods=['GET', 'POST'])
 @login_required
@@ -131,7 +142,8 @@ def user(user_id=None):
     View for updating a user's information
     """
 
-    if user_id and user_id != current_user.id and not current_user.dashboard_admin:
+    if user_id and (user_id != current_user.id and
+                    not current_user.dashboard_admin):
         flash("You are not authorized to view other user settings")
         return redirect(url_for('user'))
 
@@ -145,7 +157,8 @@ def user(user_id=None):
     if form.validate_on_submit():
         submitted_id = form.id.data
 
-        if submitted_id != current_user.id and not current_user.dashboard_admin:
+        if (submitted_id != current_user.id and
+                not current_user.dashboard_admin):
             # This catches anyone who tries to modify the user_id submitted
             # with the form to change other user's settings
             flash("You are not authorized to update other users' settings.")
@@ -153,21 +166,18 @@ def user(user_id=None):
 
         updated_user = User.query.get(submitted_id)
 
-
-
         if form.update_access.data:
             # Give user access to a new study
             updated_user.add_studies(form.add_access.data)
         elif form.revoke_all_access.data:
             # Revoke access to all enabled studies
-            updated_user.remove_studies(updated_user.studies.values())
+            updated_user.remove_studies(list(updated_user.studies.values()))
         else:
             # Update user info
             form.populate_obj(updated_user)
 
-
         removed_studies = [sf.study_id.data for sf in form.studies
-                if sf.revoke_access.data]
+                           if sf.revoke_access.data]
         if removed_studies:
             updated_user.remove_studies(removed_studies)
 
@@ -190,8 +200,9 @@ def manage_users(user_id=None, approve=False):
     # study_requests = []
 
     if not user_id:
-        return render_template('users/manage_users.html', users=users,
-                account_requests=AccountRequest.query.all())
+        return render_template('users/manage_users.html',
+                               users=users,
+                               account_requests=AccountRequest.query.all())
 
     if approve == "False":
         # URL gets parsed into unicode
@@ -201,28 +212,30 @@ def manage_users(user_id=None, approve=False):
     if not approve:
         try:
             user_request.reject()
-        except:
+        except Exception:
             flash("Failed while rejecting account request for user {}".format(
                     user_id))
         else:
             flash('Account rejected.')
-        return render_template('users/manage_users.html', users=users,
-                account_requests=AccountRequest.query.all())
+        return render_template('users/manage_users.html',
+                               users=users,
+                               account_requests=AccountRequest.query.all())
 
     try:
         user_request.approve()
-    except:
+    except Exception:
         flash('Failed while trying to activate account for user {}'.format(
                 user_id))
     else:
         flash('Account access for {} enabled'.format(user_id))
 
-    return render_template('users/manage_users.html', users=users,
-            account_requests=AccountRequest.query.all())
+    return render_template('users/manage_users.html',
+                           users=users,
+                           account_requests=AccountRequest.query.all())
 
 
 @app.route('/search_data')
-@app.route('/search_data/<string:search_string>', methods=['GET','POST'])
+@app.route('/search_data/<string:search_string>', methods=['GET', 'POST'])
 @login_required
 def search_data(search_string=None):
     """
@@ -230,8 +243,8 @@ def search_data(search_string=None):
     """
     if not search_string:
         # We need the URL endpoint without a search string to enable the use of
-        # 'url_for' in the javascript for the 'search' button, but no one should
-        # ever actually access the page this way
+        # 'url_for' in the javascript for the 'search' button, but no one
+        # should ever actually access the page this way
         flash('Please enter a search term.')
         return redirect('index')
 
@@ -239,46 +252,57 @@ def search_data(search_string=None):
     if len(subjects) == 1:
         study = subjects[0].accessible_study(current_user)
         if study:
-            return redirect(url_for('timepoint', study_id=study.id,
-                    timepoint_id=subjects[0].name))
-    subjects = [url_for('timepoint', study_id=sub.accessible_study(current_user),
-            timepoint_id=sub.name)
-            for sub in subjects if sub.accessible_study(current_user)]
+            return redirect(url_for('timepoint',
+                                    study_id=study.id,
+                                    timepoint_id=subjects[0].name))
+    subjects = [url_for('timepoint',
+                        study_id=sub.accessible_study(current_user),
+                        timepoint_id=sub.name)
+                for sub in subjects if sub.accessible_study(current_user)]
 
     sessions = find_sessions(search_string)
     if len(sessions) == 1:
         study = sessions[0].timepoint.accessible_study(current_user)
         if study:
-            return redirect(url_for('timepoint', study_id=study.id,
-                    timepoint_id=sessions[0].timepoint.name,
-                    _anchor="sess" + str(sessions[0].num)))
+            return redirect(url_for('timepoint',
+                                    study_id=study.id,
+                                    timepoint_id=sessions[0].timepoint.name,
+                                    _anchor="sess" + str(sessions[0].num)))
 
-    sessions = [url_for('timepoint', study_id=sess.timepoint.accessible_study(current_user),
-            timepoint_id=sess.timepoint.name, _anchor="sess" + str(sess.num))
-            for sess in sessions if sess.timepoint.accessible_study(current_user)]
+    sessions = [url_for('timepoint',
+                        study_id=sess.timepoint.accessible_study(current_user),
+                        timepoint_id=sess.timepoint.name,
+                        _anchor="sess" + str(sess.num))
+                for sess in sessions
+                if sess.timepoint.accessible_study(current_user)]
 
     scans = find_scans(search_string)
     if len(scans) == 1:
         study = scans[0].session.timepoint.accessible_study(current_user)
         if study:
-            return redirect(url_for('scan', study_id=study.id,
-                    scan_id=scans[0].id))
-    scans = [url_for('scan', study_id=scan.session.timepoint.accessible_study(current_user),
-             scan_id=scan.id) for scan in scans
-                if scan.session.timepoint.accessible_study(current_user)]
+            return redirect(url_for('scan',
+                                    study_id=study.id,
+                                    scan_id=scans[0].id))
+
+    scans = [url_for('scan',
+                     study_id=scan.session.timepoint.accessible_study(
+                                        current_user),
+                     scan_id=scan.id)
+             for scan in scans
+             if scan.session.timepoint.accessible_study(current_user)]
 
     return render_template('search_results.html', user_search=search_string,
-            subjects=subjects, sessions=sessions, scans=scans)
+                           subjects=subjects, sessions=sessions, scans=scans)
 
 
-############## Timepoint view functions ########################################
+# Timepoint view functions ####################################################
 # timepoint() is the main view and renders the html users interact with.
 #
 # The other routes all handle different functionality for the timepoint() view
 # and then immediately redirect back to it.
 
 @app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>',
-        methods=['GET', 'POST'])
+           methods=['GET', 'POST'])
 @fresh_login_required
 def timepoint(study_id, timepoint_id):
     """
@@ -293,11 +317,11 @@ def timepoint(study_id, timepoint_id):
     else:
         try:
             github_issues = utils.search_issues(token, timepoint.name)
-        except:
+        except Exception:
             flash("Github issue access failed. Please contact an admin if "
-                    "this issue persists.")
+                  "this issue persists.")
             logger.debug("Can't search github issues, user {} received "
-                    "access denied.".format(current_user))
+                         "access denied.".format(current_user))
             github_issues = None
 
     empty_form = EmptySessionForm()
@@ -307,22 +331,24 @@ def timepoint(study_id, timepoint_id):
     delete_form = DataDeletionForm()
     new_issue_form.title.data = timepoint.name + " - "
     return render_template('timepoint/main.html',
-            study_id=study_id,
-            timepoint=timepoint,
-            empty_session_form=empty_form,
-            incidental_findings_form=findings_form,
-            timepoint_comments_form=comments_form,
-            issues=github_issues,
-            issue_form=new_issue_form,
-            delete_form=delete_form)
+                           study_id=study_id,
+                           timepoint=timepoint,
+                           empty_session_form=empty_form,
+                           incidental_findings_form=findings_form,
+                           timepoint_comments_form=comments_form,
+                           issues=github_issues,
+                           issue_form=new_issue_form,
+                           delete_form=delete_form)
 
-@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
-        '/sign_off/<int:session_num>', methods=['GET', 'POST'])
+
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' +
+           '/sign_off/<int:session_num>', methods=['GET', 'POST'])
 @login_required
 def sign_off(study_id, timepoint_id, session_num):
     timepoint = get_timepoint(study_id, timepoint_id, current_user)
-    dest_URL = url_for('timepoint', study_id=study_id,
-            timepoint_id=timepoint_id)
+    dest_URL = url_for('timepoint',
+                       study_id=study_id,
+                       timepoint_id=timepoint_id)
     session = get_session(timepoint, session_num, dest_URL)
     session.sign_off(current_user.id)
     # This is temporary until I add some final touches to sign off process
@@ -331,22 +357,25 @@ def sign_off(study_id, timepoint_id, session_num):
             scan.add_checklist_entry(current_user.id, sign_off=True)
     return redirect(dest_URL)
 
-@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
-        '/add_comment', methods=['POST'])
-@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
-        '/add_comment/<int:comment_id>', methods=['POST', 'GET'])
+
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' +
+           '/add_comment', methods=['POST'])
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' +
+           '/add_comment/<int:comment_id>', methods=['POST', 'GET'])
 @login_required
 def add_comment(study_id, timepoint_id, comment_id=None):
     timepoint = get_timepoint(study_id, timepoint_id, current_user)
-    dest_URL = url_for('timepoint', study_id=study_id,
-            timepoint_id=timepoint_id)
+    dest_URL = url_for('timepoint',
+                       study_id=study_id,
+                       timepoint_id=timepoint_id)
 
     form = TimepointCommentsForm()
     if form.validate_on_submit():
         if comment_id:
             try:
-                timepoint.update_comment(current_user.id, comment_id,
-                        form.comment.data)
+                timepoint.update_comment(current_user.id,
+                                         comment_id,
+                                         form.comment.data)
             except Exception as e:
                 flash("Failed to update comment. Reason: {}".format(e))
             else:
@@ -355,32 +384,38 @@ def add_comment(study_id, timepoint_id, comment_id=None):
         comment = timepoint.add_comment(current_user.id, form.comment.data)
     return redirect(dest_URL)
 
-@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
-        '/delete_comment/<int:comment_id>', methods=['GET'])
+
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' +
+           '/delete_comment/<int:comment_id>', methods=['GET'])
 @dashboard_admin_required
 @login_required
 def delete_comment(study_id, timepoint_id, comment_id):
     timepoint = get_timepoint(study_id, timepoint_id, current_user)
-    dest_URL = url_for('timepoint', study_id=study_id,
-            timepoint_id=timepoint_id)
+    dest_URL = url_for('timepoint',
+                       study_id=study_id,
+                       timepoint_id=timepoint_id)
     try:
         timepoint.delete_comment(comment_id)
     except Exception as e:
         flash("Failed to delete comment. {}".format(e))
     return redirect(dest_URL)
 
-@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
-        '/flag_finding', methods=['POST'])
+
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' +
+           '/flag_finding', methods=['POST'])
 @login_required
 def flag_finding(study_id, timepoint_id):
     timepoint = get_timepoint(study_id, timepoint_id, current_user)
-    dest_URL = url_for('timepoint', study_id=study_id,
-            timepoint_id=timepoint_id)
+    dest_URL = url_for('timepoint',
+                       study_id=study_id,
+                       timepoint_id=timepoint_id)
 
     form = IncidentalFindingsForm()
     if form.validate_on_submit():
         timepoint.report_incidental_finding(current_user.id, form.comment.data)
-        incidental_finding_email(current_user, timepoint.name, form.comment.data)
+        incidental_finding_email(current_user,
+                                 timepoint.name,
+                                 form.comment.data)
         flash("Report submitted.")
     return redirect(dest_URL)
 
@@ -463,8 +498,8 @@ def delete_scan(study_id, timepoint_id, scan_id):
     return redirect(dest_URL)
 
 
-@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
-        '/dismiss_redcap/<int:session_num>', methods=['GET', 'POST'])
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' +
+           '/dismiss_redcap/<int:session_num>', methods=['GET', 'POST'])
 @study_admin_required
 @login_required
 def dismiss_redcap(study_id, timepoint_id, session_num):
@@ -472,15 +507,17 @@ def dismiss_redcap(study_id, timepoint_id, session_num):
     Dismiss a session's 'missing redcap' error message.
     """
     timepoint = get_timepoint(study_id, timepoint_id, current_user)
-    dest_URL = url_for('timepoint', study_id=study_id,
-            timepoint_id=timepoint_id)
+    dest_URL = url_for('timepoint',
+                       study_id=study_id,
+                       timepoint_id=timepoint_id)
     session = get_session(timepoint, session_num, dest_URL)
     timepoint.dismiss_redcap_error(session_num)
     flash("Successfully updated.")
     return redirect(dest_URL)
 
-@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' + \
-        '/dismiss_missing/<int:session_num>', methods=['POST'])
+
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' +
+           '/dismiss_missing/<int:session_num>', methods=['POST'])
 @study_admin_required
 @login_required
 def dismiss_missing(study_id, timepoint_id, session_num):
@@ -488,28 +525,32 @@ def dismiss_missing(study_id, timepoint_id, session_num):
     Dismiss a session's 'missing scans' error message
     """
     timepoint = get_timepoint(study_id, timepoint_id, current_user)
-    dest_URL = url_for('timepoint', study_id=study_id,
-            timepoint_id=timepoint_id)
+    dest_URL = url_for('timepoint',
+                       study_id=study_id,
+                       timepoint_id=timepoint_id)
     session = get_session(timepoint, session_num, dest_URL)
 
     form = EmptySessionForm()
     if form.validate_on_submit():
-        timepoint.ignore_missing_scans(session_num, current_user.id,
-                form.comment.data)
+        timepoint.ignore_missing_scans(session_num,
+                                       current_user.id,
+                                       form.comment.data)
         flash("Succesfully updated.")
 
     return redirect(dest_URL)
 
-@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>/create_issue',
-        methods=['POST'])
+
+@app.route('/study/<string:study_id>/timepoint/<string:timepoint_id>' +
+           '/create_issue', methods=['POST'])
 @login_required
 def create_issue(study_id, timepoint_id):
     """
     Posts a new issue to Github
     """
     timepoint = get_timepoint(study_id, timepoint_id, current_user)
-    dest_URL = url_for('timepoint', study_id=study_id,
-            timepoint_id=timepoint_id)
+    dest_URL = url_for('timepoint',
+                       study_id=study_id,
+                       timepoint_id=timepoint_id)
 
     form = NewIssueForm()
     if not form.validate_on_submit():
@@ -522,7 +563,7 @@ def create_issue(study_id, timepoint_id):
     return redirect(dest_URL)
 
 
-############## End of Timepoint View functions #################################
+# End of Timepoint View functions ############################################
 
 @app.route('/redcap', methods=['GET', 'POST'])
 def redcap():
@@ -534,11 +575,11 @@ def redcap():
     logger.info('Received a query from redcap')
     if request.method != 'POST':
         logger.error('Received an invalid redcap request. A REDCAP data '
-                'callback may be misconfigured')
+                     'callback may be misconfigured')
         raise InvalidUsage('Expected a POST request', status_code=400)
 
     logger.debug('Received keys {} from REDcap from URL {}'.format(
-            request.form.keys(), request.form['project_url']))
+            list(request.form.keys()), request.form['project_url']))
     try:
         REDCAP.create_from_request(request)
     except Exception as e:
@@ -546,6 +587,7 @@ def redcap():
         raise InvalidUsage(str(e), status_code=400)
 
     return render_template('200.html'), 200
+
 
 @app.route('/redcap_redirect/<int:record_id>', methods=['GET'])
 @login_required
@@ -563,33 +605,43 @@ def redcap_redirect(record_id):
 
     redcap_url = '{}redcap_v{}/DataEntry/index.php?pid={}&id={}{}&page={}'
     redcap_url = redcap_url.format(record.url, record.redcap_version,
-            record.project, record.record, event_string, record.instrument)
+                                   record.project, record.record, event_string,
+                                   record.instrument)
 
     return redirect(redcap_url)
 
-@app.route('/study/<string:study_id>/scan/<int:scan_id>', methods=['GET', 'POST'])
+
+@app.route('/study/<string:study_id>/scan/<int:scan_id>',
+           methods=['GET', 'POST'])
 @login_required
 def scan(study_id, scan_id):
-    scan = get_scan(scan_id, study_id, current_user, fail_url=url_for('study',
-            study_id=study_id))
+    scan = get_scan(scan_id, study_id, current_user,
+                    fail_url=url_for('study', study_id=study_id))
     checklist_form = ScanChecklistForm(obj=scan.get_checklist_entry())
     slice_timing_form = SliceTimingForm()
-    return render_template('scan/main.html', scan=scan, study_id=study_id,
-            checklist_form=checklist_form, slice_timing_form=slice_timing_form)
+    return render_template('scan/main.html',
+                           scan=scan,
+                           study_id=study_id,
+                           checklist_form=checklist_form,
+                           slice_timing_form=slice_timing_form)
+
 
 @app.route('/study/<string:study_id>/papaya/<int:scan_id>', methods=['GET'])
 @login_required
 def papaya(study_id, scan_id):
-    scan = get_scan(scan_id, study_id, current_user, fail_url=url_for('study',
-            study_id=study_id))
+    scan = get_scan(scan_id, study_id, current_user,
+                    fail_url=url_for('study', study_id=study_id))
     name = os.path.basename(utils.get_nifti_path(scan))
-    return render_template('scan/viewer.html', study_id=study_id, scan_id=scan_id, nifti_name=name)
+    return render_template('scan/viewer.html', study_id=study_id,
+                           scan_id=scan_id, nifti_name=name)
+
 
 @app.route('/study/<string:study_id>/slice-timing/<int:scan_id>',
            methods=['POST'])
 @app.route('/study/<string:study_id>/slice-timing/<int:scan_id>/auto/<auto>',
            methods=['GET'])
-@app.route('/study/<string:study_id>/slice-timing/<int:scan_id>/delete/<delete>')
+@app.route('/study/<string:study_id>/slice-timing/<int:scan_id>'
+           '/delete/<delete>')
 @login_required
 def fix_slice_timing(study_id, scan_id, auto=False, delete=False):
     dest_url = url_for('scan', study_id=study_id, scan_id=scan_id)
@@ -599,7 +651,8 @@ def fix_slice_timing(study_id, scan_id, auto=False, delete=False):
     new_json = dict(scan.json_contents)
 
     if auto:
-        new_json["SliceTiming"] = scan.get_header_diffs()["SliceTiming"]["expected"]
+        new_json["SliceTiming"] = scan.get_header_diffs()[
+                                        "SliceTiming"]["expected"]
     elif delete:
         del new_json["SliceTiming"]
     else:
@@ -617,9 +670,9 @@ def fix_slice_timing(study_id, scan_id, auto=False, delete=False):
         utils.update_json(scan, new_json)
     except Exception as e:
         logger.error("Failed updating slice timings for scan {}. Reason {} "
-                "{}".format(scan_id, type(e).__name__, e))
+                     "{}".format(scan_id, type(e).__name__, e))
         flash("Failed during slice timing update. Please contact an admin for "
-                "help")
+              "help")
         return redirect(dest_url)
 
     utils.update_header_diffs(scan)
@@ -627,18 +680,19 @@ def fix_slice_timing(study_id, scan_id, auto=False, delete=False):
 
     return redirect(dest_url)
 
+
 @app.route('/study/<string:study_id>/scan/<int:scan_id>/review',
-        methods=['GET', 'POST'])
+           methods=['GET', 'POST'])
 @app.route('/study/<string:study_id>/scan/<int:scan_id>/review/<sign_off>',
-        methods=['GET', 'POST'])
+           methods=['GET', 'POST'])
 @app.route('/study/<string:study_id>/scan/<int:scan_id>/delete/<delete>',
-        methods=['GET', 'POST'])
+           methods=['GET', 'POST'])
 @app.route('/study/<string:study_id>/scan/<int:scan_id>/update/<update>',
-        methods=['GET', 'POST'])
+           methods=['GET', 'POST'])
 @login_required
 def scan_review(study_id, scan_id, sign_off=False, delete=False, update=False):
-    scan = get_scan(scan_id, study_id, current_user, fail_url=url_for('study',
-            study_id=study_id))
+    scan = get_scan(scan_id, study_id, current_user,
+                    fail_url=url_for('study', study_id=study_id))
     dest_url = url_for('scan', study_id=study_id, scan_id=scan_id)
 
     if delete:
@@ -661,7 +715,7 @@ def scan_review(study_id, scan_id, sign_off=False, delete=False, update=False):
 
     if update:
         # Update is done separately so that a review entry can't accidentally
-        # be changed from 'flagged' to blacklisted. i.e. 'sign_off' isnt changed
+        # be changed from 'flagged' to blacklisted.
         if comment is None:
             flash("Cannot update entry with empty comment")
             return redirect(dest_url)
@@ -670,6 +724,7 @@ def scan_review(study_id, scan_id, sign_off=False, delete=False, update=False):
 
     scan.add_checklist_entry(current_user.id, comment, sign_off)
     return redirect(url_for('scan', study_id=study_id, scan_id=scan_id))
+
 
 @app.route('/study/<string:study_id>', methods=['GET', 'POST'])
 @app.route('/study/<string:study_id>/<active_tab>', methods=['GET', 'POST'])
@@ -684,7 +739,7 @@ def study(study_id=None, active_tab=None):
         flash('Not authorised')
         return redirect(url_for('index'))
 
-    # get the list of metrics to be displayed in the graph pages from the study config
+    # get the list of metrics for to graph from the study config
     display_metrics = app.config['DISPLAY_METRICS']
 
     # get the study object from the database
@@ -746,8 +801,7 @@ def metricData():
     data = None
     csv_data = None
     csvname = 'dashboard/output.csv'
-    w_file= open(csvname, 'w')
-
+    w_file = open(csvname, 'w')
 
     if form.query_complete.data == 'True':
         data = metricDataAsJson()
@@ -756,16 +810,15 @@ def metricData():
         temp_data = json.loads(data.data)["data"]
         if temp_data:
 
-
             testwrite = csv.writer(w_file)
 
             csv_data = io.BytesIO()
             csvwriter = csv.writer(csv_data)
-            csvwriter.writerow(temp_data[0].keys())
-            testwrite.writerow(temp_data[0].keys())
+            csvwriter.writerow(list(temp_data[0].keys()))
+            testwrite.writerow(list(temp_data[0].keys()))
             for row in temp_data:
-                csvwriter.writerow(row.values())
-                testwrite.writerow(row.values())
+                csvwriter.writerow(list(row.values()))
+                testwrite.writerow(list(row.values()))
 
     w_file.close()
 
@@ -800,7 +853,7 @@ def metricData():
         #     for metrictype in scantype.metrictypes:
         #         metrictype_vals.append((metrictype.id, metrictype.name))
 
-    #sort the values alphabetically
+    # sort the values alphabetically
     study_vals = sorted(set(study_vals), key=lambda v: v[1])
     site_vals = sorted(set(site_vals), key=lambda v: v[1])
     scantype_vals = sorted(set(scantype_vals), key=lambda v: v[1])
@@ -810,7 +863,6 @@ def metricData():
     flask_session['site_name'] = site_vals
     flask_session['scantypes_name'] = scantype_vals
     flask_session['metrictypes_name'] = metrictype_vals
-
 
     # this bit actually updates the valid selections on the form
     form.study_id.choices = study_vals
@@ -827,12 +879,14 @@ def metricData():
     else:
         return render_template('getMetricData.html', form=form, data="")
 
+
 def _checkRequest(request, key):
     # Checks a post request, returns none if key doesn't exist
     try:
         return(request.form.getlist(key))
     except KeyError:
         return(None)
+
 
 @app.route('/DownloadCSV')
 @login_required
@@ -850,35 +904,37 @@ def downloadCSV():
 @login_required
 def metricDataAsJson(format='http'):
     """
-    Query the database for metric database, handles both GET (generated by client side javascript for creating graphs)
-    and POST (generated by the metricData form view) requests
+    Query the database for metrics. Handles both GET (generated by client side
+    javascript for creating graphs) and POST (generated by the metricData
+    form view) requests
 
-    Can be called directly:
+    Can be accessed at:
        http://srv-dashboard.camhres.ca/metricDataAsJson
+
     This will return all data in the database (probs not what you want).
 
     Filters can be defined in the http request object
-        (http://flask.pocoo.org/docs/0.12/api/#incoming-request-data)
-        this is a global flask object that is automatically created whenever a URL is
-        requested.
-        e.g.:
-        http://srv-dashboard.camhres.ca/metricDataAsJson?studies=15&sessions=1739,1744&metrictypes=84
-        creates a request object
+    (http://flask.pocoo.org/docs/0.12/api/#incoming-request-data)
+    this is a global flask object that is automatically created whenever a URL
+    is requested. e.g.:
+
+    <url>/metricDataAsJson?studies=15&sessions=1739,1744&metrictypes=84
+    creates a request object
             request.args = {studies: 15,
                             sessions: [1739, 1744],
                             metrictypes: 84}
     If byname is defined (and evaluates True) in the request.args then filters
-       can be defined by name instead of by database id
-    e.g. http://srv-dashboard.camhres.ca/metricDataAsJson?byname=True&studies=ANDT&sessions=ANDT_CMH_101_01&metrictypes=modulename
+    can be defined by name instead of by database id e.g.
+    <url>/metricDataAsJson?byname=True&studies=ANDT&sessions=ANDT_CMH_101_01
 
     Function works slightly differently if the request method is POST
-    (such as that generated by metricData())
-        In that case the field names are expected to be the primary keys from the database
-        as these are used to create the form.
+    (such as that generated by metricData()). In that case the field names are
+    expected to be the primary keys from the database as these are used to
+    create the form.
     """
     # Define the mapping from GET field names to POST field names
-    # it's going to get replaced either by the requested values (if defined in the request object)
-    # or by None if not set as a filter
+    # it's going to get replaced either by the requested values (if defined in
+    # the request object) or by None if not set as a filter
     fields = {'studies': 'study_id',
               'sites': 'site_id',
               'sessions': 'session_id',
@@ -886,7 +942,7 @@ def metricDataAsJson(format='http'):
               'scantypes': 'scantype_id',
               'metrictypes': 'metrictype_id'}
 
-    byname = False # switcher to allow getting values byname instead of id
+    byname = False  # switcher to allow getting values byname instead of id
 
     try:
         if request.method == 'POST':
@@ -897,7 +953,7 @@ def metricDataAsJson(format='http'):
         pass
 
     # extract the values from the request object and populate
-    for k, v in fields.iteritems():
+    for k, v in fields.items():
         if request.method == 'POST':
             fields[k] = _checkRequest(request, v)
         else:
@@ -907,14 +963,14 @@ def metricDataAsJson(format='http'):
                 fields[k] = None
 
     # remove None values from the dict
-    fields = dict((k, v) for k, v in fields.iteritems() if v)
+    fields = dict((k, v) for k, v in fields.items() if v)
 
     # make the database query
     if byname:
         data = query_metric_values_byname(**fields)
     else:
         # convert from strings to integers
-        for k, vals in fields.iteritems():
+        for k, vals in fields.items():
             try:
                 fields[k] = int(vals)
             except TypeError:
@@ -926,12 +982,12 @@ def metricDataAsJson(format='http'):
     # convert these into a standard list of dicts so we can jsonify it
     objects = []
 
-
     for metricValue in data:
 
         string_row = str(metricValue)
 
-        session = [session_link.session for session_link in metricValue.scan.sessions
+        session = [session_link.session
+                   for session_link in metricValue.scan.sessions
                    if session_link.is_primary][0]
         objects.append({'value':            metricValue.value,
                         'metrictype':       metricValue.metrictype.name,
@@ -994,7 +1050,7 @@ def oauth_callback(provider):
         del flask_session['next_url']
         if not is_safe_url(dest_page):
             raise
-    except:
+    except Exception:
         dest_page = url_for('index')
 
     oauth = OAuthSignIn.get_provider(provider)
@@ -1002,7 +1058,7 @@ def oauth_callback(provider):
 
     if access_token is None:
         flash('Authentication failed. Please contact an admin if '
-                'this problem is persistent')
+              'this problem is persistent')
         return redirect(url_for('login'))
 
     if provider == 'github':
@@ -1025,6 +1081,7 @@ def oauth_callback(provider):
 
     return redirect(dest_page)
 
+
 @app.route('/refresh_login')
 def refresh_login():
     flask_session['_fresh'] = False
@@ -1033,25 +1090,27 @@ def refresh_login():
         flask_session['next_url'] = next_url
     return redirect(url_for('login'))
 
+
 @app.route('/new_account', methods=['GET', 'POST'])
 def new_account():
     request_form = UserForm()
     if request_form.validate_on_submit():
         first = request_form.first_name.data
         last = request_form.last_name.data
-        new_user = User(first, last,
-                username=request_form.account.data,
-                provider=request_form.provider.data)
+        new_user = User(first,
+                        last,
+                        username=request_form.account.data,
+                        provider=request_form.provider.data)
         new_user.request_account(request_form)
         flash("Request submitted. Please allow up to 2 days for a response "
-                "before contacting an admin.")
+              "before contacting an admin.")
         return redirect(url_for('login'))
     if request_form.is_submitted:
         report_form_errors(request_form)
     return render_template('users/account_request.html', form=request_form)
 
 
-@app.route('/analysis', methods=['GET','POST'])
+@app.route('/analysis', methods=['GET', 'POST'])
 @app.route('/analysis/<analysis_id>')
 @login_required
 def analysis(analysis_id=None):
@@ -1069,7 +1128,7 @@ def analysis(analysis_id=None):
             db.session.add(analysis)
             db.session.commit()
             flash('Analysis added')
-        except:
+        except Exception:
             flash('Failed adding analysis')
 
     if not analysis_id:
@@ -1086,12 +1145,15 @@ def analysis(analysis_id=None):
                            analyses=analyses,
                            form=form)
 
+
 # These functions serve up static files from the local filesystem
 @app.route('/study/<string:study_id>/data/RESOURCES/<path:tech_notes_path>')
 @app.route('/study/<string:study_id>/qc/<string:timepoint_id>/index.html')
-@app.route('/study/<string:study_id>/qc/<string:timepoint_id>/<regex(".*\.png"):image>')
+@app.route('/study/<string:study_id>/qc/<string:timepoint_id>'
+           '/<regex(".*\.png"):image>')  # noqa: W605
 @login_required
-def static_qc_page(study_id, timepoint_id=None, image=None, tech_notes_path=None):
+def static_qc_page(study_id, timepoint_id=None, image=None,
+                   tech_notes_path=None):
     if tech_notes_path:
         resources = utils.get_study_path(study_id, 'resources')
         return send_from_directory(resources, tech_notes_path)
@@ -1105,17 +1167,19 @@ def static_qc_page(study_id, timepoint_id=None, image=None, tech_notes_path=None
 # The file name (with correct extension) needs to be last part of the URL or
 # papaya will fail to read the file because it wont figure out on its own
 # whether or not a file needs decompression
-@app.route('/study/<string:study_id>/load_scan/<int:scan_id>/<string:file_name>')
+@app.route('/study/<string:study_id>/load_scan/<int:scan_id>/'
+           '<string:file_name>')
 @login_required
 def load_scan(study_id, scan_id, file_name):
     scan = get_scan(scan_id, study_id, current_user, fail_url=prev_url())
     full_path = utils.get_nifti_path(scan)
     try:
-        result = send_file(full_path, as_attachment=True,
-            attachment_filename=file_name,
-            mimetype="application/gzip")
+        result = send_file(full_path,
+                           as_attachment=True,
+                           attachment_filename=file_name,
+                           mimetype="application/gzip")
     except IOError as e:
         logger.error("Couldnt find file {} to load scan view for user "
-                "{}".format(full_path, current_user))
+                     "{}".format(full_path, current_user))
         result = not_found_error(e)
     return result
