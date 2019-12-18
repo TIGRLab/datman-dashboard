@@ -15,16 +15,21 @@ import logging
 from uuid import uuid4
 from datetime import datetime, timedelta
 
-from dashboard import scheduler, ADMINS
-from .models import Session, User, Study
+from dashboard import scheduler
+from .models import Session, User
 from .emails import missing_session_data_email, missing_redcap_email
 from .exceptions import MonitorException
 
 logger = logging.getLogger(__name__)
 
 
-def add_monitor(check_function, input_args, input_kwargs=None, job_id=None,
-                days=None, hours=None, minutes=None):
+def add_monitor(check_function,
+                input_args,
+                input_kwargs=None,
+                job_id=None,
+                days=None,
+                hours=None,
+                minutes=None):
 
     scheduled_time = datetime.now()
     if days:
@@ -34,9 +39,11 @@ def add_monitor(check_function, input_args, input_kwargs=None, job_id=None,
     if minutes:
         scheduled_time = scheduled_time + timedelta(minutes=minutes)
 
-    extra_args = {'trigger': 'date',
-                  'run_date': scheduled_time,
-                  'args': input_args}
+    extra_args = {
+        'trigger': 'date',
+        'run_date': scheduled_time,
+        'args': input_args
+    }
     if input_kwargs:
         extra_args['kwargs'] = input_kwargs
 
@@ -68,13 +75,14 @@ def monitor_scan_import(session, users=None):
         raise MonitorException("Must provide an instance of "
                                "dashboard.models.Session to add a scan "
                                "import monitor. Received type {}".format(
-                                        type(session)))
+                                   type(session)))
 
     if not session.missing_scans():
         return
 
     if not users:
-        users = User.query.filter(User.dashboard_admin == True).all()  # noqa: E712
+        users = User.query.filter(
+            User.dashboard_admin == True).all()  # noqa: E712
         if not users:
             raise MonitorException("No users given and no dashboard admins "
                                    "found, cant add scan import monitor for "
@@ -103,7 +111,8 @@ def check_scans(name, num, recipients=None):
                                "scan data was received".format(name, num))
     if session.scans:
         return
-    missing_session_data_email(str(session), study=session.get_study().id,
+    missing_session_data_email(str(session),
+                               study=session.get_study().id,
                                dest_emails=None)
 
 
@@ -150,5 +159,6 @@ def check_redcap(name, num, recipients=None):
     if session.redcap_record:
         return
 
-    missing_redcap_email(str(session), session.get_study().id,
+    missing_redcap_email(str(session),
+                         session.get_study().id,
                          dest_emails=recipients)

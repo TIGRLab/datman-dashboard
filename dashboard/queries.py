@@ -32,8 +32,8 @@ def find_subjects(search_str):
     Used by the dashboard's search bar
     """
     search_str = search_str.strip().upper()
-    query = Timepoint.query.filter(func.upper(Timepoint.name).contains(
-            search_str))
+    query = Timepoint.query.filter(
+        func.upper(Timepoint.name).contains(search_str))
     return query.all()
 
 
@@ -54,10 +54,10 @@ def get_timepoint(name, bids_ses=None, study=None):
     query = Timepoint.query.filter(Timepoint.bids_name == name)\
                            .filter(Timepoint.bids_session == bids_ses)
     if study:
-        query = query.join(study_timepoints_table,
-                           and_((study_timepoints_table.c.timepoint ==
-                                 Timepoint.name),
-                                study_timepoints_table.c.study == study))
+        query = query.join(
+            study_timepoints_table,
+            and_((study_timepoints_table.c.timepoint == Timepoint.name),
+                 study_timepoints_table.c.study == study))
     return query.first()
 
 
@@ -71,21 +71,21 @@ def find_sessions(search_str):
         ident = scanid.parse(search_str)
     except scanid.ParseException:
         # Not a proper ID, try fuzzy search for name match
-        query = Session.query.filter(func.upper(Session.name).contains(
-                                                                search_str))
+        query = Session.query.filter(
+            func.upper(Session.name).contains(search_str))
     else:
         if ident.session:
             query = Session.query.filter(
-                        and_((func.upper(Session.name) ==
-                              ident.get_full_subjectid_with_timepoint()),
-                             Session.num == ident.session))
+                and_((func.upper(
+                    Session.name) == ident.get_full_subjectid_with_timepoint()
+                      ), Session.num == ident.session))
             if not query.count():
                 ident.session = None
 
         if not ident.session:
             query = Session.query.filter(
-                    func.upper(Session.name) ==
-                    ident.get_full_subjectid_with_timepoint())
+                func.upper(Session.name) ==
+                ident.get_full_subjectid_with_timepoint())
 
     return query.all()
 
@@ -121,45 +121,44 @@ def find_scans(search_str):
             # Doesnt match a file name or a subject ID so fuzzy search
             # for...
             # matching scan name
-            query = Scan.query.filter(func.upper(Scan.name).contains(
-                    search_str))
+            query = Scan.query.filter(
+                func.upper(Scan.name).contains(search_str))
             if query.count() == 0:
                 # or matching subid
-                query = Scan.query.filter(func.upper(Scan.timepoint).contains(
-                        search_str))
+                query = Scan.query.filter(
+                    func.upper(Scan.timepoint).contains(search_str))
             if query.count() == 0:
                 # or matching tags
-                query = Scan.query.filter(func.upper(Scan.tag).contains(
-                        search_str))
+                query = Scan.query.filter(
+                    func.upper(Scan.tag).contains(search_str))
             if query.count() == 0:
                 # or matching series description
-                query = Scan.query.filter(func.upper(Scan.description)
-                                              .contains(search_str))
+                query = Scan.query.filter(
+                    func.upper(Scan.description).contains(search_str))
         else:
             if ident.session:
                 query = Scan.query.filter(
-                            and_((func.upper(Scan.timepoint) ==
-                                  ident.get_full_subjectid_with_timepoint()),
-                                 Scan.repeat == int(ident.session)))
+                    and_((func.upper(Scan.timepoint) ==
+                          ident.get_full_subjectid_with_timepoint()),
+                         Scan.repeat == int(ident.session)))
                 if not query.count():
                     ident.session = None
 
             if not ident.session:
                 query = Scan.query.filter(
-                        func.upper(Scan.timepoint) ==
-                        ident.get_full_subjectid_with_timepoint())
+                    func.upper(Scan.timepoint) ==
+                    ident.get_full_subjectid_with_timepoint())
     else:
-        name = "_".join([ident.get_full_subjectid_with_timepoint_session(),
-                         tag,
-                         series])
+        name = "_".join(
+            [ident.get_full_subjectid_with_timepoint_session(), tag, series])
         query = Scan.query.filter(func.upper(Scan.name).contains(name))
 
     return query.all()
 
 
 def get_user(username):
-    query = User.query.filter(func.lower(User._username).contains(
-            func.lower(username)))
+    query = User.query.filter(
+        func.lower(User._username).contains(func.lower(username)))
     return query.all()
 
 
@@ -176,12 +175,14 @@ def query_metric_values_byid(**kwargs):
     # convert the argument keys to lowercase
     kwargs = {k.lower(): v for k, v in kwargs.items()}
 
-    filters = {'studies': 'Study.id',
-               'sites': 'Site.id',
-               'sessions': 'Session.id',
-               'scans': 'Scan.id',
-               'scantypes': 'ScanType.id',
-               'metrictypes': 'MetricType.id'}
+    filters = {
+        'studies': 'Study.id',
+        'sites': 'Site.id',
+        'sessions': 'Session.id',
+        'scans': 'Scan.id',
+        'scantypes': 'ScanType.id',
+        'metrictypes': 'MetricType.id'
+    }
 
     arg_keys = set(kwargs.keys())
 
@@ -189,8 +190,8 @@ def query_metric_values_byid(**kwargs):
     good_keys = arg_keys & set(filters.keys())
 
     if bad_keys:
-        logger.warning('Ignoring invalid filter keys provided:{}'
-                       .format(bad_keys))
+        logger.warning(
+            'Ignoring invalid filter keys provided:{}'.format(bad_keys))
 
     q = db.session.query(MetricValue)
     q = q.join(MetricType, MetricValue.metrictype)
@@ -210,7 +211,7 @@ def query_metric_values_byid(**kwargs):
 
     result = q.all()
 
-    return(result)
+    return (result)
 
 
 def query_metric_values_byname(**kwargs):
@@ -226,13 +227,15 @@ def query_metric_values_byname(**kwargs):
     # convert the argument keys to lowercase
     kwargs = {k.lower(): v for k, v in kwargs.items()}
 
-    filters = {'studies': 'Study.nickname',
-               'sites': 'Site.name',
-               'sessions': 'Session.name',
-               'scans': 'Scan.name',
-               'scantypes': 'ScanType.name',
-               'metrictypes': 'MetricType.name',
-               'isphantom': 'Session.is_phantom'}
+    filters = {
+        'studies': 'Study.nickname',
+        'sites': 'Site.name',
+        'sessions': 'Session.name',
+        'scans': 'Scan.name',
+        'scantypes': 'ScanType.name',
+        'metrictypes': 'MetricType.name',
+        'isphantom': 'Session.is_phantom'
+    }
 
     arg_keys = set(kwargs.keys())
 
@@ -240,8 +243,8 @@ def query_metric_values_byname(**kwargs):
     good_keys = arg_keys & set(filters.keys())
 
     if bad_keys:
-        logger.warning('Ignoring invalid filter keys provided:{}'
-                       .format(bad_keys))
+        logger.warning(
+            'Ignoring invalid filter keys provided:{}'.format(bad_keys))
 
     q = db.session.query(MetricValue)
     q = q.join(MetricType, MetricValue.metrictype)
@@ -262,7 +265,7 @@ def query_metric_values_byname(**kwargs):
 
     result = q.all()
 
-    return(result)
+    return (result)
 
 
 def query_metric_types(**kwargs):
@@ -270,10 +273,12 @@ def query_metric_types(**kwargs):
     # convert the argument keys to lowercase
     kwargs = {k.lower(): v for k, v in kwargs.items()}
 
-    filters = {'studies': 'Study.id',
-               'sites': 'Site.id',
-               'scantypes': 'ScanType.id',
-               'metrictypes': 'MetricType.id'}
+    filters = {
+        'studies': 'Study.id',
+        'sites': 'Site.id',
+        'scantypes': 'ScanType.id',
+        'metrictypes': 'MetricType.id'
+    }
 
     arg_keys = set(kwargs.keys())
 
@@ -281,8 +286,8 @@ def query_metric_types(**kwargs):
     good_keys = arg_keys & set(filters.keys())
 
     if bad_keys:
-        logger.warning('Ignoring invalid filter keys provided: {}'
-                       .format(bad_keys))
+        logger.warning(
+            'Ignoring invalid filter keys provided: {}'.format(bad_keys))
 
     q = db.session.query(Study, Site, Scantype, Metrictype) \
           .join(Study.sites) \
@@ -297,4 +302,4 @@ def query_metric_types(**kwargs):
     logger.debug('Query string: {}'.format(str(q)))
     result = q.all()
 
-    return(result)
+    return (result)

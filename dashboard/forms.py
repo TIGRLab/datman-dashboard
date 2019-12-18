@@ -8,17 +8,13 @@ This allows us to create HTML forms in python without having to worry about
 the html code or CSRF vulnerabilities
 """
 
-from flask import session
 from flask_wtf import FlaskForm
-from wtforms import SelectField, SelectMultipleField, HiddenField, \
-                    SubmitField, TextAreaField, TextField, FormField, \
-                    BooleanField, widgets, FieldList, RadioField
+from wtforms import SelectMultipleField, HiddenField, \
+        SubmitField, TextAreaField, TextField, FormField, \
+        BooleanField, FieldList, RadioField
 from wtforms.fields.html5 import EmailField, TelField
 from wtforms.compat import iteritems
-from wtforms.validators import DataRequired, Email
-from wtforms.csrf.session import SessionCSRF
-
-from .models import Study, Analysis
+from wtforms.validators import DataRequired
 
 
 class SelectMetricsForm(FlaskForm):

@@ -8,7 +8,7 @@ import redcap as REDCAP
 import datman.scanid
 
 from config import REDCAP_TOKEN
-from .models import RedcapRecord, Session, Timepoint
+from .models import Session, Timepoint
 from .queries import get_study
 from .monitors import monitor_scan_import
 from .exceptions import RedcapException
@@ -28,7 +28,7 @@ def create_from_request(request):
     except KeyError:
         raise RedcapException('Redcap data entry trigger request missing a '
                               'required key. Found keys: {}'.format(
-                                        list(request.form.keys())))
+                                  list(request.form.keys())))
 
     if completed != 2:
         logger.info("Record {} not completed. Ignoring".format(record))
@@ -39,7 +39,7 @@ def create_from_request(request):
 
     if len(server_record) < 0:
         raise RedcapException('Record {} not found on redcap server {}'.format(
-                record, url))
+            record, url))
     elif len(server_record) > 1:
         raise RedcapException('Found {} records matching {} on redcap server '
                               '{}'.format(len(server_record), record, url))
@@ -54,8 +54,7 @@ def create_from_request(request):
     except KeyError:
         raise RedcapException('Redcap record {} from server {} missing a '
                               'required field. Found keys: {}'.format(
-                                    record,
-                                    list(server_record.keys())))
+                                  record, list(server_record.keys())))
 
     session = set_session(session_name)
     try:
@@ -63,8 +62,8 @@ def create_from_request(request):
                                         redcap_user, comment, version)
     except Exception as e:
         raise RedcapException("Failed adding record {} from project {} on "
-                              "server {}. Reason: {}".format(record, project,
-                                                             url, e))
+                              "server {}. Reason: {}".format(
+                                  record, project, url, e))
 
     monitor_scan_import(session)
 

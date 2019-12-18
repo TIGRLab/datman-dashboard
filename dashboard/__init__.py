@@ -71,15 +71,13 @@ if app.debug:
         base_dir = os.path.realpath(os.path.join(base_dir, '..'))
         log_dir = os.path.join(base_dir, 'logs')
         if not os.path.exists(log_dir):
-            app.logger.warning("{} does not exist. Make it to receive log "
-                               "files while in development mode :)".format(
-                                    log_dir))
+            app.logger.warning(
+                "{} does not exist. Make it to receive log "
+                "files while in development mode :)".format(log_dir))
         else:
-            file_handler = RotatingFileHandler(os.path.join(log_dir,
-                                                            'dashboard.log'),
-                                               'a',
-                                               1 * 1024 * 1024,
-                                               10)
+            file_handler = RotatingFileHandler(
+                os.path.join(log_dir, 'dashboard.log'), 'a', 1 * 1024 * 1024,
+                10)
             file_handler.setLevel(logging.DEBUG)
             file_handler.setFormatter(formatter)
             app.logger.addHandler(file_handler)
@@ -110,10 +108,11 @@ if SCHEDULER_ENABLED:
     scheduler.init_app(app)
     scheduler.start()
     if SCHEDULER_API_ENABLED:
+
         @scheduler.authenticate
         def authenticate(auth):
-            return (auth['username'] == SCHEDULER_USER and
-                    auth['password'] == SCHEDULER_PASS)
+            return (auth['username'] == SCHEDULER_USER
+                    and auth['password'] == SCHEDULER_PASS)
 else:
     from .task_scheduler import RemoteScheduler
     scheduler = RemoteScheduler(SCHEDULER_USER, SCHEDULER_PASS,

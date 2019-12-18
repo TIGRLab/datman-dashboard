@@ -16,8 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 def search_issues(token, timepoint):
-    search_string = "{} repo:{}/{}".format(timepoint,
-                                           GITHUB_OWNER,
+    search_string = "{} repo:{}/{}".format(timepoint, GITHUB_OWNER,
                                            GITHUB_REPO)
     try:
         issues = Github(token).search_issues(search_string)
@@ -34,8 +33,8 @@ def get_issue(token, issue_num=None):
         repo = get_issues_repo(token)
         issue = repo.get_issue(issue_num)
     except Exception as e:
-        logger.error("Can't retrieve issue {}. Reason: {}".format(issue_num,
-                                                                  e))
+        logger.error("Can't retrieve issue {}. Reason: {}".format(
+            issue_num, e))
         issue = None
     return issue
 
@@ -52,8 +51,7 @@ def create_issue(token, title, body, assign=None):
             issue = repo.create_issue(title, body)
     except Exception as e:
         raise Exception("Can't create new issue '{}'. Reason: {}".format(
-                            title,
-                            e))
+            title, e))
     return issue
 
 
@@ -141,10 +139,10 @@ def update_json(scan, contents):
         json.dump(contents, out)
 
     os.remove(scan.json_path)
-    os.symlink(os.path.join(os.path.relpath(json_folder,
-                                            os.path.dirname(scan.json_path)),
-                            os.path.basename(scan.json_path)),
-               scan.json_path)
+    os.symlink(
+        os.path.join(
+            os.path.relpath(json_folder, os.path.dirname(scan.json_path)),
+            os.path.basename(scan.json_path)), scan.json_path)
 
 
 def update_header_diffs(scan):
@@ -168,7 +166,8 @@ def update_header_diffs(scan):
     else:
         check_bvals = qc_type == 'dti'
 
-    scan.update_header_diffs(ignore=ignore, tolerance=tolerance,
+    scan.update_header_diffs(ignore=ignore,
+                             tolerance=tolerance,
                              bvals=check_bvals)
 
 
@@ -213,11 +212,13 @@ def delete_timepoint(timepoint):
         delete(config, path_key, folder=str(timepoint))
 
     for num in timepoint.sessions:
-        delete(config, 'dicom',
+        delete(config,
+               'dicom',
                files=['{}.zip'.format(str(timepoint.sessions[num]))])
         delete(config, 'resources', folder=str(timepoint.sessions[num]))
-        delete(config, 'std', files=[scan.name for scan
-                                     in timepoint.sessions[num].scans])
+        delete(config,
+               'std',
+               files=[scan.name for scan in timepoint.sessions[num].scans])
 
     if not timepoint.bids_name:
         return
