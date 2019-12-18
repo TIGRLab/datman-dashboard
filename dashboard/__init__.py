@@ -3,8 +3,8 @@ Main init script, creates the app object and sets up logging
 """
 import os
 import logging
-from logging.handlers import SMTPHandler, RotatingFileHandler, SocketHandler, \
-        DEFAULT_TCP_LOGGING_PORT
+from logging.handlers import (SMTPHandler, RotatingFileHandler, SocketHandler,
+                              DEFAULT_TCP_LOGGING_PORT)
 
 from flask import Flask
 from flask_mail import Mail
@@ -13,11 +13,12 @@ from flask_login import LoginManager
 from flask_apscheduler import APScheduler
 from werkzeug.routing import BaseConverter
 
-from config import basedir, ADMINS, LOG_MAIL_SERVER, LOG_MAIL_PORT, \
-        LOG_MAIL_USER, LOG_MAIL_PASS, MAIL_SERVER, MAIL_PORT, SENDER, \
-        DASH_SUPPORT, LOGSERVER, GITHUB_OWNER, GITHUB_REPO, GITHUB_PUBLIC, \
-        TZ_OFFSET, SCHEDULER_ENABLED, SCHEDULER_API_ENABLED, \
-        SCHEDULER_SERVER_URL, SCHEDULER_USER, SCHEDULER_PASS
+from config import (basedir, ADMINS, LOG_MAIL_SERVER, LOG_MAIL_PORT,
+                    LOG_MAIL_USER, LOG_MAIL_PASS, MAIL_SERVER, MAIL_PORT,
+                    SENDER, DASH_SUPPORT, LOGSERVER, GITHUB_OWNER, GITHUB_REPO,
+                    GITHUB_PUBLIC, TZ_OFFSET, SCHEDULER_ENABLED,
+                    SCHEDULER_API_ENABLED, SCHEDULER_SERVER_URL,
+                    SCHEDULER_USER, SCHEDULER_PASS)
 
 app = Flask(__name__)
 app.config.from_object('config')
