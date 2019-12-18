@@ -34,20 +34,20 @@ logger = logging.getLogger(__name__)
 ###############################################################################
 # Association tables (i.e. basic many to many relationships)
 
-study_timepoints_table = db.Table('study_timepoints',
-                                  db.Column('study',
-                                            db.String(32),
-                                            db.ForeignKey('studies.id'),
-                                            nullable=False),
-                                  db.Column('timepoint',
-                                            db.String(64),
-                                            db.ForeignKey('timepoints.name'),
-                                            nullable=False),
-                                  UniqueConstraint('study', 'timepoint'))
-
+study_timepoints_table = db.Table(
+    'study_timepoints',
+    db.Column('study',
+              db.String(32),
+              db.ForeignKey('studies.id'),
+              nullable=False),
+    db.Column('timepoint',
+              db.String(64),
+              db.ForeignKey('timepoints.name'),
+              nullable=False), UniqueConstraint('study', 'timepoint'))
 
 ###############################################################################
 # Plain entities
+
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
@@ -67,12 +67,12 @@ class User(UserMixin, db.Model):
     dashboard_admin = db.Column('dashboard_admin', db.Boolean, default=False)
     is_active = db.Column('account_active', db.Boolean, default=False)
 
-    studies = db.relationship('StudyUser',
-                              back_populates='user',
-                              order_by='StudyUser.study_id',
-                              collection_class=attribute_mapped_collection(
-                                               'study_id'),
-                              cascade="all, delete-orphan")
+    studies = db.relationship(
+        'StudyUser',
+        back_populates='user',
+        order_by='StudyUser.study_id',
+        collection_class=attribute_mapped_collection('study_id'),
+        cascade="all, delete-orphan")
     incidental_findings = db.relationship('IncidentalFinding')
     scan_comments = db.relationship('ScanChecklist')
     timepoint_comments = db.relationship('TimepointComment')
@@ -82,10 +82,21 @@ class User(UserMixin, db.Model):
                                        uselist=False,
                                        cascade="all, delete")
 
-    def __init__(self, first, last, username=None, provider='github',
-                 email=None, position=None, institution=None, phone=None,
-                 ext=None, alt_phone=None, alt_ext=None, picture=None,
-                 dashboard_admin=False, account_active=False):
+    def __init__(self,
+                 first,
+                 last,
+                 username=None,
+                 provider='github',
+                 email=None,
+                 position=None,
+                 institution=None,
+                 phone=None,
+                 ext=None,
+                 alt_phone=None,
+                 alt_ext=None,
+                 picture=None,
+                 dashboard_admin=False,
+                 account_active=False):
         self.first_name = first
         self.last_name = last
         self.email = email
@@ -189,7 +200,7 @@ class User(UserMixin, db.Model):
 
         if enabled_studies:
             disabled_studies = Study.query.filter(
-                    ~Study.id.in_(enabled_studies)).all()
+                ~Study.id.in_(enabled_studies)).all()
         else:
             disabled_studies = Study.query.all()
 
@@ -253,7 +264,9 @@ class User(UserMixin, db.Model):
 class AccountRequest(db.Model):
     __tablename__ = 'account_requests'
 
-    user_id = db.Column('user_id', db.Integer, db.ForeignKey("users.id"),
+    user_id = db.Column('user_id',
+                        db.Integer,
+                        db.ForeignKey("users.id"),
                         primary_key=True)
     user = db.relationship('User', uselist=False)
 
@@ -291,11 +304,10 @@ class AccountRequest(db.Model):
     def __str__(self):
         if self.user:
             result = "{} {} requests access under username {}".format(
-                    self.user.first_name, self.user.last_name,
-                    self.user.username)
+                self.user.first_name, self.user.last_name, self.user.username)
         else:
             result = "User with ID {} requests dashboard access".format(
-                    self.user_id)
+                self.user_id)
         return result
 
 
@@ -309,18 +321,22 @@ class Study(db.Model):
     is_open = db.Column('is_open', db.Boolean)
 
     users = db.relationship('StudyUser', back_populates='study')
-    sites = db.relationship('StudySite',
-                            back_populates='study',
-                            collection_class=attribute_mapped_collection(
-                                             'site_id'))
+    sites = db.relationship(
+        'StudySite',
+        back_populates='study',
+        collection_class=attribute_mapped_collection('site_id'))
     scantypes = association_proxy('study_scantypes', 'scantype')
     timepoints = db.relationship('Timepoint',
                                  secondary=study_timepoints_table,
                                  back_populates='studies',
                                  lazy='dynamic')
 
-    def __init__(self, study_id, full_name=None, description=None,
-                 read_me=None, is_open=None):
+    def __init__(self,
+                 study_id,
+                 full_name=None,
+                 description=None,
+                 read_me=None,
+                 is_open=None):
         self.id = study_id
         self.full_name = full_name
         self.description = description
@@ -330,31 +346,32 @@ class Study(db.Model):
     def add_timepoint(self, timepoint):
         if isinstance(timepoint, scanid.Identifier):
             timepoint = Timepoint(
-                    timepoint.get_full_subjectid_with_timepoint(),
-                    timepoint.site, is_phantom=scanid.is_phantom(timepoint))
+                timepoint.get_full_subjectid_with_timepoint(),
+                timepoint.site,
+                is_phantom=scanid.is_phantom(timepoint))
 
         if not isinstance(timepoint, Timepoint):
             raise InvalidDataException(
-                    "Invalid input to 'add_timepoint()': "
-                    "instance of dashboard.models.Timepoint or "
-                    "datman.scanid.Identifier expected")
+                "Invalid input to 'add_timepoint()': "
+                "instance of dashboard.models.Timepoint or "
+                "datman.scanid.Identifier expected")
 
         if timepoint.site_id not in self.sites.keys():
             raise InvalidDataException("Timepoint's site {} is not configured "
-                                       "for study {}".format(timepoint.site_id,
-                                                             self.id))
+                                       "for study {}".format(
+                                           timepoint.site_id, self.id))
         self.timepoints.append(timepoint)
         try:
             db.session.add(self)
             db.session.commit()
-        except FlushError as e:
+        except FlushError:
             db.session.rollback()
             raise InvalidDataException("Can't add timepoint {}. Already "
                                        "exists.".format(timepoint))
         except Exception as e:
             db.session.rollback()
             e.message = "Failed to add timepoint {}. Reason: {}".format(
-                    timepoint, e)
+                timepoint, e)
             raise
 
         return timepoint
@@ -373,26 +390,30 @@ class Study(db.Model):
             str_err = str(e)
             if 'study_scantypes' in str_err:
                 raise InvalidDataException(
-                        "Attempted to add gold standard for "
-                        "invalid study / scan type - {}".format(gs_file))
+                    "Attempted to add gold standard for "
+                    "invalid study / scan type - {}".format(gs_file))
             elif 'study_sites' in str_err:
                 raise InvalidDataException(
-                        "Attempted to add gold standard for "
-                        "invalid study / site - {}".format(gs_file))
+                    "Attempted to add gold standard for "
+                    "invalid study / site - {}".format(gs_file))
             elif 'gold_standards_json_path_contents_constraint' in str_err:
                 raise InvalidDataException("Failed to add gold standard {}. "
                                            "Record already exists "
-                                           "in database - {}".format(gs_file,
-                                                                     e))
+                                           "in database - {}".format(
+                                               gs_file, e))
         return new_gs
 
     def num_timepoints(self, type=''):
         if type.lower() == 'human':
-            timepoints = [timepoint for timepoint in self.timepoints
-                          if not timepoint.is_phantom]
+            timepoints = [
+                timepoint for timepoint in self.timepoints
+                if not timepoint.is_phantom
+            ]
         elif type.lower() == 'phantom':
-            timepoints = [timepoint for timepoint in self.timepoints
-                          if timepoint.is_phantom]
+            timepoints = [
+                timepoint for timepoint in self.timepoints
+                if timepoint.is_phantom
+            ]
         else:
             timepoints = self.timepoints
         return len(timepoints)
@@ -400,8 +421,8 @@ class Study(db.Model):
     def outstanding_issues(self):
         # use from_self to get a tuple of Session.name, Session.num like from
         # the other queries
-        new_sessions = self.get_new_sessions().from_self(Session.name,
-                                                         Session.num).all()
+        new_sessions = self.get_new_sessions().from_self(
+            Session.name, Session.num).all()
         need_rewrite = self.needs_rewrite()
         missing_redcap = self.get_missing_redcap()
         missing_scans = self.get_missing_scans()
@@ -452,7 +473,7 @@ class Study(db.Model):
                            study_timepoints_table.c.study == self.id)) \
                 .filter(Session.signed_off == False) \
                 .filter(Timepoint.is_phantom == False) \
-                .group_by(Session.name)  # noqa: E712
+                .group_by(Session.name)
 
         return new
 
@@ -478,7 +499,7 @@ class Study(db.Model):
                                    (StudySite.study_id ==
                                     study_timepoints_table.c.study))) \
                         .filter(Timepoint.is_phantom == False) \
-                        .filter(StudySite.uses_redcap == True)  # noqa: E712
+                        .filter(StudySite.uses_redcap == True)
 
         return uses_redcap
 
@@ -488,8 +509,8 @@ class Study(db.Model):
         that are expecting a redcap survey but dont yet have one.
         """
         uses_redcap = self.get_sessions_using_redcap()
-        sessions = uses_redcap.filter(SessionRedcap.name == None) \
-                    .from_self(Session.name, Session.num)  # noqa: E711
+        sessions = uses_redcap.filter(SessionRedcap.name == None).from_self(
+            Session.name, Session.num)
         return sessions.all()
 
     def get_missing_scans(self):
@@ -500,14 +521,13 @@ class Study(db.Model):
         """
         uses_redcap = self.get_sessions_using_redcap()
         sessions = uses_redcap.filter(SessionRedcap.record_id != None)\
-                    .filter(~exists().where(and_((Scan.timepoint ==
-                                                  Session.name),
-                                                 Scan.repeat == Session.num)))\
-                    .filter(~exists().where(and_((Session.name ==
-                                                  EmptySession.name),
-                                                 (Session.num ==
-                                                 EmptySession.num)))) \
-                    .from_self(Session.name, Session.num)  # noqa: E711
+                              .filter(~exists().where(and_(
+                                        Scan.timepoint == Session.name,
+                                        Scan.repeat == Session.num)))\
+                              .filter(~exists().where(and_(
+                                        Session.name == EmptySession.name,
+                                        Session.num == EmptySession.num)))\
+                              .from_self(Session.name, Session.num)
         return sessions.all()
 
     def needs_rewrite(self):
@@ -535,26 +555,29 @@ class Study(db.Model):
                                          repeated.c.num) \
                                  .filter(Session.num >
                                          Timepoint.last_qc_repeat_generated) \
-                                 .from_self(Session.name, Session.num)  # noqa: E711
+                                 .from_self(Session.name, Session.num)
 
         return need_rewrite.all()
 
     def get_blacklisted_scans(self):
         query = self._get_checklist()
-        blacklisted_scans = query.filter(and_(ScanChecklist.approved == False,
-                                              ScanChecklist.comment != None))  # noqa: E712, E711
+        blacklisted_scans = query.filter(
+            and_(ScanChecklist.approved == False,
+                 ScanChecklist.comment != None))
         return blacklisted_scans.all()
 
     def get_flagged_scans(self):
         query = self._get_checklist()
-        flagged_scans = query.filter(and_(ScanChecklist.approved == True,
-                                          ScanChecklist.comment != None))  # noqa: E712, E711
+        flagged_scans = query.filter(
+            and_(ScanChecklist.approved == True,
+                 ScanChecklist.comment != None))
         return flagged_scans.all()
 
     def get_qced_scans(self):
         query = self._get_checklist()
-        reviewed_scans = query.filter(and_(ScanChecklist.approved == True,
-                                           ScanChecklist.comment == None))  # noqa: E712, E711
+        reviewed_scans = query.filter(
+            and_(ScanChecklist.approved == True,
+                 ScanChecklist.comment == None))
         return reviewed_scans.all()
 
     def _get_checklist(self):
@@ -576,8 +599,9 @@ class Study(db.Model):
         instead (and store it in the database). For now I just got it
         working with the new schema - Dawn
         """
-        valid_fmri_scantypes = ['IMI', 'RST', 'EMP', 'OBS', 'SPRL-COMB',
-                                'VN-SPRL-COMB']
+        valid_fmri_scantypes = [
+            'IMI', 'RST', 'EMP', 'OBS', 'SPRL-COMB', 'VN-SPRL-COMB'
+        ]
         names = []
         for scantype in self.scantypes:
             for metrictype in scantype.metrictypes:
@@ -589,11 +613,13 @@ class Study(db.Model):
                     names.append(('T1', metrictype.name))
 
         names = sorted(set(names))
-        return(names)
+        return names
 
     def get_primary_contacts(self):
-        contacts = [study_user.user for study_user in self.users
-                    if study_user.primary_contact]
+        contacts = [
+            study_user.user for study_user in self.users
+            if study_user.primary_contact
+        ]
         return contacts
 
     def get_staff_contacts(self):
@@ -610,8 +636,10 @@ class Study(db.Model):
         if site:
             # Get all users who are an RA for this specific site or
             # an RA for the whole study
-            RAs = [su.user for su in self.users
-                   if su.study_RA and (not su.site or su.site == site)]
+            RAs = [
+                su.user for su in self.users
+                if su.study_RA and (not su.site or su.site == site)
+            ]
         else:
             # Get all RAs for the study
             RAs = [su.user for su in self.users if su.study_RA]
@@ -659,10 +687,10 @@ class Site(db.Model):
     name = db.Column('name', db.String(32), primary_key=True)
     description = db.Column('description', db.Text)
 
-    studies = db.relationship('StudySite',
-                              back_populates='site',
-                              collection_class=attribute_mapped_collection(
-                                                'study.id'))
+    studies = db.relationship(
+        'StudySite',
+        back_populates='site',
+        collection_class=attribute_mapped_collection('study.id'))
     timepoints = db.relationship('Timepoint')
 
     def __init__(self, site_name, description=None):
@@ -695,16 +723,16 @@ class Timepoint(db.Model):
     static_page = db.Column('static_page', db.String(1028))
 
     site = db.relationship('Site', uselist=False, back_populates='timepoints')
-    studies = db.relationship('Study',
-                              secondary=study_timepoints_table,
-                              back_populates='timepoints',
-                              collection_class=attribute_mapped_collection(
-                                               'id'))
-    sessions = db.relationship('Session',
-                               lazy='joined',
-                               collection_class=attribute_mapped_collection(
-                                                'num'),
-                               cascade='all, delete')
+    studies = db.relationship(
+        'Study',
+        secondary=study_timepoints_table,
+        back_populates='timepoints',
+        collection_class=attribute_mapped_collection('id'))
+    sessions = db.relationship(
+        'Session',
+        lazy='joined',
+        collection_class=attribute_mapped_collection('num'),
+        cascade='all, delete')
     comments = db.relationship('TimepointComment',
                                cascade='all, delete',
                                order_by='TimepointComment._timestamp')
@@ -829,8 +857,8 @@ class Timepoint(db.Model):
                                    for sess in self.sessions.values())
 
     def needs_rewrite(self):
-        if self.static_page and (self.last_qc_repeat_generated <
-                                 len(self.sessions)):
+        if self.static_page and (self.last_qc_repeat_generated < len(
+                self.sessions)):
             return True
         return False
 
@@ -882,8 +910,9 @@ class Timepoint(db.Model):
         db.session.commit()
 
     def get_comment(self, comment_id):
-        match = [comment for comment in self.comments
-                 if comment.id == comment_id]
+        match = [
+            comment for comment in self.comments if comment.id == comment_id
+        ]
         if not match:
             raise Exception('Comment not found.')
         return match[0]
@@ -932,8 +961,8 @@ class TimepointComment(db.Model):
         self.timepoint_id = timepoint_id
         self.user_id = user_id
         self.comment = comment
-        self._timestamp = datetime.datetime.now(FixedOffsetTimezone(
-                                                    offset=TZ_OFFSET))
+        self._timestamp = datetime.datetime.now(
+            FixedOffsetTimezone(offset=TZ_OFFSET))
 
     def update(self, new_text):
         self.comment = new_text
@@ -947,8 +976,7 @@ class TimepointComment(db.Model):
 
     def __repr__(self):
         return "<TimepointComment for {} by user {}>".format(
-                        self.timepoint_id,
-                        self.user_id)
+            self.timepoint_id, self.user_id)
 
 
 class Session(db.Model):
@@ -983,8 +1011,13 @@ class Session(db.Model):
                                     cascade='all, delete')
     task_files = db.relationship('TaskFile', cascade='all, delete')
 
-    def __init__(self, name, num, date=None, signed_off=False,
-                 reviewer_id=None, review_date=None):
+    def __init__(self,
+                 name,
+                 num,
+                 date=None,
+                 signed_off=False,
+                 reviewer_id=None,
+                 review_date=None):
         self.name = name
         self.num = num
         self.date = date
@@ -1018,17 +1051,24 @@ class Session(db.Model):
         except Exception as e:
             db.session.rollback()
             e.message = "Could not delete scan {}. Reason: {}".format(
-                            name,
-                            e.message)
+                name, e.message)
             raise e
 
-    def add_redcap(self, record_num, project, url, instrument=None, date=None,
-                   rc_user=None, comment=None, version=None, event_id=None):
+    def add_redcap(self,
+                   record_num,
+                   project,
+                   url,
+                   instrument=None,
+                   date=None,
+                   rc_user=None,
+                   comment=None,
+                   version=None,
+                   event_id=None):
         if self.redcap_record and self.redcap_record.record is not None:
             rc_record = self.redcap_record.record
-            if (rc_record.record != record_num or
-                    str(rc_record.project) != project or
-                    str(rc_record.url) != str(url)):
+            if (rc_record.record != record_num
+                    or str(rc_record.project) != project
+                    or str(rc_record.url) != str(url)):
                 raise InvalidDataException("Existing record already found. "
                                            "Please remove the old record "
                                            "before adding a new one.")
@@ -1063,7 +1103,7 @@ class Session(db.Model):
             self.save()
         except IntegrityError as e:
             logger.error("Can't update redcap record {}. Reason: {}".format(
-                    rc_record.id, e))
+                rc_record.id, e))
             db.session.rollback()
         except Exception as e:
             logger.error("Unable to save redcap record {} for {} to database. "
@@ -1084,8 +1124,8 @@ class Session(db.Model):
     def sign_off(self, user_id):
         self.signed_off = True
         self.reviewer_id = user_id
-        self.review_date = datetime.datetime.now(FixedOffsetTimezone(
-                                                    offset=TZ_OFFSET))
+        self.review_date = datetime.datetime.now(
+            FixedOffsetTimezone(offset=TZ_OFFSET))
         db.session.add(self)
         db.session.commit()
 
@@ -1128,7 +1168,7 @@ class Session(db.Model):
             self.save()
         except Exception as e:
             logger.error("Unable to add task file {}. Reason: {}".format(
-                    file_path, e))
+                file_path, e))
             db.session.rollback()
             return None
         return new_task
@@ -1159,20 +1199,18 @@ class EmptySession(db.Model):
     session = db.relationship('Session',
                               uselist=False,
                               back_populates='empty_session')
-    reviewer = db.relationship('User',
-                               uselist=False,
-                               lazy='joined')
+    reviewer = db.relationship('User', uselist=False, lazy='joined')
 
-    __table_args__ = (ForeignKeyConstraint(['name', 'num'],
-                                           ['sessions.name', 'sessions.num']),)
+    __table_args__ = (ForeignKeyConstraint(
+        ['name', 'num'], ['sessions.name', 'sessions.num']), )
 
     def __init__(self, name, num, user_id, comment):
         self.name = name
         self.num = num
         self.user_id = user_id
         self.comment = comment
-        self.date_added = datetime.datetime.now(FixedOffsetTimezone(
-                                                    offset=TZ_OFFSET))
+        self.date_added = datetime.datetime.now(
+            FixedOffsetTimezone(offset=TZ_OFFSET))
 
     def __repr__(self):
         return "<EmptySession {}, {}>".format(self.name, self.num)
@@ -1186,8 +1224,7 @@ class SessionRedcap(db.Model):
 
     name = db.Column('name', db.String(64), primary_key=True, nullable=False)
     num = db.Column('num', db.Integer, primary_key=True, nullable=False)
-    record_id = db.Column('record_id',
-                          db.Integer,
+    record_id = db.Column('record_id', db.Integer,
                           db.ForeignKey('redcap_records.id'))
 
     session = db.relationship('Session',
@@ -1197,8 +1234,8 @@ class SessionRedcap(db.Model):
                              back_populates='sessions',
                              uselist=False)
 
-    __table_args__ = (ForeignKeyConstraint(['name', 'num'],
-                                           ['sessions.name', 'sessions.num']),)
+    __table_args__ = (ForeignKeyConstraint(
+        ['name', 'num'], ['sessions.name', 'sessions.num']), )
 
     def __init__(self, name, num, record_id=None):
         self.name = name
@@ -1216,17 +1253,16 @@ class SessionRedcap(db.Model):
         db.session.add(target_session)
         try:
             db.session.commit()
-        except Exception as e:
+        except Exception:
             raise InvalidDataException("Failed to share redcap record {} with "
-                                       "session {}".format(self.record_id,
-                                                           target_session))
+                                       "session {}".format(
+                                           self.record_id, target_session))
             return None
         return target_session.redcap_record
 
     def __repr__(self):
-        return "<SessionRedcap {}, {} - record {}>".format(self.name,
-                                                           self.num,
-                                                           self.record_id)
+        return "<SessionRedcap {}, {} - record {}>".format(
+            self.name, self.num, self.record_id)
 
 
 class Scan(db.Model):
@@ -1280,7 +1316,13 @@ class Scan(db.Model):
                                            ['sessions.name', 'sessions.num']),
                       UniqueConstraint(name))
 
-    def __init__(self, name, timepoint, repeat, series, tag, description=None,
+    def __init__(self,
+                 name,
+                 timepoint,
+                 repeat,
+                 series,
+                 tag,
+                 description=None,
                  source_id=None):
         self.name = name
         self.timepoint = timepoint
@@ -1298,9 +1340,8 @@ class Scan(db.Model):
         except Exception as e:
             db.session.rollback()
             raise InvalidDataException("Failed to add bids name {} to scan "
-                                       "{}. Reason: {}".format(name,
-                                                               self.id,
-                                                               e))
+                                       "{}. Reason: {}".format(
+                                           name, self.id, e))
 
     def get_study(self, study_id=None):
         return self.session.get_study(study_id=study_id)
@@ -1329,23 +1370,23 @@ class Scan(db.Model):
 
     def is_new(self):
         checklist = self.get_checklist_entry()
-        return checklist is None or (not checklist.comment and
-                                     not checklist.approved)
+        return checklist is None or (not checklist.comment
+                                     and not checklist.approved)
 
     def signed_off(self):
         checklist = self.get_checklist_entry()
-        return checklist is not None and (checklist.approved and
-                                          not checklist.comment)
+        return checklist is not None and (checklist.approved
+                                          and not checklist.comment)
 
     def flagged(self):
         checklist = self.get_checklist_entry()
-        return checklist is not None and (checklist.approved and
-                                          checklist.comment is not None)
+        return checklist is not None and (checklist.approved
+                                          and checklist.comment is not None)
 
     def blacklisted(self):
         checklist = self.get_checklist_entry()
-        return checklist is not None and (checklist.comment is not None and
-                                          not checklist.approved)
+        return checklist is not None and (checklist.comment is not None
+                                          and not checklist.approved)
 
     def get_comment(self):
         checklist = self.get_checklist_entry()
@@ -1380,7 +1421,10 @@ class Scan(db.Model):
 
         return gs
 
-    def update_header_diffs(self, standard=None, ignore=None, tolerance=None,
+    def update_header_diffs(self,
+                            standard=None,
+                            ignore=None,
+                            tolerance=None,
                             bvals=False):
         if not self.json_contents:
             raise InvalidDataException("No JSON data found for series {}"
@@ -1403,27 +1447,27 @@ class Scan(db.Model):
                                               ignore=ignore,
                                               tolerance=tolerance)
         if bvals:
-            result = header_checks.check_bvals(self.json_path,
-                                               gs.json_path)
+            result = header_checks.check_bvals(self.json_path, gs.json_path)
             if result:
                 diffs['bvals'] = result
 
         found = False
         if self.header_diffs:
-            found = [item for item in self.header_diffs
-                     if item.gold_standard.id == gs.id]
+            found = [
+                item for item in self.header_diffs
+                if item.gold_standard.id == gs.id
+            ]
             if found:
                 new_diffs = found[0]
                 new_diffs.diffs = diffs
 
         if not found:
             new_diffs = ScanGoldStandard(
-                    self.id,
-                    gs.id,
-                    diffs,
-                    gold_version=utils.get_software_version(gs.json_contents),
-                    scan_version=utils.get_software_version(
-                                        self.json_contents))
+                self.id,
+                gs.id,
+                diffs,
+                gold_version=utils.get_software_version(gs.json_contents),
+                scan_version=utils.get_software_version(self.json_contents))
         try:
             db.session.add(new_diffs)
             db.session.commit()
@@ -1463,7 +1507,7 @@ class Scan(db.Model):
             db.session.rollback()
             raise InvalidDataException("Failed to add conversion error "
                                        "message for {}. Reason: {}".format(
-                                            self, e))
+                                           self, e))
 
     def delete(self):
         db.session.delete(self)
@@ -1475,9 +1519,8 @@ class Scan(db.Model):
 
     def __repr__(self):
         if self.source_id:
-            repr = "<Scan {}: {} link to scan {}>".format(self.id,
-                                                          self.name,
-                                                          self.source_id)
+            repr = "<Scan {}: {} link to scan {}>".format(
+                self.id, self.name, self.source_id)
         else:
             repr = "<Scan {}: {}>".format(self.id, self.name)
         return repr
@@ -1510,7 +1553,7 @@ class ScanChecklist(db.Model):
                            uselist=False,
                            back_populates='scan_comments')
 
-    __table_args__ = (UniqueConstraint(scan_id),)
+    __table_args__ = (UniqueConstraint(scan_id), )
 
     def __init__(self, scan_id, user_id, comment=None, approved=False):
         self.scan_id = scan_id
@@ -1528,8 +1571,8 @@ class ScanChecklist(db.Model):
         if comment is not None:
             self.comment = comment
         self.user_id = user_id
-        self._timestamp = datetime.datetime.now(FixedOffsetTimezone(
-                                                    offset=TZ_OFFSET))
+        self._timestamp = datetime.datetime.now(
+            FixedOffsetTimezone(offset=TZ_OFFSET))
 
     def save(self):
         db.session.add(self)
@@ -1540,8 +1583,8 @@ class ScanChecklist(db.Model):
         db.session.commit()
 
     def __repr__(self):
-        return "<ScanChecklist for {} by user {}>".format(self.scan_id,
-                                                          self.user_id)
+        return "<ScanChecklist for {} by user {}>".format(
+            self.scan_id, self.user_id)
 
 
 class Scantype(db.Model):
@@ -1581,12 +1624,12 @@ class GoldStandard(db.Model):
                                      viewonly=True)
     scans = association_proxy('scan_gold_standard', 'scan')
 
-    __table_args__ = (ForeignKeyConstraint(['study', 'scantype'],
-                                           ['study_scantypes.study',
-                                            'study_scantypes.scantype']),
-                      ForeignKeyConstraint(['study', 'site'],
-                                           ['study_sites.study',
-                                            'study_sites.site']))
+    __table_args__ = (ForeignKeyConstraint(
+        ['study', 'scantype'],
+        ['study_scantypes.study', 'study_scantypes.scantype']),
+                      ForeignKeyConstraint(
+                          ['study', 'site'],
+                          ['study_sites.study', 'study_sites.site']))
 
     def __init__(self, study, gs_json):
         try:
@@ -1603,10 +1646,8 @@ class GoldStandard(db.Model):
         self.json_path = gs_json
 
     def __repr__(self):
-        return "<GoldStandard {} for {}, {} - {}>".format(self.id,
-                                                          self.study,
-                                                          self.site,
-                                                          self.tag)
+        return "<GoldStandard {} for {}, {} - {}>".format(
+            self.id, self.study, self.site, self.tag)
 
     def __str__(self):
         return os.path.basename(self.json_path)
@@ -1630,7 +1671,7 @@ class RedcapRecord(db.Model):
 
     sessions = db.relationship('SessionRedcap', back_populates='record')
 
-    __table_args__ = (UniqueConstraint(record, project, url, event_id),)
+    __table_args__ = (UniqueConstraint(record, project, url, event_id), )
 
     def __init__(self, record, project, url, event_id=None):
         self.record = record
@@ -1640,7 +1681,7 @@ class RedcapRecord(db.Model):
 
     def __repr__(self):
         return "<RedcapRecord {}: record {} project {} url {}>".format(
-                    self.id, self.record, self.project, self.url)
+            self.id, self.record, self.project, self.url)
 
 
 class Analysis(db.Model):
@@ -1654,7 +1695,7 @@ class Analysis(db.Model):
     analysis_comments = db.relationship('AnalysisComment')
 
     def __repr__(self):
-        return('<Analysis {}: {}>'.format(self.id, self.name))
+        return ('<Analysis {}: {}>'.format(self.id, self.name))
 
 
 class Metrictype(db.Model):
@@ -1671,7 +1712,7 @@ class Metrictype(db.Model):
     metric_values = db.relationship('MetricValue')
 
     def __repr__(self):
-        return('<MetricType {}>'.format(self.name))
+        return ('<MetricType {}>'.format(self.name))
 
 
 class TaskFile(db.Model):
@@ -1708,6 +1749,7 @@ class TaskFile(db.Model):
 # Association Objects (i.e. many to many relationships with attributes/columns
 # of their own).
 
+
 class StudyUser(db.Model):
     __tablename__ = 'study_users'
 
@@ -1741,11 +1783,17 @@ class StudyUser(db.Model):
                             user_id,
                             site,
                             unique=True,
-                            postgresql_where=(site != None)),)  # noqa: E711
+                            postgresql_where=(site != None)), )
 
-    def __init__(self, study_id, user_id, site=None, admin=False,
-                 is_primary_contact=False, is_kimel_contact=False,
-                 is_study_RA=False, does_qc=False):
+    def __init__(self,
+                 study_id,
+                 user_id,
+                 site=None,
+                 admin=False,
+                 is_primary_contact=False,
+                 is_kimel_contact=False,
+                 is_study_RA=False,
+                 does_qc=False):
         self.study_id = study_id
         self.user_id = user_id
         self.site = site
@@ -1756,8 +1804,7 @@ class StudyUser(db.Model):
         self.does_qc = does_qc
 
     def __repr__(self):
-        return "<StudyUser {} User: {}>".format(self.study_id,
-                                                self.user_id)
+        return "<StudyUser {} User: {}>".format(self.study_id, self.user_id)
 
 
 class StudySite(db.Model):
@@ -1782,7 +1829,7 @@ class StudySite(db.Model):
                                 lazy='joined')
     standards = db.relationship('GoldStandard', back_populates='study_site')
 
-    __table_args__ = (UniqueConstraint(study_id, site_id),)
+    __table_args__ = (UniqueConstraint(study_id, site_id), )
 
     def __init__(self, study_id, site_id, uses_redcap=False, code=None):
         self.study_id = study_id
@@ -1822,13 +1869,11 @@ class AltStudyCode(db.Model):
     def uses_redcap(self):
         return self.study_site.uses_redcap
 
-    __table_args__ = (ForeignKeyConstraint(['study', 'site'],
-                                           ['study_sites.study',
-                                            'study_sites.site']),)
+    __table_args__ = (ForeignKeyConstraint(
+        ['study', 'site'], ['study_sites.study', 'study_sites.site']), )
 
     def __repr__(self):
-        return "<AltStudyCode {}, {} - {}>".format(self.study_id,
-                                                   self.site_id,
+        return "<AltStudyCode {}, {} - {}>".format(self.study_id, self.site_id,
                                                    self.code)
 
 
@@ -1882,8 +1927,13 @@ class ScanGoldStandard(db.Model):
     gold_standard = db.relationship(GoldStandard,
                                     backref=backref('scan_gold_standard'))
 
-    def __init__(self, scan_id, gold_standard_id, diffs, gold_version,
-                 scan_version, timestamp=None):
+    def __init__(self,
+                 scan_id,
+                 gold_standard_id,
+                 diffs,
+                 gold_version,
+                 scan_version,
+                 timestamp=None):
         self.scan_id = scan_id
         self.gold_standard_id = gold_standard_id
         self.diffs = diffs
@@ -1898,8 +1948,7 @@ class ScanGoldStandard(db.Model):
 
     def __repr__(self):
         return "<HeaderDiffs for Scan {} and GS {}>".format(
-                    self.scan_id,
-                    self.gold_standard_id)
+            self.scan_id, self.gold_standard_id)
 
     def __str__(self):
         return self.__repr__()
@@ -1937,9 +1986,7 @@ class IncidentalFinding(db.Model):
     __tablename__ = 'incidental_findings'
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer,
-                        db.ForeignKey('users.id'),
-                        nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     timepoint_id = db.Column(db.String(64),
                              db.ForeignKey('timepoints.name'),
                              nullable=False)
@@ -1959,12 +2006,12 @@ class IncidentalFinding(db.Model):
         self.user_id = user_id
         self.timepoint_id = timepoint_id
         self.description = description
-        self.timestamp = datetime.datetime.now(FixedOffsetTimezone(
-                                                    offset=TZ_OFFSET))
+        self.timestamp = datetime.datetime.now(
+            FixedOffsetTimezone(offset=TZ_OFFSET))
 
     def __repr__(self):
         return "<IncidentalFinding {} for {} found by User {}>".format(
-                self.id, self.timepoint_id, self.user_id)
+            self.id, self.timepoint_id, self.user_id)
 
 
 class MetricValue(db.Model):
@@ -1990,16 +2037,16 @@ class MetricValue(db.Model):
         Failing that the value is returned as a string.
         """
         if self._value is None:
-            return(None)
+            return
         value = self._value.split('::')
         try:
             value = [float(v) for v in value]
         except ValueError:
-            return(''.join(value))
+            return ''.join(value)
         if len(value) == 1:
-            return(value[0])
+            return value[0]
         else:
-            return(value)
+            return value
 
     @value.setter
     def value(self, value, delimiter=None):
@@ -2018,6 +2065,5 @@ class MetricValue(db.Model):
         self._value = str(value)
 
     def __repr__(self):
-        return('<Scan {}: Metric {}: Value {}>'.format(self.scan.name,
-                                                       self.metrictype.name,
-                                                       self.value))
+        return ('<Scan {}: Metric {}: Value {}>'.format(
+            self.scan.name, self.metrictype.name, self.value))
