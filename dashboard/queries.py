@@ -6,9 +6,9 @@ import logging
 from sqlalchemy import and_, func
 
 from dashboard import db
-from .models import Timepoint, Session, Scan, Study, Site, Metrictype, \
-                    MetricValue, Scantype, StudySite, AltStudyCode, \
-                    User, study_timepoints_table
+from .models import (Timepoint, Session, Scan, Study, Site, Metrictype,
+                     MetricValue, Scantype, StudySite, AltStudyCode, User,
+                     study_timepoints_table)
 import datman.scanid as scanid
 
 logger = logging.getLogger(__name__)
@@ -76,9 +76,9 @@ def find_sessions(search_str):
     else:
         if ident.session:
             query = Session.query.filter(
-                and_((func.upper(
-                    Session.name) == ident.get_full_subjectid_with_timepoint()
-                      ), Session.num == ident.session))
+                and_((func.upper(Session.name) ==
+                      ident.get_full_subjectid_with_timepoint()),
+                     Session.num == ident.session))
             if not query.count():
                 ident.session = None
 

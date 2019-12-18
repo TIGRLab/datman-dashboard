@@ -24,8 +24,8 @@ from sqlalchemy.ext.associationproxy import association_proxy
 from psycopg2.tz import FixedOffsetTimezone
 
 from dashboard import db, TZ_OFFSET, utils
-from dashboard.emails import account_request_email, account_activation_email, \
-        account_rejection_email
+from dashboard.emails import (account_request_email, account_activation_email,
+                              account_rejection_email)
 from .exceptions import InvalidDataException
 from datman import scanid, header_checks
 
@@ -520,14 +520,13 @@ class Study(db.Model):
         session IDs that have explicitly been marked as never expecting data
         """
         uses_redcap = self.get_sessions_using_redcap()
-        sessions = uses_redcap.filter(SessionRedcap.record_id != None)\
-                              .filter(~exists().where(and_(
-                                        Scan.timepoint == Session.name,
-                                        Scan.repeat == Session.num)))\
-                              .filter(~exists().where(and_(
-                                        Session.name == EmptySession.name,
-                                        Session.num == EmptySession.num)))\
-                              .from_self(Session.name, Session.num)
+        sessions = uses_redcap.filter(
+            SessionRedcap.record_id != None).filter(~exists().where(
+                and_(Scan.timepoint == Session.name, Scan.repeat ==
+                     Session.num))).filter(~exists().where(
+                         and_(Session.name == EmptySession.name, Session.num ==
+                              EmptySession.num))).from_self(
+                                  Session.name, Session.num)
         return sessions.all()
 
     def needs_rewrite(self):
@@ -1399,14 +1398,11 @@ class Scan(db.Model):
 
     @property
     def gold_standards(self):
-        found_standards = GoldStandard.query\
-                                      .filter(GoldStandard.study ==
-                                              self.session.get_study().id)\
-                                      .filter(GoldStandard.site ==
-                                              self.session.timepoint.site_id)\
-                                      .filter(GoldStandard.tag == self.tag)\
-                                      .order_by(
-                                            GoldStandard.json_created.desc())
+        found_standards = GoldStandard.query.filter(
+            GoldStandard.study == self.session.get_study().id).filter(
+                GoldStandard.site == self.session.timepoint.site_id).filter(
+                    GoldStandard.tag == self.tag).order_by(
+                        GoldStandard.json_created.desc())
         return found_standards.all()
 
     @property
@@ -1624,12 +1620,13 @@ class GoldStandard(db.Model):
                                      viewonly=True)
     scans = association_proxy('scan_gold_standard', 'scan')
 
-    __table_args__ = (ForeignKeyConstraint(
-        ['study', 'scantype'],
-        ['study_scantypes.study', 'study_scantypes.scantype']),
-                      ForeignKeyConstraint(
-                          ['study', 'site'],
-                          ['study_sites.study', 'study_sites.site']))
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ['study', 'scantype'],
+            ['study_scantypes.study', 'study_scantypes.scantype']),
+        ForeignKeyConstraint(
+            ['study', 'site'],
+            ['study_sites.study', 'study_sites.site']))
 
     def __init__(self, study, gs_json):
         try:

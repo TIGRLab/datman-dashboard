@@ -9,9 +9,9 @@ the html code or CSRF vulnerabilities
 """
 
 from flask_wtf import FlaskForm
-from wtforms import SelectMultipleField, HiddenField, \
-        SubmitField, TextAreaField, TextField, FormField, \
-        BooleanField, FieldList, RadioField
+from wtforms import (SelectMultipleField, HiddenField, SubmitField,
+                     TextAreaField, TextField, FormField, BooleanField,
+                     FieldList, RadioField)
 from wtforms.fields.html5 import EmailField, TelField
 from wtforms.compat import iteritems
 from wtforms.validators import DataRequired
@@ -34,7 +34,7 @@ class SelectMetricsForm(FlaskForm):
     query_complete = HiddenField(default=False)
     is_phantom = HiddenField(default=False)
 
-    def __init__(self,  *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         FlaskForm.__init__(self, *args, **kwargs)
 
 
@@ -46,12 +46,16 @@ class StudyOverviewForm(FlaskForm):
 class SliceTimingForm(FlaskForm):
     timings = TextAreaField('NewTimings',
                             id="new_timings",
-                            render_kw={'rows': 4,
-                                       'cols': 65,
-                                       'required': True,
-                                       'placeholder': "Enter comma " +
-                                                      "separated slice " +
-                                                      "timings"})
+                            render_kw={
+                                'rows':
+                                4,
+                                'cols':
+                                65,
+                                'required':
+                                True,
+                                'placeholder':
+                                "Enter comma " + "separated slice " + "timings"
+                            })
     submit = SubmitField('Update', id='submit_timings')
 
 
@@ -59,10 +63,12 @@ class ScanChecklistForm(FlaskForm):
     comment = TextAreaField('Comment:',
                             id='scan-comment',
                             validators=[DataRequired()],
-                            render_kw={'placeholder': 'Add description',
-                                       'rows': 12,
-                                       'required': True,
-                                       'maxlength': '1028'})
+                            render_kw={
+                                'placeholder': 'Add description',
+                                'rows': 12,
+                                'required': True,
+                                'maxlength': '1028'
+                            })
     submit = SubmitField('Submit')
 
 
@@ -70,48 +76,71 @@ class UserForm(FlaskForm):
     id = HiddenField()
     first_name = TextField('First Name: ',
                            validators=[DataRequired()],
-                           render_kw={'required': True,
-                                      'maxlength': '64',
-                                      'placeholder': 'Jane'})
+                           render_kw={
+                               'required': True,
+                               'maxlength': '64',
+                               'placeholder': 'Jane'
+                           })
     last_name = TextField('Last Name: ',
                           validators=[DataRequired()],
-                          render_kw={'required': True,
-                                     'maxlength': '64',
-                                     'placeholder': 'Doe'})
+                          render_kw={
+                              'required': True,
+                              'maxlength': '64',
+                              'placeholder': 'Doe'
+                          })
     email = EmailField('Email: ',
                        validators=[DataRequired()],
-                       render_kw={'required': True,
-                                  'maxlength': '256',
-                                  'placeholder': 'Enter email'})
+                       render_kw={
+                           'required': True,
+                           'maxlength': '256',
+                           'placeholder': 'Enter email'
+                       })
     provider = RadioField('Account provider: ',
                           validators=[DataRequired()],
                           choices=[('github', 'GitHub')],
                           default='github')
     account = TextField('Username: ',
                         validators=[DataRequired()],
-                        render_kw={'required': True,
-                                   'maxlength': '64',
-                                   'placeholder': 'Username used on account ' +
-                                                  'provider\'s site'})
+                        render_kw={
+                            'required':
+                            True,
+                            'maxlength':
+                            '64',
+                            'placeholder':
+                            'Username used on account ' + 'provider\'s site'
+                        })
     position = TextField('Position: ',
-                         render_kw={'maxlength': '64',
-                                    'placeholder': 'Job title or position'})
+                         render_kw={
+                             'maxlength': '64',
+                             'placeholder': 'Job title or position'
+                         })
     institution = TextField('Institution: ',
-                            render_kw={'maxlength': '128',
-                                       'placeholder': 'Full name or acronym ' +
-                                                      'for institution'})
+                            render_kw={
+                                'maxlength':
+                                '128',
+                                'placeholder':
+                                'Full name or acronym ' + 'for institution'
+                            })
     phone = TelField('Phone Number: ',
-                     render_kw={'maxlength': '20',
-                                'placeholder': '555-555-5555'})
+                     render_kw={
+                         'maxlength': '20',
+                         'placeholder': '555-555-5555'
+                     })
     ext = TextField('Extension: ',
-                    render_kw={'maxlength': '10',
-                               'placeholder': 'XXXXXXXXXX'})
+                    render_kw={
+                        'maxlength': '10',
+                        'placeholder': 'XXXXXXXXXX'
+                    })
     alt_phone = TelField('Alt. Phone Number: ',
-                         render_kw={'maxlength': '20',
-                                    'placeholder': '555-555-5555'})
+                         render_kw={
+                             'maxlength': '20',
+                             'placeholder': '555-555-5555'
+                         })
     alt_ext = TextField('Alt. Extension: ',
-                        render_kw={'maxlength': '10',
-                                   'placeholder': 'XXXXXXXXXX'})
+                        render_kw={
+                            'maxlength': '10',
+                            'placeholder': 'XXXXXXXXXX'
+                        })
     submit = SubmitField('Save Changes')
 
 
@@ -194,7 +223,7 @@ class UserAdminForm(UserForm):
             if name == 'studies':
                 for study_form in self.studies.entries:
                     study_form.form.populate_obj(
-                            obj.studies[study_form.study_id.data])
+                        obj.studies[study_form.study_id.data])
             else:
                 field.populate_obj(obj, name)
 
@@ -206,10 +235,8 @@ class AccessRequestForm(UserForm):
 
 
 class AnalysisForm(FlaskForm):
-    name = TextField('Brief name',
-                     validators=[DataRequired()])
-    description = TextAreaField('Description',
-                                validators=[DataRequired()])
+    name = TextField('Brief name', validators=[DataRequired()])
+    description = TextAreaField('Description', validators=[DataRequired()])
     software = TextAreaField('Software')
 
 
@@ -217,32 +244,41 @@ class EmptySessionForm(FlaskForm):
     comment = TextAreaField('Explanation: ',
                             id="missing_comment",
                             validators=[DataRequired()],
-                            render_kw={'rows': 4,
-                                       'cols': 50,
-                                       'required': True,
-                                       'placeholder': 'Please describe what ' +
-                                                      'happened to this ' +
-                                                      'session.',
-                                       'maxlength': '2048'})
+                            render_kw={
+                                'rows':
+                                4,
+                                'cols':
+                                50,
+                                'required':
+                                True,
+                                'placeholder':
+                                'Please describe what ' + 'happened to this ' +
+                                'session.',
+                                'maxlength':
+                                '2048'
+                            })
 
 
 class IncidentalFindingsForm(FlaskForm):
     comment = TextAreaField('Description: ',
                             id='finding-description',
                             validators=[DataRequired()],
-                            render_kw={'rows': 4,
-                                       'cols': 65,
-                                       'required': True,
-                                       'placeholder': 'Please describe ' +
-                                                      'the finding'})
+                            render_kw={
+                                'rows': 4,
+                                'cols': 65,
+                                'required': True,
+                                'placeholder':
+                                'Please describe ' + 'the finding'
+                            })
     submit = SubmitField('Submit')
 
 
 class TimepointCommentsForm(FlaskForm):
     comment = TextAreaField(validators=[DataRequired()],
-                            render_kw={'rows': 5,
-                                       'required': True,
-                                       'placeholder': 'Add new comment'})
+                            render_kw={
+                                'rows': 5,
+                                'required': True,
+                                'placeholder': 'Add new comment'})
     submit = SubmitField('Submit')
 
 
@@ -257,8 +293,10 @@ class NewIssueForm(FlaskForm):
                       render_kw={'required': True})
     body = TextAreaField("Body: ",
                          validators=[DataRequired()],
-                         render_kw={'rows': 4,
-                                    'cols': 65,
-                                    'required': True,
-                                    'placeholder': 'Enter issue here.'})
+                         render_kw={
+                             'rows': 4,
+                             'cols': 65,
+                             'required': True,
+                             'placeholder': 'Enter issue here.'
+                         })
     submit = SubmitField('Create Issue')

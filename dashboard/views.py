@@ -7,27 +7,26 @@ from functools import wraps
 
 from urllib.parse import urlparse, urljoin
 from flask import session as flask_session
-from flask import render_template, flash, url_for, redirect, request, \
-                  jsonify, make_response, send_file, \
-                  send_from_directory
-from flask_login import login_user, logout_user, current_user, \
-                        login_required, fresh_login_required, login_fresh
+from flask import (render_template, flash, url_for, redirect, request, jsonify,
+                   make_response, send_file, send_from_directory)
+from flask_login import (login_user, logout_user, current_user, login_required,
+                         fresh_login_required, login_fresh)
 
 from dashboard import app, db, lm
 from . import utils
 from . import redcap as REDCAP
 from .oauth import OAuthSignIn
-from .queries import query_metric_values_byid, query_metric_types, \
-                     query_metric_values_byname, find_subjects, \
-                     find_sessions, find_scans
+from .queries import (query_metric_values_byid, query_metric_types,
+                      query_metric_values_byname, find_subjects, find_sessions,
+                      find_scans)
 from .models import Study, Site, User, Timepoint, Analysis, AccountRequest
-from .forms import SelectMetricsForm, StudyOverviewForm, \
-                   ScanChecklistForm, UserForm, AnalysisForm, \
-                   EmptySessionForm, IncidentalFindingsForm, \
-                   TimepointCommentsForm, NewIssueForm, \
-                   SliceTimingForm, DataDeletionForm
-from .view_utils import get_user_form, report_form_errors, get_timepoint, \
-                        get_session, get_scan, handle_issue, get_redcap_record
+from .forms import (SelectMetricsForm, StudyOverviewForm, ScanChecklistForm,
+                    UserForm, AnalysisForm, EmptySessionForm,
+                    IncidentalFindingsForm, TimepointCommentsForm,
+                    NewIssueForm, SliceTimingForm, DataDeletionForm)
+from .view_utils import (get_user_form, report_form_errors, get_timepoint,
+                         get_session, get_scan, handle_issue,
+                         get_redcap_record)
 from .emails import incidental_finding_email
 from .exceptions import InvalidUsage
 
