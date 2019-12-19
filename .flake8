@@ -1,8 +1,10 @@
 [flake8]
-max-line-length = 99
+select = C,E,F,W,B,B9
+ignore = W503,W504
 doctests = False
-exclude=
-    *build/
-    docs/
-select = C,E,F,W,B,B950
-ignore = N802,N806,W504,E203
+per-file-ignores =
+    # Many imports from config.py are used elsewhere in the dashboard. Dont delete them.
+    dashboard/__init__.py:F401
+    # SQLAlchemy requires != and == be used when comparing to None and
+    # Booleans so ignore these warnings in models and other query heavy modules
+    dashboard/models.py:E711,E712
