@@ -2,6 +2,12 @@
 select = C,E,F,W,B,B9
 ignore = W503,W504
 doctests = False
+exclude =
+    .git
+    migrations
+    logs
+    docs
+    __pycache__
 per-file-ignores =
     # Many imports from config.py are used elsewhere in the dashboard. Dont delete them.
     dashboard/__init__.py:F401
