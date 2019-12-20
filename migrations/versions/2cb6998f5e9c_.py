@@ -117,7 +117,6 @@ def upgrade():
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('study_id', 'user_id', 'site_only')
     )
-    op.create_index('study_users_study_user_site_unique_key', 'study_users', ['study_id', 'user_id', 'site_only'], unique=True, postgresql_where=sa.text('site_only IS NOT NULL'))
     op.create_table('timepoints',
     sa.Column('name', sa.String(length=64), nullable=False),
     sa.Column('site', sa.String(length=32), nullable=False),
@@ -280,6 +279,13 @@ def upgrade():
     sa.ForeignKeyConstraint(['scan_id'], ['scans.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
+    # Add needed records
+    sites_t = sa.Table('sites',
+                       sa.MetaData(),
+                       sa.Column('name', sa.String(32)),
+                       sa.Column('description', sa.Text))
+    connection = op.get_bind()
+    connection.execute(sites_t.insert({'name': 'ALL', 'description': 'A pseudo-site that refers to all sites within a study'}))
     # ### end Alembic commands ###
 
 
