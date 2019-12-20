@@ -266,7 +266,7 @@ class AccountRequest(db.Model):
 
     user_id = db.Column('user_id',
                         db.Integer,
-                        db.ForeignKey("users.id"),
+                        db.ForeignKey("users.id", ondelete='CASCADE'),
                         primary_key=True)
     user = db.relationship('User', uselist=False)
 
@@ -947,7 +947,7 @@ class TimepointComment(db.Model):
                            db.DateTime(timezone=True),
                            nullable=False)
     comment = db.Column('comment', db.Text, nullable=False)
-    modified = db.Column('modified', db.Boolean, default=False)
+    modified = db.Column('modified', db.Boolean, nullable=False, default=False)
 
     user = db.relationship('User',
                            uselist=False,
@@ -1668,7 +1668,13 @@ class RedcapRecord(db.Model):
 
     sessions = db.relationship('SessionRedcap', back_populates='record')
 
-    __table_args__ = (UniqueConstraint(record, project, url, event_id), )
+    __table_args__ = (UniqueConstraint(
+        record,
+        project,
+        url,
+        event_id,
+        date,
+        name='redcap_records_unique_record_idx'), )
 
     def __init__(self, record, project, url, event_id=None):
         self.record = record
