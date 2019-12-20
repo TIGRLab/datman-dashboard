@@ -126,6 +126,7 @@ def upgrade():
     sa.Column('static_page', sa.String(length=1028), nullable=True),
     sa.Column('bids_name', sa.Text(), nullable=True),
     sa.Column('bids_sess', sa.String(length=48), nullable=True),
+    sa.Column('header_diffs', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
     sa.ForeignKeyConstraint(['site'], ['sites.name'], ),
     sa.PrimaryKeyConstraint('name')
     )
