@@ -320,7 +320,11 @@ class Study(db.Model):
     read_me = deferred(db.Column('read_me', db.Text))
     is_open = db.Column('is_open', db.Boolean)
 
-    users = db.relationship('StudyUser', back_populates='study')
+    users = db.relationship(
+        'StudyUser',
+        primaryjoin='Study.id==StudySite.study_id',
+        secondary='study_sites',
+        secondaryjoin='StudySite.study_id==StudyUser.study_id')
     sites = db.relationship(
         'StudySite',
         back_populates='study',
@@ -1756,37 +1760,33 @@ class TaskFile(db.Model):
 class StudyUser(db.Model):
     __tablename__ = 'study_users'
 
-    study_id = db.Column('study_id',
-                         db.String(32),
-                         db.ForeignKey('studies.id'),
-                         nullable=False,
-                         primary_key=True)
+    id = db.Column('id', db.Integer, primary_key=True)
     user_id = db.Column('user_id',
                         db.Integer,
                         db.ForeignKey('users.id'),
-                        nullable=False,
-                        primary_key=True)
-    site = db.Column('site_only',
+                        nullable=False)
+    study_id = db.Column('study_id',
+                         db.String(32),
+                         db.ForeignKey('study_sites.study'),
+                         nullable=False)
+    site = db.Column('site',
                      db.String(32),
-                     db.ForeignKey('sites.name'),
-                     nullable=True,
-                     primary_key=True)
+                     db.ForeignKey('sites.name'))
     is_admin = db.Column('is_admin', db.Boolean, default=False)
     primary_contact = db.Column('primary_contact', db.Boolean, default=False)
     kimel_contact = db.Column('kimel_contact', db.Boolean, default=False)
     study_RA = db.Column('study_ra', db.Boolean, default=False)
     does_qc = db.Column('does_qc', db.Boolean, default=False)
 
-    study = db.relationship('Study', back_populates='users')
+    study = db.relationship(
+        'Study',
+        primaryjoin='StudyUser.study_id==StudySite.study_id',
+        secondary='study_sites',
+        secondaryjoin='StudySite.study_id==Study.id',
+        uselist=False)
     user = db.relationship('User', back_populates='studies')
 
-    # Needed for the partial unique index to work correctly
-    __table_args__ = (Index('study_users_study_user_site_unique_key',
-                            study_id,
-                            user_id,
-                            site,
-                            unique=True,
-                            postgresql_where=(site != None)), )
+    __table_args__ = (UniqueConstraint('study_id', 'user_id', 'site'),)
 
     def __init__(self,
                  study_id,
@@ -1824,6 +1824,13 @@ class StudySite(db.Model):
     uses_redcap = db.Column('uses_redcap', db.Boolean, default=False)
     code = db.Column('code', db.String(32))
 
+    # Need to specify the terms of the join to ensure users with
+    # access to all sites dont get left out of the list for a specific site
+    users = db.relationship(
+        'StudyUser',
+        primaryjoin='and_(StudySite.study_id==StudyUser.study_id,'
+                         'or_(StudySite.site_id==StudyUser.site,'
+                             'StudyUser.site==None))')
     site = db.relationship('Site', back_populates='studies')
     study = db.relationship('Study', back_populates='sites')
     alt_codes = db.relationship('AltStudyCode',
