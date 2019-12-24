@@ -14,6 +14,7 @@ from .utils import create_issue as make_issue
 
 logger = logging.getLogger(__name__)
 
+
 def get_user_form(user, current_user):
     if not current_user.dashboard_admin:
         form = UserForm(obj=user)
@@ -22,25 +23,28 @@ def get_user_form(user, current_user):
     form = get_admin_user_form(user)
     return form
 
+
 def get_admin_user_form(user):
     form = UserAdminForm(obj=user)
     form.account.data = user.username
     disabled_studies = user.get_disabled_studies()
     form.add_access.choices = [(study.id, study.id) for study in
-            disabled_studies]
+                               disabled_studies]
     return form
+
 
 def report_form_errors(form):
     for field_name, errors in form.errors.items():
         try:
             label = getattr(form, field_name).label.text
-        except:
+        except AttributeError:
             logger.error("Form {} reported an error for a field, but "
-                "field was not found. field_name: {} error(s): {}".format(
-                form, field_name, errors))
+                         "field was not found. field_name: {} error(s): "
+                         "{}".format(form, field_name, errors))
             continue
         for error in errors:
             flash('ERROR - {} {}'.format(label, error))
+
 
 def handle_issue(token, issue_form, study_id, timepoint):
     title = clean_issue_title(issue_form.title.data, timepoint)
@@ -54,13 +58,14 @@ def handle_issue(token, issue_form, study_id, timepoint):
 
     try:
         issue = make_issue(token, title, issue_form.body.data,
-                assign=assigned_user)
+                           assign=assigned_user)
     except Exception as e:
         logger.error("Failed to create a GitHub issue for {}. "
-                "Reason: {}".format(timepoint, e))
+                     "Reason: {}".format(timepoint, e))
         flash("Failed to create issue '{}'".format(title))
     else:
         flash("Issue '{}' created!".format(title))
+
 
 def clean_issue_title(title, timepoint):
     title = title.rstrip()
@@ -71,6 +76,7 @@ def clean_issue_title(title, timepoint):
     elif timepoint not in title:
         title = timepoint + " - " + title
     return title
+
 
 def get_timepoint(study_id, timepoint_id, current_user):
     timepoint = Timepoint.query.get(timepoint_id)
@@ -86,13 +92,16 @@ def get_timepoint(study_id, timepoint_id, current_user):
 
     return timepoint
 
+
 def get_session(timepoint, session_num, fail_url):
     try:
         session = timepoint.sessions[session_num]
     except KeyError:
-        flash("Session {} does not exist for {}.".format(session_num, timepoint))
+        flash("Session {} does not exist for {}.".format(session_num,
+                                                         timepoint))
         raise RequestRedirect(fail_url)
     return session
+
 
 def get_scan(scan_id, study_id, current_user, fail_url=None):
     if not fail_url:
@@ -101,8 +110,8 @@ def get_scan(scan_id, study_id, current_user, fail_url=None):
     scan = Scan.query.get(scan_id)
 
     if scan is None:
-        logger.error("User {} attempted to retrieve scan with ID {}. Retrieval "
-                "failed.".format(current_user, scan_id))
+        logger.error("User {} attempted to retrieve scan with ID {}. "
+                     "Retrieval failed.".format(current_user, scan_id))
         flash("Scan does not exist.".format(scan_id))
         raise RequestRedirect(fail_url)
 
@@ -113,6 +122,7 @@ def get_scan(scan_id, study_id, current_user, fail_url=None):
 
     return scan
 
+
 def get_redcap_record(record_id, fail_url=None):
     if not fail_url:
         fail_url = url_for('index')
@@ -121,7 +131,7 @@ def get_redcap_record(record_id, fail_url=None):
 
     if record is None:
         logger.error("Tried and failed to retrieve RedcapRecord with "
-                "ID {}".format(record_id))
+                     "ID {}".format(record_id))
         flash("Record not found.")
         raise RequestRedirect(fail_url)
 
