@@ -1760,18 +1760,20 @@ class TaskFile(db.Model):
 class StudyUser(db.Model):
     __tablename__ = 'study_users'
 
+    # This primary key will never be used anywhere but is needed because
+    # sqlalchemy demands a primary key and the other columns cant be used
     id = db.Column('id', db.Integer, primary_key=True)
     user_id = db.Column('user_id',
                         db.Integer,
                         db.ForeignKey('users.id'),
                         nullable=False)
-    study_id = db.Column('study_id',
+    study_id = db.Column('study',
                          db.String(32),
                          db.ForeignKey('study_sites.study'),
                          nullable=False)
     site = db.Column('site',
                      db.String(32),
-                     db.ForeignKey('sites.name'))
+                     db.ForeignKey('study_sites.site'))
     is_admin = db.Column('is_admin', db.Boolean, default=False)
     primary_contact = db.Column('primary_contact', db.Boolean, default=False)
     kimel_contact = db.Column('kimel_contact', db.Boolean, default=False)
@@ -1786,7 +1788,7 @@ class StudyUser(db.Model):
         uselist=False)
     user = db.relationship('User', back_populates='studies')
 
-    __table_args__ = (UniqueConstraint('study_id', 'user_id', 'site'),)
+    __table_args__ = (UniqueConstraint('study', 'user_id', 'site'),)
 
     def __init__(self,
                  study_id,

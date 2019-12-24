@@ -104,18 +104,19 @@ def upgrade():
     sa.UniqueConstraint('study', 'site')
     )
     op.create_table('study_users',
-    sa.Column('study_id', sa.String(length=32), nullable=False),
+    sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
-    sa.Column('site_only', sa.String(length=32), nullable=True),
+    sa.Column('study', sa.String(length=32), nullable=False),
+    sa.Column('site', sa.String(length=32), nullable=True),
     sa.Column('is_admin', sa.Boolean(), nullable=True, server_default='false'),
     sa.Column('primary_contact', sa.Boolean(), nullable=True, server_default='false'),
     sa.Column('kimel_contact', sa.Boolean(), nullable=True, server_default='false'),
     sa.Column('study_ra', sa.Boolean(), nullable=True, server_default='false'),
     sa.Column('does_qc', sa.Boolean(), nullable=True, server_default='false'),
-    sa.ForeignKeyConstraint(['site_only'], ['sites.name'], ),
-    sa.ForeignKeyConstraint(['study_id'], ['studies.id'], ),
-    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
-    sa.PrimaryKeyConstraint('study_id', 'user_id', 'site_only')
+    sa.ForeignKeyConstraint(['study', 'site'], ['study_sites.study', 'study_sites.site'],),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'],),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('study', 'site', 'user_id')
     )
     op.create_table('timepoints',
     sa.Column('name', sa.String(length=64), nullable=False),
@@ -279,14 +280,6 @@ def upgrade():
     sa.ForeignKeyConstraint(['scan_id'], ['scans.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    # Add needed records
-    sites_t = sa.Table('sites',
-                       sa.MetaData(),
-                       sa.Column('name', sa.String(32)),
-                       sa.Column('description', sa.Text))
-    connection = op.get_bind()
-    connection.execute(sites_t.insert({'name': 'ALL', 'description': 'A pseudo-site that refers to all sites within a study'}))
-    # ### end Alembic commands ###
 
 
 def downgrade():
@@ -305,7 +298,6 @@ def downgrade():
     op.drop_table('gold_standards')
     op.drop_table('alt_study_codes')
     op.drop_table('timepoints')
-    op.drop_index('study_users_study_user_site_unique_key', table_name='study_users')
     op.drop_table('study_users')
     op.drop_table('study_sites')
     op.drop_table('study_scantypes')
