@@ -287,7 +287,7 @@ class User(UserMixin, db.Model):
         if self.dashboard_admin:
             studies = Study.query.order_by(Study.id).all()
         else:
-            studies = [su.study for su in self.studies.values()]
+            studies = [su[0].study for su in self.studies.values()]
         return studies
 
     def get_disabled_studies(self):
