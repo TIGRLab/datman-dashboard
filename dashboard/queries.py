@@ -77,9 +77,6 @@ def get_study_timepoints(study, site=None, phantoms=False):
         If the site optional arugment is used, then only timepoints
         belonging to site will be returned in a list
 
-    Raises:
-        IndexError if the provided study does not exist
-
     """
 
     try:
