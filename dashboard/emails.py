@@ -129,7 +129,7 @@ def unsent_notification_email(user, type, unsent_body):
 
 
 def qc_notification_email(user, study, current_tp, remain_tp=None):
-    subject = "{} - QC Needed".format(study)
+    subject = "{} - New scan, QC needed".format(study)
     body = "Hi {} {}, you have been tagged as a " \
            "QCer for {}".format(user.first_name, user.last_name,
                                 study)
