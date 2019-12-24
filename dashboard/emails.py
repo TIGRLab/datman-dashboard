@@ -130,14 +130,16 @@ def unsent_notification_email(user, type, unsent_body):
 
 def qc_notification_email(user, study, current_tp, remain_tp=None):
     subject = "{} - QC Needed".format(study)
-    body = "Hi {} {}, you have been tagged as a" \
+    body = "Hi {} {}, you have been tagged as a " \
            "QCer for {}".format(user.first_name, user.last_name,
                                 study)
-    body += "\n\n If this is incorrect, please contact staff at the Kimel Lab"
     body += "\n\nNew scan: {}".format(current_tp)
 
     if remain_tp:
         body += "\n\nScans still needing QC:\n"
         body += "\n".join(remain_tp)
 
-    send_email(subject, body, recipient=user)
+    body += "\n\nIf you wrongly recieved this email, " \
+            "please contact staff at the Kimel Lab"
+
+    send_email(subject, body, recipient=user.email)

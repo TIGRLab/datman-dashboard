@@ -341,20 +341,11 @@ class Study(db.Model):
                     timepoint, e)
             raise
 
-        if self.qc_email:
-
-            # A) Get qcer emails
-            qcer = [su.user for su in self.users if su.does_qc]
-
-            # B: get list of timepoints remaining
-            tp_study = self.get_study()
-            not_qcd = [t.name for t in tp_study.timepoints.all() if not
+        if self.email_qc:
+            not_qcd = [t.name for t in self.timepoints.all() if not
                        t.is_qcd()]
-
-            # C: Send emails
-            [qc_notification_email(u, tp_study, self.name, not_qcd) for
-             u in qcer]
-
+            [qc_notification_email(u, self.id, timepoint.name, not_qcd) for
+             u in self.get_QCer()]
 
         return timepoint
 
