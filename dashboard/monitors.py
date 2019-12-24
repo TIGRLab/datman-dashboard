@@ -17,7 +17,7 @@ from datetime import datetime, timedelta
 
 from dashboard import scheduler, ADMINS
 from .models import Session, User, Study
-from .emails import missing_session_data_email, missing_redcap_email, qc_needed_email
+from .emails import missing_session_data_email, missing_redcap_email
 from .exceptions import MonitorException
 
 logger = logging.getLogger(__name__)
@@ -94,11 +94,7 @@ def check_scans(name, num, recipients=None):
         raise MonitorException("Monitored session {}_{:02d} is no "
                 "longer in database. Cannot verify whether scan data was "
                 "received".format(name, num))
-    #Here if session.scans were found and are not qc'd then send another type of email
     if session.scans:
-        if not session.signed_off:
-            qc_needed_email(str(session), study=session.get_study().id,
-                    dest_emails=URGHH)
         return
     missing_session_data_email(str(session), study=session.get_study().id,
             dest_emails=None)
