@@ -13,6 +13,7 @@ def async_exec(f):
     def wrapper(*args, **kwargs):
         thr = Thread(target=f, args=args, kwargs=kwargs)
         thr.start()
+
     return wrapper
 
 
@@ -42,8 +43,7 @@ def incidental_finding_email(user, timepoint, comment):
 
 
 def account_request_email(first_name, last_name):
-    subject = "New account request from {} {}".format(first_name,
-                                                      last_name)
+    subject = "New account request from {} {}".format(first_name, last_name)
     body = "{} {} has requested a dashboard account. Please log in to " + \
            "approve or reject this request".format(first_name, last_name)
     try:
@@ -108,3 +108,20 @@ def unsent_notification_email(user, type, unsent_body):
     body = "Failed to send email to user {} with body: " + \
            "\n\n {}".format(user.id, unsent_body)
     send_email(subject, body)
+
+
+def qc_notification_email(user, study, current_tp, remain_tp=None):
+    subject = "{} - New scan, QC needed".format(study)
+    body = "Hi {} {}, you have been tagged as a " \
+           "QCer for {}".format(user.first_name, user.last_name,
+                                study)
+    body += "\n\nNew scan: {}".format(current_tp)
+
+    if remain_tp:
+        body += "\n\nScans still needing QC:\n"
+        body += "\n".join(remain_tp)
+
+    body += "\n\nIf you wrongly recieved this email, " \
+            "please contact staff at the Kimel Lab"
+
+    send_email(subject, body, recipient=user.email)
