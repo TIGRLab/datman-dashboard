@@ -32,7 +32,7 @@ paramiko==2.7.1
 pbr==5.4.4
 psycopg2==2.8.4
 pyasn1==0.4.8
-PyCap==0.0.0
+PyCap
 pycodestyle==2.5.0
 pycparser==2.19
 PyGithub==1.44.1
