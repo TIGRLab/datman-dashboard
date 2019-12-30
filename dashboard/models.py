@@ -25,7 +25,7 @@ from psycopg2.tz import FixedOffsetTimezone
 
 from dashboard import db, TZ_OFFSET, utils
 from dashboard.emails import (account_request_email, account_activation_email,
-                              account_rejection_email)
+                              account_rejection_email, qc_notification_email)
 from .exceptions import InvalidDataException
 from datman import scanid, header_checks
 
@@ -319,6 +319,7 @@ class Study(db.Model):
     description = db.Column('description', db.Text)
     read_me = deferred(db.Column('read_me', db.Text))
     is_open = db.Column('is_open', db.Boolean)
+    email_qc = db.Column('email_on_trigger', db.Boolean)
 
     users = db.relationship('StudyUser', back_populates='study')
     sites = db.relationship(
@@ -373,6 +374,12 @@ class Study(db.Model):
             e.message = "Failed to add timepoint {}. Reason: {}".format(
                 timepoint, e)
             raise
+
+        if self.email_qc:
+            not_qcd = [t.name for t in self.timepoints.all() if not
+                       t.is_qcd()]
+            [qc_notification_email(u, self.id, timepoint.name, not_qcd) for
+             u in self.get_QCer()]
 
         return timepoint
 
