@@ -32,8 +32,8 @@ def upgrade():
     sa.Column('record', sa.String(length=256), nullable=False),
     sa.Column('project_id', sa.Integer(), nullable=False),
     sa.Column('url', sa.String(length=1024), nullable=False),
-    sa.Column('instrument', sa.String(length=1024), nullable=True),
-    sa.Column('entry_date', sa.Date(), nullable=True),
+    sa.Column('instrument', sa.String(length=1024), nullable=False),
+    sa.Column('entry_date', sa.Date(), nullable=False),
     sa.Column('redcap_user', sa.Integer(), nullable=True),
     sa.Column('comment', sa.Text(), nullable=True),
     sa.Column('redcap_version', sa.String(length=10), nullable=True, server_default='7.4.2'),
@@ -56,6 +56,7 @@ def upgrade():
     sa.Column('description', sa.Text(), nullable=True),
     sa.Column('read_me', sa.Text(), nullable=True),
     sa.Column('is_open', sa.Boolean(), nullable=True, server_default='true'),
+    sa.Column('email_on_trigger', sa.Boolean(), nullable=True, server_default='False')
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('users',
