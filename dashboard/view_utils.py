@@ -27,9 +27,14 @@ def get_user_form(user, current_user):
 def get_admin_user_form(user):
     form = UserAdminForm(obj=user)
     form.account.data = user.username
-    disabled_studies = user.get_disabled_studies()
-    form.add_access.choices = [(study.id, study.id) for study in
-                               disabled_studies]
+    disabled = user.get_disabled_sites()
+    choices = []
+    for study in disabled:
+        if len(disabled[study]) > 1:
+            choices.append((study, study + " - ALL"))
+        for site in disabled[study]:
+            choices.append((study + site, study + " - " + site))
+    form.add_access.choices = choices
     return form
 
 

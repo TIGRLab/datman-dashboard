@@ -14,17 +14,16 @@ import logging
 from random import randint
 
 from flask_login import UserMixin
-from sqlalchemy import and_, exists, func
+from sqlalchemy import and_, or_, exists, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import deferred, backref
-from sqlalchemy.schema import UniqueConstraint, ForeignKeyConstraint, Index
+from sqlalchemy.schema import UniqueConstraint, ForeignKeyConstraint
 from sqlalchemy.orm.exc import FlushError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.associationproxy import association_proxy
 from psycopg2.tz import FixedOffsetTimezone
 from sqlalchemy.orm.collections import (attribute_mapped_collection,
-                                        MappedCollection,
-                                        collection)
+                                        MappedCollection, collection)
 
 from dashboard import db, TZ_OFFSET, utils
 from dashboard.emails import (account_request_email, account_activation_email,
@@ -38,7 +37,6 @@ logger = logging.getLogger(__name__)
 class DictListCollection(MappedCollection):
     """Allows a relationship to be organized into a dictionary of lists
     """
-
     def __init__(self, key):
         super(DictListCollection, self).__init__(operator.attrgetter(key))
 
@@ -267,8 +265,10 @@ class User(UserMixin, db.Model):
                 [db.session.delete(su) for su in self.studies[study]]
             else:
                 for site in study_ids[study]:
-                    found = [item for item in self.studies[study]
-                             if item.site == site]
+                    found = [
+                        item for item in self.studies[study]
+                        if item.site == site
+                    ]
                     if not found:
                         continue
                     db.session.delete(found[0])
@@ -277,12 +277,15 @@ class User(UserMixin, db.Model):
             db.session.commit()
         except Exception as e:
             raise InvalidDataException("Failed to restrict study access for "
-                                       "user {}. Reason - {}".format(self.id,
-                                                                     e))
+                                       "user {}. Reason - {}".format(
+                                           self.id, e))
 
     def get_studies(self):
-        """
-        Get a list of Study objects that this user has access to.
+        """Get a list of studies that user has any even partial access to
+
+        Returns:
+            list: A list of Study objects, one for each study where the user
+            has at least partial (site based) access.
         """
         if self.dashboard_admin:
             studies = Study.query.order_by(Study.id).all()
@@ -290,19 +293,27 @@ class User(UserMixin, db.Model):
             studies = [su[0].study for su in self.studies.values()]
         return studies
 
-    def get_disabled_studies(self):
-        """
-        Get a list of Study objects the user does NOT have access to.
-        """
-        enabled_studies = list(self.studies.keys())
+    def get_disabled_sites(self):
+        """Get a dict of study IDs mapped to sites this user cant access
 
-        if enabled_studies:
-            disabled_studies = Study.query.filter(
-                ~Study.id.in_(enabled_studies)).all()
-        else:
-            disabled_studies = Study.query.all()
+        Returns:
+            dict: A dictionary mapping each study ID to a list of its sites
+            that this user does not have access to. Studies where the user
+            has full access will be omitted entirely.
+        """
+        disabled = StudySite.query \
+            .with_entities(StudySite.study_id, StudySite.site_id) \
+            .filter(~exists().where(
+                and_(StudyUser.user_id == self.id,
+                     StudyUser.study_id == StudySite.study_id,
+                     or_(StudyUser.site_id == StudySite.site_id,
+                         StudyUser.site_id == None)))) \
+            .order_by(StudySite.study_id.asc())
 
-        return disabled_studies
+        found = {}
+        for study, site in disabled:
+            found.setdefault(study, []).append(site)
+        return found
 
     def has_study_access(self, study):
         return self._get_permissions(study)
@@ -1865,11 +1876,8 @@ class StudyUser(db.Model):
                         db.Integer,
                         db.ForeignKey('users.id'),
                         nullable=False)
-    study_id = db.Column('study',
-                         db.String(32),
-                         nullable=False)
-    site = db.Column('site',
-                     db.String(32))
+    study_id = db.Column('study', db.String(32), nullable=False)
+    site_id = db.Column('site', db.String(32))
     is_admin = db.Column('is_admin', db.Boolean, default=False)
     primary_contact = db.Column('primary_contact', db.Boolean, default=False)
     kimel_contact = db.Column('kimel_contact', db.Boolean, default=False)
@@ -1885,15 +1893,16 @@ class StudyUser(db.Model):
         viewonly=True)
     user = db.relationship('User', back_populates='studies')
 
-    __table_args__ = (UniqueConstraint('study', 'user_id', 'site'),
-                      ForeignKeyConstraint(['study', 'site'],
-                                           ['study_sites.study',
-                                            'study_sites.site']),)
+    __table_args__ = (
+        UniqueConstraint('study', 'user_id', 'site'),
+        ForeignKeyConstraint(['study', 'site'],
+                             ['study_sites.study', 'study_sites.site']),
+    )
 
     def __init__(self,
                  study_id,
                  user_id,
-                 site=None,
+                 site_id=None,
                  admin=False,
                  is_primary_contact=False,
                  is_kimel_contact=False,
@@ -1901,7 +1910,7 @@ class StudyUser(db.Model):
                  does_qc=False):
         self.study_id = study_id
         self.user_id = user_id
-        self.site = site
+        self.site_id = site_id
         self.is_admin = admin
         self.primary_contact = is_primary_contact
         self.kimel_contact = is_kimel_contact
@@ -1909,12 +1918,11 @@ class StudyUser(db.Model):
         self.does_qc = does_qc
 
     def __repr__(self):
-        if self.site:
-            site = self.site
+        if self.site_id:
+            site = self.site_id
         else:
             site = 'ALL'
-        return "<StudyUser {} - {} User: {}>".format(self.study_id,
-                                                     site,
+        return "<StudyUser {} - {} User: {}>".format(self.study_id, site,
                                                      self.user_id)
 
 
@@ -1937,8 +1945,8 @@ class StudySite(db.Model):
     users = db.relationship(
         'StudyUser',
         primaryjoin='and_(StudySite.study_id==StudyUser.study_id,'
-                         'or_(StudySite.site_id==StudyUser.site,'
-                             'StudyUser.site==None))')
+        'or_(StudySite.site_id==StudyUser.site_id,'
+        'StudyUser.site_id==None))')
     site = db.relationship('Site', back_populates='studies')
     study = db.relationship('Study', back_populates='sites')
     alt_codes = db.relationship('AltStudyCode',
