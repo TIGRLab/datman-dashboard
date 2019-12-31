@@ -113,8 +113,8 @@ def find_sessions(search_str):
             query = Session.query.filter(
                 and_((
                      func.upper(Session.name) ==
-                     -ident.get_full_subjectid_with_timepoint()),
-                     -Session.num == ident.session)
+                     ident.get_full_subjectid_with_timepoint()),
+                     Session.num == ident.session)
             )
 
             if not query.count():
