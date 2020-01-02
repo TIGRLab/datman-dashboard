@@ -37,22 +37,22 @@ def send_email(subject, body, html_body=None, recipient=None):
 
 def incidental_finding_email(user, timepoint, comment):
     subject = 'IMPORTANT: Incidental Finding flagged'
-    body = '{} has reported an incidental finding for {}. ' + \
+    body = '{} has reported an incidental finding for {}. ' \
            'Description: {}'.format(user, timepoint, comment)
     send_email(subject, body)
 
 
 def account_request_email(first_name, last_name):
     subject = "New account request from {} {}".format(first_name, last_name)
-    body = "{} {} has requested a dashboard account. Please log in to " + \
+    body = "{} {} has requested a dashboard account. Please log in to " \
            "approve or reject this request".format(first_name, last_name)
     try:
         dest_url = url_for('manage_users', _external=True)
     except Exception:
         html_body = body
     else:
-        html_body = "{} {} has requested dashboard access. <a href='{}'>" + \
-                    "Click here</a> to review and approve/reject the " + \
+        html_body = "{} {} has requested dashboard access. <a href='{}'>" \
+                    "Click here</a> to review and approve/reject the " \
                     "request".format(first_name, last_name, dest_url)
     send_email(subject, body, html_body=html_body)
 
@@ -63,9 +63,9 @@ def account_activation_email(user):
                      "email address available.".format(user.id))
         return
     subject = "QC Dashboard account activated"
-    body = "You can now log in to the QC dashboard using account {}. You " + \
-           "can currently access {} studies. Access to additional studies " + \
-           "can be requested by filling in the study request form found " + \
+    body = "You can now log in to the QC dashboard using account {}. You " \
+           "can currently access {} studies. Access to additional studies " \
+           "can be requested by filling in the study request form found " \
            "on your profile page after logging in.".format(user.username,
                                                            len(user.studies))
     send_email(subject, body, recipient=user.email)
@@ -77,9 +77,9 @@ def account_rejection_email(user):
                      "No email address available".format(user.id))
         return
     subject = "QC Dashboard account request rejected"
-    body = "An admin has reviewed your request for access to the QC " + \
-           "dashboard and unfortunately it has been rejected. For any " + \
-           "questions you may have please contact us " + \
+    body = "An admin has reviewed your request for access to the QC " \
+           "dashboard and unfortunately it has been rejected. For any " \
+           "questions you may have please contact us " \
            "at {}".format(DASH_SUPPORT)
     send_email(subject, body, recipient=user.email)
 
@@ -88,8 +88,8 @@ def missing_redcap_email(session, study=None, dest_emails=None):
     subject = "Missing REDCap Survey"
     if study:
         subject = study + "- " + subject
-    body = "A 'Scan Completed' survey is expected for session '{}' but a " + \
-           "survey has not been received. Please remember to fill out the " + \
+    body = "A 'Scan Completed' survey is expected for session '{}' but a " \
+           "survey has not been received. Please remember to fill out the " \
            "survey or let us know if this email is in error.".format(session)
     send_email(subject, body, recipient=dest_emails)
 
@@ -105,7 +105,7 @@ def missing_session_data_email(session, study=None, dest_emails=None):
 
 def unsent_notification_email(user, type, unsent_body):
     subject = "Unable to send '{}' notification to user {}".format(type, user)
-    body = "Failed to send email to user {} with body: " + \
+    body = "Failed to send email to user {} with body: " \
            "\n\n {}".format(user.id, unsent_body)
     send_email(subject, body)
 
