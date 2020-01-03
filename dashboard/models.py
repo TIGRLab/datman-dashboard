@@ -959,7 +959,7 @@ class Session(db.Model):
                 raise InvalidDataException("Existing record already found. "
                     "Please remove the old record before adding a new one.")
         else:
-            rc_record = RedcapRecord(record_num, project, url)
+            rc_record = RedcapRecord(record_num, project, url, instrument, date, version)
             db.session.add(rc_record)
             # Flush to get an ID assigned
             db.session.flush()
@@ -972,16 +972,10 @@ class Session(db.Model):
                         rc_record.id)
             self.save()
 
-        if instrument:
-            rc_record.instrument = instrument
-        if date:
-            rc_record.date = date
         if rc_user:
             rc_record.user = rc_user
         if comment:
             rc_record.comment = comment
-        if version:
-            rc_record.redcap_version = version
         if event_id:
             rc_record.event_id = event_id
         try:
@@ -1477,8 +1471,8 @@ class RedcapRecord(db.Model):
     record = db.Column('record', db.String(256), nullable=False)
     project = db.Column('project_id', db.Integer, nullable=False)
     url = db.Column('url', db.String(1024), nullable=False)
-    instrument = db.Column('instrument', db.String(1024))
-    date = db.Column('entry_date', db.Date)
+    instrument = db.Column('instrument', db.String(1024), nullable=False)
+    date = db.Column('entry_date', db.Date, nullable=False)
     user = db.Column('redcap_user', db.Integer)
     comment = db.Column('comment', db.Text)
     redcap_version = db.Column('redcap_version', db.String(10), default='7.4.2')
