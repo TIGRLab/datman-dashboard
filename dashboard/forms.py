@@ -170,6 +170,7 @@ class PermissionRadioField(RadioField):
 class StudyPermissionsForm(FlaskForm):
     study_id = HiddenField()
     user_id = HiddenField()
+    site_id = HiddenField()
     is_admin = PermissionRadioField('Study Admin')
     primary_contact = PermissionRadioField('Primary Contact')
     kimel_contact = PermissionRadioField('Kimel Contact')
@@ -182,7 +183,7 @@ class UserAdminForm(UserForm):
     dashboard_admin = BooleanField('Dashboard Admin: ')
     is_active = BooleanField('Active Account: ')
     studies = FieldList(FormField(StudyPermissionsForm))
-    add_access = SelectMultipleField('Currently disabled studies: ')
+    add_access = SelectMultipleField('Enable user access: ')
     update_access = SubmitField(label='Enable')
     revoke_all_access = SubmitField(label='Remove All')
 
@@ -205,7 +206,10 @@ class UserAdminForm(UserForm):
                 # This if statement is the only change made to the original
                 # code for BaseForm.process() - Dawn
                 if name == 'studies':
-                    field.process(formdata, list(obj.studies.values()))
+                    access_rights = []
+                    for study in obj.studies:
+                        access_rights.extend(obj.studies[study])
+                    field.process(formdata, access_rights)
                 else:
                     field.process(formdata, getattr(obj, name))
             elif name in kwargs:
@@ -222,8 +226,11 @@ class UserAdminForm(UserForm):
         for name, field in iteritems(self._fields):
             if name == 'studies':
                 for study_form in self.studies.entries:
-                    study_form.form.populate_obj(
-                        obj.studies[study_form.study_id.data])
+                    if study_form.site_id.data == '':
+                        study_form.site_id.data = None
+                    match = [su for su in obj.studies[study_form.study_id.data]
+                             if study_form.site_id.data == su.site_id]
+                    study_form.form.populate_obj(match[0])
             else:
                 field.populate_obj(obj, name)
 
