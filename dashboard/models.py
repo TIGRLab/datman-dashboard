@@ -1672,10 +1672,14 @@ class RedcapRecord(db.Model):
 
     __table_args__ = (UniqueConstraint(record, project, url, event_id), )
 
-    def __init__(self, record, project, url, event_id=None):
+    def __init__(self, record, project, url, instrument,
+                 date, version, event_id=None):
         self.record = record
         self.project = project
         self.url = url
+        self.instrument = instrument
+        self.date = date
+        self.version = version
         self.event_id = event_id
 
     def __repr__(self):
