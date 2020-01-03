@@ -1079,7 +1079,8 @@ class Session(db.Model):
                                            "Please remove the old record "
                                            "before adding a new one.")
         else:
-            rc_record = RedcapRecord(record_num, project, url, instrument, date, version)
+            rc_record = RedcapRecord(record_num, project, url,
+                                     instrument, date, version)
             db.session.add(rc_record)
             # Flush to get an ID assigned
             db.session.flush()
