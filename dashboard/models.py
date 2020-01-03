@@ -46,6 +46,13 @@ class DictListCollection(MappedCollection):
             super(DictListCollection, self).__setitem__(key, [], _sa_initiator)
         super(DictListCollection, self).__getitem__(key).append(value)
 
+    @collection.iterator
+    def __iter__(self):
+        all_records = []
+        for sub_list in self.values():
+            all_records.extend(sub_list)
+        return all_records
+
 
 ###############################################################################
 # Association tables (i.e. basic many to many relationships)
