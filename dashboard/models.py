@@ -228,7 +228,7 @@ class User(UserMixin, db.Model):
                 db.session.add(StudyUser(study, self.id))
             else:
                 for site in study_ids[study]:
-                    db.session.add(StudyUser(study, self.id, site=site))
+                    db.session.add(StudyUser(study, self.id, site_id=site))
         try:
             db.session.commit()
         except IntegrityError as e:
@@ -276,7 +276,7 @@ class User(UserMixin, db.Model):
                 for site in study_ids[study]:
                     found = [
                         item for item in self.studies[study]
-                        if item.site == site
+                        if item.site_id == site
                     ]
                     if not found:
                         continue
