@@ -47,11 +47,13 @@ class DictListCollection(MappedCollection):
         super(DictListCollection, self).__getitem__(key).append(value)
 
     @collection.iterator
-    def __iter__(self):
+    def list_mod(self):
+        """Allows sqlalchemy manage changes to the contents of the lists
+        """
         all_records = []
         for sub_list in self.values():
             all_records.extend(sub_list)
-        return all_records
+        return iter(all_records)
 
 
 ###############################################################################
