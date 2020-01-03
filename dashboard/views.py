@@ -24,9 +24,9 @@ from .forms import (SelectMetricsForm, StudyOverviewForm, ScanChecklistForm,
                     UserForm, AnalysisForm, EmptySessionForm,
                     IncidentalFindingsForm, TimepointCommentsForm,
                     NewIssueForm, SliceTimingForm, DataDeletionForm)
-from .view_utils import (get_user_form, report_form_errors, get_timepoint,
-                         get_session, get_scan, handle_issue,
-                         get_redcap_record)
+from .view_utils import (get_user_form, parse_enabled_sites,
+                         report_form_errors, get_timepoint, get_session,
+                         get_scan, handle_issue, get_redcap_record)
 from .emails import incidental_finding_email
 from .exceptions import InvalidUsage
 
@@ -161,18 +161,22 @@ def user(user_id=None):
         updated_user = User.query.get(submitted_id)
 
         if form.update_access.data:
-            # Give user access to a new study
-            updated_user.add_studies(form.add_access.data)
+            # Give user access to a new study or site
+            enabled = parse_enabled_sites(form.add_access.data)
+            updated_user.add_studies(enabled)
         elif form.revoke_all_access.data:
             # Revoke access to all enabled studies
-            updated_user.remove_studies(list(updated_user.studies.values()))
+            revoked = {s: [] for s in user.studies}
+            updated_user.remove_studies(revoked)
         else:
             # Update user info
             form.populate_obj(updated_user)
 
-        removed_studies = [
-            sf.study_id.data for sf in form.studies if sf.revoke_access.data
-        ]
+        # Check if a single study (or site in a study) has been disabled
+        removed_studies = {
+            sf.study_id.data: [sf.site_id.data] if sf.site_id.data else []
+            for sf in form.studies if sf.revoke_access.data
+        }
         if removed_studies:
             updated_user.remove_studies(removed_studies)
 
