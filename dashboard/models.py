@@ -789,7 +789,7 @@ class Study(db.Model):
             # an RA for the whole study
             RAs = [
                 su.user for su in self.users
-                if su.study_RA and (not su.site or su.site == site)
+                if su.study_RA and (not su.site_id or su.site_id == site)
             ]
         else:
             # Get all RAs for the study
