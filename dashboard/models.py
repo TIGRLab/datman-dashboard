@@ -1064,11 +1064,11 @@ class Session(db.Model):
                    record_num,
                    project,
                    url,
-                   instrument=None,
-                   date=None,
+                   instrument,
+                   date,
+                   version,
                    rc_user=None,
                    comment=None,
-                   version=None,
                    event_id=None):
         if self.redcap_record and self.redcap_record.record is not None:
             rc_record = self.redcap_record.record
@@ -1661,22 +1661,25 @@ class RedcapRecord(db.Model):
     url = db.Column('url', db.String(1024), nullable=False)
     instrument = db.Column('instrument', db.String(1024), nullable=False)
     date = db.Column('entry_date', db.Date, nullable=False)
-    user = db.Column('redcap_user', db.Integer)
-    comment = db.Column('comment', db.Text)
     redcap_version = db.Column('redcap_version',
                                db.String(10),
                                default='7.4.2')
+    user = db.Column('redcap_user', db.Integer)
+    comment = db.Column('comment', db.Text)
     event_id = db.Column('event_id', db.Integer)
 
     sessions = db.relationship('SessionRedcap', back_populates='record')
 
     __table_args__ = (UniqueConstraint(record, project, url, event_id), )
 
-    def __init__(self, record, project, url, event_id=None):
+    def __init__(self, record, project, url,
+                 instrument, date, version):
         self.record = record
         self.project = project
         self.url = url
-        self.event_id = event_id
+        self.instrument = instrument
+        self.date = date
+        self.version = version
 
     def __repr__(self):
         return "<RedcapRecord {}: record {} project {} url {}>".format(
