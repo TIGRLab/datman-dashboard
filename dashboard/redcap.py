@@ -59,7 +59,7 @@ def create_from_request(request):
     session = set_session(session_name)
     try:
         new_record = session.add_redcap(record, project, url, instrument, date,
-                                        redcap_user, comment, version)
+                                        version, redcap_user, comment)
     except Exception as e:
         raise RedcapException("Failed adding record {} from project {} on "
                               "server {}. Reason: {}".format(
