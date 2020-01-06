@@ -56,7 +56,7 @@ def upgrade():
     sa.Column('description', sa.Text(), nullable=True),
     sa.Column('read_me', sa.Text(), nullable=True),
     sa.Column('is_open', sa.Boolean(), nullable=True, server_default='true'),
-    sa.Column('email_on_trigger', sa.Boolean(), nullable=True, server_default='False')
+    sa.Column('email_on_trigger', sa.Boolean(), nullable=True, server_default='False'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('users',
