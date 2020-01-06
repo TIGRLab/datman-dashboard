@@ -123,12 +123,12 @@ def get_timepoint(study_id, timepoint_id, current_user):
 
     if timepoint is None:
         flash("Timepoint {} does not exist".format(timepoint_id))
-        raise RequestRedirect("index")
+        raise RequestRedirect(url_for("index"))
 
-    if (not current_user.has_study_access(study_id) or
+    if (not current_user.has_study_access(study_id, timepoint.site_id) or
             not timepoint.belongs_to(study_id)):
         flash("Not authorised to view {}".format(timepoint_id))
-        raise RequestRedirect("index")
+        raise RequestRedirect(url_for("index"))
 
     return timepoint
 
@@ -155,8 +155,9 @@ def get_scan(scan_id, study_id, current_user, fail_url=None):
         flash("Scan does not exist.".format(scan_id))
         raise RequestRedirect(fail_url)
 
-    if (not current_user.has_study_access(study_id) or
-            not scan.session.timepoint.belongs_to(study_id)):
+    timepoint = scan.session.timepoint
+    if (not current_user.has_study_access(study_id, timepoint.site_id) or
+            not timepoint.belongs_to(study_id)):
         flash("Not authorized to view {}".format(scan.name))
         raise RequestRedirect(fail_url)
 

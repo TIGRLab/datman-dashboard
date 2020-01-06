@@ -324,43 +324,73 @@ class User(UserMixin, db.Model):
             found.setdefault(study, []).append(site)
         return found
 
-    def has_study_access(self, study):
-        return self._get_permissions(study)
+    def has_study_access(self, study, site=None):
+        return self._get_permissions(study, site)
 
-    def is_study_admin(self, study):
-        return self._get_permissions(study, perm='is_admin')
+    def is_study_admin(self, study, site=None):
+        return self._get_permissions(study, site, perm='is_admin')
 
-    def is_primary_contact(self, study):
-        return self._get_permissions(study, perm='primary_contact')
+    def is_primary_contact(self, study, site=None):
+        return self._get_permissions(study, site, perm='primary_contact')
 
-    def is_kimel_contact(self, study):
-        return self._get_permissions(study, perm='kimel_contact')
+    def is_kimel_contact(self, study, site=None):
+        return self._get_permissions(study, site, perm='kimel_contact')
 
-    def is_study_RA(self, study):
-        return self._get_permissions(study, perm='study_RA')
+    def is_study_RA(self, study, site=None):
+        return self._get_permissions(study, site, perm='study_RA')
 
-    def does_qc(self, study):
-        return self._get_permissions(study, perm='does_qc')
+    def does_qc(self, study, site=None):
+        return self._get_permissions(study, site, perm='does_qc')
 
-    def _get_permissions(self, study, perm=None):
-        """
-        Checks the StudyUser records for this user. If no key is given it
-        checks if a record exists for a specific study (i.e. if the user has
-        access to that study). If 'perm' is set it can check a specific
-        permission attribute (e.g. 'is_admin' or 'has_phi').
+    def _get_permissions(self, study, site=None, perm=None):
+        """Check if a user has general access rights or a specific permission
 
-        Always returns a boolean.
+        Checks StudyUser records for this user.
+            - If only study is set, it will check if the user has any access
+            to the study at all
+            - If study and perm are set, it will check if the user
+            has the named permission for that entire study
+
+        Use the 'site' flag to restrict checks to specific sites instead of
+        the study as a whole.
+
+        Example:
+            study = 'SPINS', perm = 'study_RA' will check if the user is
+            declared as a 'study_RA' for the every site in 'SPINS'.
+            Setting site='CMH' for the same check will restrict it to
+            checking whether the user is an RA for 'CMH'
+
+        Args:
+            study (str): The ID for a managed study
+            site (str, optional): The ID of a site within the study
+            perm (str, optional): The name of a specific user permission to
+            check. e.g. 'is_admin' or 'does_qc'
+
+        Returns:
+            bool: False if the user should be denied, True otherwise
         """
         if self.dashboard_admin:
             return True
+
         if isinstance(study, Study):
             study = study.id
+        if site and isinstance(site, Site):
+            site = site.name
+
         try:
-            permissions = self.studies[study]
+            access_rights = self.studies[study]
         except KeyError:
             return False
+
+        if site:
+            access_rights = [su for su in access_rights
+                             if su.site_id is None or su.site_id == site]
+            if not access_rights:
+                return False
+
         if perm:
-            return getattr(permissions, perm)
+            return getattr(access_rights[0], perm)
+
         return True
 
     def save_changes(self):
@@ -946,7 +976,7 @@ class Timepoint(db.Model):
         to if one exists.
         """
         for study_name in self.studies:
-            if user.has_study_access(study_name):
+            if user.has_study_access(study_name, self.site_id):
                 return self.studies[study_name]
         return None
 
