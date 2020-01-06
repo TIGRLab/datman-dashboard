@@ -32,6 +32,13 @@ target_metadata = current_app.extensions['migrate'].db.metadata
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
 
+def include_object(object, name, type, reflected, compare_to):
+    # Add the name of a table to this list to make flask db migrate ignore it
+    ignored = ['apscheduler_jobs']
+
+    if type == 'table' and name in ignored:
+        return False
+    return True
 
 def run_migrations_offline():
     """Run migrations in 'offline' mode.
@@ -47,7 +54,8 @@ def run_migrations_offline():
     """
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
-        url=url, target_metadata=target_metadata, literal_binds=True
+        url=url, target_metadata=target_metadata, literal_binds=True,
+        include_object=include_object
     )
 
     with context.begin_transaction():
@@ -83,7 +91,8 @@ def run_migrations_online():
             connection=connection,
             target_metadata=target_metadata,
             process_revision_directives=process_revision_directives,
-            **current_app.extensions['migrate'].configure_args
+            **current_app.extensions['migrate'].configure_args,
+            include_object=include_object
         )
 
         with context.begin_transaction():
