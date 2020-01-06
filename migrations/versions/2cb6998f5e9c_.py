@@ -39,7 +39,8 @@ def upgrade():
     sa.Column('redcap_version', sa.String(length=10), nullable=True, server_default='7.4.2'),
     sa.Column('event_id', sa.Integer(), nullable=True),
     sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('record', 'project_id', 'url', 'event_id', 'entry_date', name='redcap_records_unique_record_idx')
+    sa.UniqueConstraint('record', 'project_id', 'url', 'event_id',
+                        'entry_date', name='redcap_records_unique_record')
     )
     op.create_table('scantypes',
     sa.Column('tag', sa.String(length=64), nullable=False),
@@ -74,7 +75,8 @@ def upgrade():
     sa.Column('picture', sa.String(length=2048), nullable=True),
     sa.Column('dashboard_admin', sa.Boolean(), nullable=True, server_default='false'),
     sa.Column('account_active', sa.Boolean(), nullable=True, server_default='false'),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('username')
     )
     op.create_table('account_requests',
     sa.Column('user_id', sa.Integer(), nullable=False),
@@ -127,7 +129,6 @@ def upgrade():
     sa.Column('static_page', sa.String(length=1028), nullable=True),
     sa.Column('bids_name', sa.Text(), nullable=True),
     sa.Column('bids_sess', sa.String(length=48), nullable=True),
-    sa.Column('header_diffs', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
     sa.ForeignKeyConstraint(['site'], ['sites.name'], ),
     sa.PrimaryKeyConstraint('name')
     )

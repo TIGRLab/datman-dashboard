@@ -107,6 +107,8 @@ class User(UserMixin, db.Model):
                                        uselist=False,
                                        cascade="all, delete")
 
+    __table_args__ = (UniqueConstraint(_username),)
+
     def __init__(self,
                  first,
                  last,
@@ -1780,7 +1782,8 @@ class GoldStandard(db.Model):
             ['study_scantypes.study', 'study_scantypes.scantype']),
         ForeignKeyConstraint(
             ['study', 'site'],
-            ['study_sites.study', 'study_sites.site']))
+            ['study_sites.study', 'study_sites.site']),
+        UniqueConstraint(json_path, json_contents))
 
     def __init__(self, study, gs_json):
         try:
@@ -1828,7 +1831,7 @@ class RedcapRecord(db.Model):
         url,
         event_id,
         date,
-        name='redcap_records_unique_record_idx'), )
+        name='redcap_records_unique_record'), )
 
     def __init__(self, record, project, url,
                  instrument, date, version):
