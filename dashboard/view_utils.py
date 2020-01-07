@@ -4,8 +4,10 @@ Helper functions for the routes defined in views.py to make them a bit more
 readable :)
 """
 import logging
+from functools import wraps
 
-from flask import flash, url_for
+from urllib.parse import urlparse, urljoin
+from flask import flash, url_for, current_user, request, redirect
 from werkzeug.routing import RequestRedirect
 
 from .models import Study, Timepoint, Scan, RedcapRecord, User
@@ -177,3 +179,49 @@ def get_redcap_record(record_id, fail_url=None):
         raise RequestRedirect(fail_url)
 
     return record
+
+
+def dashboard_admin_required(f):
+    """
+    Verifies a user is a dashboard admin before granting access
+    """
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.dashboard_admin:
+            flash("Not authorized")
+            return redirect(prev_url())
+        return f(*args, **kwargs)
+
+    return decorated_function
+
+
+def study_admin_required(f):
+    """
+    Verifies a user is a study admin or a dashboard admin. Any view function
+    this wraps must have 'study_id' as an argument
+    """
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_study_admin(kwargs['study_id']):
+            flash("Not authorized.")
+            return redirect(prev_url())
+        return f(*args, **kwargs)
+
+    return decorated_function
+
+
+def prev_url():
+    """
+    Returns the referring page if it is safe to do so, otherwise directs
+    the user to the index.
+    """
+    if request.referrer and is_safe_url(request.referrer):
+        return request.referrer
+    return url_for('index')
+
+
+def is_safe_url(target):
+    ref_url = urlparse(request.host_url)
+    test_url = urlparse(urljoin(request.host_url, target))
+    return (test_url.scheme in ('http', 'https')
+            and ref_url.netloc == test_url.netloc)

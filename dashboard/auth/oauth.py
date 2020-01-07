@@ -1,5 +1,4 @@
-"""
-This code validates users using the OAuth protocol
+"""This allows user to be validated using the OAuth protocol
 
 See https://blog.miguelgrinberg.com/post/oauth-authentication-with-flask for
 an overview.
@@ -11,7 +10,7 @@ import random
 from rauth import OAuth2Service
 from flask import url_for, request, redirect, session
 
-from config import OAUTH_CREDENTIALS, GITHUB_PUBLIC
+from ..config import OAUTH_CREDENTIALS, GITHUB_PUBLIC
 
 
 class OAuthSignIn(object):
@@ -133,4 +132,4 @@ class GitlabSignIn(OAuthSignIn):
         access_token = oauth_session.access_token
         api_url = 'http://sdrshgitlabv.camhres.ca/api/v3/user'
         user = oauth_session.get(api_url).json()
-        return(access_token, user)
+        return access_token, user
