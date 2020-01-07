@@ -2,3 +2,4 @@ exclude_paths:
   - 'migrations/**'
   - 'dashboard/static/**'
   - 'run.py'
+  - 'README.md'
