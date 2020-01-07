@@ -3,7 +3,6 @@ import csv
 import io
 import os
 import logging
-from functools import wraps
 
 from urllib.parse import urlparse, urljoin
 from flask import session as flask_session
@@ -26,7 +25,9 @@ from .forms import (SelectMetricsForm, StudyOverviewForm, ScanChecklistForm,
                     NewIssueForm, SliceTimingForm, DataDeletionForm)
 from .view_utils import (get_user_form, parse_enabled_sites,
                          report_form_errors, get_timepoint, get_session,
-                         get_scan, handle_issue, get_redcap_record)
+                         get_scan, handle_issue, get_redcap_record,
+                         dashboard_admin_required, study_admin_required,
+                         prev_url, is_safe_url)
 from .emails import incidental_finding_email
 from .exceptions import InvalidUsage
 
@@ -38,75 +39,6 @@ def handle_invalid_usage(error):
     response = jsonify(error.to_dict())
     response.status_code = error.status_code
     return response
-
-
-@lm.user_loader
-def load_user(id):
-    return User.query.get(int(id))
-
-
-def dashboard_admin_required(f):
-    """
-    Verifies a user is a dashboard admin before granting access
-    """
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not current_user.dashboard_admin:
-            flash("Not authorized")
-            return redirect(prev_url())
-        return f(*args, **kwargs)
-
-    return decorated_function
-
-
-def study_admin_required(f):
-    """
-    Verifies a user is a study admin or a dashboard admin. Any view function
-    this wraps must have 'study_id' as an argument
-    """
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not current_user.is_study_admin(kwargs['study_id']):
-            flash("Not authorized.")
-            return redirect(prev_url())
-        return f(*args, **kwargs)
-
-    return decorated_function
-
-
-def prev_url():
-    """
-    Returns the referring page if it is safe to do so, otherwise directs
-    the user to the index.
-    """
-    if request.referrer and is_safe_url(request.referrer):
-        return request.referrer
-    return url_for('index')
-
-
-def is_safe_url(target):
-    ref_url = urlparse(request.host_url)
-    test_url = urlparse(urljoin(request.host_url, target))
-    return (test_url.scheme in ('http', 'https')
-            and ref_url.netloc == test_url.netloc)
-
-
-@app.before_request
-def before_request():
-    if current_user.is_authenticated:
-        if not current_user.is_active:
-            logout_user()
-            flash('Your account is disabled. Please contact an administrator.')
-            return
-        db.session.add(current_user)
-        db.session.commit()
-
-
-@app.route('/logout')
-def logout():
-    logout_user()
-    flash('You have been logged out.')
-    return redirect(url_for('login'))
 
 
 @app.route('/')
@@ -126,111 +58,6 @@ def index():
                            timepoint_count=timepoint_count,
                            study_count=study_count,
                            site_count=site_count)
-
-
-@app.route('/user', methods=['GET', 'POST'])
-@app.route('/user/<int:user_id>', methods=['GET', 'POST'])
-@login_required
-def user(user_id=None):
-    """
-    View for updating a user's information
-    """
-
-    if user_id and (user_id != current_user.id
-                    and not current_user.dashboard_admin):
-        flash("You are not authorized to view other user settings")
-        return redirect(url_for('user'))
-
-    if user_id:
-        user = User.query.get(user_id)
-    else:
-        user = current_user
-
-    form = get_user_form(user, current_user)
-
-    if form.validate_on_submit():
-        submitted_id = form.id.data
-
-        if (submitted_id != current_user.id
-                and not current_user.dashboard_admin):
-            # This catches anyone who tries to modify the user_id submitted
-            # with the form to change other user's settings
-            flash("You are not authorized to update other users' settings.")
-            return redirect(url_for('user'))
-
-        updated_user = User.query.get(submitted_id)
-
-        if form.update_access.data:
-            # Give user access to a new study or site
-            enabled = parse_enabled_sites(form.add_access.data)
-            updated_user.add_studies(enabled)
-        elif form.revoke_all_access.data:
-            # Revoke access to all enabled studies
-            revoked = {s: [] for s in user.studies}
-            updated_user.remove_studies(revoked)
-        else:
-            # Update user info
-            form.populate_obj(updated_user)
-
-        # Check if a single study (or site in a study) has been disabled
-        removed_studies = {
-            sf.study_id.data: [sf.site_id.data] if sf.site_id.data else []
-            for sf in form.studies if sf.revoke_access.data
-        }
-        if removed_studies:
-            updated_user.remove_studies(removed_studies)
-
-        updated_user.save_changes()
-
-        flash("User profile updated.")
-        return redirect(url_for('user', user_id=submitted_id))
-
-    report_form_errors(form)
-
-    return render_template('users/profile.html', user=user, form=form)
-
-
-@app.route('/manage_users')
-@app.route('/manage_users/<int:user_id>/account/<approve>')
-@login_required
-@dashboard_admin_required
-def manage_users(user_id=None, approve=False):
-    users = User.query.all()
-    # study_requests = []
-
-    if not user_id:
-        return render_template('users/manage_users.html',
-                               users=users,
-                               account_requests=AccountRequest.query.all())
-
-    if approve == "False":
-        # URL gets parsed into unicode
-        approve = False
-
-    user_request = AccountRequest.query.get(user_id)
-    if not approve:
-        try:
-            user_request.reject()
-        except Exception:
-            flash("Failed while rejecting account request for user {}".format(
-                user_id))
-        else:
-            flash('Account rejected.')
-        return render_template('users/manage_users.html',
-                               users=users,
-                               account_requests=AccountRequest.query.all())
-
-    try:
-        user_request.approve()
-    except Exception:
-        flash('Failed while trying to activate account for user {}'.format(
-            user_id))
-    else:
-        flash('Account access for {} enabled'.format(user_id))
-
-    return render_template('users/manage_users.html',
-                           users=users,
-                           account_requests=AccountRequest.query.all())
 
 
 @app.route('/search_data')
@@ -1053,92 +880,6 @@ def not_found_error(error):
 def internal_error(error):
     db.session.rollback()
     return render_template('500.html'), 500
-
-
-@app.route('/login')
-def login():
-    next_url = request.args.get('next')
-    if next_url:
-        flask_session['next_url'] = next_url
-    return render_template('login.html')
-
-
-@app.route('/authorize/<provider>')
-def oauth_authorize(provider):
-    if not current_user.is_anonymous and login_fresh():
-        return redirect(url_for('index'))
-    oauth = OAuthSignIn.get_provider(provider)
-    return oauth.authorize()
-
-
-@app.route('/callback/<provider>')
-def oauth_callback(provider):
-    if not current_user.is_anonymous and login_fresh():
-        return redirect(url_for('index'))
-
-    try:
-        dest_page = flask_session['next_url']
-        del flask_session['next_url']
-        if not is_safe_url(dest_page):
-            raise
-    except Exception:
-        dest_page = url_for('index')
-
-    oauth = OAuthSignIn.get_provider(provider)
-    access_token, user_info = oauth.callback()
-
-    if access_token is None:
-        flash('Authentication failed. Please contact an admin if '
-              'this problem is persistent')
-        return redirect(url_for('login'))
-
-    if provider == 'github':
-        username = "gh_" + user_info['login']
-        avatar_url = user_info['avatar_url']
-    elif provider == 'gitlab':
-        username = "gl_" + user_info['username']
-        avatar_url = None
-
-    user = User.query.filter_by(_username=username).first()
-
-    if not user:
-        flash("No account found. Please submit a request for an account.")
-        return redirect(url_for('new_account'))
-
-    user.update_avatar(avatar_url)
-    login_user(user, remember=True)
-    # Token is needed for access to github issues
-    flask_session['active_token'] = access_token
-
-    return redirect(dest_page)
-
-
-@app.route('/refresh_login')
-def refresh_login():
-    flask_session['_fresh'] = False
-    next_url = request.args.get('next')
-    if next_url:
-        flask_session['next_url'] = next_url
-    return redirect(url_for('login'))
-
-
-@app.route('/new_account', methods=['GET', 'POST'])
-def new_account():
-    request_form = UserForm()
-    if request_form.validate_on_submit():
-        first = request_form.first_name.data
-        last = request_form.last_name.data
-        new_user = User(first,
-                        last,
-                        username=request_form.account.data,
-                        provider=request_form.provider.data)
-        new_user.request_account(request_form)
-        flash("Request submitted. Please allow up to 2 days for a response "
-              "before contacting an admin.")
-        return redirect(url_for('login'))
-    if request_form.is_submitted:
-        report_form_errors(request_form)
-    return render_template('users/account_request.html', form=request_form)
 
 
 @app.route('/analysis', methods=['GET', 'POST'])
