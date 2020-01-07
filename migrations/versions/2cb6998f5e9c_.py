@@ -95,7 +95,7 @@ def upgrade():
     sa.Column('scantype', sa.String(length=64), nullable=False),
     sa.ForeignKeyConstraint(['scantype'], ['scantypes.tag'], ),
     sa.ForeignKeyConstraint(['study'], ['studies.id'], ),
-    sa.UniqueConstraint('study', 'scantype')
+    sa.PrimaryKeyConstraint('study', 'scantype')
     )
     op.create_table('study_sites',
     sa.Column('study', sa.String(length=32), nullable=False),
