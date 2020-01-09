@@ -66,10 +66,10 @@
                 <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">View <span class="caret"></span></a>
                 <ul class="dropdown-menu" role="menu" aria-labelledby="Options menu">
                   <li role="presentation">
-                    <a role="menuitem" href={{ url_for('analysis') }}>Analyses</a>
+                    <a role="menuitem" href={{ url_for('main.analysis') }}>Analyses</a>
                   </li>
                   <li role="presentation">
-                    <a role="menuitem" href={{ url_for('metricData') }}>Metric Data</a>
+                    <a role="menuitem" href={{ url_for('main.metricData') }}>Metric Data</a>
                   </li>
                 </ul>
               </li>
@@ -89,7 +89,7 @@
                   <ul class="dropdown-menu" role="menu"
                       aria-labelledby="admin_roles">
                     <li role="presentation">
-                      <a role="menuitem" href={{ url_for('manage_users') }}
+                      <a role="menuitem" href={{ url_for('users.manage_users') }}
                           id="manage-users">
                         Manage Users
                       </a>
@@ -113,10 +113,10 @@
                 </ul>
               </li>
               <li>
-                <a href="{{ url_for('user') }}"><span class="header-icon glyphicon glyphicon-user"></span> Profile</a>
+                <a href="{{ url_for('users.user') }}"><span class="header-icon glyphicon glyphicon-user"></span> Profile</a>
               </li>
               <li>
-                <a role="menuitem" href="{{ url_for('logout') }}">Logout <span class="header-icon glyphicon glyphicon-log-out"></span></a>
+                <a role="menuitem" href="{{ url_for('users.logout') }}">Logout <span class="header-icon glyphicon glyphicon-log-out"></span></a>
               </li>
             </ul>
             {% endif %}
@@ -168,7 +168,7 @@
       $("#search-data-btn").bind('click', function() {
         var search_str = $("#search-data-text").val();
         if (search_str) {
-          var url = "{{ url_for('search_data') }}" + "/" + search_str;
+          var url = "{{ url_for('main.search_data') }}" + "/" + search_str;
           window.location.href = url;
         }
       });

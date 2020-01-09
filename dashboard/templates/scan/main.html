@@ -31,7 +31,7 @@
             <!-- The viewer is in an iframe to stop every little page change from
             breaking papaya's UI -_- -->
             <iframe id="viewer" class="embed-responsive-item"
-                src="{{ url_for('papaya', study_id=study_id, scan_id=scan.id) }}">
+                src="{{ url_for('main.papaya', study_id=study_id, scan_id=scan.id) }}">
             </iframe>
           </div>
         </div>

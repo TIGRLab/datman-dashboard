@@ -23,7 +23,7 @@
         </thead>
         <tbody>
           {% for study in studies %}
-          <tr class="clickable-row" data-href="{{ url_for('study', study_id=study.id) }}">
+          <tr class="clickable-row" data-href="{{ url_for('main.study', study_id=study.id) }}">
             <td> {{ study.id }} </td>
             <td align="center">
               {% if study.is_open %}

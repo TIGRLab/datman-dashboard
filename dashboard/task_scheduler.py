@@ -5,8 +5,6 @@ import logging
 import requests
 from requests import ConnectionError
 
-from flask_apscheduler import APScheduler
-
 from .exceptions import SchedulerException
 
 logger = logging.getLogger(__name__)
@@ -65,6 +63,14 @@ class RemoteScheduler(object):
         # 'real' scheduler), but for now its fine to return the string
         # formatted dictionary the server gives us
         return response.content
+
+    def init_app(self, app):
+        # This is here to allow delayed initialization
+        return
+
+    def start(self):
+        # This is here to allow delayed initialization
+        return
 
 
 def format_job_function(job_function):

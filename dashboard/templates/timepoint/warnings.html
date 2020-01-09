@@ -163,7 +163,7 @@ autosize($("#missing_comment"));
 $(".dismiss-redcap").on("click", function() {
   var session = this.getAttribute("data-session");
   var num = this.getAttribute("data-num");
-  var destURL = "{{ url_for('timepoint', study_id=study_id, timepoint_id=timepoint.name) }}" +
+  var destURL = "{{ url_for('main.timepoint', study_id=study_id, timepoint_id=timepoint.name) }}" +
       '/dismiss_redcap/' + num;
   $("#rm-error").on("click", function() { window.location.href = destURL;});
   $("#redcap-sess").text(session);
@@ -174,7 +174,7 @@ $(".dismiss-redcap").on("click", function() {
 $(".missing-scans").on("click", function() {
   var session = this.getAttribute("data-session");
   var num = this.getAttribute("data-num");
-  var destURL = "{{ url_for('timepoint', study_id=study_id, timepoint_id=timepoint.name) }}" +
+  var destURL = "{{ url_for('main.timepoint', study_id=study_id, timepoint_id=timepoint.name) }}" +
       '/dismiss_missing/' + num;
   $("#missing-scans-sess").text(session);
   $("#empty-session-form")[0].setAttribute("action", destURL);

@@ -13,7 +13,7 @@
         Survey completed on {{ session.redcap_record.record.date }}
       </span>
     {% endif %}
-    <a href="{{ url_for('redcap_redirect', record_id=session.redcap_record.record_id) }}"
+    <a href="{{ url_for('main.redcap_redirect', record_id=session.redcap_record.record_id) }}"
         class="pull-right btn btn-primary" target="_blank">
       <span class="button-text">View Survey </span>
       <span class="glyphicon glyphicon-share-alt"></span>

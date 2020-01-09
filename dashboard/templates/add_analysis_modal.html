@@ -7,7 +7,7 @@
       </div>
       <div class="modal-body">
         <div>
-          <form action="{{ url_for('analysis') }}" method="post" name="analysis">
+          <form action="{{ url_for('main.analysis') }}" method="post" name="analysis">
             {{ form.hidden_tag() }}
             <div class="form-group">
               <label for="analysis_name">{{ form.name.label }}</label>

@@ -2,7 +2,7 @@
 {% include 'flash.html' %}
 {% block content %}
   <div class="container">
-    <form action="{{ url_for('user', user_id=user.id)}}" method="post" name="profile">
+    <form action="{{ url_for('users.user', user_id=user.id)}}" method="post" name="profile">
       {{ form.hidden_tag() }}
       <div class="panel panel-primary" title="Basic user demographic information">
         <div class="panel-heading collapsible-heading" data-toggle="collapse" data-target="#userInfo">
@@ -18,7 +18,7 @@
           {% else %}
             <div class="col-xs-12">
           {% endif %}
-              {% include 'users/demographics_snip.html' %}
+              {% include 'snips/demographics.html' %}
             </div>
           </div>
         </div>
@@ -38,7 +38,7 @@
                 {{ form.dashboard_admin.label }} {{ form.dashboard_admin() }}
               </span>
             </div>
-            {% include 'users/permissions_snip.html' %}
+            {% include 'snips/permissions.html' %}
           </div>
         </div>
       {% endif %}

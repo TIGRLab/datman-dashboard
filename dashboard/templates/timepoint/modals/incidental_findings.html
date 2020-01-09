@@ -12,7 +12,7 @@
           An incidental finding will be reported for <strong>{{ timepoint }}</strong>.
           Admins will be notified of the issue.
         </p>
-        <form action="{{ url_for('flag_finding', study_id=study_id,
+        <form action="{{ url_for('main.flag_finding', study_id=study_id,
             timepoint_id=timepoint.name) }}" method="post" name="flag-finding"
             class="form">
             {{ incidental_findings_form.hidden_tag() }}

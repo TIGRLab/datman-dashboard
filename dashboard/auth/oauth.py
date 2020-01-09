@@ -1,4 +1,4 @@
-"""This allows user to be validated using the OAuth protocol
+"""This allows users to be validated using the OAuth protocol
 
 See https://blog.miguelgrinberg.com/post/oauth-authentication-with-flask for
 an overview.
@@ -8,9 +8,7 @@ import string
 import random
 
 from rauth import OAuth2Service
-from flask import url_for, request, redirect, session
-
-from ..config import OAUTH_CREDENTIALS, GITHUB_PUBLIC
+from flask import url_for, request, redirect, session, current_app
 
 
 class OAuthSignIn(object):
@@ -18,7 +16,7 @@ class OAuthSignIn(object):
 
     def __init__(self, provider_name):
         self.provider_name = provider_name
-        credentials = OAUTH_CREDENTIALS[provider_name]
+        credentials = current_app.config['OAUTH_CREDENTIALS'][provider_name]
         self.consumer_id = credentials['id']
         self.consumer_secret = credentials['secret']
 
@@ -29,7 +27,7 @@ class OAuthSignIn(object):
         pass
 
     def get_callback_url(self):
-        return url_for('oauth_callback', provider=self.provider_name,
+        return url_for('auth.oauth_callback', provider=self.provider_name,
                        _external=True)
 
     def random_string(self, size=10, chars=(string.ascii_uppercase +
@@ -65,7 +63,7 @@ class GithubSignIn(OAuthSignIn):
 
     def authorize(self):
         session['str_rnd'] = self.random_string()
-        if GITHUB_PUBLIC:
+        if current_app.config['GITHUB_PUBLIC']:
             app_scope = 'user public_repo'
         else:
             app_scope = 'user repo'
@@ -114,7 +112,7 @@ class GitlabSignIn(OAuthSignIn):
         self.random_string()
         return redirect(self.service.get_authorize_url(
             state=self.str_rnd,
-            redirect_uri=url_for('oauth_callback',
+            redirect_uri=url_for('auth.oauth_callback',
                                  provider='gitlab',
                                  _external=True),
             response_type='code')
