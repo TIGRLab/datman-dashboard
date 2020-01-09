@@ -6,8 +6,13 @@ from flask_migrate import Migrate
 from werkzeug.routing import BaseConverter
 
 from config import (SCHEDULER_ENABLED, SCHEDULER_API_ENABLED, SCHEDULER_USER,
-                    SCHEDULER_PASS, SCHEDULER_SERVER_URL, TZ_OFFSET,
-                    GITHUB_OWNER, GITHUB_REPO, SENDER, ADMINS, DASH_SUPPORT)
+                    SCHEDULER_PASS, TZ_OFFSET, GITHUB_OWNER, GITHUB_REPO,
+                    SENDER, ADMINS, DASH_SUPPORT)
+
+if SCHEDULER_ENABLED:
+    from flask_apscheduler import APScheduler as Scheduler
+else:
+    from .task_scheduler import RemoteScheduler as Scheduler
 
 
 class RegexConverter(BaseConverter):
@@ -37,19 +42,15 @@ lm = LoginManager()
 lm.login_view = 'users.login'
 lm.refresh_view = 'users.refresh_login'
 mail = Mail()
+scheduler = Scheduler()
 
-if SCHEDULER_ENABLED:
-    from flask_apscheduler import APScheduler
-    scheduler = APScheduler()
-    if SCHEDULER_API_ENABLED:
-        @scheduler.authenticate
-        def authenticate(auth):
-            return (auth['username'] == SCHEDULER_USER
-                    and auth['password'] == SCHEDULER_PASS)
-else:
-    from .task_scheduler import RemoteScheduler
-    scheduler = RemoteScheduler(SCHEDULER_USER, SCHEDULER_PASS,
-                                SCHEDULER_SERVER_URL)
+if SCHEDULER_API_ENABLED:
+    # If this instance is acting as a scheduler server + the api should be
+    # available for clients, set up authentication credentials here
+    @scheduler.authenticate
+    def authenticate(auth):
+        return (auth['username'] == SCHEDULER_USER
+                and auth['password'] == SCHEDULER_PASS)
 
 
 def create_app(config=None):
