@@ -65,6 +65,3 @@ def create_app(config=None):
     app.register_blueprint(auth_bp)
 
     return app
-
-
-from dashboard import models  # noqa: E402
