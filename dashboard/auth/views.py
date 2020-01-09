@@ -2,24 +2,24 @@ from flask import session as flask_session
 from flask import flash, url_for, redirect
 from flask_login import login_user, current_user, login_fresh
 
-from . import auth
+from . import auth_bp
 from .oauth import OAuthSignIn
 from ..models import User
 from ..view_utils import is_safe_url
 
 
-@auth.route('/authorize/<provider>')
+@auth_bp.route('/authorize/<provider>')
 def oauth_authorize(provider):
     if not current_user.is_anonymous and login_fresh():
-        return redirect(url_for('index'))
+        return redirect(url_for('main.index'))
     oauth = OAuthSignIn.get_provider(provider)
     return oauth.authorize()
 
 
-@auth.route('/callback/<provider>')
+@auth_bp.route('/callback/<provider>')
 def oauth_callback(provider):
     if not current_user.is_anonymous and login_fresh():
-        return redirect(url_for('index'))
+        return redirect(url_for('main.index'))
 
     try:
         dest_page = flask_session['next_url']
@@ -27,7 +27,7 @@ def oauth_callback(provider):
         if not is_safe_url(dest_page):
             raise
     except Exception:
-        dest_page = url_for('index')
+        dest_page = url_for('main.index')
 
     oauth = OAuthSignIn.get_provider(provider)
     access_token, user_info = oauth.callback()

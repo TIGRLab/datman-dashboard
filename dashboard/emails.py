@@ -1,10 +1,10 @@
 import logging
 from threading import Thread
 
-from flask import url_for
+from flask import url_for, current_app
 from flask_mail import Message
 
-from dashboard import app, mail, SENDER, ADMINS, DASH_SUPPORT
+from dashboard import mail, SENDER, ADMINS, DASH_SUPPORT
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ def send_email(subject, body, html_body=None, recipient=None):
     email.body = body
     if html_body:
         email.html = html_body
-    send_async_email(app, email)
+    send_async_email(current_app, email)
 
 
 def incidental_finding_email(user, timepoint, comment):
@@ -47,7 +47,7 @@ def account_request_email(first_name, last_name):
     body = "{} {} has requested a dashboard account. Please log in to " \
            "approve or reject this request".format(first_name, last_name)
     try:
-        dest_url = url_for('manage_users', _external=True)
+        dest_url = url_for('users.manage_users', _external=True)
     except Exception:
         html_body = body
     else:

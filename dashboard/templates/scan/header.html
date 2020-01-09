@@ -13,7 +13,7 @@
 </div>
 
 <div class="col-sm-3">
-  <a href="{{ url_for('timepoint', study_id=study_id, timepoint_id=scan.timepoint) }}"
+  <a href="{{ url_for('main.timepoint', study_id=study_id, timepoint_id=scan.timepoint) }}"
       class="btn btn-primary">
     <span class="glyphicon glyphicon-arrow-left"></span>
     <span class="button-text">{{ scan.timepoint }}</span>
@@ -22,7 +22,7 @@
 <div class="col-sm-9">
   {% if scan.is_new() %}
     <div class="pull-right" role="group">
-      <a href="{{ url_for('scan_review', study_id=study_id, scan_id=scan.id, sign_off=True) }}"
+      <a href="{{ url_for('main.scan_review', study_id=study_id, scan_id=scan.id, sign_off=True) }}"
           class="button btn btn-success">
         <span class="fas fa-check-circle"></span> Sign Off
       </a>
@@ -70,7 +70,7 @@
           </div>
         </div>
         <a class="text-muted pull-right"
-            href="{{ url_for('scan_review', study_id=study_id, scan_id=scan.id, delete=True) }}">
+            href="{{ url_for('main.scan_review', study_id=study_id, scan_id=scan.id, delete=True) }}">
           Remove Entry
         </a>
       </div>
@@ -133,15 +133,15 @@ if (comment) {
 }
 
 $("#flag-scan").on("click", function() {
-  $("#scan-comment-form").attr("action", "{{ url_for('scan_review', study_id=study_id, scan_id=scan.id, sign_off=True) }}");
+  $("#scan-comment-form").attr("action", "{{ url_for('main.scan_review', study_id=study_id, scan_id=scan.id, sign_off=True) }}");
 });
 
 $("#blacklist-scan").on("click", function() {
-  $("#scan-comment-form").attr("action", "{{ url_for('scan_review', study_id=study_id, scan_id=scan.id) }}");
+  $("#scan-comment-form").attr("action", "{{ url_for('main.scan_review', study_id=study_id, scan_id=scan.id) }}");
 });
 
 $("#update-comment").on("click", function() {
-  $("#scan-comment-form").attr("action", "{{ url_for('scan_review', study_id=study_id, scan_id=scan.id, update=True) }}");
+  $("#scan-comment-form").attr("action", "{{ url_for('main.scan_review', study_id=study_id, scan_id=scan.id, update=True) }}");
 });
 
 </script>

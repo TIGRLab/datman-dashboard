@@ -20,15 +20,15 @@
             <div class="user-request">
               {{ request }}
               <div class="btn-group pull-right">
-                <a class="btn btn-primary" href="{{ url_for('manage_users',
+                <a class="btn btn-primary" href="{{ url_for('users.manage_users',
                     user_id=request.user_id, approve=True) }}">
                   <span class="fas fa-check-circle"></span> Approve
                 </a>
-                <a class="btn btn-primary" href="{{ url_for('user',
+                <a class="btn btn-primary" href="{{ url_for('users.user',
                     user_id=request.user_id) }}">
                   View Details
                 </a>
-                <a class="btn btn-primary" href="{{ url_for('manage_users',
+                <a class="btn btn-primary" href="{{ url_for('users.manage_users',
                     user_id=request.user_id, approve=False) }}">
                   <span class="fas fa-ban"></span> Reject
                 </a>
@@ -55,7 +55,7 @@
       </thead>
       <tbody>
         {% for user in users %}
-          <tr class="clickable-row" data-href="{{ url_for('user', user_id=user.id) }}">
+          <tr class="clickable-row" data-href="{{ url_for('users.user', user_id=user.id) }}">
             <td>
               {{ user.id }}
             </td>

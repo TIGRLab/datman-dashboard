@@ -47,7 +47,7 @@
   </div>
 
   {% if timepoint.static_page %}
-    <a href="{{ url_for('static_qc_page', study_id=study_id, timepoint_id=timepoint.name) }}"
+    <a href="{{ url_for('main.static_qc_page', study_id=study_id, timepoint_id=timepoint.name) }}"
         class="btn btn-primary pull-right" id="doc-page" target="_blank">
       <span class="button-text">View QC page</span>
       <span class="glyphicon glyphicon-share-alt"></span>

@@ -6,7 +6,7 @@
           session.review_date.strftime('%I:%M %p, %Y-%m-%d')) }}
     </span>
   {% else %}
-    <a class="btn btn-primary pull-right" href="{{ url_for('sign_off',
+    <a class="btn btn-primary pull-right" href="{{ url_for('main.sign_off',
         study_id=study_id, timepoint_id=session.name,
         session_num=session.num) }}">
       Sign Off <i class="fas fa-file-signature"></i>

@@ -21,17 +21,17 @@
       right to restrict or terminate your access if misuse is discovered.
     </div>
     <div class="panel-footer" style="color: #a94442;">
-      <a href="{{ url_for('new_account') }}" class="btn btn-primary" role="button">
+      <a href="{{ url_for('users.new_account') }}" class="btn btn-primary" role="button">
         <i class="fas fa-id-card-alt fa-lg"></i>
         Request Account
       </a>
       <div class="pull-right">
-        <a href="{{ url_for('oauth_authorize', provider='github') }}"
+        <a href="{{ url_for('auth.oauth_authorize', provider='github') }}"
             class="btn btn-primary" role="button">
           <i class="fab fa-github fa-lg"></i>
           GitHub Login
         </a>
-        <a href="{{ url_for('oauth_authorize', provider='gitlab') }}"
+        <a href="{{ url_for('auth.oauth_authorize', provider='gitlab') }}"
             class="btn btn-primary disabled" role="button">
           <i class="fab fa-gitlab fa-lg"></i>
           GitLab Login

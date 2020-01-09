@@ -1,15 +1,61 @@
-@app.route('/user', methods=['GET', 'POST'])
-@app.route('/user/<int:user_id>', methods=['GET', 'POST'])
+from flask import session as flask_session
+from flask import render_template, flash, url_for, redirect, request
+from flask_login import logout_user, current_user, login_required
+
+from dashboard import lm
+from . import user_bp
+from .utils import get_user_form, parse_enabled_sites
+from .forms import UserForm
+from ..models import User, AccountRequest
+from ..view_utils import report_form_errors, dashboard_admin_required
+
+
+@lm.user_loader
+def load_user(id):
+    return User.query.get(int(id))
+
+
+@user_bp.before_app_request
+def before_request():
+    if current_user.is_authenticated and not current_user.is_active:
+        logout_user()
+        flash('Your account is disabled. Please contact an administrator.')
+        return
+
+
+@user_bp.route('/login')
+def login():
+    next_url = request.args.get('next')
+    if next_url:
+        flask_session['next_url'] = next_url
+    return render_template('login.html')
+
+
+@user_bp.route('/logout')
+def logout():
+    logout_user()
+    flash('You have been logged out.')
+    return redirect(url_for('users.login'))
+
+
+@user_bp.route('/refresh_login')
+def refresh_login():
+    flask_session['_fresh'] = False
+    next_url = request.args.get('next')
+    if next_url:
+        flask_session['next_url'] = next_url
+    return redirect(url_for('users.login'))
+
+
+@user_bp.route('/', methods=['GET', 'POST'])
+@user_bp.route('/<int:user_id>', methods=['GET', 'POST'])
 @login_required
 def user(user_id=None):
-    """
-    View for updating a user's information
-    """
 
     if user_id and (user_id != current_user.id
                     and not current_user.dashboard_admin):
         flash("You are not authorized to view other user settings")
-        return redirect(url_for('user'))
+        return redirect(url_for('users.user'))
 
     if user_id:
         user = User.query.get(user_id)
@@ -26,7 +72,7 @@ def user(user_id=None):
             # This catches anyone who tries to modify the user_id submitted
             # with the form to change other user's settings
             flash("You are not authorized to update other users' settings.")
-            return redirect(url_for('user'))
+            return redirect(url_for('users.user'))
 
         updated_user = User.query.get(submitted_id)
 
@@ -53,15 +99,15 @@ def user(user_id=None):
         updated_user.save_changes()
 
         flash("User profile updated.")
-        return redirect(url_for('user', user_id=submitted_id))
+        return redirect(url_for('users.user', user_id=submitted_id))
 
     report_form_errors(form)
 
-    return render_template('users/profile.html', user=user, form=form)
+    return render_template('profile.html', user=user, form=form)
 
 
-@app.route('/manage_users')
-@app.route('/manage_users/<int:user_id>/account/<approve>')
+@user_bp.route('/manage')
+@user_bp.route('/manage/<int:user_id>/account/<approve>')
 @login_required
 @dashboard_admin_required
 def manage_users(user_id=None, approve=False):
@@ -69,7 +115,7 @@ def manage_users(user_id=None, approve=False):
     # study_requests = []
 
     if not user_id:
-        return render_template('users/manage_users.html',
+        return render_template('manage_users.html',
                                users=users,
                                account_requests=AccountRequest.query.all())
 
@@ -86,7 +132,7 @@ def manage_users(user_id=None, approve=False):
                 user_id))
         else:
             flash('Account rejected.')
-        return render_template('users/manage_users.html',
+        return render_template('manage_users.html',
                                users=users,
                                account_requests=AccountRequest.query.all())
 
@@ -98,49 +144,12 @@ def manage_users(user_id=None, approve=False):
     else:
         flash('Account access for {} enabled'.format(user_id))
 
-    return render_template('users/manage_users.html',
+    return render_template('manage_users.html',
                            users=users,
                            account_requests=AccountRequest.query.all())
 
 
-@app.before_request
-def before_request():
-    if current_user.is_authenticated and not current_user.is_active:
-        logout_user()
-        flash('Your account is disabled. Please contact an administrator.')
-        return
-
-
-@app.route('/login')
-def login():
-    next_url = request.args.get('next')
-    if next_url:
-        flask_session['next_url'] = next_url
-    return render_template('login.html')
-
-
-@app.route('/logout')
-def logout():
-    logout_user()
-    flash('You have been logged out.')
-    return redirect(url_for('login'))
-
-
-@lm.user_loader
-def load_user(id):
-    return User.query.get(int(id))
-
-
-@app.route('/refresh_login')
-def refresh_login():
-    flask_session['_fresh'] = False
-    next_url = request.args.get('next')
-    if next_url:
-        flask_session['next_url'] = next_url
-    return redirect(url_for('login'))
-
-
-@app.route('/new_account', methods=['GET', 'POST'])
+@user_bp.route('/new_account', methods=['GET', 'POST'])
 def new_account():
     request_form = UserForm()
     if request_form.validate_on_submit():
@@ -153,7 +162,7 @@ def new_account():
         new_user.request_account(request_form)
         flash("Request submitted. Please allow up to 2 days for a response "
               "before contacting an admin.")
-        return redirect(url_for('login'))
+        return redirect(url_for('users.login'))
     if request_form.is_submitted:
         report_form_errors(request_form)
-    return render_template('users/account_request.html', form=request_form)
+    return render_template('account_request.html', form=request_form)

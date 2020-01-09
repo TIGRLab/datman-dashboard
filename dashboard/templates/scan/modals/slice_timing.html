@@ -8,7 +8,7 @@
         <h4>Update Slice Timing</h4>
       </div>
       <div class="modal-body">
-        <form action="{{ url_for('fix_slice_timing', study_id=study_id, scan_id=scan.id) }}"
+        <form action="{{ url_for('main.fix_slice_timing', study_id=study_id, scan_id=scan.id) }}"
             method="post" name="sliceTiming" class="form" id="slice-timing-form">
           Make changes to the slice timings for this scan
           <div class="container-fluid" style="margin-top: 10px; margin-bottom: 10px;">
