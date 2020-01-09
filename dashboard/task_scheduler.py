@@ -20,15 +20,13 @@ class RemoteScheduler(object):
     'APScheduler._load_api'
     """
 
-    def __init__(self, user, password, scheduler_server):
-        self.auth = (user, password)
-        if scheduler_server:
-            if not (scheduler_server.startswith("https://") or
-                    scheduler_server.startswith("http://")):
-                scheduler_server = "http://" + scheduler_server
-            self.url = scheduler_server + "/scheduler"
-        else:
-            self.url = ""
+    def __init__(self, app):
+        if not app:
+            # Delay init
+            self.auth = (None, None)
+            return
+        self.init_app(app)
+
 
     def add_job(self, job_id, job_function, **extra_args):
         if not self.url:
@@ -65,7 +63,18 @@ class RemoteScheduler(object):
         return response.content
 
     def init_app(self, app):
-        # This is here to allow delayed initialization
+        user = app.config('SCHEDULER_USER')
+        password = app.config('SCHEDULER_PASS')
+        url = app.config('SCHEDULER_SERVER_URL')
+
+        self.auth = (user, password)
+        if scheduler_server:
+            if not (scheduler_server.startswith("https://") or
+                    scheduler_server.startswith("http://")):
+                scheduler_server = "http://" + scheduler_server
+            self.url = scheduler_server + "/scheduler"
+        else:
+            self.url = ""
         return
 
     def start(self):
