@@ -18,6 +18,19 @@ class RegexConverter(BaseConverter):
         self.regex = items[0]
 
 
+def connect_db():
+    """Allows access to the database models outside of the flask application
+
+    If importing the dashboard app (i.e. not starting the server properly) this
+    function should be called once before attempting to use anything from the
+    models.
+    """
+    app = create_app()
+    context = app.app_context()
+    context.push()
+    return db
+
+
 db = SQLAlchemy()
 migrate = Migrate()
 lm = LoginManager()
