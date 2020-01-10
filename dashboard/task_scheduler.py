@@ -20,8 +20,8 @@ class RemoteScheduler(object):
     'APScheduler._load_api'
     """
 
-    def __init__(self, app):
-        if not app:
+    def __init__(self, app=None):
+        if app is None:
             # Delay init
             self.auth = (None, None)
             return
@@ -63,9 +63,9 @@ class RemoteScheduler(object):
         return response.content
 
     def init_app(self, app):
-        user = app.config('SCHEDULER_USER')
-        password = app.config('SCHEDULER_PASS')
-        url = app.config('SCHEDULER_SERVER_URL')
+        user = app.config['SCHEDULER_USER']
+        password = app.config['SCHEDULER_PASS']
+        scheduler_server = app.config['SCHEDULER_SERVER_URL']
 
         self.auth = (user, password)
         if scheduler_server:
