@@ -7,7 +7,7 @@
       {% for session in pending_qc %}
         <!-- 'session' is a tuple (Session.name, Session.num) -->
         {% set timepoint = session[0] %}
-          <tr class="clickable-row" data-href="{{ url_for('main.timepoint', timepoint_id=timepoint) }}">
+          <tr class="clickable-row" data-href="{{ url_for('timepoints.timepoint', timepoint_id=timepoint) }}">
             <td>{{ timepoint }}</td>
             <td>
               {% for label in pending_qc[session] %}

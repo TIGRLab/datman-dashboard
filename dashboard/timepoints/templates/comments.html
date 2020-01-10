@@ -35,7 +35,7 @@
             {% endif %}
             {% if current_user.dashboard_admin %}
               <a type="button" class="btn btn-primary"
-                  href="{{ url_for('main.delete_comment', study_id=study_id,
+                  href="{{ url_for('timepoints.delete_comment', study_id=study_id,
                       timepoint_id=timepoint.name, comment_id=comment.id) }}">
                 Delete
               </a>
@@ -49,7 +49,7 @@
     </div>
   </div>
 {% endfor %}
-<form action="{{ url_for('main.add_comment', study_id=study_id,
+<form action="{{ url_for('timepoints.add_comment', study_id=study_id,
     timepoint_id=timepoint.name) }}" method="post"
     name="comment-form" class="form" id="new-comment">
     {{ timepoint_comments_form.hidden_tag() }}
@@ -72,7 +72,7 @@
       cancel();
     }
 
-    var timepointURL = "{{ url_for('main.add_comment', study_id=study_id, timepoint_id=timepoint.name) }}";
+    var timepointURL = "{{ url_for('timepoints.add_comment', study_id=study_id, timepoint_id=timepoint.name) }}";
     id = this.getAttribute('id');
     var dest =  timepointURL + "/" + id;
     var formHTML = '<form action="' + dest + '" method="post" ' +

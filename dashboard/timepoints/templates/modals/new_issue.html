@@ -21,7 +21,7 @@
         </p>
         <br>
         <br>
-        <form action="{{ url_for('main.create_issue', study_id=study_id,
+        <form action="{{ url_for('timepoints.create_issue', study_id=study_id,
             timepoint_id=timepoint.name)}}" method="post" name="add-issue"
             class="form">
           {{ issue_form.hidden_tag() }}
