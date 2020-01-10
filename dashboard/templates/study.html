@@ -43,7 +43,7 @@ Most of the html in the divs is extracted into a snippet file and rendered
         <div class="panel-body collapse in" id="qclist">
           <table class="table table-striped table-hover table-condensed">
             {% for timepoint in pending_qc | sort %}
-              <tr class="clickable-row" data-href="{{ url_for('main.timepoint', study_id=study.id, timepoint_id=timepoint) }}">
+              <tr class="clickable-row" data-href="{{ url_for('timepoints.timepoint', study_id=study.id, timepoint_id=timepoint) }}">
                 <td class="col-xs-2">{{ timepoint }}</td>
                   {% for column in pending_qc[timepoint] %}
                     {{ column|safe }}

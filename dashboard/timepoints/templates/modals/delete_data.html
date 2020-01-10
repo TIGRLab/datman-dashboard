@@ -103,7 +103,7 @@ function getModalChanges(session_num, scan_id, scan_name, scan_children) {
         "<div style='text-align:center;'>" + scan_children + "</div><br><br>";
     }
     // Done manually for same reason as below
-    var destURL = "{{ url_for('main.delete_scan', study_id=study_id, timepoint_id=timepoint.name) }}" + scan_id;
+    var destURL = "{{ url_for('timepoints.delete_scan', study_id=study_id, timepoint_id=timepoint.name) }}" + scan_id;
   }else if (session_num) {
     var message = "Session " + session_num + " from " + name +
       " will be deleted and everything associated with it will be purged " +
@@ -111,13 +111,13 @@ function getModalChanges(session_num, scan_id, scan_name, scan_children) {
     // Session_num is appended manually because the value of the variable isnt
     // known until run time when a button is clicked. By this point the template
     // has already been rendered.
-    var destURL = "{{ url_for('main.timepoint', study_id=study_id, timepoint_id=timepoint.name) }}/delete_session/" +
+    var destURL = "{{ url_for('timepoints.timepoint', study_id=study_id, timepoint_id=timepoint.name) }}/delete_session/" +
         session_num;
   } else {
     var message = name + " will be deleted. " +
       "Everything associated with this ID will be purged from the database " +
       "and file system. Any associated comments and QC will disappear forever.";
-    var destURL = "{{ url_for('main.delete_timepoint', study_id=study_id, timepoint_id=timepoint.name)}}";
+    var destURL = "{{ url_for('timepoints.delete_timepoint', study_id=study_id, timepoint_id=timepoint.name)}}";
   }
 
   return [message, destURL]
