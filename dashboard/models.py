@@ -379,7 +379,7 @@ class Study(db.Model):
             not_qcd = [t.name for t in self.timepoints.all() if not
                        t.is_qcd()]
             [qc_notification_email(u, self.id, timepoint.name, not_qcd) for
-             u in self.get_QCer()]
+             u in self.get_QCers()]
 
         return timepoint
 
