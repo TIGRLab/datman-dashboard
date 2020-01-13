@@ -3,15 +3,14 @@
 import re
 import logging
 
+from flask import current_user
 import redcap as REDCAP
 
 import datman.scanid
-
-from config import REDCAP_TOKEN
-from .models import Session, Timepoint
-from .queries import get_study
-from .monitors import monitor_scan_import
-from .exceptions import RedcapException
+from ..models import Session, Timepoint
+from ..queries import get_study
+from ..monitors import monitor_scan_import
+from ..exceptions import RedcapException
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +33,7 @@ def create_from_request(request):
         logger.info("Record {} not completed. Ignoring".format(record))
         return
 
-    rc = REDCAP.Project(url + 'api/', REDCAP_TOKEN)
+    rc = REDCAP.Project(url + 'api/', current_user.config['REDCAP_TOKEN'])
     server_record = rc.export_records([record])
 
     if len(server_record) < 0:
