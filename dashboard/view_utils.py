@@ -12,7 +12,6 @@ from flask import flash, url_for, request, redirect
 from werkzeug.routing import RequestRedirect
 
 from .models import Study, Timepoint, Scan, RedcapRecord, User
-from .utils import create_issue as make_issue
 
 logger = logging.getLogger(__name__)
 
@@ -28,38 +27,6 @@ def report_form_errors(form):
             continue
         for error in errors:
             flash('ERROR - {} {}'.format(label, error))
-
-
-def handle_issue(token, issue_form, study_id, timepoint):
-    title = clean_issue_title(issue_form.title.data, timepoint)
-    study = Study.query.get(study_id)
-
-    staff_member = study.choose_staff_contact()
-    if staff_member:
-        assigned_user = staff_member.username
-    else:
-        assigned_user = None
-
-    try:
-        issue = make_issue(token, title, issue_form.body.data,
-                           assign=assigned_user)
-    except Exception as e:
-        logger.error("Failed to create a GitHub issue for {}. "
-                     "Reason: {}".format(timepoint, e))
-        flash("Failed to create issue '{}'".format(title))
-    else:
-        flash("Issue '{}' created!".format(title))
-
-
-def clean_issue_title(title, timepoint):
-    title = title.rstrip()
-    if not title:
-        title = timepoint
-    elif title.endswith('-'):
-        title = title[:-1].rstrip()
-    elif timepoint not in title:
-        title = timepoint + " - " + title
-    return title
 
 
 def get_timepoint(study_id, timepoint_id, current_user):
