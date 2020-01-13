@@ -35,7 +35,7 @@
               <div class="btn-group-vertical pull-right" role="group">
                 {% if "RepetitionTime" not in diffs and diffs[field]["actual"]|length == diffs[field]["expected"]|length %}
                   <a class="button btn btn-danger"
-                     href="{{ url_for('main.fix_slice_timing', study_id=study_id, scan_id=scan.id, auto=True) }}">
+                     href="{{ url_for('scans.fix_slice_timing', study_id=study_id, scan_id=scan.id, auto=True) }}">
                      Use Standard Timing
                   </a>
                 {% endif %}
@@ -44,7 +44,7 @@
                   Manual Edit
                 </a>
                 <a class="button btn btn-danger"
-                   href="{{ url_for('main.fix_slice_timing', study_id=study_id, scan_id=scan.id, delete=True) }}">
+                   href="{{ url_for('scans.fix_slice_timing', study_id=study_id, scan_id=scan.id, delete=True) }}">
                   Delete Field
                 </a>
               </div>
