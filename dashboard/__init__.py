@@ -91,10 +91,16 @@ def create_app(config=None):
     from dashboard.main import main_bp
     from dashboard.users import user_bp
     from dashboard.auth import auth_bp
+    from dashboard.timepoints import time_bp
+    from dashboard.scans import scan_bp
+    from dashboard.redcap import rcap_bp
 
     app.register_blueprint(main_bp)
-    app.register_blueprint(user_bp, url_prefix="/user")
+    app.register_blueprint(user_bp)
     app.register_blueprint(auth_bp)
+    app.register_blueprint(time_bp)
+    app.register_blueprint(rcap_bp)
+    app.register_blueprint(scan_bp)
 
     if app.debug and app.env == 'development':
         # Never run this on a production server!

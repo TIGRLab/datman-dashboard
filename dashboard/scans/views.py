@@ -1,9 +1,10 @@
+import os
 import logging
 
 from flask import render_template, flash, url_for, redirect, send_file
-from flask_login import (current_user, login_required)
+from flask_login import current_user, login_required
 
-import .utils
+from . import utils
 from . import scan_bp
 from .forms import ScanChecklistForm, SliceTimingForm
 from ..view_utils import report_form_errors, get_scan, prev_url
@@ -20,7 +21,7 @@ def scan(study_id, scan_id):
                     fail_url=url_for('main.study', study_id=study_id))
     checklist_form = ScanChecklistForm(obj=scan.get_checklist_entry())
     slice_timing_form = SliceTimingForm()
-    return render_template('scan/scan_bp.html',
+    return render_template('scan.html',
                            scan=scan,
                            study_id=study_id,
                            checklist_form=checklist_form,
@@ -35,7 +36,7 @@ def papaya(study_id, scan_id):
                     current_user,
                     fail_url=url_for('main.study', study_id=study_id))
     name = os.path.basename(utils.get_nifti_path(scan))
-    return render_template('scan/viewer.html',
+    return render_template('viewer.html',
                            study_id=study_id,
                            scan_id=scan_id,
                            nifti_name=name)

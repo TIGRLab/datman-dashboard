@@ -6,24 +6,24 @@
 <div class="fluid-container">
     <div class="row">
       <div class="col-md-8 col-md-offset-2">
-        {% include 'scan/header.html' %}
+        {% include 'snips/header.html' %}
       </div>
     </div>
     {% if scan.conv_errors %}
-      {% include 'scan/dcm2niix_details.html' %}
+      {% include 'snips/dcm2niix_details.html' %}
     {% endif %}
     {% set diffs = scan.get_header_diffs() %}
     {% if diffs != {} %}
       <div class="row" style="margin-top: 20px;">
         <div class="col-md-8 col-md-offset-2">
-          {% include 'scan/header_diffs.html' %}
+          {% include 'snips/header_diffs.html' %}
         </div>
       </div>
     {% endif %}
     <div class="row">
       <div class="col-md-2">
         {% if not scan.tag in ['T1','T2'] %}
-            {% include 'scan/papaya_nav.html' %}
+            {% include 'snips/papaya_nav.html' %}
         {% endif %}
       </div>
       <div class="col-md-8">
