@@ -4,8 +4,7 @@ from flask import (render_template, redirect, request)
 from flask_login import login_required
 
 from . import rcap_bp
-from . import utils as REDCAP
-from ..view_utils import get_redcap_record
+from . import utils
 from ..exceptions import InvalidUsage
 
 
@@ -28,7 +27,7 @@ def redcap():
     logger.debug('Received keys {} from REDcap from URL {}'.format(
         list(request.form.keys()), request.form['project_url']))
     try:
-        REDCAP.create_from_request(request)
+        utils.create_from_request(request)
     except Exception as e:
         logger.error('Failed creating redcap object. Reason: {}'.format(e))
         raise InvalidUsage(str(e), status_code=400)
@@ -43,7 +42,7 @@ def redcap_redirect(record_id):
     Used to provide a link from the session page to a redcap session complete
     record on the redcap server itself.
     """
-    record = get_redcap_record(record_id)
+    record = utils.get_redcap_record(record_id)
 
     if record.event_id:
         event_string = "&event_id={}".format(record.event_id)

@@ -11,7 +11,7 @@ from flask_login import current_user
 from flask import flash, url_for, request, redirect
 from werkzeug.routing import RequestRedirect
 
-from .models import Study, Timepoint, Scan, RedcapRecord, User
+from .models import Timepoint, Scan
 
 logger = logging.getLogger(__name__)
 
@@ -73,21 +73,6 @@ def get_scan(scan_id, study_id, current_user, fail_url=None):
         raise RequestRedirect(fail_url)
 
     return scan
-
-
-def get_redcap_record(record_id, fail_url=None):
-    if not fail_url:
-        fail_url = url_for('main.index')
-
-    record = RedcapRecord.query.get(record_id)
-
-    if record is None:
-        logger.error("Tried and failed to retrieve RedcapRecord with "
-                     "ID {}".format(record_id))
-        flash("Record not found.")
-        raise RequestRedirect(fail_url)
-
-    return record
 
 
 def dashboard_admin_required(f):

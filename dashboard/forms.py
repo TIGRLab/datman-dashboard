@@ -9,8 +9,8 @@ the html code or CSRF vulnerabilities
 """
 
 from flask_wtf import FlaskForm
-from wtforms import (SelectMultipleField, HiddenField, SubmitField,
-                     TextAreaField, TextField)
+from wtforms import (SelectMultipleField, HiddenField, TextAreaField,
+                     TextField)
 from wtforms.validators import DataRequired
 
 

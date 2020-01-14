@@ -8,18 +8,17 @@ from flask import session as flask_session
 from flask import (current_app, render_template, flash, url_for, redirect,
                    request, jsonify, make_response, send_file,
                    send_from_directory)
-from flask_login import (current_user, login_required, fresh_login_required)
+from flask_login import current_user, login_required
 
 from dashboard import db
 from . import main_bp as main
 from .. import utils
 from ..queries import (query_metric_values_byid, query_metric_types,
-                      query_metric_values_byname, find_subjects, find_sessions,
-                      find_scans)
-from ..models import Study, Site, User, Timepoint, Analysis, AccountRequest
+                       query_metric_values_byname, find_subjects,
+                       find_sessions, find_scans)
+from ..models import Study, Site, Timepoint, Analysis
 from ..forms import (SelectMetricsForm, StudyOverviewForm, AnalysisForm)
-from ..view_utils import (report_form_errors, get_timepoint, get_scan,
-                          prev_url, is_safe_url)
+from ..view_utils import get_timepoint
 from ..exceptions import InvalidUsage
 
 logger = logging.getLogger(__name__)

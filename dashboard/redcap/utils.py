@@ -3,16 +3,33 @@
 import re
 import logging
 
+from flask import url_for, flash
 from flask_login import current_user
+from werkzeug.routing import RequestRedirect
 import redcap as REDCAP
 
 import datman.scanid
-from ..models import Session, Timepoint
+from ..models import Session, Timepoint, RedcapRecord
 from ..queries import get_study
 from ..monitors import monitor_scan_import
 from ..exceptions import RedcapException
 
 logger = logging.getLogger(__name__)
+
+
+def get_redcap_record(record_id, fail_url=None):
+    if not fail_url:
+        fail_url = url_for('main.index')
+
+    record = RedcapRecord.query.get(record_id)
+
+    if record is None:
+        logger.error("Tried and failed to retrieve RedcapRecord with "
+                     "ID {}".format(record_id))
+        flash("Record not found.")
+        raise RequestRedirect(fail_url)
+
+    return record
 
 
 def create_from_request(request):
