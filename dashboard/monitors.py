@@ -17,7 +17,8 @@ from datetime import datetime, timedelta
 
 from dashboard import scheduler
 from .models import Session, User
-from .emails import missing_session_data_email, missing_redcap_email, qc_notification_email
+from .emails import (missing_session_data_email,
+                     missing_redcap_email, qc_notification_email
 from .exceptions import MonitorException
 
 logger = logging.getLogger(__name__)
