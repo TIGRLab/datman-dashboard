@@ -4,7 +4,7 @@ from flask import (render_template, redirect, request)
 from flask_login import login_required
 
 from . import rcap_bp
-import .redcap as REDCAP
+from . import utils as REDCAP
 from ..view_utils import get_redcap_record
 from ..exceptions import InvalidUsage
 

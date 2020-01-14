@@ -3,7 +3,7 @@
 import re
 import logging
 
-from flask import current_user
+from flask_login import current_user
 import redcap as REDCAP
 
 import datman.scanid

@@ -9,7 +9,7 @@ from . import utils
 from .forms import (EmptySessionForm, IncidentalFindingsForm,
                     TimepointCommentsForm, NewIssueForm, DataDeletionForm)
 from ..view_utils import (report_form_errors, get_timepoint, get_session,
-                          get_scan, handle_issue, dashboard_admin_required,
+                          get_scan, dashboard_admin_required,
                           study_admin_required)
 from ..emails import incidental_finding_email
 
@@ -45,7 +45,7 @@ def timepoint(study_id, timepoint_id):
     new_issue_form = NewIssueForm()
     delete_form = DataDeletionForm()
     new_issue_form.title.data = timepoint.name + " - "
-    return render_template('timepoint/main.html',
+    return render_template('main.html',
                            study_id=study_id,
                            timepoint=timepoint,
                            empty_session_form=empty_form,
@@ -261,6 +261,6 @@ def create_issue(study_id, timepoint_id):
         return redirect(dest_URL)
     token = flask_session['active_token']
 
-    handle_issue(token, form, study_id, timepoint.name)
+    utils.handle_issue(token, form, study_id, timepoint.name)
 
     return redirect(dest_URL)

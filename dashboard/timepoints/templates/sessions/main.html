@@ -1,4 +1,4 @@
-{% extends 'timepoint/collapsible_section.html' %}
+{% extends 'collapsible_section.html' %}
 
 {% block section_id %}{{ session }}{% endblock %}
 {% block body_id %}{{ session }}-body{% endblock %}
@@ -18,19 +18,19 @@
 {% endblock %}
 
 {% block body_content %}
-    {% include 'timepoint/sessions/review_status.html' %}
+    {% include 'sessions/review_status.html' %}
 
     {% if session.task_files %}
-      {% include 'timepoint/sessions/task_files.html' %}
+      {% include 'sessions/task_files.html' %}
     {% endif %}
 
     {% if session.redcap_record %}
-      {% include 'timepoint/sessions/redcap_report.html' %}
+      {% include 'sessions/redcap_report.html' %}
     {% endif %}
 
     {% if session.scans|count %}
-      {% include 'timepoint/sessions/scan_table.html' %}
+      {% include 'sessions/scan_table.html' %}
     {% elif session.empty_session %}
-      {% include 'timepoint/sessions/empty_session.html' %}
+      {% include 'sessions/empty_session.html' %}
     {% endif %}
 {% endblock %}
