@@ -86,6 +86,8 @@ SCHEDULER_JOB_DEFAULTS = {
         'misfire_grace_time': 3600
 }
 
+SCHEDULER_EXECUTORS = {'default': {'type': 'threadpool', 'max_workers': 2}}
+
 # This starts an instance of the scheduler (for sending scheduled notifications,
 # etc.). You only want this to be true on the server, not instances where the
 # dashboard has been imported
