@@ -25,7 +25,8 @@ from psycopg2.tz import FixedOffsetTimezone
 
 from dashboard import db, TZ_OFFSET, utils
 from dashboard.emails import (account_request_email, account_activation_email,
-                              account_rejection_email, qc_notification_email)
+                              account_rejection_email)
+from .monitors import monitor_qc_needed
 from .exceptions import InvalidDataException
 from datman import scanid, header_checks
 
@@ -378,7 +379,7 @@ class Study(db.Model):
         if self.email_qc:
             not_qcd = [t.name for t in self.timepoints.all() if not
                        t.is_qcd()]
-            [qc_notification_email(u, self.id, timepoint.name, not_qcd) for
+            [monitor_qc_needed(u, self.id, timepoint.name, not_qcd) for
              u in self.get_QCers()]
 
         return timepoint

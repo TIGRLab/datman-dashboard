@@ -17,7 +17,8 @@ from datetime import datetime, timedelta
 
 from dashboard import scheduler
 from .models import Session, User
-from .emails import missing_session_data_email, missing_redcap_email
+from .emails import (missing_session_data_email,
+                     missing_redcap_email, qc_notification_email
 from .exceptions import MonitorException
 
 logger = logging.getLogger(__name__)
@@ -162,3 +163,17 @@ def check_redcap(name, num, recipients=None):
     missing_redcap_email(str(session),
                          session.get_study().id,
                          dest_emails=recipients)
+
+
+def monitor_qc_needed(user, study, current_tp, remain_tp):
+    """
+    Adds an instant 'monitor' for notifying users of needed QC
+    Args:
+        user (Models.User): User object
+        study (str): Study name
+        current_tp (str): New timepoint needing QC
+        remain_tp (:obj:`list` of :obj:`str`): Timepoints still requiring QC
+    """
+
+    args = [user, study, current_tp, remain_tp]
+    add_monitor(qc_notification_email, args)
