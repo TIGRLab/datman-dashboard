@@ -9,8 +9,7 @@ from flask_migrate import Migrate
 from werkzeug.routing import BaseConverter
 
 from config import (SCHEDULER_ENABLED, SCHEDULER_API_ENABLED, SCHEDULER_USER,
-                    SCHEDULER_PASS, TZ_OFFSET, GITHUB_OWNER, GITHUB_REPO,
-                    SENDER, ADMINS, DASH_SUPPORT, LOGGING_CONFIG)
+                    SCHEDULER_PASS, TZ_OFFSET, LOGGING_CONFIG)
 
 if SCHEDULER_ENABLED:
     from flask_apscheduler import APScheduler as Scheduler

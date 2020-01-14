@@ -4,7 +4,7 @@ from threading import Thread
 from flask import url_for, current_app
 from flask_mail import Message
 
-from dashboard import mail, SENDER, ADMINS, DASH_SUPPORT
+from dashboard import mail
 
 logger = logging.getLogger(__name__)
 
@@ -25,10 +25,12 @@ def send_async_email(app, email):
 
 def send_email(subject, body, html_body=None, recipient=None):
     if not recipient:
-        recipient = ADMINS
+        recipient = current_app.config['ADMINS']
     if not isinstance(recipient, list):
         recipient = [recipient]
-    email = Message(subject, sender=SENDER, recipients=recipient)
+    email = Message(subject,
+                    sender=current_app.config['SENDER'],
+                    recipients=recipient)
     email.body = body
     if html_body:
         email.html = html_body
@@ -80,7 +82,7 @@ def account_rejection_email(user):
     body = "An admin has reviewed your request for access to the QC " \
            "dashboard and unfortunately it has been rejected. For any " \
            "questions you may have please contact us " \
-           "at {}".format(DASH_SUPPORT)
+           "at {}".format(current_app.config['DASH_SUPPORT'])
     send_email(subject, body, recipient=user.email)
 
 
