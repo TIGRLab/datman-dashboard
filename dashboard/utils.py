@@ -7,7 +7,6 @@ import glob
 import shutil
 import logging
 
-from dashboard import GITHUB_OWNER, GITHUB_REPO
 import datman.config
 
 logger = logging.getLogger(__name__)
