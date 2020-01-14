@@ -1,12 +1,16 @@
 import os
 import glob
 import shutil
+import logging
 
 from github import Github
-from flask import current_app
+from flask import current_app, flash
+from ..models import Study
 
 import datman.config
 import datman.scanid
+
+logger = logging.getLogger(__name__)
 
 
 def search_issues(token, timepoint):
@@ -33,8 +37,7 @@ def handle_issue(token, issue_form, study_id, timepoint):
         assigned_user = None
 
     try:
-        issue = make_issue(token, title, issue_form.body.data,
-                           assign=assigned_user)
+        make_issue(token, title, issue_form.body.data, assign=assigned_user)
     except Exception as e:
         logger.error("Failed to create a GitHub issue for {}. "
                      "Reason: {}".format(timepoint, e))

@@ -68,6 +68,7 @@ def setup_devel_ext(app):
     else:
         toolbar = DebugToolbarExtension(app)
         app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
+    return toolbar
 
 
 def create_app(config=None):

@@ -27,11 +27,10 @@ class RemoteScheduler(object):
             return
         self.init_app(app)
 
-
     def add_job(self, job_id, job_function, **extra_args):
         if not self.url:
             logger.error("Can't submit job {}, scheduler URL not set".format(
-                    job_id))
+                job_id))
             return
         api_url = self.url + "/jobs"
         job_str = format_job_function(job_function)

@@ -1,7 +1,4 @@
-from flask_login import current_user
-
 from .forms import UserForm, UserAdminForm
-from ..models import User
 
 
 def get_user_form(user, current_user):

@@ -36,29 +36,3 @@ def update_json(scan, contents):
         os.path.join(
             os.path.relpath(json_folder, os.path.dirname(scan.json_path)),
             os.path.basename(scan.json_path)), scan.json_path)
-
-
-def update_header_diffs(scan):
-    site = scan.session.timepoint.site_id
-    config = datman.config.config(study=scan.get_study().id)
-
-    try:
-        tolerance = config.get_key("HeaderFieldTolerance", site=site)
-    except Exception:
-        tolerance = {}
-    try:
-        ignore = config.get_key("IgnoreHeaderFields", site=site)
-    except Exception:
-        ignore = []
-
-    tags = config.get_tags(site=site)
-    try:
-        qc_type = tags.get(scan.tag, "qc_type")
-    except KeyError:
-        check_bvals = False
-    else:
-        check_bvals = qc_type == 'dti'
-
-    scan.update_header_diffs(ignore=ignore,
-                             tolerance=tolerance,
-                             bvals=check_bvals)

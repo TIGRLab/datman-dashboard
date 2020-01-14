@@ -69,8 +69,7 @@ class GithubSignIn(OAuthSignIn):
             app_scope = 'user repo'
         return redirect(self.service.get_authorize_url(
             scope=app_scope,
-            state=session['str_rnd'])
-            )
+            state=session['str_rnd']))
 
     def callback(self):
         if 'code' not in request.args or 'state' not in request.args:
@@ -115,8 +114,7 @@ class GitlabSignIn(OAuthSignIn):
             redirect_uri=url_for('auth.oauth_callback',
                                  provider='gitlab',
                                  _external=True),
-            response_type='code')
-            )
+            response_type='code'))
 
     def callback(self):
         if 'code' not in request.args:

@@ -1,8 +1,8 @@
 import logging
 
 from flask import session as flask_session
-from flask import (current_app, render_template, flash, url_for, redirect)
-from flask_login import (current_user, login_required, fresh_login_required)
+from flask import render_template, flash, url_for, redirect
+from flask_login import current_user, login_required, fresh_login_required
 
 from . import time_bp
 from . import utils
@@ -16,8 +16,7 @@ from ..emails import incidental_finding_email
 logger = logging.getLogger(__name__)
 
 
-@time_bp.route('/',
-           methods=['GET', 'POST'])
+@time_bp.route('/', methods=['GET', 'POST'])
 @fresh_login_required
 def timepoint(study_id, timepoint_id):
     """
@@ -137,8 +136,9 @@ def delete_timepoint(study_id, timepoint_id):
     form = DataDeletionForm()
     if not form.validate_on_submit():
         flash("Deletion failed. Please contact an administrator")
-        return redirect(
-            url_for('timepoints.timepoint', study_id=study_id, timepoint_id=timepoint_id))
+        return redirect(url_for('timepoints.timepoint',
+                                study_id=study_id,
+                                timepoint_id=timepoint_id))
 
     if form.raw_data.data:
         utils.delete_timepoint(timepoint)
@@ -204,8 +204,7 @@ def delete_scan(study_id, timepoint_id, scan_id):
     return redirect(dest_URL)
 
 
-@time_bp.route('/dismiss_redcap/<int:session_num>',
-                    methods=['GET', 'POST'])
+@time_bp.route('/dismiss_redcap/<int:session_num>', methods=['GET', 'POST'])
 @study_admin_required
 @login_required
 def dismiss_redcap(study_id, timepoint_id, session_num):

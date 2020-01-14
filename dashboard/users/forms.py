@@ -6,6 +6,7 @@ from wtforms.fields.html5 import EmailField, TelField
 from wtforms.compat import iteritems
 from wtforms.validators import DataRequired
 
+
 class UserForm(FlaskForm):
     id = HiddenField()
     first_name = TextField('First Name: ',
