@@ -19,16 +19,8 @@ from ..queries import (query_metric_values_byid, query_metric_types,
 from ..models import Study, Site, Timepoint, Analysis
 from ..forms import (SelectMetricsForm, StudyOverviewForm, AnalysisForm)
 from ..view_utils import get_timepoint
-from ..exceptions import InvalidUsage
 
 logger = logging.getLogger(__name__)
-
-
-@main.errorhandler(InvalidUsage)
-def handle_invalid_usage(error):
-    response = jsonify(error.to_dict())
-    response.status_code = error.status_code
-    return response
 
 
 @main.route('/')
@@ -405,17 +397,6 @@ def metricDataAsJson(format='http'):
     else:
         # return a pretty object for human readable
         return (json.dumps(objects, indent=4, separators=(',', ': ')))
-
-
-@main.errorhandler(404)
-def not_found_error(error):
-    return render_template('404.html'), 404
-
-
-@main.errorhandler(500)
-def internal_error(error):
-    db.session.rollback()
-    return render_template('500.html'), 500
 
 
 @main.route('/analysis', methods=['GET', 'POST'])

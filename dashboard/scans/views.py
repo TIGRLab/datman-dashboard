@@ -1,7 +1,7 @@
 import os
 import logging
 
-from flask import render_template, flash, url_for, redirect, send_file
+from flask import render_template, flash, url_for, redirect, send_file, abort
 from flask_login import current_user, login_required
 
 from . import utils
@@ -150,5 +150,5 @@ def load_scan(study_id, scan_id, file_name):
     except IOError as e:
         logger.error("Couldnt find file {} to load scan view for user "
                      "{}".format(full_path, current_user))
-        result = not_found_error(e)
+        abort(404)
     return result
