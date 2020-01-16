@@ -94,6 +94,7 @@ def create_app(config=None):
     from dashboard.timepoints import time_bp
     from dashboard.scans import scan_bp
     from dashboard.redcap import rcap_bp
+    from dashboard.handlers import handler_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(user_bp)
@@ -101,6 +102,7 @@ def create_app(config=None):
     app.register_blueprint(time_bp)
     app.register_blueprint(rcap_bp)
     app.register_blueprint(scan_bp)
+    app.register_blueprint(handler_bp)
 
     if app.debug and app.env == 'development':
         # Never run this on a production server!
