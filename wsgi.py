@@ -3,8 +3,7 @@
 
 This is used to start the app for debug / development on a local machine.
 
-This script is also used by flask migrate. If it is deleted or renamed
-the FLASK_APP variable will need to be set to get migrations to work.
+This script is also used by flask migrate and srv_uwsgi.sh.
 """
 from dashboard import create_app
 
