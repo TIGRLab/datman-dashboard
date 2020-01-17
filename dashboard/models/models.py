@@ -8,7 +8,6 @@ The @validates decorator ensures this is run before the checklist comment
     checklist.csv is in sync with the database.
 """
 import os
-import operator
 import datetime
 import logging
 from random import randint
@@ -22,8 +21,7 @@ from sqlalchemy.orm.exc import FlushError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.associationproxy import association_proxy
 from psycopg2.tz import FixedOffsetTimezone
-from sqlalchemy.orm.collections import (attribute_mapped_collection,
-                                        MappedCollection, collection)
+from sqlalchemy.orm.collections import attribute_mapped_collection
 
 from dashboard import db, TZ_OFFSET
 from dashboard.emails import (account_request_email, account_activation_email,
@@ -33,28 +31,6 @@ from dashboard.models import utils
 from datman import scanid, header_checks
 
 logger = logging.getLogger(__name__)
-
-
-class DictListCollection(MappedCollection):
-    """Allows a relationship to be organized into a dictionary of lists
-    """
-    def __init__(self, key):
-        super(DictListCollection, self).__init__(operator.attrgetter(key))
-
-    @collection.internally_instrumented
-    def __setitem__(self, key, value, _sa_initiator=None):
-        if not super(DictListCollection, self).get(key):
-            super(DictListCollection, self).__setitem__(key, [], _sa_initiator)
-        super(DictListCollection, self).__getitem__(key).append(value)
-
-    @collection.iterator
-    def list_mod(self):
-        """Allows sqlalchemy manage changes to the contents of the lists
-        """
-        all_records = []
-        for sub_list in self.values():
-            all_records.extend(sub_list)
-        return iter(all_records)
 
 
 ###############################################################################
@@ -97,7 +73,7 @@ class User(UserMixin, db.Model):
         'StudyUser',
         back_populates='user',
         order_by='StudyUser.study_id',
-        collection_class=lambda: DictListCollection('study_id'),
+        collection_class=lambda: utils.DictListCollection('study_id'),
         cascade="all, delete-orphan")
     incidental_findings = db.relationship('IncidentalFinding')
     scan_comments = db.relationship('ScanChecklist')
