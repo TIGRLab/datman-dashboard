@@ -5,7 +5,7 @@ from flask_login import login_required
 
 from . import rcap_bp
 from . import utils
-from ..exceptions import InvalidUsage
+from ...exceptions import InvalidUsage
 
 
 logger = logging.getLogger(__name__)

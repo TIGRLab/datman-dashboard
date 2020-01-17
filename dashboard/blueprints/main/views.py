@@ -12,13 +12,13 @@ from flask_login import current_user, login_required
 
 from dashboard import db
 from . import main_bp as main
-from .. import utils
-from ..queries import (query_metric_values_byid, query_metric_types,
+from ... import utils
+from ...queries import (query_metric_values_byid, query_metric_types,
                        query_metric_values_byname, find_subjects,
                        find_sessions, find_scans)
-from ..models import Study, Site, Timepoint, Analysis
-from ..forms import (SelectMetricsForm, StudyOverviewForm, AnalysisForm)
-from ..utils import get_timepoint
+from ...models import Study, Site, Timepoint, Analysis
+from ...forms import (SelectMetricsForm, StudyOverviewForm, AnalysisForm)
+from ...utils import get_timepoint
 
 logger = logging.getLogger(__name__)
 
