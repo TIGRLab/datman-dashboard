@@ -12,6 +12,7 @@ from ..view_utils import (report_form_errors, get_timepoint, get_session,
                           get_scan, dashboard_admin_required,
                           study_admin_required)
 from ..emails import incidental_finding_email
+from ..datman_utils import delete_timepoint, delete_session, delete_scan
 
 logger = logging.getLogger(__name__)
 
@@ -141,7 +142,7 @@ def delete_timepoint(study_id, timepoint_id):
                                 timepoint_id=timepoint_id))
 
     if form.raw_data.data:
-        utils.delete_timepoint(timepoint)
+        delete_timepoint(timepoint)
 
     if form.database_records.data:
         timepoint.delete()
@@ -167,9 +168,9 @@ def delete_session(study_id, timepoint_id, session_num):
 
     if form.raw_data.data:
         if len(timepoint.sessions) == 1:
-            utils.delete_timepoint(timepoint)
+            delete_timepoint(timepoint)
         else:
-            utils.delete_session(session)
+            delete_session(session)
 
     if form.database_records.data:
         session.delete()
@@ -196,7 +197,7 @@ def delete_scan(study_id, timepoint_id, scan_id):
         return redirect(dest_URL)
 
     if form.raw_data.data:
-        utils.delete_scan(scan)
+        delete_scan(scan)
 
     if form.database_records.data:
         scan.delete()
