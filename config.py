@@ -155,11 +155,19 @@ LOGGING_CONFIG = {
             'class': 'logging.StreamHandler',
             'level': LOG_LEVEL,
             'formatter': 'basic'
+        },
+        'silenced': {
+            'class': 'logging.StreamHandler',
+            'level': logging.CRITICAL,
+            'formatter': 'basic'
         }
     },
     'loggers': {
         'dashboard': {
             'handlers': ['console']
+        },
+        'datman': {
+            'handlers': ['silenced']
         }
     }
 }
