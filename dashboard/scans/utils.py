@@ -1,7 +1,7 @@
 import os
 import json
 
-from ..utils import get_study_path
+from ..datman_utils import get_study_path
 
 
 def get_nifti_path(scan):

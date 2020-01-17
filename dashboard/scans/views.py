@@ -8,6 +8,7 @@ from . import utils
 from . import scan_bp
 from .forms import ScanChecklistForm, SliceTimingForm
 from ..view_utils import report_form_errors, get_scan, prev_url
+from ..datman_utils import update_header_diffs
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +81,7 @@ def fix_slice_timing(study_id, scan_id, auto=False, delete=False):
               "help")
         return redirect(dest_url)
 
-    utils.update_header_diffs(scan)
+    update_header_diffs(scan)
     flash("Update successful")
 
     return redirect(dest_url)
@@ -147,7 +148,7 @@ def load_scan(study_id, scan_id, file_name):
                            as_attachment=True,
                            attachment_filename=file_name,
                            mimetype="application/gzip")
-    except IOError as e:
+    except IOError:
         logger.error("Couldnt find file {} to load scan view for user "
                      "{}".format(full_path, current_user))
         abort(404)
