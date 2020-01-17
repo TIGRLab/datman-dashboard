@@ -34,7 +34,7 @@ def send_email(subject, body, html_body=None, recipient=None):
     email.body = body
     if html_body:
         email.html = html_body
-    send_async_email(current_app, email)
+    send_async_email(current_app._get_current_object(), email)
 
 
 def incidental_finding_email(user, timepoint, comment):
