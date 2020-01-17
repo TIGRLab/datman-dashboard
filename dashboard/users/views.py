@@ -7,7 +7,7 @@ from . import user_bp
 from .utils import get_user_form, parse_enabled_sites
 from .forms import UserForm
 from ..models import User, AccountRequest
-from ..view_utils import report_form_errors, dashboard_admin_required
+from ..utils import report_form_errors, dashboard_admin_required
 
 
 @lm.user_loader

@@ -7,7 +7,7 @@ from flask_login import current_user, login_required
 from . import utils
 from . import scan_bp
 from .forms import ScanChecklistForm, SliceTimingForm
-from ..view_utils import report_form_errors, get_scan, prev_url
+from ..utils import report_form_errors, get_scan, prev_url
 from ..datman_utils import update_header_diffs
 
 logger = logging.getLogger(__name__)
