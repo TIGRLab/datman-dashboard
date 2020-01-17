@@ -25,10 +25,11 @@ from psycopg2.tz import FixedOffsetTimezone
 from sqlalchemy.orm.collections import (attribute_mapped_collection,
                                         MappedCollection, collection)
 
-from dashboard import db, TZ_OFFSET, utils
+from dashboard import db, TZ_OFFSET
 from dashboard.emails import (account_request_email, account_activation_email,
                               account_rejection_email, qc_notification_email)
-from .exceptions import InvalidDataException
+from dashboard.exceptions import InvalidDataException
+from dashboard.models import utils
 from datman import scanid, header_checks
 
 logger = logging.getLogger(__name__)

@@ -18,7 +18,7 @@ from ..queries import (query_metric_values_byid, query_metric_types,
                        find_sessions, find_scans)
 from ..models import Study, Site, Timepoint, Analysis
 from ..forms import (SelectMetricsForm, StudyOverviewForm, AnalysisForm)
-from ..view_utils import get_timepoint
+from ..utils import get_timepoint
 
 logger = logging.getLogger(__name__)
 

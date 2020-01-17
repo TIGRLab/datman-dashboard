@@ -5,7 +5,7 @@ from flask_login import login_user, current_user, login_fresh
 from . import auth_bp
 from .oauth import OAuthSignIn
 from ..models import User
-from ..view_utils import is_safe_url
+from ..utils import is_safe_url
 
 
 @auth_bp.route('/authorize/<provider>')
