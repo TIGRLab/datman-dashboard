@@ -9,10 +9,10 @@ from werkzeug.routing import RequestRedirect
 import redcap as REDCAP
 
 import datman.scanid
-from ..models import Session, Timepoint, RedcapRecord
-from ..queries import get_study
-from ..monitors import monitor_scan_import
-from ..exceptions import RedcapException
+from ...models import Session, Timepoint, RedcapRecord
+from ...queries import get_study
+from ...monitors import monitor_scan_import
+from ...exceptions import RedcapException
 
 logger = logging.getLogger(__name__)
 

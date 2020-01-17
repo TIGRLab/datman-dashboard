@@ -5,7 +5,7 @@ import logging
 
 from github import Github
 from flask import current_app, flash
-from ..models import Study
+from ...models import Study
 
 import datman.scanid
 

@@ -88,13 +88,13 @@ def create_app(config=None):
 
     app.url_map.converters['regex'] = RegexConverter
 
-    from dashboard.main import main_bp
-    from dashboard.users import user_bp
-    from dashboard.auth import auth_bp
-    from dashboard.timepoints import time_bp
-    from dashboard.scans import scan_bp
-    from dashboard.redcap import rcap_bp
-    from dashboard.handlers import handler_bp
+    from dashboard.blueprints.main import main_bp
+    from dashboard.blueprints.users import user_bp
+    from dashboard.blueprints.auth import auth_bp
+    from dashboard.blueprints.timepoints import time_bp
+    from dashboard.blueprints.scans import scan_bp
+    from dashboard.blueprints.redcap import rcap_bp
+    from dashboard.blueprints.handlers import handler_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(user_bp)

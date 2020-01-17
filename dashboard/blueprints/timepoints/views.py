@@ -8,11 +8,11 @@ from . import time_bp
 from . import utils
 from .forms import (EmptySessionForm, IncidentalFindingsForm,
                     TimepointCommentsForm, NewIssueForm, DataDeletionForm)
-from ..utils import (report_form_errors, get_timepoint, get_session,
+from ...utils import (report_form_errors, get_timepoint, get_session,
                      get_scan, dashboard_admin_required,
                      study_admin_required)
-from ..emails import incidental_finding_email
-from ..datman_utils import delete_timepoint, delete_session, delete_scan
+from ...emails import incidental_finding_email
+from ...datman_utils import delete_timepoint, delete_session, delete_scan
 
 logger = logging.getLogger(__name__)
 

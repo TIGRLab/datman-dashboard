@@ -3,7 +3,7 @@ from flask_login import current_user
 
 from dashboard import db
 from . import handler_bp
-from ..exceptions import InvalidUsage
+from ...exceptions import InvalidUsage
 
 
 @handler_bp.app_errorhandler(InvalidUsage)
