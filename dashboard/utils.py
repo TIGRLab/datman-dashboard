@@ -62,7 +62,7 @@ def get_scan(scan_id, study_id, current_user, fail_url=None):
     if scan is None:
         logger.error("User {} attempted to retrieve scan with ID {}. "
                      "Retrieval failed.".format(current_user, scan_id))
-        flash("Scan does not exist.".format(scan_id))
+        flash("Scan does not exist.")
         raise RequestRedirect(fail_url)
 
     timepoint = scan.session.timepoint
