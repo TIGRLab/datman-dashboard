@@ -9,10 +9,10 @@ from . import utils
 from .forms import (EmptySessionForm, IncidentalFindingsForm,
                     TimepointCommentsForm, NewIssueForm, DataDeletionForm)
 from ...utils import (report_form_errors, get_timepoint, get_session,
-                     get_scan, dashboard_admin_required,
-                     study_admin_required)
+                      get_scan, dashboard_admin_required,
+                      study_admin_required)
 from ...emails import incidental_finding_email
-from ...datman_utils import delete_timepoint, delete_session, delete_scan
+import dashboard.datman_utils as dm_utils
 
 logger = logging.getLogger(__name__)
 
@@ -142,7 +142,7 @@ def delete_timepoint(study_id, timepoint_id):
                                 timepoint_id=timepoint_id))
 
     if form.raw_data.data:
-        delete_timepoint(timepoint)
+        dm_utils.delete_timepoint(timepoint)
 
     if form.database_records.data:
         timepoint.delete()
@@ -168,9 +168,9 @@ def delete_session(study_id, timepoint_id, session_num):
 
     if form.raw_data.data:
         if len(timepoint.sessions) == 1:
-            delete_timepoint(timepoint)
+            dm_utils.delete_timepoint(timepoint)
         else:
-            delete_session(session)
+            dm_utils.delete_session(session)
 
     if form.database_records.data:
         session.delete()
@@ -197,7 +197,7 @@ def delete_scan(study_id, timepoint_id, scan_id):
         return redirect(dest_URL)
 
     if form.raw_data.data:
-        delete_scan(scan)
+        dm_utils.delete_scan(scan)
 
     if form.database_records.data:
         scan.delete()
