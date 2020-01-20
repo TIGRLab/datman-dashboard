@@ -52,13 +52,14 @@ class GithubSignIn(OAuthSignIn):
     def __init__(self):
         super(GithubSignIn, self).__init__('github')
 
+        self.conf = current_app.config['OAUTH_CONFIG']['github']
         self.service = OAuth2Service(
             name='github',
             client_id=self.consumer_id,
             client_secret=self.consumer_secret,
-            authorize_url='https://github.com/login/oauth/authorize',
-            base_url='https://github.com/login/',
-            access_token_url='https://github.com/login/oauth/access_token'
+            authorize_url=self.conf['authorize_url'],
+            base_url=self.conf['base_url'],
+            access_token_url=self.conf['token_url']
         )
 
     def authorize(self):
@@ -87,7 +88,7 @@ class GithubSignIn(OAuthSignIn):
                   })
 
         access_token = oauth_session.access_token
-        user = oauth_session.get('https://api.github.com/user').json()
+        user = oauth_session.get(self.conf['user_api']).json()
 
         return access_token, user
 
@@ -98,13 +99,14 @@ class GitlabSignIn(OAuthSignIn):
     def __init__(self):
         super(GitlabSignIn, self).__init__('gitlab')
 
+        self.conf = current_app.config['OAUTH_CONFIG']['gitlab']
         self.service = OAuth2Service(
             name='gitlab',
             client_id=self.consumer_id,
             client_secret=self.consumer_secret,
-            authorize_url='http://sdrshgitlabv.camhres.ca/oauth/authorize',
-            base_url='http://sdrshgitlabv.camhres.ca',
-            access_token_url='http://sdrshgitlabv.camhres.ca/oauth/token'
+            authorize_url=self.conf['authorize_url'],
+            base_url=self.conf['base_url'],
+            access_token_url=self.conf['token_url']
         )
 
     def authorize(self):
@@ -126,6 +128,6 @@ class GitlabSignIn(OAuthSignIn):
                   },
             decoder=json.loads)
         access_token = oauth_session.access_token
-        api_url = 'http://sdrshgitlabv.camhres.ca/api/v3/user'
+        api_url = self.conf['user_api']
         user = oauth_session.get(api_url).json()
         return access_token, user
