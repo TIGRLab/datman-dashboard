@@ -1,5 +1,4 @@
-from flask import render_template, jsonify, request
-from flask_login import current_user
+from flask import render_template, jsonify
 
 from dashboard import db
 from . import handler_bp

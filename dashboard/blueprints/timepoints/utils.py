@@ -1,13 +1,8 @@
-import os
-import glob
-import shutil
 import logging
 
 from github import Github
 from flask import current_app, flash
 from ...models import Study
-
-import datman.scanid
 
 logger = logging.getLogger(__name__)
 
