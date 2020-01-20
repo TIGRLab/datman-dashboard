@@ -270,8 +270,8 @@ instance of the dashboard.
 
 #### Creating an Environment Module
 If you use environment modules (TIGRLab does) you can create your own module
-from the template provided in [dashboard.module.template](dashboard.module.template). Just
-follow the comments and fill in your own passwords and other secrets. [See
+from the template provided in [the docs folder](docs/dashboard.module.template).
+Just follow the comments and fill in your own passwords and other secrets. [See
 here](https://wiki.scinet.utoronto.ca/wiki/index.php/Installing_your_own_modules)
 for advice on setting up a module using environment modules.
 
