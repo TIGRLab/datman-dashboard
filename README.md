@@ -44,7 +44,7 @@ you are trying to get familiar with flask) with
 [NGINX](https://www.nginx.com/) with
 [uWSGI](https://uwsgi-docs.readthedocs.io/en/latest/). Authentication is handled
 with [OAuth](https://en.wikipedia.org/wiki/OAuth) and we currently support
-github for login.
+GitHub for login.
 
 ## Dashboard Structure
 [dashboard/models.py](dashboard/models.py) defines the _Object Relational Mapping (ORM)_ used by
@@ -172,7 +172,7 @@ createdb dashboard
 flask db upgrade
 ```
 
-If you're in TIGRLab and wish to work with a pre-populated database the easiest
+If you're in TIGRLab and wish to work with a pre-populated database, the easiest
 way is to load in an old backup of the real database (ask @DESm1th for this).
 Once you have the backup you can set up your database by running the following
 as a user with database creation privileges
@@ -184,10 +184,10 @@ psql dashboard -f $path_to_your_backup
 ```
 
 #### Superuser Dashboard Access
-If this is a development set up you may also want to give your user account
-superuser access to the database for convenience. To do this you must connect
+If this is a development setup, you may also want to give your user account
+superuser access to the database for convenience. To do this, you must connect
 to the database as a user that already has superuser permissions (on most new
-installations this would be the postgres user). Run the following in your
+installations, this would be the postgres user). Run the following in your
 terminal
 ```
 sudo su postgres
@@ -471,7 +471,7 @@ copies at all times.
 
 ## Code Tips
 This is just a collection of small things to be aware of if you're going to write
-code for the dashboard. To help with profiling and debugging consider using the
+code for the dashboard. To help with profiling and debugging, consider using the
 [Flask Debug Toolbar](https://flask-debugtoolbar.readthedocs.io/en/latest/index.html)
 (Thanks Mike for finding that! - Dawn). The profiler can help identify what's generating
 most of the load time and the SQLAlchemy tab can let you know if your code is accidentally
@@ -486,7 +486,7 @@ chunks by saving html in another file and then importing it with something like
 {% include 'my_other_file.html' %}
 ```
 performance wise this is not always a good idea. Each and every time the 'include'
-statement is read when the website's page is loaded the included file has to be
+statement is read when the website's page is loaded, the included file has to be
 read from the filesystem. File reads are (relatively) slow and if the include is
 inside of a loop with a large number of iterations you can easily add extra seconds
 of load time for a minimal boost in HTML readability.
@@ -496,7 +496,7 @@ Some tips to get the most out of Jinja without adding too much overhead:
     file, it's better to keep the loop inside the included file (so the file is
     opened and read once, rather than once per iteration)
   - If you have an 'if' statement and the body of it is included from another
-    snippet it's better to keep the 'if' in your original file, so you dont
+    snippet, it's better to keep the 'if' in your original file, so you dont
     need to open the snippet just to discover the if statement failed
 
 Also note that if you're organizing your html snippets in a nested folder you always need to
@@ -529,7 +529,7 @@ for timepoint in cmh.timepoints:
 ```
 This loop would generate one query to the database for each timepoint that has
 the site 'CMH'. If code like that were embedded in a function called in a jinja
-template then those extra queries would hit every time a user loaded the page.
+template, then those extra queries would hit every time a user loaded the page.
 In these sorts of cases it is often better to craft your own queries using
 [SQLAlchemy's query API](http://docs.sqlalchemy.org/en/latest/orm/query.html).
 
