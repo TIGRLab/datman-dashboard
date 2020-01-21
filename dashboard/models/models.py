@@ -1,11 +1,4 @@
-"""
-Object definition file for dashboard app
-Each class defines a table in the database.
-
-Of interest, check out sessions.validate_comment() and scan.validate_comment()
-The @validates decorator ensures this is run before the checklist comment
-    field can be updated in the database. This is what ensures the filesystem
-    checklist.csv is in sync with the database.
+"""Database models + relations
 """
 import os
 import datetime
