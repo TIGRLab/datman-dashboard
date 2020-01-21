@@ -80,6 +80,9 @@ class RemoteScheduler(object):
         # This is here to allow delayed initialization
         return
 
+    def __repr__(self):
+        return "<RemoteScheduler for {}>".format(self.url)
+
 
 def format_job_function(job_function):
     return job_function.__module__ + ":" + job_function.__name__
