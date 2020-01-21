@@ -111,7 +111,7 @@ function getModalChanges(session_num, scan_id, scan_name, scan_children) {
     // Session_num is appended manually because the value of the variable isnt
     // known until run time when a button is clicked. By this point the template
     // has already been rendered.
-    var destURL = "{{ url_for('timepoints.timepoint', study_id=study_id, timepoint_id=timepoint.name) }}/delete_session/" +
+    var destURL = "{{ url_for('timepoints.timepoint', study_id=study_id, timepoint_id=timepoint.name) }}delete_session/" +
         session_num;
   } else {
     var message = name + " will be deleted. " +

@@ -7,23 +7,16 @@ from . import rcap_bp
 from . import utils
 from ...exceptions import InvalidUsage
 
-
 logger = logging.getLogger(__name__)
 
 
-@rcap_bp.route('/redcap', methods=['GET', 'POST'])
+@rcap_bp.route('/redcap', methods=['POST'])
 def redcap():
-    """
-    A redcap server can send a notification to this URL when a survey is saved
-    and the record will be retrieved from the redcap server and saved to the
-    database.
-    """
-    logger.info('Received a query from redcap')
-    if request.method != 'POST':
-        logger.error('Received an invalid redcap request. A REDCAP data '
-                     'callback may be misconfigured')
-        raise InvalidUsage('Expected a POST request', status_code=400)
+    """URL endpoint to receive redcap data entry triggers.
 
+    A redcap server can send a notification to this URL when a survey is saved
+    and the record will be retrieved and saved to the database.
+    """
     logger.debug('Received keys {} from REDcap from URL {}'.format(
         list(request.form.keys()), request.form['project_url']))
     try:
