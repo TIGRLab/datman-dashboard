@@ -1,5 +1,13 @@
-/* Colors are defined here! */
+/* This file contains all the CSS styles for the dashboard. We can't really
+split them up without causing additional HTTP requests (or introducing a CSS
+preprocessor), so just try to keep them organized */
+
+
+/**********************************************
+* Site wide styling
+***********************************************/
 :root {
+  /* Site color defaults are defined here! */
   --light-text: #F8F8F8;      /* Slightly off white */
   --dark-text: #383838;       /* Slightly gray black */
   --theme-main: #6E298D;      /* CAMH purple */
@@ -10,6 +18,27 @@
   --bootstrap-success: #5CB85C;
   --bootstrap-warning: #F0AD4E;
   --bootstrap-danger: #D9534F;
+}
+
+/* labels in CAMH colours */
+.label-theme-main {
+  background-color: var(--theme-main);
+}
+
+.label-theme-dark {
+  background-color: var(--theme-dark);
+}
+
+.label-theme-light {
+  background-color: var(--theme-light);
+}
+
+.label-alt-theme-main {
+  background-color: var(--alt-theme-main);
+}
+
+.label-alt-theme-light {
+  background-color: var(--alt-theme-light);
 }
 
 body {
@@ -35,68 +64,17 @@ thead {
   margin-right: auto;
 }
 
-#search-data-text {
+#search-bar {
   width: 350px !important;
 }
 
-#qc-panel {
-  width: 60%;
-  margin-left: auto;
-  margin-right: auto;
+#search-bar-btn {
+  background-color: var(--theme-main);
+  color: var(--light-text);
 }
 
-/* Make the qc panel body scrollable if the list is too long */
-#qclist {
-  height: auto;
-  max-height: 300px;
-  overflow-x: hidden;
-}
-
-/* Styling for the session page 'QC Comment' text area */
-#cl_comment {
-  width: 100%;
-  padding-bottom: 5px;
-  margin-bottom: 10px;
-  resize: none;
-  border: 1px solid #D3D3D3;
-}
-
-/* Styling for the session page 'Scan Missing' modal comment box */
-#missing_comment {
-  width: 100% !important;
-  resize: none !important;
-  margin-bottom: 5px !important;
-}
-
-#doc-page {
-  margin: 10px;
-  margin-left: 0px;
-}
-
-#comment-container {
-  display: inline-block;
-  width: 100%;
-  height: 56px;
-  padding-top: 5px;
-  padding-bottom: 0px;
-}
-
-#scan-qc-comment {
-  display: inline-block;
-  max-height: 56px;
-}
-
-#qc-badge {
-  padding-top: 12px;
-  margin-bottom: 10px;
-}
-
-#scan-qc-status {
-  font-size: 1.5em;
-}
-
-#scan-qc-signature {
-  font-size: .7em;
+#search-bar-btn:hover {
+  background-color: var(--theme-dark);
 }
 
 .approved {
@@ -115,22 +93,71 @@ thead {
   margin-bottom: 10px;
 }
 
-.tab-content {
-  margin-top: 20px;
+.button-text {
+  /* Styling for buttons with glyphicons  */
+  padding: 5px;
 }
 
-.subject-warning-panel {
-  margin-bottom: 30px;
+.new-qc {
+  background-color: var(--alt-theme-main);
+  float: right;
+  width: 80px;
+  height: 100%;
+  text-align: left;
+  text-transform: uppercase;
+  font-weight: 700;
 }
 
-.center {
+.new-qc .badge {
+  background-color: var(--light-text);
+  color: var(--alt-theme-main);
+  width: 35px;
+}
+
+.clickable-row {
+  cursor: pointer;
+}
+
+.click-me {
+  background: var(--alt-theme-light);
+  color: var(--light-text);
+  height: 100%;
+  padding: 0px;
+  text-align: right;
+}
+
+.table-hover tbody tr:hover .click-me {
+  background: var(--alt-theme-main);
+}
+
+.header-icon {
+  /* Give header icons a standardized amount of space */
+  margin: 0px 3px;
+}
+
+.user-request {
+  line-height: 34px;
+  margin: 7px 25px 7px;
+}
+
+/**********************************************
+* Study page styling
+***********************************************/
+#qc-panel {
+  width: 60%;
   margin-left: auto;
   margin-right: auto;
 }
 
-/* Add a bit of styling around text in buttons with glyphicons  */
-.button-text {
-  padding: 5px;
+#qclist {
+  /* Make the qc panel body scrollable if the list is too long */
+  height: auto;
+  max-height: 300px;
+  overflow-x: hidden;
+}
+
+.tab-content {
+  margin-top: 20px;
 }
 
 .scrollable-menu {
@@ -149,6 +176,38 @@ thead {
   min-width: 100px;
 }
 
+/**********************************************
+* Timepoints page styling
+***********************************************/
+#missing_comment {
+  /* Styling for the session 'Scan Missing' modal comment box */
+  width: 100% !important;
+  resize: none !important;
+  margin-bottom: 5px !important;
+}
+
+#doc-page {
+  margin: 10px;
+  margin-left: 0px;
+}
+
+#incidental-findings-report {
+  margin-bottom: 40px;
+}
+
+#incidental-findings-report .finding-comment {
+  margin-bottom: 30px;
+}
+
+.subject-warning-panel {
+  margin-bottom: 30px;
+}
+
+.center {
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .section-separator {
   margin-top: 5px;
   border: 0;
@@ -165,8 +224,8 @@ thead {
   margin-left: 10px;
 }
 
-/* Make a button slide in on hover */
 .slide-button {
+  /* Make a button slide in on hover */
   overflow: hidden;
   width: 0;
   padding: 0;
@@ -176,8 +235,8 @@ thead {
   transition: 0.2s ease;
 }
 
-/* slide in on scan rows */
 .scan-row:hover .slide-button {
+  /* slide in on scan rows */
   padding: 6px 12px;
   border: 1px solid transparent;
   width: 46px;
@@ -220,24 +279,16 @@ thead {
   margin: 10px 0;
 }
 
+.redcap-survey a {
+  margin-top: 7px;
+}
+
 .redcap-survey .well {
   margin-bottom: 0px;
 }
 
 .entry-date {
   font-size: 0.8em;
-}
-
-.redcap-survey a {
-  margin-top: 7px;
-}
-
-#incidental-findings-report {
-  margin-bottom: 40px;
-}
-
-#incidental-findings-report .finding-comment {
-  margin-bottom: 30px;
 }
 
 .scan-table {
@@ -248,8 +299,7 @@ thead {
   text-align: center;
 }
 
-/* style timepoint comments */
-.thumbnail {
+.comment-thumbnail {
   padding: 0px;
 }
 .comment-display {
@@ -301,69 +351,60 @@ thead {
   margin-bottom: 5px;
 }
 
-/* labels in CAMH colours */
-.label-theme-main {
-  background-color: var(--theme-main);
+/**********************************************
+* Scans page styling
+***********************************************/
+#comment-container {
+  display: inline-block;
+  width: 100%;
+  height: 56px;
+  padding-top: 5px;
+  padding-bottom: 0px;
 }
 
-.label-theme-dark {
-  background-color: var(--theme-dark);
+#scan-qc-comment {
+  display: inline-block;
+  max-height: 56px;
 }
 
-.label-theme-light {
-  background-color: var(--theme-light);
+#qc-badge {
+  padding-top: 12px;
+  margin-bottom: 10px;
 }
 
-.label-alt-theme-main {
-  background-color: var(--alt-theme-main);
+#scan-qc-status {
+  font-size: 1.5em;
 }
 
-.label-alt-theme-light {
-  background-color: var(--alt-theme-light);
+#scan-qc-signature {
+  font-size: .7em;
 }
 
-/* Style badge on 'new-qc' labels */
-.new-qc {
-  background-color: var(--alt-theme-main);
-  float: right;
-  width: 80px;
-  height: 100%;
-  text-align: left;
-  text-transform: uppercase;
-  font-weight: 700;
+#papaya-nav {
+  position: absolute;
+  padding-top: 200px;
+  left: 30%;
+  width: 160px;
+  height: 208px;
+  display: block;
 }
 
-.new-qc .badge {
-  background-color: var(--light-text);
-  color: var(--alt-theme-main);
-  width: 35px;
+#loop-series {
+  margin-left: 35px !important;
 }
 
-/* Set up clickable rows and 'buttons' to indicate the table can be clicked */
-.clickable-row {
-  cursor: pointer;
+#papaya-nav > #play-speed-controls {
+  display: none;
+  margin: 10px 0px 20px 0px;
 }
 
-.click-me {
-  background: var(--alt-theme-light);
-  color: var(--light-text);
-  height: 100%;
-  padding: 0px;
-  text-align: right;
+#play-speed-controls > input {
+  display: block;
+  margin-bottom: 5px;
 }
 
-.table-hover tbody tr:hover .click-me {
-  background: var(--alt-theme-main);
-}
-
-/* Make sure icons in the header have a standard amount of space around them */
-.header-icon {
-  margin: 0px 3px;
-}
-
-.user-request {
-  line-height: 34px;
-  margin: 7px 25px 7px;
+#papaya-nav > #change-volume-controls {
+  margin-top: 20px;
 }
 
 /**********************************************
@@ -383,9 +424,6 @@ thead {
   padding-right: 5px;
 }
 
-/**********************************************
-* User demographics form styling
-***********************************************/
 #user-demo-info label {
   border-bottom: 1px solid #333;
   display: block;
@@ -438,10 +476,6 @@ thead {
 #optional-user-info h3 {
   margin: 80px 0px 10px 0px;
 }
-
-/**********************************************
-* User permissions form styling
-***********************************************/
 
 #access-table-box {
   border: 3px solid var(--alt-theme-main);
@@ -512,41 +546,11 @@ thead {
 }
 
 /**********************************************
-* papaya-nav styling
-***********************************************/
-#papaya-nav {
-  position: absolute;
-  padding-top: 200px;
-  left: 30%;
-  width: 160px;
-  height: 208px;
-  display: block;
-}
-
-#loop-series {
-  margin-left: 35px !important;
-}
-
-#papaya-nav > #play-speed-controls {
-  display: none;
-  margin: 10px 0px 20px 0px;
-}
-
-#play-speed-controls > input {
-  display: block;
-  margin-bottom: 5px;
-}
-
-#papaya-nav > #change-volume-controls {
-  margin-top: 20px;
-}
-
-/**********************************************
 * Bootstrap customizations below
 ***********************************************/
 
-/* Add a chevron toggle for collapsible headings (e.g panels) */
 .collapsible-heading {
+  /* Add a chevron toggle for collapsible headings (e.g panels) */
   cursor: pointer;
 }
 
@@ -560,28 +564,27 @@ thead {
   content: "\e113";       /* Chevron up */
 }
 
-/* Remove top border of tables without a head */
 .table > tbody > tr:first-child > td {
+  /* Remove top border of tables without a head */
   border: none;
 }
 
-/* Ensure top border exists on tables with a header */
 .table > thead + tbody > tr:first-child > td {
+  /* Ensure top border exists on tables with a header */
   border-top: 1px solid #ddd;
 }
 
-/* Change table hover color so it can be used in conjunction with
-table-striped */
 .table-hover tbody tr:hover td, .table-hover tbody tr:hover th {
+  /* Change table hover color so it can be used in conjunction with
+  table-striped */
   background-color: #e6e6e6;
 }
 
-/* Restrict brand image size */
 .navbar-brand img {
+  /* Restrict brand image size */
   height: 100%;
 }
 
-/* Improve jumbotron styling */
 .jumbotron {
   color: var(--light-text);
   background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('/static/images/jumbotron-bg.png');
@@ -599,8 +602,8 @@ table-striped */
   text-shadow: 1px 3px 1px rgba(0,0,0,0.3);
 }
 
-/* Get rid of padding on the ends of the header */
 .navbar-collapse {
+  /* Get rid of padding on the ends of the header */
   padding: 0px;
 }
 
@@ -625,14 +628,6 @@ as screen size shrinks */
 }
 
 /* Color scheme of navbar, tables and panel-primary to match CAMH scheme */
-#search-data-btn {
-  background-color: var(--theme-main);
-  color: var(--light-text);
-}
-
-#search-data-btn:hover {
-  background-color: var(--theme-dark);
-}
 
 .navbar-default {
   background-color: var(--theme-main);
