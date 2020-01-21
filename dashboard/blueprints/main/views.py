@@ -154,16 +154,6 @@ def study(study_id=None, active_tab=None):
                            display_metrics=display_metrics)
 
 
-@main.route('/person')
-@main.route('/person/<int:person_id>', methods=['GET'])
-@login_required
-def person(person_id=None):
-    """
-    Place holder, does nothing
-    """
-    return redirect('/index')
-
-
 @main.route('/metricData', methods=['GET', 'POST'])
 @login_required
 def metricData():

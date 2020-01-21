@@ -61,9 +61,6 @@
                   <li role="presentation">
                     <a role="menuitem" href={{ url_for('main.analysis') }}>Analyses</a>
                   </li>
-                  <li role="presentation">
-                    <a role="menuitem" href={{ url_for('main.metricData') }}>Metric Data</a>
-                  </li>
                 </ul>
               </li>
               {% if current_user.dashboard_admin %}
@@ -157,7 +154,7 @@
 
       // Sets the destination URL for the navbar search bar
       $("#search-bar-btn").bind('click', function() {
-        var search_str = $("#search-data-text").val();
+        var search_str = $("#search-bar").val();
         if (search_str) {
           var url = "{{ url_for('main.search_data') }}" + "/" + search_str;
           window.location.href = url;
@@ -165,7 +162,7 @@
       });
 
       // Lets the user submit a search when they hit enter
-      $("#search-data-text").keyup(function(e) {
+      $("#search-bar").keyup(function(e) {
         if (e.keyCode == 13) {
           $("#search-bar-btn").click();
         }
