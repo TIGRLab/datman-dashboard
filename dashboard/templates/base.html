@@ -14,9 +14,8 @@
     <link href="/static/css/datatables.css" rel="stylesheet" media="screen" type="text/css">
     <link href="/static/css/c3.css" rel="stylesheet" type="text/css">
 
-    <!-- Lab custom base styles go here -->
-    <link href="/static/css/site.css" rel="stylesheet">
-    {% block added_css %}{% endblock %}
+    <!-- Lab custom CSS styles go here -->
+    <link href="/static/css/qc_dashboard.css" rel="stylesheet">
 
     <script src="/static/js/jquery-3.1.1.min.js"></script>
     <script src="/static/js/d3.v3.js" charset="utf-8"></script>
@@ -51,9 +50,9 @@
             <form class="navbar-form navbar-left"
                 title="Pro-tip: You can narrow your search by using multiple terms and separating each term with '%'. e.g. 'STOPPD%PDT2' will find all STOPPD scans with a PDT2 tag">
               <div class="form-group">
-                <input type="text" class="form-control" id="search-data-text" placeholder="Search for a Session">
+                <input type="text" class="form-control" id="search-bar" placeholder="Search for a Session">
               </div>
-              <button type="button" class="btn btn-default" id="search-data-btn"><span class="header-icon glyphicon glyphicon-search"></span> Search</button>
+              <button type="button" class="btn btn-default" id="search-bar-btn"><span class="header-icon glyphicon glyphicon-search"></span> Search</button>
             </form>
             <ul class="nav navbar-nav navbar-right">
               <li class=dropdown>
@@ -157,7 +156,7 @@
       });
 
       // Sets the destination URL for the navbar search bar
-      $("#search-data-btn").bind('click', function() {
+      $("#search-bar-btn").bind('click', function() {
         var search_str = $("#search-data-text").val();
         if (search_str) {
           var url = "{{ url_for('main.search_data') }}" + "/" + search_str;
@@ -168,7 +167,7 @@
       // Lets the user submit a search when they hit enter
       $("#search-data-text").keyup(function(e) {
         if (e.keyCode == 13) {
-          $("#search-data-btn").click();
+          $("#search-bar-btn").click();
         }
       });
 
@@ -183,7 +182,5 @@
         });
       {% endif %}
     </script>
-
-    {% block footer_js %}{% endblock %}
   </body>
 </html>
