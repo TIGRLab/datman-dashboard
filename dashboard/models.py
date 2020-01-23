@@ -8,20 +8,22 @@ The @validates decorator ensures this is run before the checklist comment
     checklist.csv is in sync with the database.
 """
 import os
+import operator
 import datetime
 import logging
 from random import randint
 
 from flask_login import UserMixin
-from sqlalchemy import and_, exists, func
+from sqlalchemy import and_, or_, exists, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import deferred, backref
-from sqlalchemy.schema import UniqueConstraint, ForeignKeyConstraint, Index
-from sqlalchemy.orm.collections import attribute_mapped_collection
+from sqlalchemy.schema import UniqueConstraint, ForeignKeyConstraint
 from sqlalchemy.orm.exc import FlushError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.associationproxy import association_proxy
 from psycopg2.tz import FixedOffsetTimezone
+from sqlalchemy.orm.collections import (attribute_mapped_collection,
+                                        MappedCollection, collection)
 
 from dashboard import db, TZ_OFFSET, utils
 from dashboard.emails import (account_request_email, account_activation_email,
@@ -30,6 +32,29 @@ from .exceptions import InvalidDataException
 from datman import scanid, header_checks
 
 logger = logging.getLogger(__name__)
+
+
+class DictListCollection(MappedCollection):
+    """Allows a relationship to be organized into a dictionary of lists
+    """
+    def __init__(self, key):
+        super(DictListCollection, self).__init__(operator.attrgetter(key))
+
+    @collection.internally_instrumented
+    def __setitem__(self, key, value, _sa_initiator=None):
+        if not super(DictListCollection, self).get(key):
+            super(DictListCollection, self).__setitem__(key, [], _sa_initiator)
+        super(DictListCollection, self).__getitem__(key).append(value)
+
+    @collection.iterator
+    def list_mod(self):
+        """Allows sqlalchemy manage changes to the contents of the lists
+        """
+        all_records = []
+        for sub_list in self.values():
+            all_records.extend(sub_list)
+        return iter(all_records)
+
 
 ###############################################################################
 # Association tables (i.e. basic many to many relationships)
@@ -71,7 +96,7 @@ class User(UserMixin, db.Model):
         'StudyUser',
         back_populates='user',
         order_by='StudyUser.study_id',
-        collection_class=attribute_mapped_collection('study_id'),
+        collection_class=lambda: DictListCollection('study_id'),
         cascade="all, delete-orphan")
     incidental_findings = db.relationship('IncidentalFinding')
     scan_comments = db.relationship('ScanChecklist')
@@ -81,6 +106,8 @@ class User(UserMixin, db.Model):
     pending_approval = db.relationship('AccountRequest',
                                        uselist=False,
                                        cascade="all, delete")
+
+    __table_args__ = (UniqueConstraint(_username),)
 
     def __init__(self,
                  first,
@@ -168,81 +195,204 @@ class User(UserMixin, db.Model):
         return AccountRequest.query.count()
 
     def add_studies(self, study_ids):
+        """Enable study access for this user.
+
+        This will add a StudyUser record with the default permissions for
+        each given study. Restrict access to specific sites by mapping the
+        study ID to a list of allowed site names. An empty list means 'grant
+        the user access to all sites'.
+
+        For example:
+
+            study_ids = {'OPT': ['UT1', 'UT2'],
+                         'PRELAPSE': []}
+
+        This would grant the user access to two sites (UT1, UT2) in OPT and
+        all sites in PRELAPSE.
+
+        Args:
+            study_ids (:obj:`dict`): A dictionary of study IDs to grant user
+                access to. Each study ID key should map to a list of sites
+                to enable. Use the empty list to indicate global study access.
+
+        Raises:
+            InvalidDataException: If the format of arg study_ids is incorrect
+                or one or more records cannot be added.
+
+        """
+        if not isinstance(study_ids, dict):
+            raise InvalidDataException("User.add_studies expects a dictionary "
+                                       "of permission settings. Received {}"
+                                       "".format(type(study_ids)))
+
         for study in study_ids:
-            record = StudyUser(study, self.id)
-            self.studies[study] = record
-        self.save_changes()
+            if not study_ids[study]:
+                db.session.add(StudyUser(study, self.id))
+            else:
+                for site in study_ids[study]:
+                    db.session.add(StudyUser(study, self.id, site_id=site))
+        try:
+            db.session.commit()
+        except IntegrityError as e:
+            db.session.rollback()
+            raise InvalidDataException("Failed to update user {}'s study "
+                                       "access. Reason - {}"
+                                       "".format(self.id, e._message()))
 
     def remove_studies(self, study_ids):
-        if not isinstance(study_ids, list):
-            study_ids = list(study_ids)
+        """Disable study access for this user.
+
+        This removes any StudyUser records that match the given study IDs.
+        Access to specific sites within a study can be disabled by mapping
+        the study ID to a list of site names. An empty list means 'disable
+        user access to this study completely'.
+
+        For example:
+
+            study_ids = {'OPT': ['UT1'],
+                         'PRELAPSE': []}
+
+        This would remove user access to site 'UT1' for OPT and totally
+        disable user access to PRELAPSE
+
+        Args:
+            study_ids (:obj:`dict`): A dictionary of study IDs to disable
+                access to. Each ID should map to a list of sites to disable.
+                The empty list indicates complete access restriction
+
+        Raises:
+            InvalidDataException: If the format of arg study_ids is incorrect
+                or one or more records cannot be removed.
+        """
+        if not isinstance(study_ids, dict):
+            raise InvalidDataException("User.remove_studies expects a "
+                                       "dictionary of permission settings. "
+                                       "Received {}".format(type(study_ids)))
+
         for study in study_ids:
-            if isinstance(study, StudyUser):
-                study = study.study_id
-            db.session.delete(self.studies[study])
-        self.save_changes()
+            if study not in self.studies:
+                continue
+            if not study_ids[study]:
+                [db.session.delete(su) for su in self.studies[study]]
+            else:
+                for site in study_ids[study]:
+                    found = [
+                        item for item in self.studies[study]
+                        if item.site_id == site
+                    ]
+                    if not found:
+                        continue
+                    db.session.delete(found[0])
+
+        try:
+            db.session.commit()
+        except Exception as e:
+            raise InvalidDataException("Failed to restrict study access for "
+                                       "user {}. Reason - {}".format(
+                                           self.id, e))
 
     def get_studies(self):
-        """
-        Get a list of Study objects that this user has access to.
+        """Get a list of studies that user has any even partial access to
+
+        Returns:
+            list: A list of Study objects, one for each study where the user
+            has at least partial (site based) access.
         """
         if self.dashboard_admin:
             studies = Study.query.order_by(Study.id).all()
         else:
-            studies = [su.study for su in self.studies.values()]
+            studies = [su[0].study for su in self.studies.values()]
         return studies
 
-    def get_disabled_studies(self):
+    def get_disabled_sites(self):
+        """Get a dict of study IDs mapped to sites this user cant access
+
+        Returns:
+            dict: A dictionary mapping each study ID to a list of its sites
+            that this user does not have access to. Studies where the user
+            has full access will be omitted entirely.
         """
-        Get a list of Study objects the user does NOT have access to.
-        """
-        enabled_studies = list(self.studies.keys())
+        disabled = StudySite.query \
+            .with_entities(StudySite.study_id, StudySite.site_id) \
+            .filter(~exists().where(
+                and_(StudyUser.user_id == self.id,
+                     StudyUser.study_id == StudySite.study_id,
+                     or_(StudyUser.site_id == StudySite.site_id,
+                         StudyUser.site_id == None)))) \
+            .order_by(StudySite.study_id.asc())
 
-        if enabled_studies:
-            disabled_studies = Study.query.filter(
-                ~Study.id.in_(enabled_studies)).all()
-        else:
-            disabled_studies = Study.query.all()
+        found = {}
+        for study, site in disabled:
+            found.setdefault(study, []).append(site)
+        return found
 
-        return disabled_studies
+    def has_study_access(self, study, site=None):
+        return self._get_permissions(study, site)
 
-    def has_study_access(self, study):
-        return self._get_permissions(study)
+    def is_study_admin(self, study, site=None):
+        return self._get_permissions(study, site, perm='is_admin')
 
-    def is_study_admin(self, study):
-        return self._get_permissions(study, perm='is_admin')
+    def is_primary_contact(self, study, site=None):
+        return self._get_permissions(study, site, perm='primary_contact')
 
-    def is_primary_contact(self, study):
-        return self._get_permissions(study, perm='primary_contact')
+    def is_kimel_contact(self, study, site=None):
+        return self._get_permissions(study, site, perm='kimel_contact')
 
-    def is_kimel_contact(self, study):
-        return self._get_permissions(study, perm='kimel_contact')
+    def is_study_RA(self, study, site=None):
+        return self._get_permissions(study, site, perm='study_RA')
 
-    def is_study_RA(self, study):
-        return self._get_permissions(study, perm='study_RA')
+    def does_qc(self, study, site=None):
+        return self._get_permissions(study, site, perm='does_qc')
 
-    def does_qc(self, study):
-        return self._get_permissions(study, perm='does_qc')
+    def _get_permissions(self, study, site=None, perm=None):
+        """Check if a user has general access rights or a specific permission
 
-    def _get_permissions(self, study, perm=None):
-        """
-        Checks the StudyUser records for this user. If no key is given it
-        checks if a record exists for a specific study (i.e. if the user has
-        access to that study). If 'perm' is set it can check a specific
-        permission attribute (e.g. 'is_admin' or 'has_phi').
+        Checks StudyUser records for this user.
+            - If only study is set, it will check if the user has any access
+            to the study at all
+            - If study and perm are set, it will check if the user
+            has the named permission for that entire study
 
-        Always returns a boolean.
+        Use the 'site' flag to restrict checks to specific sites instead of
+        the study as a whole.
+
+        Example:
+            study = 'SPINS', perm = 'study_RA' will check if the user is
+            declared as a 'study_RA' for the every site in 'SPINS'.
+            Setting site='CMH' for the same check will restrict it to
+            checking whether the user is an RA for 'CMH'
+
+        Args:
+            study (str): The ID for a managed study
+            site (str, optional): The ID of a site within the study
+            perm (str, optional): The name of a specific user permission to
+            check. e.g. 'is_admin' or 'does_qc'
+
+        Returns:
+            bool: False if the user should be denied, True otherwise
         """
         if self.dashboard_admin:
             return True
+
         if isinstance(study, Study):
             study = study.id
+        if site and isinstance(site, Site):
+            site = site.name
+
         try:
-            permissions = self.studies[study]
+            access_rights = self.studies[study]
         except KeyError:
             return False
+
+        if site:
+            access_rights = [su for su in access_rights
+                             if su.site_id is None or su.site_id == site]
+            if not access_rights:
+                return False
+
         if perm:
-            return getattr(permissions, perm)
+            return getattr(access_rights[0], perm)
+
         return True
 
     def save_changes(self):
@@ -266,7 +416,7 @@ class AccountRequest(db.Model):
 
     user_id = db.Column('user_id',
                         db.Integer,
-                        db.ForeignKey("users.id"),
+                        db.ForeignKey("users.id", ondelete='CASCADE'),
                         primary_key=True)
     user = db.relationship('User', uselist=False)
 
@@ -321,7 +471,11 @@ class Study(db.Model):
     is_open = db.Column('is_open', db.Boolean)
     email_qc = db.Column('email_on_trigger', db.Boolean)
 
-    users = db.relationship('StudyUser', back_populates='study')
+    users = db.relationship(
+        'StudyUser',
+        primaryjoin='Study.id==StudySite.study_id',
+        secondary='study_sites',
+        secondaryjoin='StudySite.study_id==StudyUser.study_id')
     sites = db.relationship(
         'StudySite',
         back_populates='study',
@@ -644,7 +798,7 @@ class Study(db.Model):
             # an RA for the whole study
             RAs = [
                 su.user for su in self.users
-                if su.study_RA and (not su.site or su.site == site)
+                if su.study_RA and (not su.site_id or su.site_id == site)
             ]
         else:
             # Get all RAs for the study
@@ -831,7 +985,7 @@ class Timepoint(db.Model):
         to if one exists.
         """
         for study_name in self.studies:
-            if user.has_study_access(study_name):
+            if user.has_study_access(study_name, self.site_id):
                 return self.studies[study_name]
         return None
 
@@ -954,7 +1108,7 @@ class TimepointComment(db.Model):
                            db.DateTime(timezone=True),
                            nullable=False)
     comment = db.Column('comment', db.Text, nullable=False)
-    modified = db.Column('modified', db.Boolean, default=False)
+    modified = db.Column('modified', db.Boolean, nullable=False, default=False)
 
     user = db.relationship('User',
                            uselist=False,
@@ -1628,7 +1782,8 @@ class GoldStandard(db.Model):
             ['study_scantypes.study', 'study_scantypes.scantype']),
         ForeignKeyConstraint(
             ['study', 'site'],
-            ['study_sites.study', 'study_sites.site']))
+            ['study_sites.study', 'study_sites.site']),
+        UniqueConstraint(json_path, json_contents))
 
     def __init__(self, study, gs_json):
         try:
@@ -1670,7 +1825,13 @@ class RedcapRecord(db.Model):
 
     sessions = db.relationship('SessionRedcap', back_populates='record')
 
-    __table_args__ = (UniqueConstraint(record, project, url, event_id), )
+    __table_args__ = (UniqueConstraint(
+        record,
+        project,
+        url,
+        event_id,
+        date,
+        name='redcap_records_unique_record'), )
 
     def __init__(self, record, project, url,
                  instrument, date, version):
@@ -1755,42 +1916,40 @@ class TaskFile(db.Model):
 class StudyUser(db.Model):
     __tablename__ = 'study_users'
 
-    study_id = db.Column('study_id',
-                         db.String(32),
-                         db.ForeignKey('studies.id'),
-                         nullable=False,
-                         primary_key=True)
+    # This primary key will never be used anywhere but is needed because
+    # sqlalchemy demands a primary key and the other columns cant be used
+    id = db.Column('id', db.Integer, primary_key=True)
     user_id = db.Column('user_id',
                         db.Integer,
                         db.ForeignKey('users.id'),
-                        nullable=False,
-                        primary_key=True)
-    site = db.Column('site_only',
-                     db.String(32),
-                     db.ForeignKey('sites.name'),
-                     nullable=True,
-                     primary_key=True)
+                        nullable=False)
+    study_id = db.Column('study', db.String(32), nullable=False)
+    site_id = db.Column('site', db.String(32))
     is_admin = db.Column('is_admin', db.Boolean, default=False)
     primary_contact = db.Column('primary_contact', db.Boolean, default=False)
     kimel_contact = db.Column('kimel_contact', db.Boolean, default=False)
     study_RA = db.Column('study_ra', db.Boolean, default=False)
     does_qc = db.Column('does_qc', db.Boolean, default=False)
 
-    study = db.relationship('Study', back_populates='users')
+    study = db.relationship(
+        'Study',
+        primaryjoin='StudyUser.study_id==StudySite.study_id',
+        secondary='study_sites',
+        secondaryjoin='StudySite.study_id==Study.id',
+        uselist=False,
+        viewonly=True)
     user = db.relationship('User', back_populates='studies')
 
-    # Needed for the partial unique index to work correctly
-    __table_args__ = (Index('study_users_study_user_site_unique_key',
-                            study_id,
-                            user_id,
-                            site,
-                            unique=True,
-                            postgresql_where=(site != None)), )
+    __table_args__ = (
+        UniqueConstraint('study', 'user_id', 'site'),
+        ForeignKeyConstraint(['study', 'site'],
+                             ['study_sites.study', 'study_sites.site']),
+    )
 
     def __init__(self,
                  study_id,
                  user_id,
-                 site=None,
+                 site_id=None,
                  admin=False,
                  is_primary_contact=False,
                  is_kimel_contact=False,
@@ -1798,7 +1957,7 @@ class StudyUser(db.Model):
                  does_qc=False):
         self.study_id = study_id
         self.user_id = user_id
-        self.site = site
+        self.site_id = site_id
         self.is_admin = admin
         self.primary_contact = is_primary_contact
         self.kimel_contact = is_kimel_contact
@@ -1806,7 +1965,12 @@ class StudyUser(db.Model):
         self.does_qc = does_qc
 
     def __repr__(self):
-        return "<StudyUser {} User: {}>".format(self.study_id, self.user_id)
+        if self.site_id:
+            site = self.site_id
+        else:
+            site = 'ALL'
+        return "<StudyUser {} - {} User: {}>".format(self.study_id, site,
+                                                     self.user_id)
 
 
 class StudySite(db.Model):
@@ -1823,6 +1987,13 @@ class StudySite(db.Model):
     uses_redcap = db.Column('uses_redcap', db.Boolean, default=False)
     code = db.Column('code', db.String(32))
 
+    # Need to specify the terms of the join to ensure users with
+    # access to all sites dont get left out of the list for a specific site
+    users = db.relationship(
+        'StudyUser',
+        primaryjoin='and_(StudySite.study_id==StudyUser.study_id,'
+        'or_(StudySite.site_id==StudyUser.site_id,'
+        'StudyUser.site_id==None))')
     site = db.relationship('Site', back_populates='studies')
     study = db.relationship('Study', back_populates='sites')
     alt_codes = db.relationship('AltStudyCode',

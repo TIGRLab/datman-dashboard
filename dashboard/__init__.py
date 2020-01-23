@@ -11,6 +11,7 @@ from flask_mail import Mail
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_apscheduler import APScheduler
+from flask_migrate import Migrate
 from werkzeug.routing import BaseConverter
 
 from config import (basedir, ADMINS, LOG_MAIL_SERVER, LOG_MAIL_PORT,
@@ -99,6 +100,7 @@ else:
 ###############################################################################
 
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 lm = LoginManager(app)
 lm.login_view = 'login'
 lm.refresh_view = 'refresh_login'

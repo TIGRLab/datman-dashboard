@@ -19,7 +19,12 @@
           <tr>
             <td rowspan="5">
               {{ study_form.hidden_tag() }}
-              {{ study_form.study_id.data }}
+              {{ study_form.study_id.data }} -
+              {% if not study_form.site_id.data %}
+                ALL
+              {% else %}
+                {{ study_form.site_id.data }}
+              {% endif %}
             </td>
             <td>{{ study_form.is_admin.label.text }}</td>
             {% for subfield in study_form.is_admin %}
