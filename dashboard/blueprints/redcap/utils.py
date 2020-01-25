@@ -8,11 +8,11 @@ from flask_login import current_user
 from werkzeug.routing import RequestRedirect
 import redcap as REDCAP
 
+from .monitors import monitor_scan_import
+from dashboard.models import Session, Timepoint, RedcapRecord
+from dashboard.queries import get_study
+from dashboard.exceptions import RedcapException
 import datman.scanid
-from ...models import Session, Timepoint, RedcapRecord
-from ...queries import get_study
-from ...monitors import monitor_scan_import
-from ...exceptions import RedcapException
 
 logger = logging.getLogger(__name__)
 
