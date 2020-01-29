@@ -24,6 +24,7 @@ class RemoteScheduler(object):
         if app is None:
             # Delay init
             self.auth = (None, None)
+            self.url = "N/A"
             return
         self.init_app(app)
 

@@ -6,8 +6,13 @@ import operator
 import json
 import time
 import logging
+from uuid import uuid4
+from datetime import datetime
 
 from sqlalchemy.orm.collections import MappedCollection, collection
+import flask_apscheduler
+
+from dashboard import scheduler
 
 logger = logging.getLogger(__name__)
 
@@ -55,3 +60,23 @@ def get_software_version(json_contents):
     except KeyError:
         software_version = "Version Not Available"
     return software_name + " - " + software_version
+
+
+def schedule_email(email_func, input_args):
+    """Send an email from the server side.
+
+    If an automated email is fired from code that may be run on the client
+    side then it should be wrapped by this function. This will add a scheduler
+    job that fires instantly to ensure it executes server side (or just send it
+    if it's already server side).
+
+    NOTE: We're using scheduler.add_job directly and not
+    dashboard.monitors.add_monitor because monitors often need classes from
+    the models and using add_monitor would introduce circular dependencies.
+    """
+    if isinstance(scheduler, flask_apscheduler.APScheduler):
+        # You're already executing on the server side so just send the email
+        email_func(*input_args)
+        return
+    scheduler.add_job(uuid4().hex, email_func, trigger='date',
+                      run_date=datetime.now(), args=input_args)

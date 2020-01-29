@@ -154,7 +154,8 @@ class User(UserMixin, db.Model):
             # Account exists or request is already pending
             db.session.rollback()
         else:
-            account_request_email(self.first_name, self.last_name)
+            utils.schedule_email(account_request_email,
+                                 [self.first_name, self.last_name])
 
     def num_requests(self):
         """
@@ -404,7 +405,7 @@ class AccountRequest(db.Model):
                          "{}".format(self.user_id, e))
             raise e
         else:
-            account_activation_email(self.user)
+            utils.schedule_email(account_activation_email, [self.user])
 
     def reject(self):
         try:
@@ -416,7 +417,7 @@ class AccountRequest(db.Model):
                          "Reason: {}".format(self.user_id, e))
             raise e
         else:
-            account_rejection_email(self.user)
+            utils.schedule_email(account_rejection_email, [self.user])
 
     def __repr__(self):
         return "<User {} Requires Admin Review>".format(self.user_id)
@@ -502,8 +503,9 @@ class Study(db.Model):
         if self.email_qc:
             not_qcd = [t.name for t in self.timepoints.all() if not
                        t.is_qcd()]
-            [qc_notification_email(u, self.id, timepoint.name, not_qcd) for
-             u in self.get_QCer()]
+            [utils.schedule_email(qc_notification_email,
+                                  [str(u), self.id, timepoint.name, not_qcd])
+             for u in self.get_QCer()]
 
         return timepoint
 

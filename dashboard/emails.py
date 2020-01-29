@@ -1,3 +1,16 @@
+"""Code for sending email notifications.
+
+If an email message _must_ come from the server side, and isn't sent from
+within a view function, then it needs to be submitted to the scheduler. That
+means it needs a monitor (or needs to be given to models.utils.schedule_email
+if it's triggered by the database models).
+
+Any email notifications that might be submitted to the scheduler must only
+receive arguments that are JSON serializable (see here for info on serializable
+types: https://docs.python.org/3/library/json.html#json.JSONEncoder). Arguments
+that arent serializable will cause an exception and the message will be dropped
+"""
+
 import logging
 from threading import Thread
 
@@ -105,9 +118,7 @@ def unsent_notification_email(user, type, unsent_body):
 
 def qc_notification_email(user, study, current_tp, remain_tp=None):
     subject = "{} - New scan, QC needed".format(study)
-    body = "Hi {} {}, you have been tagged as a " \
-           "QCer for {}".format(user.first_name, user.last_name,
-                                study)
+    body = "Hi {}, you have been tagged as a QCer for {}".format(user, study)
     body += "\n\nNew scan: {}".format(current_tp)
 
     if remain_tp:
