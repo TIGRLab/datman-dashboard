@@ -16,12 +16,12 @@ from sqlalchemy.ext.associationproxy import association_proxy
 from psycopg2.tz import FixedOffsetTimezone
 from sqlalchemy.orm.collections import attribute_mapped_collection
 
+from datman import scanid, header_checks
 from dashboard import db, TZ_OFFSET
-from dashboard.emails import (account_request_email, account_activation_email,
-                              account_rejection_email, qc_notification_email)
 from dashboard.exceptions import InvalidDataException
 from dashboard.models import utils
-from datman import scanid, header_checks
+from .emails import (account_request_email, account_activation_email,
+                     account_rejection_email, qc_notification_email)
 
 logger = logging.getLogger(__name__)
 
@@ -155,7 +155,7 @@ class User(UserMixin, db.Model):
             db.session.rollback()
         else:
             utils.schedule_email(account_request_email,
-                                 [self.first_name, self.last_name])
+                                 [str(self)])
 
     def num_requests(self):
         """
@@ -405,7 +405,10 @@ class AccountRequest(db.Model):
                          "{}".format(self.user_id, e))
             raise e
         else:
-            utils.schedule_email(account_activation_email, [self.user])
+            user = self.user
+            utils.schedule_email(
+                account_activation_email,
+                [user.username, len(user.studies), user.email])
 
     def reject(self):
         try:
@@ -417,7 +420,9 @@ class AccountRequest(db.Model):
                          "Reason: {}".format(self.user_id, e))
             raise e
         else:
-            utils.schedule_email(account_rejection_email, [self.user])
+            user = self.user
+            utils.schedule_email(account_rejection_email,
+                                 [user.id, user.email])
 
     def __repr__(self):
         return "<User {} Requires Admin Review>".format(self.user_id)

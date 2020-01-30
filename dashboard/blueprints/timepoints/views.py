@@ -6,12 +6,12 @@ from flask_login import current_user, login_required, fresh_login_required
 
 from . import time_bp
 from . import utils
+from .emails import incidental_finding_email
 from .forms import (EmptySessionForm, IncidentalFindingsForm,
                     TimepointCommentsForm, NewIssueForm, DataDeletionForm)
 from ...utils import (report_form_errors, get_timepoint, get_session,
                       get_scan, dashboard_admin_required,
                       study_admin_required)
-from ...emails import incidental_finding_email
 import dashboard.datman_utils as dm_utils
 
 logger = logging.getLogger(__name__)
@@ -122,7 +122,7 @@ def flag_finding(study_id, timepoint_id):
     form = IncidentalFindingsForm()
     if form.validate_on_submit():
         timepoint.report_incidental_finding(current_user.id, form.comment.data)
-        incidental_finding_email(current_user, timepoint.name,
+        incidental_finding_email(str(current_user), timepoint.name,
                                  form.comment.data)
         flash("Report submitted.")
     return redirect(dest_URL)

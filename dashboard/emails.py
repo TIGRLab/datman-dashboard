@@ -1,20 +1,19 @@
-"""Code for sending email notifications.
+"""Functions for sending email notifications.
 
 If an email message _must_ come from the server side, and isn't sent from
 within a view function, then it needs to be submitted to the scheduler. That
-means it needs a monitor (or needs to be given to models.utils.schedule_email
-if it's triggered by the database models).
+means it needs a monitor/check function and should be called by the monitor and
+not directly.
 
 Any email notifications that might be submitted to the scheduler must only
 receive arguments that are JSON serializable (see here for info on serializable
-types: https://docs.python.org/3/library/json.html#json.JSONEncoder). Arguments
-that arent serializable will cause an exception and the message will be dropped
+types: https://docs.python.org/3/library/json.html#json.JSONEncoder).
 """
 
 import logging
 from threading import Thread
 
-from flask import url_for, current_app
+from flask import current_app
 from flask_mail import Message
 
 from dashboard import mail
@@ -50,55 +49,6 @@ def send_email(subject, body, html_body=None, recipient=None):
     send_async_email(current_app._get_current_object(), email)
 
 
-def incidental_finding_email(user, timepoint, comment):
-    subject = 'IMPORTANT: Incidental Finding flagged'
-    body = '{} has reported an incidental finding for {}. ' \
-           'Description: {}'.format(user, timepoint, comment)
-    send_email(subject, body)
-
-
-def account_request_email(first_name, last_name):
-    subject = "New account request from {} {}".format(first_name, last_name)
-    body = "{} {} has requested a dashboard account. Please log in to " \
-           "approve or reject this request".format(first_name, last_name)
-    try:
-        dest_url = url_for('users.manage_users', _external=True)
-    except Exception:
-        html_body = body
-    else:
-        html_body = "{} {} has requested dashboard access. <a href='{}'>" \
-                    "Click here</a> to review and approve/reject the " \
-                    "request".format(first_name, last_name, dest_url)
-    send_email(subject, body, html_body=html_body)
-
-
-def account_activation_email(user):
-    if not user.email:
-        logger.error("Can't send account activation email to user {}. No "
-                     "email address available.".format(user.id))
-        return
-    subject = "QC Dashboard account activated"
-    body = "You can now log in to the QC dashboard using account {}. You " \
-           "can currently access {} studies. Access to additional studies " \
-           "can be requested by filling in the study request form found " \
-           "on your profile page after logging in.".format(user.username,
-                                                           len(user.studies))
-    send_email(subject, body, recipient=user.email)
-
-
-def account_rejection_email(user):
-    if not user.email:
-        logger.error("Can't send account request rejection email to user {}."
-                     "No email address available".format(user.id))
-        return
-    subject = "QC Dashboard account request rejected"
-    body = "An admin has reviewed your request for access to the QC " \
-           "dashboard and unfortunately it has been rejected. For any " \
-           "questions you may have please contact us " \
-           "at {}".format(current_app.config['DASH_SUPPORT'])
-    send_email(subject, body, recipient=user.email)
-
-
 def missing_redcap_email(session, study=None, dest_emails=None):
     subject = "Missing REDCap Survey"
     if study:
@@ -107,25 +57,3 @@ def missing_redcap_email(session, study=None, dest_emails=None):
            "survey has not been received. Please remember to fill out the " \
            "survey or let us know if this email is in error.".format(session)
     send_email(subject, body, recipient=dest_emails)
-
-
-def unsent_notification_email(user, type, unsent_body):
-    subject = "Unable to send '{}' notification to user {}".format(type, user)
-    body = "Failed to send email to user {} with body: " \
-           "\n\n {}".format(user.id, unsent_body)
-    send_email(subject, body)
-
-
-def qc_notification_email(user, study, current_tp, remain_tp=None):
-    subject = "{} - New scan, QC needed".format(study)
-    body = "Hi {}, you have been tagged as a QCer for {}".format(user, study)
-    body += "\n\nNew scan: {}".format(current_tp)
-
-    if remain_tp:
-        body += "\n\nScans still needing QC:\n"
-        body += "\n".join(remain_tp)
-
-    body += "\n\nIf you wrongly recieved this email, " \
-            "please contact staff at the Kimel Lab"
-
-    send_email(subject, body, recipient=user.email)
