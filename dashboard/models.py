@@ -1835,7 +1835,7 @@ class RedcapRecord(db.Model):
         self.url = url
         self.instrument = instrument
         self.date = date
-        self.version = version
+        self.redcap_version = version
 
     def __repr__(self):
         return "<RedcapRecord {}: record {} project {} url {}>".format(
