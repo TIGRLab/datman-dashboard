@@ -1,14 +1,12 @@
-dashboard/output.csv
-.gitignore
 .gitattributes
-*.pyc
 venv/
+*.pyc
 *.sqlite
 *.log
+
+# Dashboard specific
 logs/
-dashboard.ini
-dashboard.module
-dashboard_dev.module
-dashboard_env/
-test_run.py
-todo.txt
+dashboard/output.csv
+
+# Sphinx
+docs/_build
