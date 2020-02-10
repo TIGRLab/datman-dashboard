@@ -5,7 +5,7 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).parent.parent
 ENV = os.environ.get('FLASK_ENV')
-DEBUG = os.environ.get('FLASK_DEBUG') or (ENV and 1)
+DEBUG = bool(os.environ.get('FLASK_DEBUG') or (ENV and 1))
 
 
 def read_boolean(var_name, default=False):
