@@ -62,7 +62,7 @@ def get_software_version(json_contents):
     return software_name + " - " + software_version
 
 
-def schedule_email(email_func, input_args):
+def schedule_email(email_func, input_args, input_kwargs=None):
     """Send an email from the server side.
 
     If an automated email is fired from code that may be run on the client
@@ -79,4 +79,5 @@ def schedule_email(email_func, input_args):
         email_func(*input_args)
         return
     scheduler.add_job(uuid4().hex, email_func, trigger='date',
-                      run_date=datetime.now(), args=input_args)
+                      run_date=datetime.now(), args=input_args,
+                      kwargs=input_kwargs)

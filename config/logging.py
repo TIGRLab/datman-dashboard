@@ -8,6 +8,7 @@ from pathlib import Path
 from .utils import BASE_DIR, ENV, DEBUG
 from .email import (LOG_MAIL_SERVER, LOG_MAIL_PORT, LOG_MAIL_USER,
                     LOG_MAIL_PASS, ADMINS, SENDER)
+from .scheduler import SCHEDULER_ENABLED
 
 
 # Default log level to use for all dashboard logging
@@ -97,3 +98,9 @@ if DEBUG and ENV == 'development':
             'level': LOG_LEVEL,
         }
         LOGGING_CONFIG['loggers']['dashboard']['handlers'].append('log_file')
+
+if SCHEDULER_ENABLED:
+    LOGGING_CONFIG['loggers']['apscheduler'] = {
+        'level': LOG_LEVEL,
+        'handlers': LOGGING_CONFIG['loggers']['dashboard']['handlers']
+    }

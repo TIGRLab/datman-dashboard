@@ -85,6 +85,12 @@ def create_app(config=None):
     mail.init_app(app)
     scheduler.init_app(app)
     scheduler.start()
+    try:
+        scheduler._scheduler.app = app
+    except AttributeError:
+        # Unlike APScheduler, RemoteScheduler doesnt have _scheduler and
+        # doesnt need app access. Ignore it.
+        pass
 
     app.url_map.converters['regex'] = RegexConverter
 

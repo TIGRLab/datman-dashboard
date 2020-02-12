@@ -5,6 +5,7 @@ import os
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from flask_apscheduler.auth import HTTPBasicAuth
 
+from dashboard.task_scheduler import ContextThreadExecutor
 from .utils import read_boolean
 from .database import SQLALCHEMY_DATABASE_URI
 
@@ -18,9 +19,7 @@ SCHEDULER_JOB_DEFAULTS = {
 }
 
 SCHEDULER_EXECUTORS = {
-    'default':
-        {'type': 'threadpool',
-         'max_workers': 2}
+    'default': ContextThreadExecutor(2)
 }
 
 # Indicates whether to start the scheduler server. Should only be set if
