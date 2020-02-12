@@ -121,7 +121,7 @@ class User(UserMixin, db.Model):
     @property
     def username(self):
         try:
-            uname = self._username.split("_")[1]
+            uname = "_".join(self._username.split("_")[1:])
         except AttributeError:
             uname = ""
         return uname
@@ -408,7 +408,7 @@ class AccountRequest(db.Model):
             user = self.user
             utils.schedule_email(
                 account_activation_email,
-                [user.username, len(user.studies), user.email])
+                [user.username, user.email, len(user.studies)])
 
     def reject(self):
         try:
@@ -509,8 +509,9 @@ class Study(db.Model):
             not_qcd = [t.name for t in self.timepoints.all() if not
                        t.is_qcd()]
             [utils.schedule_email(qc_notification_email,
-                                  [str(u), self.id, timepoint.name, not_qcd])
-             for u in self.get_QCer()]
+                                  [str(u), u.email, self.id, timepoint.name,
+                                   not_qcd])
+             for u in self.get_QCers()]
 
         return timepoint
 
