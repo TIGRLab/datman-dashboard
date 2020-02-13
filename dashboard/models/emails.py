@@ -1,9 +1,14 @@
 """Email notifications sent from models.py
 
-Email functions used by models are likely to be submitted to the scheduler, and
+Email functions used by models are likely to be submitted to the scheduler and
 so special care should be taken to ensure their input arguments are always JSON
 serializable types (see here for info on serializable types:
 https://docs.python.org/3/library/json.html#json.JSONEncoder).
+
+Additionally, because these functions are needed within models.py, you can't
+query the database within an email function without risking circular
+import issues. Any info needed to generate the email should therefore be
+provided as an argument when the function is called.
 """
 
 import logging
@@ -77,18 +82,21 @@ def account_rejection_email(user_id, user_email):
     send_email(subject, body, recipient=user_email)
 
 
-def qc_notification_email(user, study, current_tp, remain_tp=None):
+def qc_notification_email(user_name, dest_email, study, current_tp,
+                          remain_tp=None):
     """Notify QCers that there is a new session to review.
 
     Args:
-        user (:obj:`str`): A user's real name.
+        user_name (:obj:`str`): A user's real name.
+        dest_email (:obj:`str`): Email address to contact.
         study (:obj:`str`): The name of the study that has received data.
         current_tp (:obj:`str`): The name of the timepoint that needs review.
         remain_tp (:obj:`list` of :obj:`str`): A list of names of timepoints
             from this study that are still awaiting quality control.
     """
     subject = "{} - New scan, QC needed".format(study)
-    body = "Hi {}, you have been tagged as a QCer for {}".format(user, study)
+    body = "Hi {}, you have been tagged as a QCer for {}".format(
+        user_name, study)
     body += "\n\nNew scan: {}".format(current_tp)
 
     if remain_tp:
@@ -98,4 +106,4 @@ def qc_notification_email(user, study, current_tp, remain_tp=None):
     body += "\n\nIf you wrongly recieved this email, " \
             "please contact staff at the Kimel Lab"
 
-    send_email(subject, body, recipient=user.email)
+    send_email(subject, body, recipient=dest_email)
