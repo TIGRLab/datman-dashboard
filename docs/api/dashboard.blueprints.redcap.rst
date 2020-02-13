@@ -1,8 +1,17 @@
+***********************************
 dashboard.blueprints.redcap package
-===================================
+***********************************
+
+Module contents
+===============
+
+.. automodule:: dashboard.blueprints.redcap
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 Submodules
-----------
+==========
 
 dashboard.blueprints.redcap.emails module
 -----------------------------------------
@@ -32,15 +41,6 @@ dashboard.blueprints.redcap.views module
 ----------------------------------------
 
 .. automodule:: dashboard.blueprints.redcap.views
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-Module contents
----------------
-
-.. automodule:: dashboard.blueprints.redcap
    :members:
    :undoc-members:
    :show-inheritance:

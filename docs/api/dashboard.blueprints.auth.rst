@@ -1,8 +1,18 @@
+*********************************
 dashboard.blueprints.auth package
-=================================
+*********************************
+
+Module contents
+===============
+
+.. automodule:: dashboard.blueprints.auth
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 
 Submodules
-----------
+==========
 
 dashboard.blueprints.auth.oauth module
 --------------------------------------
@@ -16,15 +26,6 @@ dashboard.blueprints.auth.views module
 --------------------------------------
 
 .. automodule:: dashboard.blueprints.auth.views
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-Module contents
----------------
-
-.. automodule:: dashboard.blueprints.auth
    :members:
    :undoc-members:
    :show-inheritance:

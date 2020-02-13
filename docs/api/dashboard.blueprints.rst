@@ -1,5 +1,14 @@
-dashboard.blueprints package
-============================
+Blueprints
+==========
+
+Module contents
+---------------
+
+.. automodule:: dashboard.blueprints
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 
 Subpackages
 -----------
@@ -13,11 +22,3 @@ Subpackages
    dashboard.blueprints.scans
    dashboard.blueprints.timepoints
    dashboard.blueprints.users
-
-Module contents
----------------
-
-.. automodule:: dashboard.blueprints
-   :members:
-   :undoc-members:
-   :show-inheritance:

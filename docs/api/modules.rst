@@ -1,5 +1,5 @@
-API
-=========
+Dashboard API
+=============
 
 .. toctree::
    :maxdepth: 4

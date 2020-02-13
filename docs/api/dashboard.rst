@@ -1,16 +1,13 @@
-dashboard package
-=================
+Module contents
+===============
 
-Subpackages
------------
-
-.. toctree::
-
-   dashboard.blueprints
-   dashboard.models
+.. automodule:: dashboard
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 Submodules
-----------
+==========
 
 dashboard.datman\_utils module
 ------------------------------
@@ -76,11 +73,10 @@ dashboard.utils module
    :undoc-members:
    :show-inheritance:
 
+Subpackages
+===========
 
-Module contents
----------------
+.. toctree::
 
-.. automodule:: dashboard
-   :members:
-   :undoc-members:
-   :show-inheritance:
+  dashboard.blueprints
+  dashboard.models

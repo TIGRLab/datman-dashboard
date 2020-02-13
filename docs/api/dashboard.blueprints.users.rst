@@ -1,8 +1,17 @@
+**********************************
 dashboard.blueprints.users package
-==================================
+**********************************
+
+Module contents
+===============
+
+.. automodule:: dashboard.blueprints.users
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 Submodules
-----------
+==========
 
 dashboard.blueprints.users.forms module
 ---------------------------------------
@@ -24,15 +33,6 @@ dashboard.blueprints.users.views module
 ---------------------------------------
 
 .. automodule:: dashboard.blueprints.users.views
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-Module contents
----------------
-
-.. automodule:: dashboard.blueprints.users
    :members:
    :undoc-members:
    :show-inheritance:

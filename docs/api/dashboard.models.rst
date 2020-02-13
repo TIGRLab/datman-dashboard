@@ -1,8 +1,18 @@
-dashboard.models package
-========================
+******
+Models
+******
+
+Module contents
+===============
+
+.. automodule:: dashboard.models
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 
 Submodules
-----------
+==========
 
 dashboard.models.emails module
 ------------------------------
@@ -24,15 +34,6 @@ dashboard.models.utils module
 -----------------------------
 
 .. automodule:: dashboard.models.utils
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-Module contents
----------------
-
-.. automodule:: dashboard.models
    :members:
    :undoc-members:
    :show-inheritance:

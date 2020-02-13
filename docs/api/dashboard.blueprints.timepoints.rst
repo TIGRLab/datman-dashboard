@@ -1,8 +1,17 @@
+***************************************
 dashboard.blueprints.timepoints package
-=======================================
+***************************************
+
+Module contents
+===============
+
+.. automodule:: dashboard.blueprints.timepoints
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 Submodules
-----------
+==========
 
 dashboard.blueprints.timepoints.emails module
 ---------------------------------------------
@@ -32,15 +41,6 @@ dashboard.blueprints.timepoints.views module
 --------------------------------------------
 
 .. automodule:: dashboard.blueprints.timepoints.views
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-Module contents
----------------
-
-.. automodule:: dashboard.blueprints.timepoints
    :members:
    :undoc-members:
    :show-inheritance:

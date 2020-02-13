@@ -1,8 +1,9 @@
+**********************************
 dashboard.blueprints.scans package
-==================================
+**********************************
 
 Submodules
-----------
+==========
 
 dashboard.blueprints.scans.forms module
 ---------------------------------------
@@ -30,7 +31,7 @@ dashboard.blueprints.scans.views module
 
 
 Module contents
----------------
+===============
 
 .. automodule:: dashboard.blueprints.scans
    :members:
