@@ -1,17 +1,23 @@
 #!/usr/bin/env python
-"""Utility functions for adding and managing scheduled jobs.
+"""Add and run scheduled jobs.
 
-This script contains a collection of functions that can be used to run
-scheduled jobs on the dashboard's server. Each scheduled job requires two
-pieces:
+Each scheduled job requires two pieces:
     1) A 'check' function that will run at the scheduled time and that does
        the actual work.
     2) A 'monitor' function that packages up the check function, any arguments
        it needs, and a date/time and submits it to the server.
 
-NOTE: If a monitor is used by a view function in a blueprint it should be
-put in a 'monitors' file inside the blueprint rather than here.
-"""
+Database queries can be made from within the check function to reduce the
+number of arguments that must be passed. Remember also to use the check
+function to verify that the scheduled task still makes sense to run at the
+time it is executed. i.e. make sure data hasn't been deleted, notifications are
+still relevant, etc.
+
+.. warning:: Any inputs submitted to the scheduler must be
+    `JSON serializable. <https://docs.python.org/3/library/json.html#json.JSONEncoder>`_
+    Check functions, therefore, must only accept these types as input.
+
+"""  # noqa: E501
 import logging
 from uuid import uuid4
 from datetime import datetime, timedelta
@@ -36,9 +42,9 @@ def add_monitor(check_function,
     Args:
         check_function (:obj:`function`): The function that will run at the
             scheduled day and time.
-        input_args (Any): Arguments to feed in to check_function at runtime
-        input_kwargs (Any, optional): Optional args to feed in to
-            check_function at runtime.
+        input_args (Any): Arguments to pass to check_function at runtime
+        input_kwargs (Any, optional): Optional args to pass to check_function
+            at runtime.
         job_id (:obj:`str`, optional): A unique identifier for the job
         days (int, optional): Number of days to add to the current time when
             setting the run date.
@@ -100,11 +106,11 @@ def get_emails(users):
 
 
 def monitor_redcap_import(name, num, users=None, study=None):
-    """Add a scheduled job to run :obj:`check_redcap`.
+    """Add a scheduled job to run :py:func:`check_redcap`.
 
     This adds a scheduled job that will run :obj:`check_redcap` two days
-    after job submission and notify either the given list of users or staff
-    contacts and RAs if a redcap record is not found at that time.
+    after job submission and notify either the given list of users or all staff
+    contacts and study RAs if a redcap record has not found at that time.
 
     Args:
         name (:obj:`str`): A session name
@@ -112,7 +118,7 @@ def monitor_redcap_import(name, num, users=None, study=None):
         users (:obj:`list` of :obj:`dashboard.models.User`, optional):
             A list of users to notify
         study (:obj:`dashboard.models.Study`, optional): The study to monitor
-            if the session exists in more than one.
+            if the session belongs to more than one.
 
     Raises:
         :obj:`dashboard.exceptions.MonitorException`: If the 'users' argument

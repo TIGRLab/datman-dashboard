@@ -1,11 +1,9 @@
-"""
-Web forms used in the flask app are defined here.
+"""Web forms used by the dashboard.
 
-Forms are defined using the WTForms api via Flask-WTForms extension.
-(https://wtforms.readthedocs.io/en/latest/)
-
-This allows us to create HTML forms in python without having to worry about
-the html code or CSRF vulnerabilities
+Forms are defined using the
+` Flask-WTForms <https://wtforms.readthedocs.io/en/latest/>`_ extension. This
+allows us to create HTML forms in python without having to worry writing HTML
+or avoiding CSRF vulnerabilities.
 """
 
 from flask_wtf import FlaskForm
@@ -15,6 +13,10 @@ from wtforms.validators import DataRequired
 
 
 class SelectMetricsForm(FlaskForm):
+    """Choose metrics from the database.
+
+    This form needs to be updated when we fix our QC metric integrations.
+    """
     study_vals = []
     site_vals = []
     session_vals = []
@@ -36,11 +38,17 @@ class SelectMetricsForm(FlaskForm):
 
 
 class StudyOverviewForm(FlaskForm):
+    """Make edits to a study's README form.
+    """
     readme_txt = TextAreaField('README', id='readme_editor')
     study_id = HiddenField()
 
 
 class AnalysisForm(FlaskForm):
+    """Add a new analysis to the dashboard.
+
+    This feature has not yet been fully implemented.
+    """
     name = TextField('Brief name', validators=[DataRequired()])
     description = TextAreaField('Description', validators=[DataRequired()])
     software = TextAreaField('Software')

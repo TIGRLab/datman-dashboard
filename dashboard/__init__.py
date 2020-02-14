@@ -84,7 +84,7 @@ def connect_db():
     operate inside of an
     `application context. <https://flask.palletsprojects.com/en/1.1.x/appcontext/>`_
     This function can be called to push the context.
-    """
+    """  # noqa: E501
     app = create_app()
     context = app.app_context()
     context.push()
