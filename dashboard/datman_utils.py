@@ -1,4 +1,4 @@
-"""Any dashboard code that needs datman.config should go here
+"""Dashboard functionality that requires datman's config module.
 
 Some parts of the dashboard need datman.config to locate things on the file
 system but datman.config uses the dashboard's models. So to help prevent
@@ -7,7 +7,12 @@ datman.config related code here.
 
 This can safely be imported elsewhere but no dashboard related imports should
 ever appear here
+
+.. note:: This currently does not import correctly outside of an app context.
+One consequence of this is that sphinx's automodule can't add it to the docs.
+We have to solve the datman.config circular reference issues to fix this. :(
 """
+
 import os
 import shutil
 import glob
