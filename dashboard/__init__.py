@@ -1,3 +1,6 @@
+"""Setup and initialization for the QC Dashboard.
+"""
+
 import os
 import logging.config
 
@@ -31,25 +34,56 @@ if SCHEDULER_API_ENABLED:
     # available for clients, set up authentication here
     @scheduler.authenticate
     def authenticate(auth):
+        """Set authentication credentials for the scheduler server.
+
+        All client schedulers must authenticate with a username and password
+        that matches the ones provided.
+
+        Args:
+            auth (:obj:`dict`): A dictionary containing the keys 'username' and
+                'password'. Clients wishing to use the API must match the two
+                values provided.
+
+        Returns:
+            bool: True if user provided matching credentials, False otherwise.
+        """
         return (auth['username'] == SCHEDULER_USER
                 and auth['password'] == SCHEDULER_PASS)
 
 
 class RegexConverter(BaseConverter):
-    # This adds a 'regex' type for app routes.
-    # See: https://stackoverflow.com/questions/5870188/does-flask-support-regular-expressions-in-its-url-routing  # noqa: E501
+    """A 'regex' type for URL routes.
+
+    For whatever reason Flask (as of this writing) does not appear to have a
+    built-in way to allow regular expressions in URL routes. RegexConverter
+    adds this capability. For more info see
+    `this post. <https://stackoverflow.com/questions/5870188/does-flask-support-regular-expressions-in-its-url-routing>`_
+
+    Example:
+        .. code-block:: python
+
+            @app.route('/someroute/<regex("*.png"):varname>')
+            def some_view(varname):
+                ...
+
+        This would add a URL endpoint for the pattern ``/someroute/*.png``. The
+        part of the URL that matches the regex will be passed in to the view
+        without the prefix. e.g. accessing the URL '/someroute/my_picture.png'
+        would set varname to 'my_picture.png'
+    """  # noqa: E501
+
     def __init__(self, url_map, *items):
         super(RegexConverter, self).__init__(url_map)
         self.regex = items[0]
 
 
 def connect_db():
-    """Allows access to the database models outside of the flask application
+    """Push an application context to allow external access to database models.
 
-    If importing the dashboard app (i.e. not starting the server properly) this
-    function should be called once before attempting to use anything from the
-    models otherwise you'll get an exception about working outside of an
-    app context
+    Anything that uses a flask extension, or accesses the app config, needs to
+    operate inside of an
+    `application context. <https://flask.palletsprojects.com/en/1.1.x/appcontext/>`_
+    This function can be called to push the context.
     """
     app = create_app()
     context = app.app_context()
@@ -58,7 +92,7 @@ def connect_db():
 
 
 def setup_devel_ext(app):
-    """This sets up any development extensions that may be needed
+    """Set up extensions only used within development environments.
     """
     try:
         from flask_debugtoolbar import DebugToolbarExtension
@@ -72,6 +106,11 @@ def setup_devel_ext(app):
 
 
 def create_app(config=None):
+    """Generate an application instance from the given configuration.
+
+    This will load the application configuration, initialize all extensions,
+    and register all blueprints.
+    """
     app = Flask(__name__)
 
     if config is None:

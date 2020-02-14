@@ -1,24 +1,27 @@
 class InvalidDataException(Exception):
-    """
-    Default exception when user tries to insert something obviously wrong.
+    """An exception for attempts to add incorrect data to the database.
     """
 
 
 class RedcapException(Exception):
-    """Generic error for recap interface"""
+    """An exception for REDCap interface issues.
+    """
 
 
 class MonitorException(Exception):
+    """An exception for scheduled jobs that have encountered problems.
+    """
     pass
 
 
 class SchedulerException(Exception):
+    """An exception for problems while interacting with the scheduler.
+    """
     pass
 
 
 class InvalidUsage(Exception):
-    """
-    Generic exception for API
+    """An exception for incorrect usage of the URL endpoints.
     """
     status_code = 400
 
@@ -33,7 +36,3 @@ class InvalidUsage(Exception):
         rv = dict(self.payload or ())
         rv['message'] = self.message
         return rv
-
-
-class TimeoutError(Exception):
-    pass
