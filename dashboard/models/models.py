@@ -1192,21 +1192,20 @@ class Session(db.Model):
                 name, e.message)
             raise e
 
-    def add_redcap(self,
-                   record_num,
-                   project,
-                   url,
-                   instrument,
-                   date,
-                   version,
-                   rc_user=None,
-                   comment=None,
-                   event_id=None):
-        if self.redcap_record and self.redcap_record.record is not None:
+    def add_redcap(self, record_num, project, url, instrument, date,
+                   version=None, rc_user=None, comment=None, event_id=None):
+        if self.redcap_record:
             rc_record = self.redcap_record.record
-            if (rc_record.record != record_num
-                    or str(rc_record.project) != project
-                    or str(rc_record.url) != str(url)):
+            if rc_record is None:
+                raise InvalidDataException(
+                    "{} has been manually marked as not expecting a Redcap "
+                    "record. Failed to add record ({}, {}, {}, {}, {})".format(
+                        self, record_num, project, url, instrument, date))
+            if (str(rc_record.record) != str(record_num)
+                    or str(rc_record.project) != str(project)
+                    or str(rc_record.url) != str(url)
+                    or str(rc_record.instrument) != str(instrument)
+                    or str(rc_record.date) != str(date)):
                 raise InvalidDataException("Existing record already found. "
                                            "Please remove the old record "
                                            "before adding a new one.")
@@ -1216,14 +1215,9 @@ class Session(db.Model):
             db.session.add(rc_record)
             # Flush to get an ID assigned
             db.session.flush()
-            if self.redcap_record:
-                logger.error("Found redcap record for {} after it was marked "
-                             "as not expecting a record. Adding "
-                             "record.".format(self))
-                self.redcap_record.record = rc_record
-            else:
-                self.redcap_record = SessionRedcap(self.name, self.num,
-                                                   rc_record.id)
+
+            self.redcap_record = SessionRedcap(
+                self.name, self.num, rc_record.id)
             self.save()
 
         if rc_user:
@@ -1232,6 +1226,7 @@ class Session(db.Model):
             rc_record.comment = comment
         if event_id:
             rc_record.event_id = event_id
+
         try:
             self.save()
         except IntegrityError as e:
@@ -1818,7 +1813,7 @@ class RedcapRecord(db.Model):
         self.url = url
         self.instrument = instrument
         self.date = date
-        self.version = version
+        self.redcap_version = version
 
     def __repr__(self):
         return "<RedcapRecord {}: record {} project {} url {}>".format(
