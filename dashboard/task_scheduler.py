@@ -125,7 +125,7 @@ class RemoteScheduler(object):
 
     def start(self):
         # This is here to allow delayed initialization
-        return
+        return self
 
     def __repr__(self):
         return "<RemoteScheduler for {}>".format(self.url)

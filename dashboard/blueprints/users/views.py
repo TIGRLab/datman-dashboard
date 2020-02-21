@@ -11,8 +11,8 @@ from ...utils import report_form_errors, dashboard_admin_required
 
 
 @lm.user_loader
-def load_user(id):
-    return User.query.get(int(id))
+def load_user(uid):
+    return User.query.get(int(uid))
 
 
 @user_bp.before_app_request

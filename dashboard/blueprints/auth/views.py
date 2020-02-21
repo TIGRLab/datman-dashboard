@@ -6,6 +6,7 @@ from . import auth_bp
 from .oauth import OAuthSignIn
 from ...models import User
 from ...utils import is_safe_url
+from ...exceptions import InvalidUsage
 
 
 @auth_bp.route('/authorize/<provider>')
@@ -25,7 +26,7 @@ def oauth_callback(provider):
         dest_page = flask_session['next_url']
         del flask_session['next_url']
         if not is_safe_url(dest_page):
-            raise
+            raise InvalidUsage
     except Exception:
         dest_page = url_for('main.index')
 

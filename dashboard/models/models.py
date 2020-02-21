@@ -508,10 +508,10 @@ class Study(db.Model):
         if self.email_qc:
             not_qcd = [t.name for t in self.timepoints.all() if not
                        t.is_qcd()]
-            [utils.schedule_email(qc_notification_email,
-                                  [str(u), u.email, self.id, timepoint.name,
-                                   not_qcd])
-             for u in self.get_QCers()]
+            _ = [utils.schedule_email(qc_notification_email,
+                                      [str(u), u.email, self.id,
+                                       timepoint.name, not_qcd])
+                 for u in self.get_QCers()]
 
         return timepoint
 
