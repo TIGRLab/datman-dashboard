@@ -239,7 +239,7 @@ def dismiss_missing(study_id, timepoint_id, session_num):
     if form.validate_on_submit():
         timepoint.ignore_missing_scans(session_num, current_user.id,
                                        form.comment.data)
-        flash("Succesfully updated.")
+        flash("Successfully updated.")
 
     return redirect(dest_URL)
 

@@ -156,8 +156,8 @@ def delete_bids(config, subject, session, scan=None):
     sub_dirs.append(subject_folder)
     sub_dirs.append(session_folder)
     for path, dirs, files in os.walk(session_folder):
-        for dir in dirs:
-            sub_dirs.append(os.path.join(path, dir))
+        for sub_dir in dirs:
+            sub_dirs.append(os.path.join(path, sub_dir))
 
         for item in files:
             if bids_file == item:
@@ -165,9 +165,9 @@ def delete_bids(config, subject, session, scan=None):
                 os.remove(full_path)
 
     # Clean up any folders that may now be empty
-    for dir in reversed(sub_dirs):
+    for sub_dir in reversed(sub_dirs):
         try:
-            os.rmdir(dir)
+            os.rmdir(sub_dir)
         except OSError:
             pass
 
