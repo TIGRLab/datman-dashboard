@@ -867,6 +867,7 @@ class Timepoint(db.Model):
     name = db.Column('name', db.String(64), primary_key=True)
     bids_name = db.Column('bids_name', db.Text)
     bids_session = db.Column('bids_sess', db.String(48))
+    kcni_name = db.Column('kcni_name', db.String(48))
     site_id = db.Column('site',
                         db.String(32),
                         db.ForeignKey('sites.name'),
@@ -1148,6 +1149,7 @@ class Session(db.Model):
                      primary_key=True)
     num = db.Column('num', db.Integer, primary_key=True)
     date = db.Column('date', db.DateTime)
+    kcni_name = db.Column('kcni_name', db.String(48))
     signed_off = db.Column('signed_off', db.Boolean, default=False)
     reviewer_id = db.Column('reviewer', db.Integer, db.ForeignKey('users.id'))
     review_date = db.Column('review_date', db.DateTime(timezone=True))

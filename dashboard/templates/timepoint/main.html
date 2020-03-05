@@ -11,6 +11,9 @@
         BIDS Subject: {{ timepoint.bids_name }}<br>
         BIDS Session: {{ timepoint.bids_session }}<br>
       {% endif %}
+      {% if timepoint.kcni_name %}
+        KCNI ID: {{ timepoint.kcni_name }}
+      {% endif %}
       {% if timepoint.is_phantom %}
         Phantom
       {% endif %}
