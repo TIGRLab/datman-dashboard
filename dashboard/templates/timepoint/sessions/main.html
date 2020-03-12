@@ -18,6 +18,11 @@
 {% endblock %}
 
 {% block body_content %}
+    {% if session.kcni_name %}
+    <span class="section-subheader">KCNI ID:</span>
+    <span class="pull-right">{{ session.kcni_name }}</span>
+    {% endif %}
+
     {% include 'timepoint/sessions/review_status.html' %}
 
     {% if session.task_files %}
