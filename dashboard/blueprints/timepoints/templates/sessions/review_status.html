@@ -1,0 +1,15 @@
+<div class="review-status">
+  <span class="section-subheader">Reviewer:</span>
+  {% if session.signed_off %}
+    <span class="pull-right">
+      {{ '{} - {}'.format(session.reviewer,
+          session.review_date.strftime('%I:%M %p, %Y-%m-%d')) }}
+    </span>
+  {% else %}
+    <a class="btn btn-primary pull-right" href="{{ url_for('timepoints.sign_off',
+        study_id=study_id, timepoint_id=session.name,
+        session_num=session.num) }}">
+      Sign Off <i class="fas fa-file-signature"></i>
+    </a>
+  {% endif %}
+</div>

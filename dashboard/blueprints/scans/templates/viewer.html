@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+  <body>
+    <script type="text/javascript">
+        var params = [];
+        params["worldSpace"] = true;
+        params["images"] = ["{{ url_for('scans.load_scan', study_id=study_id, scan_id=scan_id, file_name=nifti_name) }}"];
+        params["mainView"] = 'coronal';
+        params["interpolation"] = true;
+    </script>
+
+    <div class="papaya" data-params="params"></div>
+
+    <link rel="stylesheet" type="text/css" href="/static/css/papaya.css" />
+    <script type="text/javascript" src="/static/js/papaya.js"></script>
+  </body>
+</html>

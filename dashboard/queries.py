@@ -1,5 +1,4 @@
-"""
-Database queries used by the app
+"""Reusable database queries.
 """
 import logging
 
@@ -15,6 +14,24 @@ logger = logging.getLogger(__name__)
 
 
 def get_study(name=None, tag=None, site=None):
+    """Retrieve a study from the database.
+
+    Requires enough information to uniquely identify a match in the database,
+    if one exists. This means either a 'name' or a 'tag' / 'site' pair.
+
+    Args:
+        name (str, optional): A short-form study name (e.g. 'SPINS'). Defaults
+            to None.
+        tag (str, optional): The session study ID tag (i.e. the code used for
+            the first field of datman style IDs). This may be the same as
+            'name' in some cases. Defaults to None.
+        site (str, optional): A session site ID tag (i.e. the code used to
+            identify scan site). Defaults to None.
+
+    Returns:
+        :obj:`list`: a list of :obj:`dashboard.models.Study` objects that match
+            the given values or the empty list.
+    """
     if name:
         return Study.query.filter(Study.id == name).all()
     studies = StudySite.query.filter(StudySite.code == tag)

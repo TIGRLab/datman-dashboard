@@ -1,0 +1,147 @@
+<div class="jumbotron">
+  <h1>{{ scan.name }}</h1>
+  <p class="lead">
+    {% if scan.bids_name %}
+      BIDS: {{ scan.bids_name }}<br>
+    {% endif %}
+    {% if scan.session.is_phantom %}
+      Phantom Data
+    {% else %}
+      Human Data
+    {% endif %}
+  </p>
+</div>
+
+<div class="col-sm-3">
+  <a href="{{ url_for('timepoints.timepoint', study_id=study_id, timepoint_id=scan.timepoint) }}"
+      class="btn btn-primary">
+    <span class="glyphicon glyphicon-arrow-left"></span>
+    <span class="button-text">{{ scan.timepoint }}</span>
+  </a>
+</div>
+<div class="col-sm-9">
+  {% if scan.is_new() %}
+    <div class="pull-right" role="group">
+      <a href="{{ url_for('scans.scan_review', study_id=study_id, scan_id=scan.id, sign_off=True) }}"
+          class="button btn btn-success">
+        <span class="fas fa-check-circle"></span> Sign Off
+      </a>
+      <a id="flag-scan" href="#add_review_modal" data-toggle="modal"
+          class="button btn btn-warning">
+        <span class="fas fa-exclamation-triangle"></span> Flag
+      </a>
+      <a id="blacklist-scan" href="#add_review_modal" data-toggle="modal"
+          class="button btn btn-danger">
+        <span class="fas fa-ban"></span> Blacklist
+      </a>
+    </div>
+  {% else %}
+    <div class="row">
+      <div class="col-xs-9">
+        {% if scan.blacklisted() or scan.flagged() %}
+          <span id="comment-container" class="well">
+            <span id="scan-qc-comment">
+                  {{ scan.get_comment() }}
+            </span>
+          </span>
+          <a id="update-comment" class="text-muted pull-right"
+              href="#add_review_modal" data-toggle="modal">
+            View
+          </a>
+        {% endif %}
+      </div>
+      <div class="col-xs-3">
+        <div class="pull-right" id="qc-badge">
+          {% if scan.signed_off() %}
+            <span id="scan-qc-status" class="approved">
+              <span class="far fa-check-circle"></span> Reviewed
+            </span>
+          {% elif scan.flagged() %}
+            <span id="scan-qc-status" class="flagged">
+              <span class="fas fa-exclamation-triangle"></span> Flagged
+            </span>
+          {% elif scan.blacklisted() %}
+            <span id="scan-qc-status" class="blacklisted">
+              <span class="fas fa-ban"></span> Blacklisted
+            </span>
+          {% endif %}
+          <div id="scan-qc-signature" class="text-muted">
+            {{ scan.get_checklist_entry().user }} at {{ scan.get_checklist_entry().timestamp }}
+          </div>
+        </div>
+        <a class="text-muted pull-right"
+            href="{{ url_for('scans.scan_review', study_id=study_id, scan_id=scan.id, delete=True) }}">
+          Remove Entry
+        </a>
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+
+<div id="add_review_modal" class="modal fade" role="dialog">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">
+          <i class="fas fa-times"></i>
+        </button>
+        <h4>Add comment</h4>
+      </div>
+      <div class="modal-body">
+        <form action="#" method="post" name="scan-comment" class="form"
+            id="scan-comment-form">
+          {% if scan.is_linked() %}
+            <strong style="color: red;">WARNING: </strong>This scan is a link.
+            Any changes will also affect source scan <br>{{ scan.source_data }}<br><br>
+          {% elif scan.links %}
+            <strong style="color: red;">WARNING: </strong>This scan is linked
+            under other names. Any changes will also affect <br>{{ '<br>'.join(scan.list_children()) }}<br><br>
+          {% endif %}
+          {{ checklist_form.hidden_tag() }}
+          {{ checklist_form.comment() }}
+          <div>
+            {{ checklist_form.submit(class_="btn btn-primary") }}
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary"
+            data-dismiss="modal">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Clamp lets us vertically truncate text and end it with an ellipsis if it's
+ too long. Source: https://github.com/jmenglis/clamp-js-main -->
+<script src="/static/js/clamp.js"></script>
+<script type="text/javascript">
+
+var comment = $("#scan-qc-comment")[0];
+if (comment) {
+  comment.textContent = comment.textContent.trim();
+  var orig_text = comment.textContent;
+  $clamp(comment, {clamp: 'auto'});
+  $(window).resize(function() {
+    comment.textContent = orig_text;
+    $clamp(comment, {clamp: 'auto'});
+  });
+}
+
+$("#flag-scan").on("click", function() {
+  $("#scan-comment-form").attr("action", "{{ url_for('scans.scan_review', study_id=study_id, scan_id=scan.id, sign_off=True) }}");
+});
+
+$("#blacklist-scan").on("click", function() {
+  $("#scan-comment-form").attr("action", "{{ url_for('scans.scan_review', study_id=study_id, scan_id=scan.id) }}");
+});
+
+$("#update-comment").on("click", function() {
+  $("#scan-comment-form").attr("action", "{{ url_for('scans.scan_review', study_id=study_id, scan_id=scan.id, update=True) }}");
+});
+
+</script>

@@ -43,7 +43,7 @@ Most of the html in the divs is extracted into a snippet file and rendered
         <div class="panel-body collapse in" id="qclist">
           <table class="table table-striped table-hover table-condensed">
             {% for timepoint in pending_qc | sort %}
-              <tr class="clickable-row" data-href="{{ url_for('timepoint', study_id=study.id, timepoint_id=timepoint) }}">
+              <tr class="clickable-row" data-href="{{ url_for('timepoints.timepoint', study_id=study.id, timepoint_id=timepoint) }}">
                 <td class="col-xs-2">{{ timepoint }}</td>
                   {% for column in pending_qc[timepoint] %}
                     {{ column|safe }}
@@ -65,7 +65,7 @@ Most of the html in the divs is extracted into a snippet file and rendered
           <ul class="dropdown-menu scrollable-menu study-menu">
             {% for study in current_user.get_studies() %}
               <li>
-                <a href="{{ url_for('study', study_id=study.id) }}">
+                <a href="{{ url_for('main.study', study_id=study.id) }}">
                   {{ study.id }}
                 </a>
               </li>
@@ -78,28 +78,16 @@ Most of the html in the divs is extracted into a snippet file and rendered
         <li role="presentation">
           <a data-toggle="tab" href="#sessions">Session List</a>
         </li>
-        <li role="presentation">
-          <a data-toggle="tab" href="#phantoms">Phantom Plots</a>
-        </li>
-        <li role="presentation">
-          <a data-toggle="tab" href="#humans">Subject Plots</a>
-        </li>
       </ul>
     </div>
 
     <!-- The tab content -->
     <div class="tab-content">
       <div class="tab-pane active" id="overview">
-        {% include 'study_overview_snip.html' %}
+        {% include 'snips/study_overview.html' %}
       </div>
       <div class="tab-pane" id="sessions">
-        {% include 'timepoint_list_snip.html' %}
-      </div>
-      <div class="tab-pane" id="phantoms">
-        {% include 'metric_selections_phantom_snip.html' %}
-      </div>
-      <div class="tab-pane" id="humans">
-        {% include 'metric_selections_human_snip.html' %}
+        {% include 'snips/study_timepoints.html' %}
       </div>
     </div>
   </div>

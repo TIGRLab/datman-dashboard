@@ -1,0 +1,107 @@
+{% extends 'collapsible_section.html' %}
+
+{% block section_id %}comment-section{% endblock %}
+{% block body_id %}comment-list{% endblock %}
+{% block section_header %}Comments{% endblock %}
+
+{% block body_content %}
+{% for comment in timepoint.comments %}
+  <div class="row">
+    <div class="col-xs-2">
+      {% if comment.user.picture %}
+        <div class="thumbnail">
+          <img src="{{ comment.user.picture }}">
+        </div>
+      {% endif %}
+    </div>
+    <div class="col-xs-10">
+      <div class="panel panel-default comment-display">
+        <div class="panel-heading">
+          <span class="comment-creator">
+            <strong>{{ comment.user }}</strong>
+            <span class="text-muted">
+              commented at {{ comment.timestamp }}
+              {% if comment.modified %}
+                *EDITED
+              {% endif %}
+            </span>
+          </span>
+          <span class="btn-group pull-right">
+            {% if current_user.id == comment.user_id %}
+              <a type="button" class="btn btn-primary edit-comment"
+                  id="{{ comment.id }}">
+                Edit
+              </a>
+            {% endif %}
+            {% if current_user.dashboard_admin %}
+              <a type="button" class="btn btn-primary"
+                  href="{{ url_for('timepoints.delete_comment', study_id=study_id,
+                      timepoint_id=timepoint.name, comment_id=comment.id) }}">
+                Delete
+              </a>
+            {% endif %}
+          </span>
+        </div>
+        <div class="panel-body comment-body" id="{{ comment.id }}-text">
+          {{ comment.comment }}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endfor %}
+<form action="{{ url_for('timepoints.add_comment', study_id=study_id,
+    timepoint_id=timepoint.name) }}" method="post"
+    name="comment-form" class="form" id="new-comment">
+    {{ timepoint_comments_form.hidden_tag() }}
+    {{ timepoint_comments_form.comment(class_="timepoint-comment") }}
+    {{ timepoint_comments_form.submit(class_="btn btn-primary pull-right") }}
+</form>
+
+<script type="text/javascript">
+  // Holds the edited comment's text between button clicks
+  var oldText;
+  // Holds most recently edited comment's ID
+  var id;
+
+  $('.edit-comment').on('click.edit', edit);
+
+  // Logic for Edit button
+  function edit() {
+    if (id) {
+      // if unfinished editing exists elsewhere, cancel it first
+      cancel();
+    }
+
+    var timepointURL = "{{ url_for('timepoints.add_comment', study_id=study_id, timepoint_id=timepoint.name) }}";
+    id = this.getAttribute('id');
+    var dest =  timepointURL + "/" + id;
+    var formHTML = '<form action="' + dest + '" method="post" ' +
+        'name="comment-form" class="form" id="edit-comment">' +
+        '{{ timepoint_comments_form.hidden_tag() }}' +
+        '{{ timepoint_comments_form.comment(class_="timepoint-comment")}}' +
+        '{{ timepoint_comments_form.submit(class_="btn btn-primary pull-right")}}' +
+        '</form>';
+
+    var commentBody = $("#" + id + "-text");
+    oldText = commentBody.text().trim();
+
+    var editButton = $("#" + id);
+    editButton.text("Cancel");
+    editButton.off("click.edit");
+    editButton.on('click.cancel', cancel);
+    commentBody.html(formHTML);
+    $("#edit-comment > .timepoint-comment").text(oldText);
+  };
+
+  // Logic for Cancel button (to stop editing)
+  function cancel() {
+    var cancelButton = $("#" + id);
+    cancelButton.text("Edit");
+    cancelButton.off("click.cancel");
+    cancelButton.on('click.edit', edit);
+    $("#edit-comment").remove();
+    $("#" + id + "-text").text(oldText);
+  };
+</script>
+
+{% endblock %}

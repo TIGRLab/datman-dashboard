@@ -1,0 +1,58 @@
+<!-- Overview for a single scan -->
+{% extends 'base.html' %}
+{% include 'flash.html' %}
+{% block content %}
+
+<div class="fluid-container">
+    <div class="row">
+      <div class="col-md-8 col-md-offset-2">
+        {% include 'snips/header.html' %}
+      </div>
+    </div>
+    {% if scan.conv_errors %}
+      {% include 'snips/dcm2niix_details.html' %}
+    {% endif %}
+    {% set diffs = scan.get_header_diffs() %}
+    {% if diffs != {} %}
+      <div class="row" style="margin-top: 20px;">
+        <div class="col-md-8 col-md-offset-2">
+          {% include 'snips/header_diffs.html' %}
+        </div>
+      </div>
+    {% endif %}
+    <div class="row">
+      <div class="col-md-2">
+        {% if not scan.tag in ['T1','T2'] %}
+            {% include 'snips/papaya_nav.html' %}
+        {% endif %}
+      </div>
+      <div class="col-md-8">
+        <div class="embed-responsive embed-responsive-4by3">
+            <!-- The viewer is in an iframe to stop every little page change from
+            breaking papaya's UI -_- -->
+            <iframe id="viewer" class="embed-responsive-item"
+                src="{{ url_for('scans.papaya', study_id=study_id, scan_id=scan.id) }}">
+            </iframe>
+          </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+  // This is needed to fix a firefox issue which
+  // causes iframes to become blank on page reload
+  $(document).ready(function() {
+    var iframe = document.getElementById("viewer");
+    iframe.parentNode.replaceChild(iframe.cloneNode(), iframe);
+  });
+  // Give focus to the iframe when mouse is over it so papaya keybindings
+  // still work
+  $("#viewer").mouseover(function() {
+    this.focus();
+  });
+  $("#viewer").mouseout(function() {
+    window.focus();
+  });
+</script>
+
+{% endblock %}

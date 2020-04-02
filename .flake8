@@ -9,8 +9,11 @@ exclude =
     docs
     __pycache__
 per-file-ignores =
-    # Many imports from config.py are used elsewhere in the dashboard. Dont delete them.
-    dashboard/__init__.py:F401
+    # Views always need to be imported to build the url map, even if they're
+    # not explicitly used anywhere. And they always need to be imported at the
+    # bottom to avoid circular references. So always ignore this in init files
+    __init__.py:F401,E402
     # SQLAlchemy requires != and == be used when comparing to None and
     # Booleans so ignore these warnings in models and other query heavy modules
-    dashboard/models.py:E711,E712
+    dashboard/models/*.py:E711,E712
+    config/__init__.py:F403,F401

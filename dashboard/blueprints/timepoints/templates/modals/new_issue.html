@@ -1,0 +1,62 @@
+<div id="issue-modal" class="modal fade" role="dialog">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">
+          <i class="fas fa-times"></i>
+        </button>
+        <h4>Open New Issue</h4>
+      </div>
+      <div class="modal-body">
+        <p>
+          A github issue will be opened for <strong>{{ timepoint.name }}</strong>.
+          Please add a descriptive title and add as much detail as possible to
+          the body to help with investigating and resolving the problem.
+        </p>
+        <br>
+        <br>
+        <p>
+          <strong>NOTE:</strong> You may have to refresh the participant's page
+          before your new issue appears.
+        </p>
+        <br>
+        <br>
+        <form action="{{ url_for('timepoints.create_issue', study_id=study_id,
+            timepoint_id=timepoint.name)}}" method="post" name="add-issue"
+            class="form">
+          {{ issue_form.hidden_tag() }}
+          <div>
+            {{ issue_form.title.label() }} {{ issue_form.title }}
+          </div>
+          <div>
+            {{ issue_form.body.label() }}{{ issue_form.body }}
+          </div>
+            {{ issue_form.submit(class_="btn btn-primary") }}
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-dismiss="modal">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="text/javascript">
+
+$('#issue-modal').on('shown.bs.modal', function() {
+  var title_input = $('#title');
+  // Set the cursor to the end of the title text and set focus when the modal opens
+  title_input[0].selectionStart = title_input[0].selectionEnd = title_input[0].value.length;
+  title_input.focus();
+});
+
+$("#issue-modal .form").submit(function() {
+  var submitButton = $("#issue-modal .form #submit");
+  submitButton.attr("disabled", true);
+  $("#issue-modal .form #submit").replaceWith('<button class="btn btn-primary"\
+      disabled><i class="fas fa-sync-alt fa-spin"></i> Creating...</button>');
+});
+
+</script>

@@ -1,0 +1,80 @@
+<div class="table-responsive scan-table">
+  <table class="ui table">
+    <thead>
+      <tr>
+        <th class="col-md-1">Series</th>
+        <th class="col-md-1">Tag</th>
+        <th class="col-md-3">Description</th>
+        <th class="col-md-1">Status</th>
+        <th class="col-md-1">Warnings</th>
+        <th class="col-md-5">Comment</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for scan in session.scans %}
+        <tr class="scan-row" id="scan_{{ scan.id }}">
+          <td class="scan_series"> {{ scan.series }}</td>
+          <td class="scan_type"> {{ scan.tag }}</td>
+          <td class="scan_desc">
+            <a href="{{ url_for('scans.scan', study_id=study_id, scan_id=scan.id ) }}">
+              {{ scan.description }}
+            </a>
+            {% if scan.source_id %}
+              <a href="{{ url_for('scans.scan', study_id=scan.source_data.get_study().id, scan_id=scan.source_id) }}">
+                <span class="badge" title="Click to visit source scan">
+                  linked scan
+                </span>
+              </a>
+            {% endif %}
+          </td>
+
+          <td class="scan-status">
+            {% if scan.is_new() %}
+              <span class="badge" style="background-color: tomato;">New!</span>
+            {% elif scan.flagged() %}
+              <span class="flagged" title="Flagged during review.">
+                <i class="fas fa-exclamation-triangle"></i>
+              </span>
+            {% elif scan.blacklisted() %}
+              <span class="blacklisted" title="Blacklisted">
+                <i class="fas fa-ban"></i>
+              </span>
+            {% else %}
+              <span class="approved" title="Passed review.">
+                <i class="fas fa-check-circle"></i>
+              </span>
+            {% endif %}
+          </td>
+
+          <td>
+            {% if scan.get_header_diffs() %}
+              <span class="badge" style="background-color: var(--bootstrap-danger);">
+                Header field mismatch
+              </span>
+            {% endif %}
+            {% if scan.conv_errors %}
+              <span class="badge" style="background-color: #000000;">
+                dcm2niix error
+              </span>
+            {% endif %}
+          </td>
+
+          <td>
+            {% if not scan.is_new() %}
+              {{ scan.get_comment() }}
+            {% else %}
+              &nbsp;
+            {% endif %}
+            <a class="button btn btn-danger slide-button delete-scan pull-right"
+                href="#delete-modal"
+                data-toggle="modal" data-session="{{ session.num }}"
+                data-scan="{{ scan.id }}" data-scan-name="{{ scan.name }}"
+                data-links="{{ "<br>".join(scan.list_children()) }}">
+              <span class="glyphicon glyphicon-trash"></span>
+            </a>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
