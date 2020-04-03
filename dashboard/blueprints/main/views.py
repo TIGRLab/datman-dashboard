@@ -12,13 +12,13 @@ from flask_login import current_user, login_required
 
 from dashboard import db
 from . import main_bp as main
-from ... import utils
 from ...queries import (query_metric_values_byid, query_metric_types,
                         query_metric_values_byname, find_subjects,
                         find_sessions, find_scans)
 from ...models import Study, Site, Timepoint, Analysis
 from ...forms import (SelectMetricsForm, StudyOverviewForm, AnalysisForm)
 from ...utils import get_timepoint
+from ...datman_utils import get_study_path
 
 logger = logging.getLogger(__name__)
 
@@ -434,7 +434,7 @@ def static_qc_page(study_id,
                    image=None,
                    tech_notes_path=None):
     if tech_notes_path:
-        resources = utils.get_study_path(study_id, 'resources')
+        resources = get_study_path(study_id, 'resources')
         return send_from_directory(resources, tech_notes_path)
     timepoint = get_timepoint(study_id, timepoint_id, current_user)
     if image:
