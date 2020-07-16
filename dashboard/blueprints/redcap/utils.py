@@ -3,8 +3,7 @@
 import re
 import logging
 
-from flask import url_for, flash
-from flask_login import current_user
+from flask import url_for, flash, current_app
 from werkzeug.routing import RequestRedirect
 import redcap as REDCAP
 
@@ -50,7 +49,7 @@ def create_from_request(request):
         logger.info("Record {} not completed. Ignoring".format(record))
         return
 
-    rc = REDCAP.Project(url + 'api/', current_user.config['REDCAP_TOKEN'])
+    rc = REDCAP.Project(url + 'api/', current_app.config['REDCAP_TOKEN'])
     server_record = rc.export_records([record])
 
     if len(server_record) < 0:
