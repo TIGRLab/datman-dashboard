@@ -1165,6 +1165,10 @@ class Session(db.Model):
         self.reviewer_id = reviewer_id
         self.review_date = review_date
 
+    @property
+    def site(self):
+        return self.timepoint.site
+
     def get_study(self, study_id=None):
         return self.timepoint.get_study(study_id=study_id)
 
@@ -1960,6 +1964,11 @@ class StudySite(db.Model):
                         db.ForeignKey('sites.name'),
                         primary_key=True)
     uses_redcap = db.Column('uses_redcap', db.Boolean, default=False)
+    auto_download = db.Column(
+        'auto_download',
+        db.Boolean,
+        server_default="False"
+    )
     code = db.Column('code', db.String(32))
 
     # Need to specify the terms of the join to ensure users with
