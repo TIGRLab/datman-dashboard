@@ -2,6 +2,7 @@
 
 import re
 import logging
+from subprocess import run
 
 from flask import url_for, flash, current_app
 from werkzeug.routing import RequestRedirect
@@ -82,6 +83,12 @@ def create_from_request(request):
 
     monitor_scan_import(session)
 
+    study = session.get_study()
+    site_settings = study.sites[session.site.name]
+
+    if site_settings.auto_download:
+        queue_download(session, new_job=True)
+
     return new_record
 
 
@@ -119,3 +126,29 @@ def get_timepoint(ident):
             study = study[0].study
         timepoint = study.add_timepoint(ident)
     return timepoint
+
+
+def queue_download(session, new_job=False):
+    """Queue a job to download a session.
+
+    Adds a job to the scheduler that submits a queue job to download the
+    subject. The scheduler will resubmit this job every 30 minutes until
+    at least one scan has been added to the database for the session or
+    two days has passed.
+
+    Args:
+        session (:obj:`dashboard.models.Session`): A session object for the
+            scan to be downloaded.
+    """
+
+    # 1. Check if scans.missing() <- exit / finish if not
+    if not session.missing_scans():
+        # Submit post download jobs here
+        return
+
+    # 2. Grab the scheduler job...? Original submit date of job... ?
+    # 3. If current date >= 2 days from original submit time exit / finish
+    # 4. Submit queue job, re-add scheduler job with original date...
+    result = run(cmd, capture_output=True)
+
+    return
