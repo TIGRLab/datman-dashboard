@@ -2,7 +2,6 @@
 
 import re
 import logging
-from subprocess import run
 
 from flask import url_for, flash, current_app
 from werkzeug.routing import RequestRedirect
