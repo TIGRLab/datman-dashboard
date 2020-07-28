@@ -144,14 +144,6 @@ def monitor_scan_download(session, end_time=None):
         minutes=30
     )
 
-    # 3. Re-add self to scheduler first, with wakeup for 60 mins later.
-    # monitor_scan_download(session, end_time)
-
-    # 4. Submit job to download to the queue.
-
-    result = run(cmd, capture_output=True)
-
-    return
 
 def check_download(name, num, end_time):
     session = Session.query.get((name, num))
