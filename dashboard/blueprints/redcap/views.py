@@ -25,7 +25,7 @@ def redcap():
         logger.error('Failed creating redcap object. Reason: {}'.format(e))
         raise InvalidUsage(str(e), status_code=400)
 
-    return render_template('200.html'), 200
+    return 'Record successfully added', 200
 
 
 @rcap_bp.route('/redcap_redirect/<int:record_id>', methods=['GET'])
