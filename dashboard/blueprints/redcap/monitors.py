@@ -6,7 +6,7 @@ on monitors and check functions.
 """
 from os.path import join
 from datetime import datetime, timedelta
-from subprocess import run
+from subprocess import run, PIPE
 
 from flask import current_app
 
@@ -140,7 +140,8 @@ def monitor_scan_download(session, end_time=None):
 
     add_monitor(
         check_download,
-        [str(session.name), str(session.num), str(end_time)],
+        # .timestamp needed for py3.5
+        [str(session.name), str(session.num), str(end_time.timestamp())],
         minutes=30
     )
 
@@ -165,8 +166,10 @@ def check_download(name, num, end_time):
     ])
 
     # do some error correction with result here..
-    result = run(cmd, capture_output=True)
+    # capture_output=True can be used instead of PIPE once uwsgi compatible
+    # with newer python versions
+    result = run(cmd, stdout=PIPE, stderr=PIPE)
 
     # 4. Re-add self to queue if needed
-    # datetime.fromisoformat(str_date)
-    monitor_scan_download(session, datetime.fromisoformat(end_time))
+    # datetime.fromisoformat(end_time) can be used for > py3.5
+    monitor_scan_download(session, datetime.fromtimestamp(float(end_time)))
