@@ -161,7 +161,7 @@ def check_download(name, num, end_time):
 
     cmd.extend([
         join(current_app.config['SUBMIT_SCRIPTS'], 'data_download.sh'),
-        session.get_study(),
+        session.get_study().id,
         str(session)
     ])
 
