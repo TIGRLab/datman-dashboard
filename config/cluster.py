@@ -14,6 +14,6 @@ SUBMIT_SCRIPTS = (
     os.environ.get("DASHBOARD_QSUBMIT_SCRIPTS") or
     os.path.join(
         os.path.dirname(os.path.realpath(__name__)),
-        '..dashboard/queue_jobs'
+        'dashboard/queue_jobs'
         )
     )
