@@ -8,7 +8,7 @@ from flask import url_for, flash, current_app
 from werkzeug.routing import RequestRedirect
 import redcap as REDCAP
 
-from .monitors import monitor_scan_import
+from .monitors import monitor_scan_import, monitor_scan_download
 from dashboard.models import Session, Timepoint, RedcapRecord
 from dashboard.queries import get_study
 from dashboard.exceptions import RedcapException
@@ -87,7 +87,7 @@ def create_from_request(request):
     site_settings = study.sites[session.site.name]
 
     if site_settings.auto_download:
-        queue_download(session, new_job=True)
+        monitor_scan_download(session)
 
     return new_record
 
