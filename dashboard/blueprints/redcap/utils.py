@@ -85,7 +85,7 @@ def create_from_request(request):
     study = session.get_study()
     site_settings = study.sites[session.site.name]
 
-    if site_settings.auto_download:
+    if site_settings.download_script:
         monitor_scan_download(session)
 
     return new_record

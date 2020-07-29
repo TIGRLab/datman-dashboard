@@ -20,15 +20,15 @@ def upgrade():
     op.add_column(
         'study_sites',
         sa.Column(
-            'auto_download',
-            sa.Boolean(),
-            server_default='False',
+            'download_script',
+            sa.String(length=128),
+            nullable=True
         )
     )
     op.add_column(
         'study_sites',
         sa.Column(
-            'post_download_step',
+            'post_download_script',
             sa.String(length=128),
             nullable=True
         )
@@ -36,5 +36,5 @@ def upgrade():
 
 
 def downgrade():
-    op.drop_column('study_sites', 'post_download_step')
-    op.drop_column('study_sites', 'auto_download')
+    op.drop_column('study_sites', 'post_download_script')
+    op.drop_column('study_sites', 'download_script')
