@@ -1964,12 +1964,13 @@ class StudySite(db.Model):
                         db.ForeignKey('sites.name'),
                         primary_key=True)
     uses_redcap = db.Column('uses_redcap', db.Boolean, default=False)
+    code = db.Column('code', db.String(32))
     auto_download = db.Column(
         'auto_download',
         db.Boolean,
         server_default="False"
     )
-    code = db.Column('code', db.String(32))
+    post_download_step = db.Column('post_download_step', db.String(128))
 
     # Need to specify the terms of the join to ensure users with
     # access to all sites dont get left out of the list for a specific site

@@ -1,5 +1,4 @@
-"""Add a column to indicate that sessions should be downloaded as soon as
-a redcap form comes in (and indicate there may be further pipelines to run).
+"""Add a columns to configure on demand downloading + post download processing.
 
 Revision ID: 442e3abe5587
 Revises: c5d321b34b54
@@ -26,7 +25,16 @@ def upgrade():
             server_default='False',
         )
     )
+    op.add_column(
+        'study_sites',
+        sa.Column(
+            'post_download_step',
+            sa.String(length=128),
+            nullable=True
+        )
+    )
 
 
 def downgrade():
+    op.drop_column('study_sites', 'post_download_step')
     op.drop_column('study_sites', 'auto_download')
