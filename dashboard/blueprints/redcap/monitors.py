@@ -150,8 +150,8 @@ def check_download(name, num, end_time):
     session = Session.query.get((name, num))
     if not session:
         raise MonitorException(
-            "Monitored session {}_{:02d} is no longer in database, aborting "
-            "download attempt.".format(name, num))
+            "Monitored session {}_{} is no longer in database, aborting "
+            "download attempt.".format(name, str(num).zfill(2)))
 
     # 3. Submit a download job to queue
     cmd = [current_app.config['SUBMIT_COMMAND']]
