@@ -2,6 +2,7 @@
 """
 from os.path import join
 from subprocess import run, PIPE
+import logging
 
 from flask import current_app
 
