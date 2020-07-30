@@ -122,28 +122,33 @@ def monitor_scan_download(session, end_time=None):
         raise MonitorException("End time must be an instance of datetime. "
                                "Received type {}".format(type(end_time)))
 
-    # 1.If not scans.missing_scans(), download likely succeeded.
     if not session.missing_scans():
-        # Submit post download jobs here
+        settings = session.get_site_settings()
+        if settings.post_download_script:
+            submit_job(
+                settings.post_download_script,
+                [session.get_study().id, str(session)]
+            )
         return
 
-    # 2. If current date >= 2 days from first submission, stop trying.
     if not end_time:
         end_time = datetime.now() + timedelta(days=2)
+        download_session(session.name, session.num, str(end_time.timestamp()))
+        return
 
     if datetime.now() >= end_time:
         # Download failed + out of time
         return
 
     add_monitor(
-        check_download,
+        download_session,
         # .timestamp needed for py3.5
         [str(session.name), str(session.num), str(end_time.timestamp())],
-        minutes=30
+        hours=1
     )
 
 
-def check_download(name, num, end_time):
+def download_session(name, num, end_time):
     session = Session.query.get((name, num))
     if not session:
         raise MonitorException(
