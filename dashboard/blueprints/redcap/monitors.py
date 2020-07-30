@@ -6,8 +6,6 @@ on monitors and check functions.
 """
 from datetime import datetime, timedelta
 
-from flask import current_app
-
 from .emails import missing_session_data
 from dashboard.monitors import add_monitor, get_emails
 from dashboard.models import Session, User

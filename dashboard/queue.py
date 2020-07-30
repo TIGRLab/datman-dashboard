@@ -12,7 +12,7 @@ def submit_job(script, input_args=None):
     """Attempt to submit a job to the configured computing cluster.
 
     Args:
-        script (str): The full path to the script to run as a queue job.
+        script (str): The name of a script in the SUBMIT_SCRIPTS folder.
         input_args (:obj:`list`, optional): A list of input arguments to give
             the job script.
     """
@@ -21,7 +21,7 @@ def submit_job(script, input_args=None):
     if current_app.config["SUBMIT_OPTIONS"]:
         cmd.append(current_app.config["SUBMIT_OPTIONS"])
 
-    cmd.append(script)
+    cmd.append(join(current_app.config['SUBMIT_SCRIPTS'], script))
 
     if input_args:
         cmd.extend(input_args)
