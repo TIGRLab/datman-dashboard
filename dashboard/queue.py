@@ -8,16 +8,13 @@ from flask import current_app
 
 logger = logging.getLogger(__name__)
 
-def submit_job(script, input_args=None, job_name=None, work_dir=None):
+def submit_job(script, input_args=None):
     """Attempt to submit a job to the configured computing cluster.
 
     Args:
         script (str): The full path to the script to run as a queue job.
         input_args (:obj:`list`, optional): A list of input arguments to give
             the job script.
-        job_name (str, optional): The name to give the job.
-        work_dir (str, optional): The directory to use as the work dir.
-            A directory will be created in /tmp if none is given.
     """
     cmd = [current_app.config["SUBMIT_COMMAND"]]
 
