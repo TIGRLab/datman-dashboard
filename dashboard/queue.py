@@ -1,7 +1,7 @@
 """Code used to interact with computing clusters.
 """
 from os.path import join
-from subprocess import run, PIPE
+from subprocess import run, PIPE, CalledProcessError
 import logging
 
 from flask import current_app
