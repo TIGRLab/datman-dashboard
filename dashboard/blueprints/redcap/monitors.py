@@ -4,9 +4,7 @@ Any scheduler jobs that the redcap blueprint needs will require a monitor
 function and a check function here. See dashboard.monitors for more information
 on monitors and check functions.
 """
-from os.path import join
 from datetime import datetime, timedelta
-from subprocess import run, PIPE
 
 from flask import current_app
 
@@ -14,6 +12,7 @@ from .emails import missing_session_data
 from dashboard.monitors import add_monitor, get_emails
 from dashboard.models import Session, User
 from dashboard.exceptions import MonitorException
+from dashboard.queue import submit_job
 
 
 def monitor_scan_import(session, users=None):
@@ -153,23 +152,10 @@ def check_download(name, num, end_time):
             "Monitored session {}_{} is no longer in database, aborting "
             "download attempt.".format(name, str(num).zfill(2)))
 
-    # 3. Submit a download job to queue
-    cmd = [current_app.config['SUBMIT_COMMAND']]
+    study = session.get_study()
+    site_settings = study.sites[session.site.name]
 
-    if current_app.config['SUBMIT_OPTIONS']:
-        cmd.append(current_app.config['SUBMIT_OPTIONS'])
+    args = [study.id, str(session)]
 
-    cmd.extend([
-        join(current_app.config['SUBMIT_SCRIPTS'], 'data_download.sh'),
-        session.get_study().id,
-        str(session)
-    ])
-
-    # do some error correction with result here..
-    # capture_output=True can be used instead of PIPE once uwsgi compatible
-    # with newer python versions
-    result = run(cmd, stdout=PIPE, stderr=PIPE)
-
-    # 4. Re-add self to queue if needed
-    # datetime.fromisoformat(end_time) can be used for > py3.5
+    submit_job(site_settings.download_script, args)
     monitor_scan_download(session, datetime.fromtimestamp(float(end_time)))
