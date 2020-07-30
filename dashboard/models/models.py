@@ -1172,10 +1172,6 @@ class Session(db.Model):
     def get_study(self, study_id=None):
         return self.timepoint.get_study(study_id=study_id)
 
-    def get_site_settings(self, study_id=None):
-        study = self.get_study(study_id)
-        return study.sites[self.site.name]
-
     def add_scan(self, name, series, tag, description=None, source_id=None):
         scan = Scan(name, self.name, self.num, series, tag, description,
                     source_id)

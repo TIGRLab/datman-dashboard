@@ -45,3 +45,5 @@ def submit_job(script, input_args=None):
             "args '{}'.".format(script, input_args)
         )
         raise
+
+    return result.stdout, result.stderr

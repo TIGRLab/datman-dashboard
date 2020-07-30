@@ -6,7 +6,7 @@ on monitors and check functions.
 """
 from datetime import datetime, timedelta
 
-from .emails import missing_session_data
+from .emails import missing_session_data, download_succeeded
 from dashboard.monitors import add_monitor, get_emails
 from dashboard.models import Session, User
 from dashboard.exceptions import MonitorException
@@ -122,8 +122,11 @@ def monitor_scan_download(session, end_time=None):
         raise MonitorException("End time must be an instance of datetime. "
                                "Received type {}".format(type(end_time)))
 
+    study = session.get_study()
+
     if not session.missing_scans():
-        settings = session.get_site_settings()
+        settings = study.sites[session.site.name]
+        download_succeeded(session, study.get_staff_contacts())
         if settings.post_download_script:
             submit_job(
                 settings.post_download_script,
