@@ -130,7 +130,7 @@ def monitor_scan_download(session, end_time=None):
         if settings.post_download_script:
             submit_job(
                 settings.post_download_script,
-                [session.get_study().id, str(session)]
+                [study.id, str(session)]
             )
         return
 
