@@ -21,7 +21,7 @@ def submit_job(script, input_args=None):
     if current_app.config["SUBMIT_OPTIONS"]:
         cmd.append(current_app.config["SUBMIT_OPTIONS"])
 
-    cmd.append(join(current_app.config['SUBMIT_SCRIPTS'], script))
+    cmd.append(join(current_app.config["SUBMIT_SCRIPTS"], script))
 
     if input_args:
         cmd.extend(input_args)
