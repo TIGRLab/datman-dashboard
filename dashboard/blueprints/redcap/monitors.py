@@ -6,7 +6,7 @@ on monitors and check functions.
 """
 from datetime import datetime, timedelta
 
-from .emails import missing_session_data, download_succeeded
+from .emails import missing_session_data
 from dashboard.monitors import add_monitor, get_emails
 from dashboard.models import Session, User
 from dashboard.exceptions import MonitorException
@@ -126,7 +126,6 @@ def monitor_scan_download(session, end_time=None):
 
     if not session.missing_scans():
         settings = study.sites[session.site.name]
-        download_succeeded(session, study.get_staff_contacts())
         if settings.post_download_script:
             submit_job(
                 settings.post_download_script,
