@@ -4,10 +4,13 @@ Any scheduler jobs that the redcap blueprint needs will require a monitor
 function and a check function here. See dashboard.monitors for more information
 on monitors and check functions.
 """
+from datetime import datetime, timedelta
+
 from .emails import missing_session_data
 from dashboard.monitors import add_monitor, get_emails
 from dashboard.models import Session, User
 from dashboard.exceptions import MonitorException
+from dashboard.queue import submit_job
 
 
 def monitor_scan_import(session, users=None):
@@ -87,3 +90,77 @@ def check_scans(name, num, recipients=None):
     missing_session_data(str(session),
                          study=session.get_study().id,
                          dest_emails=None)
+
+
+def monitor_scan_download(session, end_time=None):
+    """Add a job to download a session.
+
+    Note: This one directly downloads a subject while monitor_scan_import
+    just notifies users if download doesnt occur within a time window.
+
+    Args:
+        session (:obj:`dashboard.models.Session`): The session to download.
+        end_time (:obj:`datetime.datetime`): The date and time for when
+            to stop download attempts. If not set, attempts will stop two days
+            from the first time the function is called. Defaults to None.
+
+    Raises:
+        :obj:`dashboard.exceptions.MonitorException`: if a
+            :obj:`dashboard.models.Session` object is not given for session or
+            a :obj:`datetime.datetime` object is not given for end_time, if
+            end_time is provided.
+        :obj:`dashboard.exceptions.SchedulerException`: if a job to retry
+            download can't be added to the scheduler server.
+    """
+    if not isinstance(session, Session):
+        raise MonitorException("Must provide an instance of "
+                               "dashboard.models.Session to add a scan "
+                               "download monitor. Received type {}".format(
+                                   type(session)))
+
+    if end_time and not isinstance(end_time, datetime):
+        raise MonitorException("End time must be an instance of datetime. "
+                               "Received type {}".format(type(end_time)))
+
+    study = session.get_study()
+
+    if not session.missing_scans():
+        settings = study.sites[session.site.name]
+        if settings.post_download_script:
+            submit_job(
+                settings.post_download_script,
+                [study.id, str(session)]
+            )
+        return
+
+    if not end_time:
+        end_time = datetime.now() + timedelta(days=2)
+        download_session(session.name, session.num, str(end_time.timestamp()))
+        return
+
+    if datetime.now() >= end_time:
+        # Download failed + out of time
+        return
+
+    add_monitor(
+        download_session,
+        # .timestamp needed for py3.5
+        [str(session.name), str(session.num), str(end_time.timestamp())],
+        hours=1
+    )
+
+
+def download_session(name, num, end_time):
+    session = Session.query.get((name, num))
+    if not session:
+        raise MonitorException(
+            "Monitored session {}_{} is no longer in database, aborting "
+            "download attempt.".format(name, str(num).zfill(2)))
+
+    study = session.get_study()
+    site_settings = study.sites[session.site.name]
+
+    args = [study.id, str(session)]
+
+    submit_job(site_settings.download_script, args)
+    monitor_scan_download(session, datetime.fromtimestamp(float(end_time)))

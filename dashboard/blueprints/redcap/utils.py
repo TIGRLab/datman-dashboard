@@ -3,12 +3,11 @@
 import re
 import logging
 
-from flask import url_for, flash
-from flask_login import current_user
+from flask import url_for, flash, current_app
 from werkzeug.routing import RequestRedirect
 import redcap as REDCAP
 
-from .monitors import monitor_scan_import
+from .monitors import monitor_scan_import, monitor_scan_download
 from dashboard.models import Session, Timepoint, RedcapRecord
 from dashboard.queries import get_study
 from dashboard.exceptions import RedcapException
@@ -50,7 +49,7 @@ def create_from_request(request):
         logger.info("Record {} not completed. Ignoring".format(record))
         return
 
-    rc = REDCAP.Project(url + 'api/', current_user.config['REDCAP_TOKEN'])
+    rc = REDCAP.Project(url + 'api/', current_app.config['REDCAP_TOKEN'])
     server_record = rc.export_records([record])
 
     if len(server_record) < 0:
@@ -82,6 +81,12 @@ def create_from_request(request):
                                   record, project, url, e))
 
     monitor_scan_import(session)
+
+    study = session.get_study()
+    site_settings = study.sites[session.site.name]
+
+    if site_settings.download_script:
+        monitor_scan_download(session)
 
     return new_record
 

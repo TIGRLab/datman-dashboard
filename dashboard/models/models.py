@@ -1165,6 +1165,10 @@ class Session(db.Model):
         self.reviewer_id = reviewer_id
         self.review_date = review_date
 
+    @property
+    def site(self):
+        return self.timepoint.site
+
     def get_study(self, study_id=None):
         return self.timepoint.get_study(study_id=study_id)
 
@@ -1961,6 +1965,8 @@ class StudySite(db.Model):
                         primary_key=True)
     uses_redcap = db.Column('uses_redcap', db.Boolean, default=False)
     code = db.Column('code', db.String(32))
+    download_script = db.Column('download_script', db.String(128))
+    post_download_script = db.Column('post_download_script', db.String(128))
 
     # Need to specify the terms of the join to ensure users with
     # access to all sites dont get left out of the list for a specific site
