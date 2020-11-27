@@ -119,7 +119,7 @@ def delete(config, key, folder=None, files=None):
     if not os.path.exists(path):
         return
 
-    if not files:
+    if files is None:
         shutil.rmtree(path)
         return
 
