@@ -52,7 +52,7 @@ def create_from_request(request):
     rc = REDCAP.Project(url + 'api/', current_app.config['REDCAP_TOKEN'])
     server_record = rc.export_records([record])
 
-    if len(server_record) < 0:
+    if len(server_record) == 0:
         raise RedcapException('Record {} not found on redcap server {}'.format(
             record, url))
     elif len(server_record) > 1:
