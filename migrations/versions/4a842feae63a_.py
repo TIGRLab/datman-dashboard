@@ -28,12 +28,12 @@ def upgrade():
         sa.Column('comment_field', sa.String(length=128), nullable=True),
         sa.Column('user_id_field', sa.String(length=128), nullable=True),
         sa.Column('session_id_field', sa.String(length=128), nullable=True),
-        sa.Column('access_token', sa.String(length=64), nullable=False),
+        sa.Column('access_token', sa.String(length=64), nullable=True),
         sa.PrimaryKeyConstraint('id')
     )
     op.add_column(
         'redcap_records',
-        sa.Column('config', sa.Integer(), nullable=False)
+        sa.Column('config', sa.Integer(), nullable=True)
     )
 
     # Transfer existing config to new table
@@ -55,13 +55,14 @@ def upgrade():
     # Set config column to entry in new table
     op.execute(
         'update redcap_records '
-        '  set redcap_records.config = cfg.id '
+        '  set config = cfg.id '
         '  from redcap_config as cfg'
         '  where cfg.project_id = redcap_records.project_id and '
         '    cfg.instrument = redcap_records.instrument and '
         '    cfg.url = redcap_records.url and '
         '    cfg.redcap_version = redcap_records.redcap_version;'
     )
+    op.alter_column('redcap_records', 'config', nullable=False)
 
     op.drop_constraint(
         'redcap_records_unique_record',
@@ -93,7 +94,7 @@ def downgrade():
             'url',
             sa.VARCHAR(length=1024),
             autoincrement=False,
-            nullable=False
+            nullable=True
         )
     )
     op.add_column(
@@ -112,7 +113,7 @@ def downgrade():
             'instrument',
             sa.VARCHAR(length=1024),
             autoincrement=False,
-            nullable=False
+            nullable=True
         )
     )
     op.add_column(
@@ -121,7 +122,7 @@ def downgrade():
             'project_id',
             sa.INTEGER(),
             autoincrement=False,
-            nullable=False
+            nullable=True
         )
     )
 
@@ -135,6 +136,10 @@ def downgrade():
         '  from redcap_config as cfg '
         '  where redcap_records.config = cfg.id;'
     )
+
+    op.alter_column('redcap_records', 'url', nullable=False)
+    op.alter_column('redcap_records', 'instrument', nullable=False)
+    op.alter_column('redcap_records', 'project_id', nullable=False)
 
     op.drop_constraint(None, 'redcap_records', type_='foreignkey')
     op.drop_constraint(

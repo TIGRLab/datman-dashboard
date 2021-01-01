@@ -1842,7 +1842,7 @@ class RedcapConfig(db.Model):
     session_id_field = db.Column(
         'session_id_field', db.String(128), default='par_id'
     )
-    token = db.Column('access_token', db.String(64), nullable=False)
+    token = db.Column('access_token', db.String(64))
 
     records = db.relationship('RedcapRecord', back_populates='config')
 
