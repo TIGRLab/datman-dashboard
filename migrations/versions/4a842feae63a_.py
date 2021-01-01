@@ -75,7 +75,7 @@ def upgrade():
         ['record', 'config', 'event_id', 'entry_date']
     )
     op.create_foreign_key(
-        None,
+        'redcap_records_config_fkey',
         'redcap_records',
         'redcap_config',
         ['config'],
@@ -129,10 +129,10 @@ def downgrade():
     # Migrate config back to redcap_records
     op.execute(
         'update redcap_records '
-        '  set redcap_records.project_id = cfg.project_id, '
-        '      redcap_records.instrument = cfg.instrument, '
-        '      redcap_records.url = cfg.url, '
-        '      redcap_records.redcap_version = cfg.redcap_version '
+        '  set project_id = cfg.project_id, '
+        '      instrument = cfg.instrument, '
+        '      url = cfg.url, '
+        '      redcap_version = cfg.redcap_version '
         '  from redcap_config as cfg '
         '  where redcap_records.config = cfg.id;'
     )
@@ -141,7 +141,11 @@ def downgrade():
     op.alter_column('redcap_records', 'instrument', nullable=False)
     op.alter_column('redcap_records', 'project_id', nullable=False)
 
-    op.drop_constraint(None, 'redcap_records', type_='foreignkey')
+    op.drop_constraint(
+        'redcap_records_config_fkey',
+        'redcap_records',
+        type_='foreignkey'
+    )
     op.drop_constraint(
         'redcap_records_unique_record',
         'redcap_records',
