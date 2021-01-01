@@ -1198,8 +1198,15 @@ class Session(db.Model):
                 name, e.message)
             raise e
 
-    def add_redcap(self, record_num, project, url, instrument, date,
-                   version=None, rc_user=None, comment=None, event_id=None):
+    def add_redcap(self, record_num, date, project=None, url=None,
+                   instrument=None, config=None, rc_user=None, comment=None,
+                   event_id=None, redcap_version=None):
+
+        cfg = RedcapConfig.get_config(
+            id=config, project=project, instrument=instrument, url=url,
+            create=True, version=redcap_version
+        )
+
         if self.redcap_record:
             rc_record = self.redcap_record.record
             if rc_record is None:
@@ -1208,16 +1215,13 @@ class Session(db.Model):
                     "record. Failed to add record ({}, {}, {}, {}, {})".format(
                         self, record_num, project, url, instrument, date))
             if (str(rc_record.record) != str(record_num)
-                    or str(rc_record.project) != str(project)
-                    or str(rc_record.url) != str(url)
-                    or str(rc_record.instrument) != str(instrument)
+                    or rc_record.config != cfg.id
                     or str(rc_record.date) != str(date)):
                 raise InvalidDataException("Existing record already found. "
                                            "Please remove the old record "
                                            "before adding a new one.")
         else:
-            rc_record = RedcapRecord(record_num, project, url,
-                                     instrument, date, version)
+            rc_record = RedcapRecord(record_num, cfg.id, date, version)
             db.session.add(rc_record)
             # Flush to get an ID assigned
             db.session.flush()
@@ -1790,40 +1794,94 @@ class RedcapRecord(db.Model):
     __tablename__ = 'redcap_records'
 
     id = db.Column('id', db.Integer, primary_key=True)
+    form_config = db.Column(
+        'config', db.Integer, db.ForeignKey('redcap_config.id'),
+        nullable=False
+    )
     record = db.Column('record', db.String(256), nullable=False)
-    project = db.Column('project_id', db.Integer, nullable=False)
-    url = db.Column('url', db.String(1024), nullable=False)
-    instrument = db.Column('instrument', db.String(1024), nullable=False)
     date = db.Column('entry_date', db.Date, nullable=False)
-    redcap_version = db.Column('redcap_version',
-                               db.String(10),
-                               default='7.4.2')
     user = db.Column('redcap_user', db.Integer)
     comment = db.Column('comment', db.Text)
     event_id = db.Column('event_id', db.Integer)
 
     sessions = db.relationship('SessionRedcap', back_populates='record')
+    config = db.relationship(
+        'RedcapConfig', back_populates='records', uselist=False
+    )
 
     __table_args__ = (UniqueConstraint(
         record,
-        project,
-        url,
+        form_config,
         event_id,
         date,
         name='redcap_records_unique_record'), )
 
-    def __init__(self, record, project, url,
-                 instrument, date, version):
+    def __init__(self, record, config_id, date, version):
         self.record = record
-        self.project = project
-        self.url = url
-        self.instrument = instrument
+        self.form_config = config_id
         self.date = date
         self.redcap_version = version
 
     def __repr__(self):
-        return "<RedcapRecord {}: record {} project {} url {}>".format(
-            self.id, self.record, self.project, self.url)
+        return "<RedcapRecord {}: record {}>".format(self.id, self.record)
+
+
+class RedcapConfig(db.Model):
+    __tablename__ = "redcap_config"
+
+    id = db.Column(db.Integer, primary_key=True)
+    project = db.Column('project_id', db.Integer, nullable=False)
+    instrument = db.Column('instrument', db.String(1024), nullable=False)
+    url = db.Column('url', db.String(1024), nullable=False)
+    redcap_version = db.Column(
+        'redcap_version', db.String(10), default='7.4.2'
+    )
+    date_field = db.Column('date_field', db.String(128), default='date')
+    comment_field = db.Column('comment_field', db.String(128), default='cmts')
+    user_id_field = db.Column('user_id_field', db.String(128), default='ra_id')
+    session_id_field = db.Column(
+        'session_id_field', db.String(128), default='par_id'
+    )
+    token = db.Column('access_token', db.String(64), nullable=False)
+
+    records = db.relationship('RedcapRecord', back_populates='config')
+
+    def __init__(self, project, instrument, url, version=None):
+        self.project = project
+        self.instrument = instrument
+        self.url = url
+        self.redcap_version = version
+
+    def get_config(id=None, project=None, instrument=None, url=None,
+                   version=None, create=False):
+        if config:
+            cfg = RedcapConfig.query.get(config)
+        elif project and url and instrument:
+            cfg = RedcapConfig.query \
+                    .filter(RedcapConfig.project == project) \
+                    .filter(RedcapConfig.url == url) \
+                    .filter(RedcapConfig.instrument == instrument) \
+                    .all()
+        else:
+            cfg = None
+
+        if cfg:
+            return cfg
+
+        if not create:
+            raise InvalidDataException("Can't locate Redcap config.")
+
+        if not (project and url and instrument):
+            raise InvalidDataException(
+                "Can't create new RedCap config without project, "
+                "instrument, and url."
+            )
+
+        cfg = RedcapConfig(project, instrument, url, version=version)
+        cfg.save()
+
+    def __repr__(self):
+        return "<RedcapConfig {}>".format(id)
 
 
 class Analysis(db.Model):
