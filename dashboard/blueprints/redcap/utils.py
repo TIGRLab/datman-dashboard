@@ -56,6 +56,14 @@ def create_from_request(request):
         .filter(RedcapConfig.instrument == instrument) \
         .all()
 
+    if len(cfg) == 1:
+        cfg = cfg[0]
+    else:
+        raise RedcapException(
+            'Project configuration not found for project - {} instrument '
+            '- {} on server {}'.format(project, instrument, url)
+        )
+
     rc = REDCAP.Project(url + 'api/', cfg.token)
     server_record = rc.export_records([record])
 
@@ -83,7 +91,7 @@ def create_from_request(request):
     session = set_session(session_name)
     try:
         new_record = session.add_redcap(
-            record, config=cfg.id, rc_user=redcap_user, comment=comment
+            record, date, config=cfg.id, rc_user=redcap_user, comment=comment
         )
     except Exception as e:
         raise RedcapException("Failed adding record {} from project {} on "

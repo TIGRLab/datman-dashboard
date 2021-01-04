@@ -24,11 +24,23 @@ def upgrade():
         sa.Column('instrument', sa.String(length=1024), nullable=False),
         sa.Column('url', sa.String(length=1024), nullable=False),
         sa.Column('redcap_version', sa.String(length=10), nullable=True),
-        sa.Column('date_field', sa.String(length=128), nullable=True),
-        sa.Column('comment_field', sa.String(length=128), nullable=True),
-        sa.Column('user_id_field', sa.String(length=128), nullable=True),
-        sa.Column('session_id_field', sa.String(length=128), nullable=True),
-        sa.Column('access_token', sa.String(length=64), nullable=True),
+        sa.Column(
+            'date_field', sa.String(length=128), server_default='date',
+            nullable=True
+        ),
+        sa.Column(
+            'comment_field', sa.String(length=128), server_default='cmts',
+            nullable=True
+        ),
+        sa.Column(
+            'user_id_field', sa.String(length=128), server_default='ra_id',
+            nullable=True
+        ),
+        sa.Column(
+            'session_id_field', sa.String(length=128), server_default='par_id',
+            nullable=True
+        ),
+        sa.Column('token', sa.String(length=64), nullable=True),
         sa.PrimaryKeyConstraint('id')
     )
     op.add_column(

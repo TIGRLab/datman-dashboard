@@ -1203,7 +1203,7 @@ class Session(db.Model):
                    event_id=None, redcap_version=None):
 
         cfg = RedcapConfig.get_config(
-            id=config, project=project, instrument=instrument, url=url,
+            config_id=config, project=project, instrument=instrument, url=url,
             create=True, version=redcap_version
         )
 
@@ -1836,13 +1836,11 @@ class RedcapConfig(db.Model):
     redcap_version = db.Column(
         'redcap_version', db.String(10), default='7.4.2'
     )
-    date_field = db.Column('date_field', db.String(128), default='date')
-    comment_field = db.Column('comment_field', db.String(128), default='cmts')
-    user_id_field = db.Column('user_id_field', db.String(128), default='ra_id')
-    session_id_field = db.Column(
-        'session_id_field', db.String(128), default='par_id'
-    )
-    token = db.Column('access_token', db.String(64))
+    date_field = db.Column('date_field', db.String(128))
+    comment_field = db.Column('comment_field', db.String(128))
+    user_id_field = db.Column('user_id_field', db.String(128))
+    session_id_field = db.Column('session_id_field', db.String(128))
+    token = db.Column('token', db.String(64))
 
     records = db.relationship('RedcapRecord', back_populates='config')
 
@@ -1852,10 +1850,10 @@ class RedcapConfig(db.Model):
         self.url = url
         self.redcap_version = version
 
-    def get_config(id=None, project=None, instrument=None, url=None,
+    def get_config(config_id=None, project=None, instrument=None, url=None,
                    version=None, create=False):
-        if config:
-            cfg = RedcapConfig.query.get(config)
+        if config_id:
+            cfg = RedcapConfig.query.get(config_id)
         elif project and url and instrument:
             cfg = RedcapConfig.query \
                     .filter(RedcapConfig.project == project) \
@@ -1881,7 +1879,7 @@ class RedcapConfig(db.Model):
         cfg.save()
 
     def __repr__(self):
-        return "<RedcapConfig {}>".format(id)
+        return "<RedcapConfig {}>".format(self.id)
 
 
 class Analysis(db.Model):
