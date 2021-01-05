@@ -40,7 +40,7 @@ def create_from_request(request):
         version = re.search('redcap_v(.*)/index',
                             request.form['project_url']).group(1)
         completed = int(request.form[instrument + '_complete'])
-        # might need event ID
+        event_name = request.form['redcap_event_name']
     except KeyError:
         raise RedcapException('Redcap data entry trigger request missing a '
                               'required key. Found keys: {}'.format(
@@ -73,8 +73,16 @@ def create_from_request(request):
         raise RedcapException('Record {} not found on redcap server {}'.format(
             record, url))
     elif len(server_record) > 1:
-        raise RedcapException('Found {} records matching {} on redcap server '
-                              '{}'.format(len(server_record), record, url))
+        if not cfg.event_id_field:
+            raise RedcapException(
+                'Found {} records matching {} on redcap server {}'.format(
+                    len(server_record), record, url)
+            )
+        event_match = [item for item in server_record
+                       if item['redcap_event_name'] == event_name]
+        if len(event_match) != 1:
+            raise RedcapException('No matching records found for event')
+        server_record = event_match
 
     server_record = server_record[0]
 
