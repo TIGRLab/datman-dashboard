@@ -1215,13 +1215,13 @@ class Session(db.Model):
                     "record. Failed to add record ({}, {}, {}, {}, {})".format(
                         self, record_num, project, url, instrument, date))
             if (str(rc_record.record) != str(record_num)
-                    or rc_record.config != cfg.id
+                    or rc_record.config.id != cfg.id
                     or str(rc_record.date) != str(date)):
                 raise InvalidDataException("Existing record already found. "
                                            "Please remove the old record "
                                            "before adding a new one.")
         else:
-            rc_record = RedcapRecord(record_num, cfg.id, date, version)
+            rc_record = RedcapRecord(record_num, cfg.id, date, redcap_version)
             db.session.add(rc_record)
             # Flush to get an ID assigned
             db.session.flush()
@@ -1840,6 +1840,9 @@ class RedcapConfig(db.Model):
     comment_field = db.Column('comment_field', db.String(128))
     user_id_field = db.Column('user_id_field', db.String(128))
     session_id_field = db.Column('session_id_field', db.String(128))
+    completed_field = db.Column('completed_form_field', db.String(128))
+    completed_value = db.Column('completed_value', db.Integer)
+
     token = db.Column('token', db.String(64))
 
     records = db.relationship('RedcapRecord', back_populates='config')

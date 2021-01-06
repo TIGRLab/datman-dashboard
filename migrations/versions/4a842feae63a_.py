@@ -32,15 +32,19 @@ def upgrade():
             'comment_field', sa.String(length=128), server_default='cmts',
             nullable=True
         ),
-        sa.Column(
-            'user_id_field', sa.String(length=128), server_default='ra_id',
-            nullable=True
-        ),
+        sa.Column('user_id_field', sa.String(length=128), nullable=True),
         sa.Column(
             'session_id_field', sa.String(length=128), server_default='par_id',
             nullable=True
         ),
         sa.Column('token', sa.String(length=64), nullable=True),
+        sa.Column(
+            'completed_form_field', sa.String(128),
+            server_default='tigrlab_scan_completed_complete', nullable=True
+        )
+        sa.Column(
+            'completed_value', sa.Integer(), server_default=2, nullable=True
+        )
         sa.PrimaryKeyConstraint('id')
     )
     op.add_column(

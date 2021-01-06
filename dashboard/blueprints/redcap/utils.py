@@ -39,58 +39,45 @@ def create_from_request(request):
         instrument = request.form['instrument']
         version = re.search('redcap_v(.*)/index',
                             request.form['project_url']).group(1)
-        completed = int(request.form[instrument + '_complete'])
-        event_name = request.form['redcap_event_name']
     except KeyError:
         raise RedcapException('Redcap data entry trigger request missing a '
                               'required key. Found keys: {}'.format(
                                   list(request.form.keys())))
 
-    if completed != 2:
+    cfg = get_redcap_config(url, project, instrument)
+
+    if request.form[cfg.completed_field] != cfg.completed_value:
         logger.info("Record {} not completed. Ignoring".format(record))
         return
 
-    cfg = RedcapConfig.query \
-        .filter(RedcapConfig.url == url) \
-        .filter(RedcapConfig.project == project) \
-        .filter(RedcapConfig.instrument == instrument) \
-        .all()
-
-    if len(cfg) == 1:
-        cfg = cfg[0]
+    if 'redcap_event_name' in request.form:
+        event_name = request.form['redcap_event_name']
     else:
-        raise RedcapException(
-            'Project configuration not found for project - {} instrument '
-            '- {} on server {}'.format(project, instrument, url)
-        )
+        event_name = None
 
     rc = REDCAP.Project(url + 'api/', cfg.token)
     server_record = rc.export_records([record])
 
-    # Might need to select by event ID here
+    if event_name:
+        server_record = [item for item in server_record
+                         if item['redcap_event_name'] == event_name]
 
     if len(server_record) == 0:
         raise RedcapException('Record {} not found on redcap server {}'.format(
             record, url))
     elif len(server_record) > 1:
-        if not cfg.event_id_field:
-            raise RedcapException(
-                'Found {} records matching {} on redcap server {}'.format(
-                    len(server_record), record, url)
-            )
-        event_match = [item for item in server_record
-                       if item['redcap_event_name'] == event_name]
-        if len(event_match) != 1:
-            raise RedcapException('No matching records found for event')
-        server_record = event_match
+        raise RedcapException('Found {} records matching {} on redcap server '
+                              '{}'.format(len(server_record), record, url))
 
     server_record = server_record[0]
 
     try:
         date = server_record[cfg.date_field]
         comment = server_record[cfg.comment_field]
-        redcap_user = server_record[cfg.user_id_field]
         session_name = server_record[cfg.session_id_field]
+        redcap_user = (
+            server_record[cfg.user_id_field] if cfg.user_id_field else None
+        )
     except KeyError:
         raise RedcapException('Redcap record {} from server {} missing a '
                               'required field. Found keys: {}'.format(
@@ -151,3 +138,19 @@ def get_timepoint(ident):
             study = study[0].study
         timepoint = study.add_timepoint(ident)
     return timepoint
+
+
+def get_redcap_config(url, project, instrument):
+    cfg = RedcapConfig.query \
+        .filter(RedcapConfig.url == url) \
+        .filter(RedcapConfig.project == project) \
+        .filter(RedcapConfig.instrument == instrument) \
+        .all()
+
+    if len(cfg) != 1:
+        raise RedcapException(
+            'Project configuration not found for project - {} instrument '
+            '- {} on server {}'.format(project, instrument, url)
+        )
+
+    return cfg[0]
