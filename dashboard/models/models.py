@@ -1214,9 +1214,9 @@ class Session(db.Model):
                     "{} has been manually marked as not expecting a Redcap "
                     "record. Failed to add record ({}, {}, {}, {}, {})".format(
                         self, record_num, project, url, instrument, date))
-            if (str(rc_record.record) != str(record_num)
-                    or rc_record.config.id != cfg.id
-                    or str(rc_record.date) != str(date)):
+            if (str(rc_record.record) != str(record_num) or
+                    rc_record.config.id != cfg.id or
+                    str(rc_record.date) != str(date)):
                 raise InvalidDataException("Existing record already found. "
                                            "Please remove the old record "
                                            "before adding a new one.")
@@ -1860,10 +1860,10 @@ class RedcapConfig(db.Model):
             cfg = [found] if found else []
         elif project and url and instrument:
             cfg = RedcapConfig.query \
-                    .filter(RedcapConfig.project == project) \
-                    .filter(RedcapConfig.url == url) \
-                    .filter(RedcapConfig.instrument == instrument) \
-                    .all()
+                .filter(RedcapConfig.project == project) \
+                .filter(RedcapConfig.url == url) \
+                .filter(RedcapConfig.instrument == instrument) \
+                .all()
         else:
             cfg = []
 
