@@ -41,10 +41,10 @@ def upgrade():
         sa.Column(
             'completed_form_field', sa.String(128),
             server_default='tigrlab_scan_completed_complete', nullable=True
-        )
+        ),
         sa.Column(
-            'completed_value', sa.Integer(), server_default=2, nullable=True
-        )
+            'completed_value', sa.String(10), server_default='2', nullable=True
+        ),
         sa.PrimaryKeyConstraint('id')
     )
     op.add_column(

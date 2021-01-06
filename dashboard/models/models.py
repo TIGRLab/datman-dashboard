@@ -1841,7 +1841,7 @@ class RedcapConfig(db.Model):
     user_id_field = db.Column('user_id_field', db.String(128))
     session_id_field = db.Column('session_id_field', db.String(128))
     completed_field = db.Column('completed_form_field', db.String(128))
-    completed_value = db.Column('completed_value', db.Integer)
+    completed_value = db.Column('completed_value', db.String(10))
 
     token = db.Column('token', db.String(64))
 
