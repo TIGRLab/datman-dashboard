@@ -65,7 +65,7 @@ def upgrade():
           'instrument': record[1],
           'url': record[2],
           'redcap_version': record[3]}
-          for record in records]
+         for record in records]
     )
 
     # Set config column to entry in new table
