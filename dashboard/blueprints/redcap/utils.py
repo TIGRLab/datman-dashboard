@@ -44,7 +44,9 @@ def create_from_request(request):
                               'required key. Found keys: {}'.format(
                                   list(request.form.keys())))
 
-    cfg = get_redcap_config(url, project, instrument)
+    cfg = RedcapConfig.get_config(
+        url=url, project=project, instrument=instrument
+    )
 
     if request.form[cfg.completed_field] != cfg.completed_value:
         logger.info("Record {} not completed. Ignoring".format(record))
@@ -138,19 +140,3 @@ def get_timepoint(ident):
             study = study[0].study
         timepoint = study.add_timepoint(ident)
     return timepoint
-
-
-def get_redcap_config(url, project, instrument):
-    cfg = RedcapConfig.query \
-        .filter(RedcapConfig.url == url) \
-        .filter(RedcapConfig.project == project) \
-        .filter(RedcapConfig.instrument == instrument) \
-        .all()
-
-    if len(cfg) != 1:
-        raise RedcapException(
-            'Project configuration not found for project - {} instrument '
-            '- {} on server {}'.format(project, instrument, url)
-        )
-
-    return cfg[0]

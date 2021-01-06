@@ -1856,7 +1856,8 @@ class RedcapConfig(db.Model):
     def get_config(config_id=None, project=None, instrument=None, url=None,
                    version=None, create=False):
         if config_id:
-            cfg = RedcapConfig.query.get(config_id)
+            found = RedcapConfig.query.get(config_id)
+            cfg = [found] if found else []
         elif project and url and instrument:
             cfg = RedcapConfig.query \
                     .filter(RedcapConfig.project == project) \
@@ -1864,10 +1865,10 @@ class RedcapConfig(db.Model):
                     .filter(RedcapConfig.instrument == instrument) \
                     .all()
         else:
-            cfg = None
+            cfg = []
 
-        if cfg:
-            return cfg
+        if len(cfg) == 1:
+            return cfg[0]
 
         if not create:
             raise InvalidDataException("Can't locate Redcap config.")
