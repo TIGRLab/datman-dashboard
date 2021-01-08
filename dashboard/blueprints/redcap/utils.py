@@ -3,12 +3,12 @@
 import re
 import logging
 
-from flask import url_for, flash, current_app
+from flask import url_for, flash
 from werkzeug.routing import RequestRedirect
 import redcap as REDCAP
 
 from .monitors import monitor_scan_import, monitor_scan_download
-from dashboard.models import Session, Timepoint, RedcapRecord
+from dashboard.models import Session, Timepoint, RedcapRecord, RedcapConfig
 from dashboard.queries import get_study
 from dashboard.exceptions import RedcapException
 import datman.scanid
@@ -39,20 +39,32 @@ def create_from_request(request):
         instrument = request.form['instrument']
         version = re.search('redcap_v(.*)/index',
                             request.form['project_url']).group(1)
-        completed = int(request.form[instrument + '_complete'])
     except KeyError:
         raise RedcapException('Redcap data entry trigger request missing a '
                               'required key. Found keys: {}'.format(
                                   list(request.form.keys())))
 
-    if completed != 2:
+    cfg = RedcapConfig.get_config(
+        url=url, project=project, instrument=instrument
+    )
+
+    if request.form[cfg.completed_field] != cfg.completed_value:
         logger.info("Record {} not completed. Ignoring".format(record))
         return
 
-    rc = REDCAP.Project(url + 'api/', current_app.config['REDCAP_TOKEN'])
+    if 'redcap_event_name' in request.form:
+        event_name = request.form['redcap_event_name']
+    else:
+        event_name = None
+
+    rc = REDCAP.Project(url + 'api/', cfg.token)
     server_record = rc.export_records([record])
 
-    if len(server_record) < 0:
+    if event_name:
+        server_record = [item for item in server_record
+                         if item['redcap_event_name'] == event_name]
+
+    if len(server_record) == 0:
         raise RedcapException('Record {} not found on redcap server {}'.format(
             record, url))
     elif len(server_record) > 1:
@@ -62,10 +74,12 @@ def create_from_request(request):
     server_record = server_record[0]
 
     try:
-        date = server_record['date']
-        comment = server_record['cmts']
-        redcap_user = server_record['ra_id']
-        session_name = server_record['par_id']
+        date = server_record[cfg.date_field]
+        comment = server_record[cfg.comment_field]
+        session_name = server_record[cfg.session_id_field]
+        redcap_user = (
+            server_record[cfg.user_id_field] if cfg.user_id_field else None
+        )
     except KeyError:
         raise RedcapException('Redcap record {} from server {} missing a '
                               'required field. Found keys: {}'.format(
@@ -73,8 +87,9 @@ def create_from_request(request):
 
     session = set_session(session_name)
     try:
-        new_record = session.add_redcap(record, project, url, instrument, date,
-                                        version, redcap_user, comment)
+        new_record = session.add_redcap(
+            record, date, config=cfg.id, rc_user=redcap_user, comment=comment
+        )
     except Exception as e:
         raise RedcapException("Failed adding record {} from project {} on "
                               "server {}. Reason: {}".format(
