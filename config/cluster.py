@@ -6,7 +6,11 @@ import os
 SUBMIT_COMMAND = os.environ.get("DASHBOARD_QSUBMIT_CMD") or "sbatch"
 
 # Options to always set during submission (e.g. QOS)
-SUBMIT_OPTIONS = os.environ.get("DASHBOARD_QSUBMIT_OPTIONS") or "--chdir=/tmp/"
+user_options = os.environ.get("DASHBOARD_QSUBMIT_OPTIONS")
+SUBMIT_OPTIONS = (
+    [item for item in user_options.split(" ")]
+    if user_options else ["--chdir=/tmp/"]
+)
 
 # Job script location. If changed from dashboard/queue_jobs, the folder
 # must contain scripts matching the names of those in the original folder.
