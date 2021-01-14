@@ -44,9 +44,18 @@ def create_from_request(request):
                               'required key. Found keys: {}'.format(
                                   list(request.form.keys())))
 
-    cfg = RedcapConfig.get_config(
-        url=url, project=project, instrument=instrument
-    )
+    try:
+        cfg = RedcapConfig.get_config(
+            url=url, project=project, instrument=instrument
+        )
+    except Exception as e:
+        logger.info(
+             "Failed to find redcap config for record {} in project {} on "
+             "server {} with instrument {}. Exception - {}".format(
+                 record, project, url, instrument, e
+             )
+        )
+        return
 
     if request.form[cfg.completed_field] != cfg.completed_value:
         logger.info("Record {} not completed. Ignoring".format(record))
