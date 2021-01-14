@@ -1822,6 +1822,22 @@ class RedcapRecord(db.Model):
         self.date = date
         self.redcap_version = version
 
+    @property
+    def url(self):
+        return self.config.url
+
+    @property
+    def project(self):
+        return self.config.project
+
+    @property
+    def instrument(self):
+        return self.config.instrument
+
+    @property
+    def redcap_version(self):
+        return self.config.redcap_version
+
     def __repr__(self):
         return "<RedcapRecord {}: record {}>".format(self.id, self.record)
 
