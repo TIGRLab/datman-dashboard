@@ -94,7 +94,14 @@ def create_from_request(request):
                               'required field. Found keys: {}'.format(
                                   record, list(server_record.keys())))
 
-    session = set_session(session_name)
+    try:
+        session = set_session(session_name)
+    except Exception as e:
+        raise RedcapException(
+            "Failed finding session for record {} from project {} on server "
+            "{}. Reason: {}".format(record, project, url, e)
+        )
+
     try:
         new_record = session.add_redcap(
             record, date, config=cfg.id, rc_user=redcap_user, comment=comment
