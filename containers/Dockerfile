@@ -14,6 +14,9 @@ ENV PYTHONPATH="${PYTHONPATH}:/dashboard"
 # charge of keeping the database schema up to date
 COPY ./entrypoint3.sh /entrypoint3.sh
 
+ENV POSTGRES_SRVR=postgres
+ENV POSTGRES_DATABASE=dashboard
+
 # Might need the --static-map command from srv_uwsgi.sh to correctly
 # serve qc pages
 # might need         "--daemonize=/output.log" to hold log output

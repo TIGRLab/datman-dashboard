@@ -17,12 +17,32 @@ Run with Docker compose
 ---------------------
 #. `Install Docker <https://docs.docker.com/get-docker/>`_, if you don't 
    already have it.
+#. `Install Datman. <http://imaging-genetics.camh.ca/datman/installation.html>`_
 #. Clone the `QC dashboard. <https://github.com/TIGRLab/dashboard.git>`_
 
    .. code-block:: bash
 
       git clone https://github.com/TIGRLab/dashboard.git
-#. 
+#. Switch to the 'containers' folder inside the dashboard's folder.
+
+   .. code-block:: bash
+   
+      cd dashboard/containers
+#. Fill in your configuration in the ``dashboard/containers/dashboard.env`` file. 
+   At a minimum you should set a flask secret key (this should be a very hard 
+   to guess string), your OAuth secret key and OAuth client key 
+   `from GitHub, <https://docs.github.com/en/developers/apps/building-oauth-apps/creating-an-oauth-app>`_
+   and a database password. For information on configurating the dashboard
+   :ref:`see here <glossary>`   
+#. Fill in your database configuration in the ``dashboard/containers/database.env`` 
+   file. Note that the database name, user, and password should match what you 
+   provided in dashboard.env
+#. Run the app
+
+   .. code-block:: bash
+   
+      docker compose up
+
 
 Run with Docker and your own PostgreSQL database
 ------------------------------------------------
@@ -31,9 +51,26 @@ already have it.
 
 Run without containers
 ----------------------
+This method is not for the faint of heart.
+
+#. 
 
 Run for development
 -------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 -v ${base}/datman-config:/config
 -v ${base}/temp_workdir:/archive

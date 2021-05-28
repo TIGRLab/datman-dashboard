@@ -1,26 +1,25 @@
+version: '3'
 services:
   app:
-    #######################################################################
-    # Update this to set build + image properly after testing
+    env_file: dashboard.env
+    ######################################################################
+    #Update this to set build + image properly after testing
     image: dashboard:0.1
     ports:
       - 5000:5000
     # command: tail -f /dev/null
     # command: /dashboard/srv_uwsgi.sh
     command: /entrypoint3.sh
-    env_file:
-      - dashboard.env
-    # volumes:
-    #   - .:/code
-    #   - logs:/logs
+    volumes:
+      - .:/code
+      - logs:/logs
   postgres:
+    env_file: database.env
     container_name: postgres
     restart: always
     image: postgres:latest
-    env_file:
-      - database.env
     volumes:
-      - ./database:/var/lib/postgresql
+      - ../database:/var/lib/postgresql
     ports:
       - 5432:5432
 
