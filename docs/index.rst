@@ -6,6 +6,7 @@ Welcome to QC Dashboard's documentation!
 
    installation
    glossary
+   developer
    api/modules
 
 
