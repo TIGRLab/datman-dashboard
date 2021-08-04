@@ -32,7 +32,7 @@ Run with Docker compose
    At a minimum you should set a flask secret key (this should be a very hard 
    to guess string), your OAuth secret key and OAuth client key 
    `from GitHub, <https://docs.github.com/en/developers/apps/building-oauth-apps/creating-an-oauth-app>`_
-   and a database password. For information on configurating the dashboard
+   and a database password. For information on configuring the dashboard
    :ref:`see here <glossary>`   
 #. Fill in your database configuration in the ``dashboard/containers/database.env`` 
    file. Note that the database name, user, and password should match what you 
@@ -51,19 +51,47 @@ already have it.
 
 Run without containers
 ----------------------
-This method is not for the faint of heart.
+If you're considering this you should be familiar with configuring postgres 
+and uwsgi.
 
-#. 
+#. `Install Datman. <http://imaging-genetics.camh.ca/datman/installation.html>`_
+#. Clone the `QC dashboard. <https://github.com/TIGRLab/dashboard.git>`_
+
+   .. code-block:: bash
+
+      git clone https://github.com/TIGRLab/dashboard.git
+#. Install the dashboard's python dependencies. Note that the dashboard is 
+   meant to run on python 3.5 or higher.
+
+   .. code-block:: bash
+   
+      # Make a virtual environment
+      python -m venv $YOURPATH/venv
+      
+      # Activate your environment
+      source $YOURPATH/venv/bin/activate
+      
+      # Install required packages
+      pip install -r $DASHBOARDPATH/requirements.txt
+#. `Install <https://www.postgresql.org/download/>`_ and configure your 
+    Postgres database. The dashboard was tested against PostgreSQL 9.5 but more 
+    recent versions should work as well. At a minimum you should create the
+    database user that the dashboard should use to connect.
+    
+    Once your database is ready you can initialize an empty database with the
+    correct schema with the following:
+    
+    .. code-block:: bash
+    
+       createdb dashboard
+       # You must be in the dashboard folder when you run this
+       flask db upgrade
+#. Get an OAuth client key and OAuth secret key `from GitHub. <https://docs.github.com/en/developers/apps/building-oauth-apps/creating-an-oauth-app>`_
+   You'll need to provide these to the dashboard later.
+#. Install uwsgi (on ubuntu this is just ``apt install uwsgi``)
 
 Run for development
 -------------------
-
-
-
-
-
-
-
 
 
 
