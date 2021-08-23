@@ -74,7 +74,7 @@ and uwsgi.
       # Install required packages
       pip install -r $DASHBOARDPATH/requirements.txt
 #. `Install <https://www.postgresql.org/download/>`_ and configure your 
-    Postgres database. The dashboard was tested against PostgreSQL 9.5 but more 
+    Postgres database. The dashboard was tested against PostgreSQL 12 but more 
     recent versions should work as well. At a minimum you should create the
     database user that the dashboard should use to connect.
     
