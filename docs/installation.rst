@@ -75,8 +75,15 @@ and uwsgi.
       pip install -r $DASHBOARDPATH/requirements.txt
 #. `Install <https://www.postgresql.org/download/>`_ and configure your 
     Postgres database. The dashboard was tested against PostgreSQL 12 but more 
-    recent versions should work as well. At a minimum you should create the
-    database user that the dashboard should use to connect.
+    recent versions should work as well. On Ubuntu 20.04 you can install postgres
+    with the following:
+
+    .. code-block:: bash
+
+       apt install postgresql-12
+
+    At a minimum you should create the database user that the dashboard should
+    use to connect.
     
     Once your database is ready you can initialize an empty database with the
     correct schema with the following:
