@@ -80,29 +80,47 @@ and uwsgi.
 
     .. code-block:: bash
 
-       apt install postgresql-12
+       sudo apt install postgresql-12
 
-    The first thing to do is add a dashboard user to postgres. You should set
-    a password for this user. It will be needed later.
+    First, you should update `postgresql.conf` to use a more secure method
+    for user passwords. On Ubuntu 20.04, for version 12, this file is stored at
+    `/etc/postgresql/12/main/postgresql.conf`. 
+    
+    In this file, change `password_encryption = md5` to 
+    `password_encryption = scram-sha-256` and ensure the line is not commented 
+    out. 
+    
+    Next, you'll want to update the `pg_hba.conf` file to allow password 
+    protected connections to the dashboard. On Ubuntu 20.04 this file is 
+    at `/etc/postgresql/12/main/pg_hba.conf`. Adding the line below to this 
+    file (beneath the comment section that says "Put your actual configuration 
+    here") will let you securely login to the dashboard user from your local 
+    machine with the password you set. If you plan to use a different name 
+    for your dashboard user you should modify the third column to match this
+    username. 
 
     .. code-block:: bash
 
-       sudo -u postgres createuser --password dashboard
+       #     database name  database user     connection method
+       local dashboard      dashboard         scram-sha-256
 
-    Next, you should update `pga_hba.conf` file to allow password access
-    to the dashboard database for the dashboard user. On Ubuntu 20.04, for
-    version 12, this file can be found at `/etc/postgresql/12/pg_hba.conf`.
+    After you've made these changes you must reload the configuration files.
+    On Ubuntu you can do this with `sudo systemctl reload postgresql`      
 
-    Adding the line below to this file (beneath the comment section that says
-    "Put your actual configuration here") will let you securely login to
-    the dashboard user from your local machine with the password you set.
+    Next you should add a dashboard user to postgres. You should set
+    a password for this user. This password and user is what the dashboard 
+    will use to connect to the database, so keep track of them.
 
     .. code-block:: bash
 
-       local dashboard dashboard scram-sha-256
+       sudo -u postgres createuser -P dashboard
 
-    After you've made the change you must restart the postgresql server.
-    On Ubuntu you can do this with `sudo systemctl restart postgresql`
+    Once your database is ready you can initialize an empty database with the
+    correct schema with the following:
+
+    .. code-block:: bash
+
+       sudo -u postgres createdb -O dashboard dashboard
 
 
     ***** Is this actually needed on prod / devel? *************************
@@ -129,13 +147,19 @@ and uwsgi.
     ***** These steps should come after the env vars are set (otherwise
           flask migrate fails)
 
-    Once your database is ready you can initialize an empty database with the
-    correct schema with the following:
 
-    .. code-block:: bash
-
-       sudo -u postgres createdb -O dashboard dashboard
+       
+    The first time you set up postgres for the dashboard you also need to 
+    initialize its database tables. You can do this by:
+      1. changing to the directory where you cloned the dashboard
+      2. Making sure your python virtual env is active
+      3. 
        # You must be in the dashboard folder when you run this
+       export PATH=<datmanpath>:${PATH}
+       export PYTHONPATH=<datmanpath>:${PYTHONPATH}
+       export FLASK_SECRET_KEY=something
+       export POSTGRES_USER=
+       export POSTGRES_PASS=
        flask db upgrade
 #. Get an OAuth client key and OAuth secret key `from GitHub. <https://docs.github.com/en/developers/apps/building-oauth-apps/creating-an-oauth-app>`_
    You'll need to provide these to the dashboard later.
