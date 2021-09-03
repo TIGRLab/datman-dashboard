@@ -84,20 +84,20 @@ and uwsgi.
 
     First, you should update `postgresql.conf` to use a more secure method
     for user passwords. On Ubuntu 20.04, for version 12, this file is stored at
-    `/etc/postgresql/12/main/postgresql.conf`. 
-    
-    In this file, change `password_encryption = md5` to 
-    `password_encryption = scram-sha-256` and ensure the line is not commented 
-    out. 
-    
-    Next, you'll want to update the `pg_hba.conf` file to allow password 
-    protected connections to the dashboard. On Ubuntu 20.04 this file is 
-    at `/etc/postgresql/12/main/pg_hba.conf`. Adding the line below to this 
-    file (beneath the comment section that says "Put your actual configuration 
-    here") will let you securely login to the dashboard user from your local 
-    machine with the password you set. If you plan to use a different name 
+    `/etc/postgresql/12/main/postgresql.conf`.
+
+    In this file, change `password_encryption = md5` to
+    `password_encryption = scram-sha-256` and ensure the line is not commented
+    out.
+
+    Next, you'll want to update the `pg_hba.conf` file to allow password
+    protected connections to the dashboard. On Ubuntu 20.04 this file is
+    at `/etc/postgresql/12/main/pg_hba.conf`. Adding the line below to this
+    file (beneath the comment section that says "Put your actual configuration
+    here") will let you securely login to the dashboard user from your local
+    machine with the password you set. If you plan to use a different name
     for your dashboard user you should modify the third column to match this
-    username. 
+    username.
 
     .. code-block:: bash
 
@@ -105,10 +105,10 @@ and uwsgi.
        local dashboard      dashboard         scram-sha-256
 
     After you've made these changes you must reload the configuration files.
-    On Ubuntu you can do this with `sudo systemctl reload postgresql`      
+    On Ubuntu you can do this with `sudo systemctl reload postgresql`
 
     Next you should add a dashboard user to postgres. You should set
-    a password for this user. This password and user is what the dashboard 
+    a password for this user. This password and user is what the dashboard
     will use to connect to the database, so keep track of them.
 
     .. code-block:: bash
@@ -148,12 +148,12 @@ and uwsgi.
           flask migrate fails)
 
 
-       
-    The first time you set up postgres for the dashboard you also need to 
+
+    The first time you set up postgres for the dashboard you also need to
     initialize its database tables. You can do this by:
       1. changing to the directory where you cloned the dashboard
       2. Making sure your python virtual env is active
-      3. 
+      3.
        # You must be in the dashboard folder when you run this
        export PATH=<datmanpath>:${PATH}
        export PYTHONPATH=<datmanpath>:${PYTHONPATH}
@@ -161,9 +161,88 @@ and uwsgi.
        export POSTGRES_USER=
        export POSTGRES_PASS=
        flask db upgrade
+
 #. Get an OAuth client key and OAuth secret key `from GitHub. <https://docs.github.com/en/developers/apps/building-oauth-apps/creating-an-oauth-app>`_
    You'll need to provide these to the dashboard later.
-#. Install uwsgi (on ubuntu this is just ``apt install uwsgi``)
+#. Install uwsgi (on ubuntu this is just ``apt install uwsgi``). On some
+   operating systems you may also need to install the uwsgi python3 plugin.
+   For Ubuntu 20.04 this can be done with `apt install uwsgi-plugin-python3`.
+   Then create your configuration file for uwsgi to use. On Ubuntu 20.04, for
+   example, you would make a file at `/etc/uwsgi/apps-enabled/dashboard.ini`.
+
+   In the 'dashboard.ini' file you should add at least the following
+   configuration.
+
+   .. code-block::ini
+
+      [uwsgi]
+
+      module = wsgi:app
+      chown-socket = www-data
+      lazy-apps = True     # Needed to prevent the scheduler from locking up
+
+      # This should be the path to your copy of the dashboard
+      chdir = PATH_TO_YOUR_DASHBOARD_HERE
+      # This is the virtualenv uwsgi will use when running the dashboard
+      virtualenv = PATH_TO_YOUR_VIRTUALENV_HERE
+      # Need the python3 plugin to run python3 apps
+      plugins = python3,logfile
+
+      # Fill in the path where you want log files to go. The default
+      # below is for Ubuntu 20.04. Note that this log will hold messages from
+      # the dashboard app only and using it will turn off log messages from
+      # uWSGI itself. So if you're having issues starting the app you should
+      # comment out this line to regain those messages.
+      logger = file:/var/log/uwsgi/app/dashboard.log
+
+      # This controls the user and group the app will run as. Replace it with
+      # a real user.
+      uid = YOURUSER
+      gid = YOURGROUP
+
+    Below this you should add all the environment variables that the dashboard
+    needs to run. At a minimum you'll need to set the variables from the
+    config glossary
+
+    *********INSERT REFERENCE TO GLOSSARY*******
+
+    that have been identified as required, though you may wish to enable
+    other dashboard features as well. Below is an example of what the
+    bare minimum environment configuration in your 'dashboard.ini' may need
+    to contain, but you should consult the configuration glossary for more
+    information.
+
+    .. code-block::ini
+
+       env = FLASK_SECRET_KEY=YOUR_VERY_SECURE_KEY_HERE
+
+       env = POSTGRES_USER=YOUR_DATABASE_USER
+       env = POSTGRES_PASS=YOUR_DATABASE_PASSWORD
+
+       env = OAUTH_CLIENT_GITHUB=YOUR_GITHUB_CLIENT_ID
+       env = OAUTH_SECRET_GITHUB=YOUR_GITHUB_SECRET
+
+    You will also need to provide the required datman configuration in this
+    file. Consult
+
+    ******** INSERT LINK TO DATMAN CONFIG DOCS HERE *******
+
+    datman's config docs for more info. The below should be sufficient for
+    the dashboard's purposes though.
+
+    .. code-block::ini
+
+       env = PYTHONPATH=PATH_TO_YOUR_DATMAN_COPY_HERE
+       env = DM_SYSTEM=YOUR_SYSTEM_NAME
+       env = DM_CONFIG=PATH_TO_YOUR_MAIN_CONFIG_HERE
+
+    Then, restart uwsgi to force it to read the configuration. On Ubuntu
+    you can do this with `sudo systemctl restart uwsgi`.
+
+
+
+
+
 #. Install nginx
 
 Run for development
