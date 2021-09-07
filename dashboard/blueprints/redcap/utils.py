@@ -57,8 +57,8 @@ def create_from_request(request):
         )
         return
 
-    if (cfg.completed_field in request.form
-            and request.form[cfg.completed_field] != cfg.completed_value):
+    if (cfg.completed_field in request.form and
+            request.form[cfg.completed_field] != cfg.completed_value):
         # Check if complete before pulling whole record
         logger.info("Record {} not completed. Ignoring".format(record))
         return
@@ -84,8 +84,8 @@ def create_from_request(request):
 
     server_record = server_record[0]
 
-    if (cfg.completed_field not in request.form
-            and server_record[cfg.completed_field] != cfg.completed_value):
+    if (cfg.completed_field not in request.form and
+            server_record[cfg.completed_field] != cfg.completed_value):
         # Check when the 'completed' field wasnt present in the DET
         logger.info("Record {} not completed. Ignoring".format(record))
         return
