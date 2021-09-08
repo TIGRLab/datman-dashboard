@@ -66,13 +66,13 @@ and uwsgi.
    .. code-block:: bash
 
       # Make a virtual environment
-      python -m venv $YOURPATH/venv
+      python3 -m venv $YOUR_ENV_PATH/venv
 
       # Activate your environment
-      source $YOURPATH/venv/bin/activate
+      source $YOUR_ENV_PATH/venv/bin/activate
 
       # Install required packages
-      pip install -r $DASHBOARDPATH/requirements.txt
+      pip install -r $DASHBOARD_PATH/requirements.txt
 #. `Install PostgreSQL <https://www.postgresql.org/download/>`_ and add a
     database user for the dashboard. The dashboard was tested against PostgreSQL
     12 but more recent versions should work as well. On Ubuntu 20.04 you can
@@ -163,7 +163,11 @@ and uwsgi.
        flask db upgrade
 
 #. Get an OAuth client key and OAuth secret key `from GitHub. <https://docs.github.com/en/developers/apps/building-oauth-apps/creating-an-oauth-app>`_
-   You'll need to provide these to the dashboard later.
+   In the Authorization callback URL field be sure to add '/callback/github'
+   to the end of your URL.
+   
+   You'll need to provide the Client ID and Client Secret to the dashboard 
+   later so be sure to record them. 
 #. Install uwsgi (on ubuntu this is just ``apt install uwsgi``). On some
    operating systems you may also need to install the uwsgi python3 plugin.
    For Ubuntu 20.04 this can be done with `apt install uwsgi-plugin-python3`.
