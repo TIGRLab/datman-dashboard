@@ -51,19 +51,19 @@ already have it.
 
 Run without containers
 ----------------------
-If you're considering this you should be prepared for a long installation 
-process. Note that all the example paths and installation commands provided 
-below are for Ubuntu 20.04 and may differ if you're using another operating 
+If you're considering this you should be prepared for a long installation
+process. Note that all the example paths and installation commands provided
+below are for Ubuntu 20.04 and may differ if you're using another operating
 system.
 
-#. **`Install Datman <http://imaging-genetics.camh.ca/datman/installation.html>`_**
-   and set up the configuration files as Datman's documentation describes.
-#. **Clone the `QC dashboard. <https://github.com/TIGRLab/dashboard.git>`_**
+#. `Install Datman <http://imaging-genetics.camh.ca/datman/installation.html>`_
+   and set up its configuration files.
+#. Clone the `QC dashboard. <https://github.com/TIGRLab/dashboard.git>`_
 
    .. code-block:: bash
 
       git clone https://github.com/TIGRLab/dashboard.git
-#. **Install the dashboard's python dependencies**. Note that the dashboard is
+#. Install the dashboard's python dependencies. Note that the dashboard is
    meant to run on python 3.5 or higher.
 
    .. code-block:: bash
@@ -76,108 +76,93 @@ system.
 
       # Install required packages
       pip install -r $DASHBOARD_PATH/requirements.txt
-#. **Set up `PostgreSQL.** <https://www.postgresql.org/download/>`_ The 
-   dashboard was tested against PostgreSQL 12 and all examples below assume 
+#. Set up `PostgreSQL. <https://www.postgresql.org/download/>`_ The
+   dashboard was tested against PostgreSQL 12 and all examples below assume
    this is the version in use. Newer versions should work as well, however.
 
-   * Install PostgreSQL
+   * Install PostgreSQL.
 
      .. code-block:: bash
 
         sudo apt install postgresql-12
 
-    First, you should update `postgresql.conf` to use a more secure method
-    for user passwords. On Ubuntu 20.04, for version 12, this file is stored at
-    `/etc/postgresql/12/main/postgresql.conf`.
+   * Make postgres use a more secure password storage method.
 
-    In this file, change `password_encryption = md5` to
-    `password_encryption = scram-sha-256` and ensure the line is not commented
-    out.
+     * Open the ``postgresql.conf`` file. e.g. ``nano /etc/postgresql/12/main/postgresql.conf``
+     * Uncomment the line for the ``password_encryption`` setting
+     * Change it to ``password_encryption = scram-sha-256``
 
-    Next, you'll want to update the `pg_hba.conf` file to allow password
-    protected connections to the dashboard. On Ubuntu 20.04 this file is
-    at `/etc/postgresql/12/main/pg_hba.conf`. Adding the line below to this
-    file (beneath the comment section that says "Put your actual configuration
-    here") will let you securely login to the dashboard user from your local
-    machine with the password you set. If you plan to use a different name
-    for your dashboard user you should modify the third column to match this
-    username.
+   * Allow the dashboard user to connect to the dashboard database with a password.
 
-    .. code-block:: bash
+     * Open the ``pg_hba.conf`` file. e.g. ``nano /etc/postgresql/12/main/pg_hba.conf``
+     * Beneath the comment that says "Put your actual configuration here", add
+       an entry like this::
 
-       #     database name  database user     connection method
-       local dashboard      dashboard         scram-sha-256
+        #     database name  database user     connection method
+        local dashboard      dashboard         scram-sha-256
+     * Reload the configuration files to make the changes take effect.
 
-    After you've made these changes you must reload the configuration files.
-    On Ubuntu you can do this with `sudo systemctl reload postgresql`
+       .. code-block:: bash
 
-    Next you should add a dashboard user to postgres. You should set
-    a password for this user. This password and user is what the dashboard
-    will use to connect to the database, so keep track of them.
+          sudo systemctl reload postgresql
 
-    .. code-block:: bash
+     * Add the dashboard user to the database.
 
-       sudo -u postgres createuser -P dashboard
+       .. code-block:: bash
 
-    Once your database is ready you can initialize an empty database with the
-    correct schema with the following:
+          # Save the password you use. You'll use it every time you connect to
+          # the database.
+          sudo -u postgres createuser -P dashboard
+     * Initialize the database.
 
-    .. code-block:: bash
+       * Create an empty database that's owned by the dashboard user.
 
-       sudo -u postgres createdb -O dashboard dashboard
+         .. code-block:: bash
 
+            sudo -u postgres createdb -O dashboard dashboard
 
-    ***** Is this actually needed on prod / devel? *************************
-    ***** Likely not needed (and on prod it uses * but probably only because of
-    ***** datman/psql )
+       * Activate your virtual environment, if you havent yet.
 
-    You'll need to update `postgresql.conf`, which is stored at
-    `/etc/postgresql/12/main/postgresql.conf` for version 12 on Ubuntu 20.04,
-    to make postgres listen for your machine's IP in addition to localhost.
+         .. code-block:: bash
 
-    .. code-block:: bash
+            source $YOUR_ENV_PATH/venv/bin/activate
 
-       listen_addresses = 'YOUR IP HERE', localhost
-    ********************************************************
+       * Set the environment variables needed for flask migrate to run.
 
-    ***** Are pg_hba.conf records needed? ******************
-    ***** Only if dashboard will be using non-local connections also
-    ***** (e.g. datman/psql)
+         .. code-block:: bash
 
-    ***** Are pg_ident.conf records needed? ****************
-    *****
+            # Replace "/full/path/to/datman" with the full path to
+            # your datman folder.
+            export PATH=/full/path/to/datman:${PATH}
+            export PYTHONPATH=/full/path/to/datman:${PYTHONPATH}
 
+            # This secret key is needed but is temporary so can be anything for now
+            export FLASK_SECRET_KEY=mytemporarysecretkey
 
-    ***** These steps should come after the env vars are set (otherwise
-          flask migrate fails)
+            export POSTGRES_USER=dashboard
+            export POSTGRES_PASS=YOUR_DATABASE_PASSWORD_HERE
+
+       * Switch to your dashboard directory and run the command below to create
+         the database tables.
+
+         .. code-block:: bash
+
+            flask db upgrade
 
 
-
-    The first time you set up postgres for the dashboard you also need to
-    initialize its database tables. You can do this by:
-      1. changing to the directory where you cloned the dashboard
-      2. Making sure your python virtual env is active
-      3.
-       # You must be in the dashboard folder when you run this
-       export PATH=<datmanpath>:${PATH}
-       export PYTHONPATH=<datmanpath>:${PYTHONPATH}
-       export FLASK_SECRET_KEY=something
-       export POSTGRES_USER=
-       export POSTGRES_PASS=
-       flask db upgrade
 
 #. Get an OAuth client key and OAuth secret key `from GitHub. <https://docs.github.com/en/developers/apps/building-oauth-apps/creating-an-oauth-app>`_
    In the Authorization callback URL field be sure to add '/callback/github'
    to the end of your URL.
-   
-   You'll need to provide the Client ID and Client Secret to the dashboard 
-   later so be sure to record them. 
+
+   You'll need to provide the Client ID and Client Secret to the dashboard
+   later so be sure to record them.
 #. Install uwsgi (on ubuntu this is just ``apt install uwsgi``). On some
    operating systems you may also need to install the uwsgi python3 plugin.
    For Ubuntu 20.04 this can be done with `apt install uwsgi-plugin-python3`.
    Note that you may have to reboot your computer after installing the python3
-   plugin to get uwsgi to correctly use it. 
-   
+   plugin to get uwsgi to correctly use it.
+
    Then create your configuration file for uwsgi to use. On Ubuntu 20.04, for
    example, you would make a file at `/etc/uwsgi/apps-enabled/dashboard.ini`.
 
@@ -251,25 +236,25 @@ system.
     you can do this with `sudo systemctl restart uwsgi`.
 
 #. Install nginx. On Ubuntu 20.04 you can do this with `sudo apt install nginx`.
-   Then in the 'sites-enabled' folder add a file named 'dashboard.conf' with 
-   your site configuration. On Ubuntu 20.04 you can add the file at 
-   `/etc/nginx/sites-enabled/dashboard.conf`. At a minimum, you should 
+   Then in the 'sites-enabled' folder add a file named 'dashboard.conf' with
+   your site configuration. On Ubuntu 20.04 you can add the file at
+   `/etc/nginx/sites-enabled/dashboard.conf`. At a minimum, you should
    add a server entry with your site name and at least the below configuration.
    Note that this configuration is for HTTP only, and shouldn't be used outside
    of a private network.
-   
+
    .. code-block:: bash
-      
+
       server {
         listen 80;
         server_name localhost YOURSERVERNAMEHERE;
-        
+
         location / {
           include uwsgi_params;
           uwsgi_pass unix://var/run/uwsgi/app/dashboard/socket;
         }
       }
-  
+
 
 Run for development
 -------------------
