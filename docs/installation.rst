@@ -51,36 +51,40 @@ already have it.
 
 Run without containers
 ----------------------
-If you're considering this you should be familiar with configuring postgres
-and uwsgi.
+If you're considering this you should be prepared for a long installation 
+process. Note that all the example paths and installation commands provided 
+below are for Ubuntu 20.04 and may differ if you're using another operating 
+system.
 
-#. `Install Datman. <http://imaging-genetics.camh.ca/datman/installation.html>`_
-#. Clone the `QC dashboard. <https://github.com/TIGRLab/dashboard.git>`_
+#. **`Install Datman <http://imaging-genetics.camh.ca/datman/installation.html>`_**
+   and set up the configuration files as Datman's documentation describes.
+#. **Clone the `QC dashboard. <https://github.com/TIGRLab/dashboard.git>`_**
 
    .. code-block:: bash
 
       git clone https://github.com/TIGRLab/dashboard.git
-#. Install the dashboard's python dependencies. Note that the dashboard is
+#. **Install the dashboard's python dependencies**. Note that the dashboard is
    meant to run on python 3.5 or higher.
 
    .. code-block:: bash
 
       # Make a virtual environment
-      python -m venv $YOURPATH/venv
+      python3 -m venv $YOUR_ENV_PATH/venv
 
       # Activate your environment
-      source $YOURPATH/venv/bin/activate
+      source $YOUR_ENV_PATH/venv/bin/activate
 
       # Install required packages
-      pip install -r $DASHBOARDPATH/requirements.txt
-#. `Install PostgreSQL <https://www.postgresql.org/download/>`_ and add a
-    database user for the dashboard. The dashboard was tested against PostgreSQL
-    12 but more recent versions should work as well. On Ubuntu 20.04 you can
-    install postgres with the following:
+      pip install -r $DASHBOARD_PATH/requirements.txt
+#. **Set up `PostgreSQL.** <https://www.postgresql.org/download/>`_ The 
+   dashboard was tested against PostgreSQL 12 and all examples below assume 
+   this is the version in use. Newer versions should work as well, however.
 
-    .. code-block:: bash
+   * Install PostgreSQL
 
-       sudo apt install postgresql-12
+     .. code-block:: bash
+
+        sudo apt install postgresql-12
 
     First, you should update `postgresql.conf` to use a more secure method
     for user passwords. On Ubuntu 20.04, for version 12, this file is stored at
@@ -163,10 +167,17 @@ and uwsgi.
        flask db upgrade
 
 #. Get an OAuth client key and OAuth secret key `from GitHub. <https://docs.github.com/en/developers/apps/building-oauth-apps/creating-an-oauth-app>`_
-   You'll need to provide these to the dashboard later.
+   In the Authorization callback URL field be sure to add '/callback/github'
+   to the end of your URL.
+   
+   You'll need to provide the Client ID and Client Secret to the dashboard 
+   later so be sure to record them. 
 #. Install uwsgi (on ubuntu this is just ``apt install uwsgi``). On some
    operating systems you may also need to install the uwsgi python3 plugin.
    For Ubuntu 20.04 this can be done with `apt install uwsgi-plugin-python3`.
+   Note that you may have to reboot your computer after installing the python3
+   plugin to get uwsgi to correctly use it. 
+   
    Then create your configuration file for uwsgi to use. On Ubuntu 20.04, for
    example, you would make a file at `/etc/uwsgi/apps-enabled/dashboard.ini`.
 
@@ -180,13 +191,13 @@ and uwsgi.
       module = wsgi:app
       chown-socket = www-data
       lazy-apps = True     # Needed to prevent the scheduler from locking up
+      # Need the python3 plugin to run python3 apps
+      plugins = python3,logfile
 
       # This should be the path to your copy of the dashboard
       chdir = PATH_TO_YOUR_DASHBOARD_HERE
       # This is the virtualenv uwsgi will use when running the dashboard
       virtualenv = PATH_TO_YOUR_VIRTUALENV_HERE
-      # Need the python3 plugin to run python3 apps
-      plugins = python3,logfile
 
       # Fill in the path where you want log files to go. The default
       # below is for Ubuntu 20.04. Note that this log will hold messages from
@@ -239,11 +250,26 @@ and uwsgi.
     Then, restart uwsgi to force it to read the configuration. On Ubuntu
     you can do this with `sudo systemctl restart uwsgi`.
 
-
-
-
-
-#. Install nginx
+#. Install nginx. On Ubuntu 20.04 you can do this with `sudo apt install nginx`.
+   Then in the 'sites-enabled' folder add a file named 'dashboard.conf' with 
+   your site configuration. On Ubuntu 20.04 you can add the file at 
+   `/etc/nginx/sites-enabled/dashboard.conf`. At a minimum, you should 
+   add a server entry with your site name and at least the below configuration.
+   Note that this configuration is for HTTP only, and shouldn't be used outside
+   of a private network.
+   
+   .. code-block:: bash
+      
+      server {
+        listen 80;
+        server_name localhost YOURSERVERNAMEHERE;
+        
+        location / {
+          include uwsgi_params;
+          uwsgi_pass unix://var/run/uwsgi/app/dashboard/socket;
+        }
+      }
+  
 
 Run for development
 -------------------
