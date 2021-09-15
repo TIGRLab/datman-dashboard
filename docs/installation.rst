@@ -110,54 +110,81 @@ system.
 
        .. code-block:: bash
 
-          # Save the password you use. You'll use it every time you connect to
-          # the database.
+          # Save the password you use. You'll use it every 
+          # time you connect to the database.
           sudo -u postgres createuser -P dashboard
-     * Initialize the database.
+   * Initialize the database.
 
-       * Create an empty database that's owned by the dashboard user.
+     * Create an empty database that's owned by the dashboard user.
 
-         .. code-block:: bash
+       .. code-block:: bash
 
-            sudo -u postgres createdb -O dashboard dashboard
+          sudo -u postgres createdb -O dashboard dashboard
 
-       * Activate your virtual environment, if you havent yet.
+     * Activate your virtual environment, if you havent yet.
 
-         .. code-block:: bash
+       .. code-block:: bash
 
-            source $YOUR_ENV_PATH/venv/bin/activate
+          source $YOUR_ENV_PATH/venv/bin/activate
 
-       * Set the environment variables needed for flask migrate to run.
+     * Set the environment variables needed for flask migrate to run.
 
-         .. code-block:: bash
+       .. code-block:: bash
 
-            # Replace "/full/path/to/datman" with the full path to
-            # your datman folder.
-            export PATH=/full/path/to/datman:${PATH}
-            export PYTHONPATH=/full/path/to/datman:${PYTHONPATH}
+          # Replace "/full/path/to/datman" with the full 
+          # path to your datman folder.
+          export PATH=/full/path/to/datman:${PATH}
+          export PYTHONPATH=/full/path/to/datman:${PYTHONPATH}
 
-            # This secret key is needed but is temporary so can be anything for now
-            export FLASK_SECRET_KEY=mytemporarysecretkey
+          # This secret key is needed but is temporary 
+          # so can be anything for now
+          export FLASK_SECRET_KEY=mytemporarysecretkey
 
-            export POSTGRES_USER=dashboard
-            export POSTGRES_PASS=YOUR_DATABASE_PASSWORD_HERE
+          export POSTGRES_USER=dashboard
+          export POSTGRES_PASS=YOUR_DATABASE_PASSWORD_HERE
 
-       * Switch to your dashboard directory and run the command below to create
-         the database tables.
+     * Switch to your dashboard directory and run the command below to create
+       the database tables.
 
-         .. code-block:: bash
+       .. code-block:: bash
 
-            flask db upgrade
+          flask db upgrade
 
-
-
-#. Get an OAuth client key and OAuth secret key `from GitHub. <https://docs.github.com/en/developers/apps/building-oauth-apps/creating-an-oauth-app>`_
-   In the Authorization callback URL field be sure to add '/callback/github'
-   to the end of your URL.
+#. Get an OAuth client ID and client secret `from GitHub. <https://docs.github.com/en/developers/apps/building-oauth-apps/creating-an-oauth-app>`_
+   In the 'Authorization callback URL' field be sure to add ``/callback/github``
+   to the end of your homepage URL.
 
    You'll need to provide the Client ID and Client Secret to the dashboard
    later so be sure to record them.
-#. Install uwsgi (on ubuntu this is just ``apt install uwsgi``). On some
+   
+#. Configure the uWSGI server. 
+  
+   * Install uWSGI.
+   
+     .. code-block:: bash
+     
+        sudo apt install uwsgi
+        
+        # On some platforms (such as Ubuntu 20.04) you also
+        # need the python3 plugin. After installation you 
+        # may need to restart your computer
+        sudo apt install uwsgi-plugin-python3
+   * Create a ``dashboard.ini`` config file in uWSGI's apps-enabled folder.
+     (e.g. ``/etc/uwsgi/apps-enabled/dashboard.ini``)
+     
+   * Add your configuration. At a minimum you should add the settings 
+     described below. For more information and a list of all settings see
+     `here `_
+     
+     
+     
+     ^^^^^^^^^^
+     
+     
+     
+     
+     
+   * Install uwsgi (on ubuntu this is just ``apt install uwsgi``). On some
    operating systems you may also need to install the uwsgi python3 plugin.
    For Ubuntu 20.04 this can be done with `apt install uwsgi-plugin-python3`.
    Note that you may have to reboot your computer after installing the python3
@@ -169,7 +196,7 @@ system.
    In the 'dashboard.ini' file you should add at least the following
    configuration.
 
-   .. code-block::ini
+   .. code-block:: ini
 
       [uwsgi]
 
