@@ -2,16 +2,13 @@
 Installation
 ------------
 
-You have several options for how to install and use the QC dashboard. These are
-listed below from easiest to hardest. If you want to setup a development
-environment you should instead see this section:  `Run for development`_
+You have several options for how to run the QC dashboard and these are
+listed below.
 
-#. `Run with Docker Compose`_. This is the fastest and simplest method
-   (but offers the least customization).
-#. `Run with Docker and your own PostgreSQL database`_. This allows you to
-   connect the QC dashboard to a pre-existing database server.
-#. `Run without containers`_. This will take the most effort but allow you
-   to fully customize your build.
+#. `Run a development instance`_
+#. `Run with Docker Compose`_
+#. `Do a Full install`_
+
 
 Run with Docker compose
 ---------------------
@@ -44,17 +41,13 @@ Run with Docker compose
       docker compose up
 
 
-Run with Docker and your own PostgreSQL database
-------------------------------------------------
-#. `Install Docker <https://docs.docker.com/get-docker/>`_, if you don't
-already have it.
 
-Run without containers
-----------------------
-If you're considering this you should be prepared for a long installation
-process. Note that all the example paths and installation commands provided
-below are for Ubuntu 20.04 and may differ if you're using another operating
-system.
+Do a Full install
+-----------------
+A full install gives you the most control over your configuration. If you're
+considering this you should be prepared for a long installation process. Note
+that all the example paths and installation commands provided below are for
+Ubuntu 20.04 and may differ if you're using another operating system.
 
 #. `Install Datman <http://imaging-genetics.camh.ca/datman/installation.html>`_
    and set up its configuration files.
@@ -110,7 +103,7 @@ system.
 
        .. code-block:: bash
 
-          # Save the password you use. You'll use it every 
+          # Save the password you use. You'll use it every
           # time you connect to the database.
           sudo -u postgres createuser -P dashboard
    * Initialize the database.
@@ -131,12 +124,12 @@ system.
 
        .. code-block:: bash
 
-          # Replace "/full/path/to/datman" with the full 
+          # Replace "/full/path/to/datman" with the full
           # path to your datman folder.
           export PATH=/full/path/to/datman:${PATH}
           export PYTHONPATH=/full/path/to/datman:${PYTHONPATH}
 
-          # This secret key is needed but is temporary 
+          # This secret key is needed but is temporary
           # so can be anything for now
           export FLASK_SECRET_KEY=mytemporarysecretkey
 
@@ -156,131 +149,102 @@ system.
 
    You'll need to provide the Client ID and Client Secret to the dashboard
    later so be sure to record them.
-   
-#. Configure the uWSGI server. 
-  
+
+#. Configure the uWSGI server.
+
    * Install uWSGI.
-   
+
      .. code-block:: bash
-     
+
         sudo apt install uwsgi
-        
+
         # On some platforms (such as Ubuntu 20.04) you also
-        # need the python3 plugin. After installation you 
+        # need the python3 plugin. After installation you
         # may need to restart your computer
         sudo apt install uwsgi-plugin-python3
    * Create a ``dashboard.ini`` config file in uWSGI's apps-enabled folder.
      (e.g. ``/etc/uwsgi/apps-enabled/dashboard.ini``)
-     
-   * Add your configuration. At a minimum you should add the settings 
-     described below. For more information and a list of all settings see
-     `here `_
-     
-     
-     
-     ^^^^^^^^^^
-     
-     
-     
-     
-     
-   * Install uwsgi (on ubuntu this is just ``apt install uwsgi``). On some
-   operating systems you may also need to install the uwsgi python3 plugin.
-   For Ubuntu 20.04 this can be done with `apt install uwsgi-plugin-python3`.
-   Note that you may have to reboot your computer after installing the python3
-   plugin to get uwsgi to correctly use it.
 
-   Then create your configuration file for uwsgi to use. On Ubuntu 20.04, for
-   example, you would make a file at `/etc/uwsgi/apps-enabled/dashboard.ini`.
+   * Add your configuration. At a minimum you should add the settings
+     described below. For more information and a list of all dashboard settings
+     see :ref:`here. <glossary>` Any Datman settings you need should also be
+     added here. For a list of uWSGI options see their documentation
+     `here <https://uwsgi-docs.readthedocs.io/en/latest/Options.html>`_
 
-   In the 'dashboard.ini' file you should add at least the following
-   configuration.
+     .. code-block:: ini
 
-   .. code-block:: ini
+        [uwsgi]
 
-      [uwsgi]
+        module = wsgi:app
+        chown-socket = www-data
+        plugins = python3,logfile
 
-      module = wsgi:app
-      chown-socket = www-data
-      lazy-apps = True     # Needed to prevent the scheduler from locking up
-      # Need the python3 plugin to run python3 apps
-      plugins = python3,logfile
+        # Needed to prevent the scheduler from locking up
+        lazy-apps = True
 
-      # This should be the path to your copy of the dashboard
-      chdir = PATH_TO_YOUR_DASHBOARD_HERE
-      # This is the virtualenv uwsgi will use when running the dashboard
-      virtualenv = PATH_TO_YOUR_VIRTUALENV_HERE
+        # This should be the path to your dashboard folder
+        chdir = PATH_TO_YOUR_DASHBOARD_HERE
+        # This is the virtualenv uwsgi will use when
+        # running the dashboard
+        virtualenv = PATH_TO_YOUR_VIRTUALENV_HERE
 
-      # Fill in the path where you want log files to go. The default
-      # below is for Ubuntu 20.04. Note that this log will hold messages from
-      # the dashboard app only and using it will turn off log messages from
-      # uWSGI itself. So if you're having issues starting the app you should
-      # comment out this line to regain those messages.
-      logger = file:/var/log/uwsgi/app/dashboard.log
+        # This controls the user and group the app will run under.
+        # Replace it with a real username/group.
+        uid = YOURUSER
+        gid = YOURGROUP
 
-      # This controls the user and group the app will run as. Replace it with
-      # a real user.
-      uid = YOURUSER
-      gid = YOURGROUP
+        # Dashboard + Datman env variables can be set here
+        # Below shows only the minimum required variables that
+        # must be set to run the app.
 
-    Below this you should add all the environment variables that the dashboard
-    needs to run. At a minimum you'll need to set the variables from the
-    config glossary
+        # Set this to something unguessable and keep it private
+        # or user sessions will be compromised
+        env = FLASK_SECRET_KEY=YOUR_VERY_SECURE_KEY_HERE
 
-    *********INSERT REFERENCE TO GLOSSARY*******
+        env = POSTGRES_USER=dashboard
+        env = POSTGRES_PASS=YOUR_DATABASE_PASSWORD
 
-    that have been identified as required, though you may wish to enable
-    other dashboard features as well. Below is an example of what the
-    bare minimum environment configuration in your 'dashboard.ini' may need
-    to contain, but you should consult the configuration glossary for more
-    information.
+        env = OAUTH_CLIENT_GITHUB=YOUR_GITHUB_CLIENT_ID
+        env = OAUTH_SECRET_GITHUB=YOUR_GITHUB_SECRET
 
-    .. code-block::ini
+        # Configure datman here too
+        env = PYTHONPATH=PATH_TO_YOUR_DATMAN_FOLDER_HERE
+        env = DM_SYSTEM=YOUR_SYSTEM_NAME
+        env = DM_CONFIG=PATH_TO_YOUR_MAIN_CONFIG_HERE
 
-       env = FLASK_SECRET_KEY=YOUR_VERY_SECURE_KEY_HERE
+   * Restart uWSGI to force it to re-read the configuration.
 
-       env = POSTGRES_USER=YOUR_DATABASE_USER
-       env = POSTGRES_PASS=YOUR_DATABASE_PASSWORD
+     .. code-block:: bash
 
-       env = OAUTH_CLIENT_GITHUB=YOUR_GITHUB_CLIENT_ID
-       env = OAUTH_SECRET_GITHUB=YOUR_GITHUB_SECRET
+        sudo systemctl restart uwsgi
 
-    You will also need to provide the required datman configuration in this
-    file. Consult
+#. Configure nginx to serve the uWSGI dashboard app.
 
-    ******** INSERT LINK TO DATMAN CONFIG DOCS HERE *******
+   * Install nginx
 
-    datman's config docs for more info. The below should be sufficient for
-    the dashboard's purposes though.
+     .. code-block:: bash
 
-    .. code-block::ini
+        sudo apt install nginx
 
-       env = PYTHONPATH=PATH_TO_YOUR_DATMAN_COPY_HERE
-       env = DM_SYSTEM=YOUR_SYSTEM_NAME
-       env = DM_CONFIG=PATH_TO_YOUR_MAIN_CONFIG_HERE
+   * Add a ``dashboard.conf`` file to nginx's sites-enabled folder.
+     (e.g. ``/etc/nginx/sites-enabled/dashboard.conf``)
 
-    Then, restart uwsgi to force it to read the configuration. On Ubuntu
-    you can do this with `sudo systemctl restart uwsgi`.
+     At a minimum you should add a server entry, like the one shown below,
+     with your server's name filled in. Note that this example configuration
+     is for HTTP only and should not be used outside of a private network.
 
-#. Install nginx. On Ubuntu 20.04 you can do this with `sudo apt install nginx`.
-   Then in the 'sites-enabled' folder add a file named 'dashboard.conf' with
-   your site configuration. On Ubuntu 20.04 you can add the file at
-   `/etc/nginx/sites-enabled/dashboard.conf`. At a minimum, you should
-   add a server entry with your site name and at least the below configuration.
-   Note that this configuration is for HTTP only, and shouldn't be used outside
-   of a private network.
+     .. code-block:: bash
 
-   .. code-block:: bash
+        server {
+          listen 80;
+          server_name localhost YOURSERVERNAMEHERE;
 
-      server {
-        listen 80;
-        server_name localhost YOURSERVERNAMEHERE;
-
-        location / {
-          include uwsgi_params;
-          uwsgi_pass unix://var/run/uwsgi/app/dashboard/socket;
+          location / {
+            include uwsgi_params;
+            uwsgi_pass unix://var/run/uwsgi/app/dashboard/socket;
+          }
         }
-      }
+
 
 
 Run for development
