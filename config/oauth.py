@@ -2,6 +2,11 @@
 """
 import os
 
+from .utils import read_boolean
+
+# Should only be True when testing
+LOGIN_DISABLED = read_boolean('LOGIN_DISABLED', default=False)
+
 OPENID_PROVIDERS = [
     {'name': 'GitHub',
      'url': 'https://github.com/login/oauth/authorize'}
