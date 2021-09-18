@@ -5,16 +5,71 @@ Installation
 You have several options for how to run the QC dashboard and these are
 listed below.
 
-#. `Run a development instance`_
+#. `Run a Development Instance`_
 #. `Run with Docker Compose`_
-#. `Do a Full install`_
+#. `Do a Full Install`_
 
 
-Run with Docker compose
+Run a Development Instance
+--------------------------
+#. `Install Docker <https://docs.docker.com/get-docker/>`_, if you don't
+   already have it.
+#. Set up your datman config files as described `here. <http://imaging-genetics.camh.ca/datman/installation.html>`_
+#. Clone the `QC dashboard. <https://github.com/TIGRLab/dashboard.git>`_
+
+   .. code-block:: bash
+
+      git clone https://github.com/TIGRLab/dashboard.git
+#. Change to the dashboard folder and build your container.
+
+   .. code-block:: bash
+   
+      cd dashboard
+      docker build -t devel_dashboard:latest -f containers/devel/Dockerfile .
+#. Change to the ``containers/devel`` folder. 
+
+   .. code-block:: bash
+   
+      cd containers/devel
+#. Update the docker-compose.yml file 'volumes' section to provide the 
+   path to the folder where your data will be stored and the path to your 
+   datman config files. Note that your datman main config is expected to 
+   be named 'main_config.yaml' and to contain a system config block named 
+   'docker', as described in the datman installation instructions.
+   
+   .. code-block:: yaml
+   
+      # Update this section with your paths
+      volumes:
+        - YOUR_DATA_PATH_HERE:/archive
+        - YOUR_CONFIG_PATH_HERE:/config
+        - logs:/logs
+#. Run the dashboard app with docker compose. Note that if you need to change
+   or set any app settings, you can modify the dashboard.env and database.env
+   files in this folder first.
+
+   .. code-block:: bash
+   
+      docker compose up
+#. If everything started up correctly, you'll be able to access the dashboard
+   in your browser at ``localhost:5000``. If you need to connect to the database
+   while the app is running, make sure you have ``psql`` installed (you can 
+   get it with ``sudo apt install postgresql-client`` on Ubuntu 20.04) and 
+   run this command from another terminal:
+   
+   .. code-block:: bash
+   
+      psql -U dashboard -p 5432 -h localhost dashboard
+      
+   You will be prompted for the ``POSTGRES_PASSWORD`` from the 
+   ``containers/devel/database.env`` file.   
+
+
+Run with Docker Compose
 ---------------------
 #. `Install Docker <https://docs.docker.com/get-docker/>`_, if you don't
    already have it.
-#. `Install Datman. <http://imaging-genetics.camh.ca/datman/installation.html>`_
+#. Create the datman container config files as described `here <http://imaging-genetics.camh.ca/datman/installation.html>`_
 #. Clone the `QC dashboard. <https://github.com/TIGRLab/dashboard.git>`_
 
    .. code-block:: bash
@@ -24,7 +79,7 @@ Run with Docker compose
 
    .. code-block:: bash
 
-      cd dashboard/containers
+      cd dashboard/containers/prod
 #. Fill in your configuration in the ``dashboard/containers/dashboard.env`` file.
    At a minimum you should set a flask secret key (this should be a very hard
    to guess string), your OAuth secret key and OAuth client key
@@ -42,7 +97,7 @@ Run with Docker compose
 
 
 
-Do a Full install
+Do a Full Install
 -----------------
 A full install gives you the most control over your configuration. If you're
 considering this you should be prepared for a long installation process. Note
@@ -244,58 +299,3 @@ Ubuntu 20.04 and may differ if you're using another operating system.
             uwsgi_pass unix://var/run/uwsgi/app/dashboard/socket;
           }
         }
-
-
-
-Run for development
--------------------
-
-
-
-
-
-
-
-
--v ${base}/datman-config:/config
--v ${base}/temp_workdir:/archive
--v ${base}/dashboard/logs:/logs
-
-
-docker run -it -p 5000:5000 -e FLASK_SECR_KEY=testingkey dashboard:0.1 uwsgi --socket 0.0.0.0:5000 --protocol http --wsgi-file /dashboard/wsgi.py --callable app --enable-threads
-
-
-Should use the setuser option like with datman to ensure
-changes to archive dont change owner to root:root
-
-Should maybe see if you can run it better than with wsgi.py... lots of
-settings will differ from ours
-
-Need to document all from the ini_template / config folder
-  - Ensure reasonable defaults
-
-
-Have a 'debug' tag that disables oauth login and mounts in a local
-copy of the dashboard so it can be changed on the fly ...?
-
-Need way to initialize the postgresql database (once app running it might
-  not be possible...)
-
-Need to document how to backup the volume of postgres data
-
-Need to document how to run nginx in front of it
-
-Need to make sure the way app is running is production not flask builtin server
-
-
-Installation cases:
-  1. Docker compose
-  2. Dashboard container with fully external/user set-up postgres
-  3. Fully manual install
-  4. debug / dev install
-
-2.
-  To access host based services (postgres installed on host):
-      Set POSTGRES_SRVR = host.docker.internal
-  Ensure a user exists in your database with a username matching POSTGRES_USER
-  and password matching POSTGRES_PASS

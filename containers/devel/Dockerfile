@@ -8,14 +8,17 @@ FROM tigrlab/datman:0.1
 
 COPY containers/devel/entrypoint.sh /entrypoint.sh
 
-COPY . /dashboard
-
-RUN cd /dashboard && \
-    pip install --upgrade pip && \
-    pip install -r requirements.txt
+# Copy the requirements and set up the python env first so
+# that rebuilds are faster.
+COPY ./requirements.txt /
+RUN pip install --upgrade pip && \
+    pip install -r /requirements.txt && \
+    pip install flask-debugtoolbar
 
 ENV PATH="/dashboard:${PATH}"
 ENV PYTHONPATH="/dashboard:${PYTHONPATH}"
+
+COPY . /dashboard
 
 CMD ["uwsgi", \
         "--socket=0.0.0.0:5000", \
