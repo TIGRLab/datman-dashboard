@@ -5,51 +5,58 @@ Installation
 You have several options for how to run the QC dashboard and these are
 listed below.
 
-#. `Run a Development Instance`_
 #. `Run with Docker Compose`_
 #. `Do a Full Install`_
+#. `Run a Development Instance`_
 
 
-Run a Development Instance
---------------------------
+Run with Docker Compose
+-----------------------
 #. `Install Docker <https://docs.docker.com/get-docker/>`_, if you don't
    already have it.
-#. Set up your datman config files as described `here. <http://imaging-genetics.camh.ca/datman/installation.html>`_
+#. Create the datman container config files as described `here <http://imaging-genetics.camh.ca/datman/installation.html>`_
+#. Get an OAuth client ID and client secret `from GitHub. <https://docs.github.com/en/developers/apps/building-oauth-apps/creating-an-oauth-app>`_
+   In the 'Authorization callback URL' field be sure to add ``/callback/github``
+   to the end of your homepage URL.
+
+   You'll need to provide the Client ID and Client Secret to the dashboard
+   later so be sure to record them.
 #. Clone the `QC dashboard. <https://github.com/TIGRLab/dashboard.git>`_
 
    .. code-block:: bash
 
       git clone https://github.com/TIGRLab/dashboard.git
-#. Change to the dashboard folder and build your container.
+#. Switch to the 'containers' folder inside the dashboard's folder.
 
    .. code-block:: bash
-   
-      cd dashboard
-      docker build -t devel_dashboard:latest -f containers/devel/Dockerfile .
-#. Change to the ``containers/devel`` folder. 
+
+      cd dashboard/containers/prod
+#. Fill in your configuration. 
+
+   * Add your dashboard configuration in ``containers/prod/dashboard.env``.
+     At a minimum you should provide a flask secret key, a database password,
+     an OAuth secret key, and an OAuth client ID. For information on 
+     configuring the dashboard :ref:`see here. <glossary>`
+   * Add your database configuration in ``containers/prod/database.env``.
+     Note that the database password in this file should match the one in 
+     ``dashboard.env``
+   * Update the ``containers/prod/docker-compose.yml`` file 'volumes' section
+     with the full path to your data folder and your datman config files. 
+     Note that your datman main config is expected to be named 'main_config.yml'
+     and to contain a system config block named 'docker', as described in 
+     the datman installation instructions.
+     
+     .. code-block:: yaml
+     
+        # Update this section with your paths
+        volumes:
+          - YOUR_DATA_PATH_HERE:/archive
+          - YOUR_CONFIG_PATH_HERE:/config
+          - logs:/logs
+#. Run the app
 
    .. code-block:: bash
-   
-      cd containers/devel
-#. Update the docker-compose.yml file 'volumes' section to provide the 
-   path to the folder where your data will be stored and the path to your 
-   datman config files. Note that your datman main config is expected to 
-   be named 'main_config.yaml' and to contain a system config block named 
-   'docker', as described in the datman installation instructions.
-   
-   .. code-block:: yaml
-   
-      # Update this section with your paths
-      volumes:
-        - YOUR_DATA_PATH_HERE:/archive
-        - YOUR_CONFIG_PATH_HERE:/config
-        - logs:/logs
-#. Run the dashboard app with docker compose. Note that if you need to change
-   or set any app settings, you can modify the dashboard.env and database.env
-   files in this folder first.
 
-   .. code-block:: bash
-   
       docker compose up
 #. If everything started up correctly, you'll be able to access the dashboard
    in your browser at ``localhost:5000``. If you need to connect to the database
@@ -63,39 +70,9 @@ Run a Development Instance
       
    You will be prompted for the ``POSTGRES_PASSWORD`` from the 
    ``containers/devel/database.env`` file.   
-
-
-Run with Docker Compose
----------------------
-#. `Install Docker <https://docs.docker.com/get-docker/>`_, if you don't
-   already have it.
-#. Create the datman container config files as described `here <http://imaging-genetics.camh.ca/datman/installation.html>`_
-#. Clone the `QC dashboard. <https://github.com/TIGRLab/dashboard.git>`_
-
-   .. code-block:: bash
-
-      git clone https://github.com/TIGRLab/dashboard.git
-#. Switch to the 'containers' folder inside the dashboard's folder.
-
-   .. code-block:: bash
-
-      cd dashboard/containers/prod
-#. Fill in your configuration in the ``dashboard/containers/dashboard.env`` file.
-   At a minimum you should set a flask secret key (this should be a very hard
-   to guess string), your OAuth secret key and OAuth client key
-   `from GitHub, <https://docs.github.com/en/developers/apps/building-oauth-apps/creating-an-oauth-app>`_
-   and a database password. For information on configuring the dashboard
-   :ref:`see here <glossary>`
-#. Fill in your database configuration in the ``dashboard/containers/database.env``
-   file. Note that the database name, user, and password should match what you
-   provided in dashboard.env
-#. Run the app
-
-   .. code-block:: bash
-
-      docker compose up
-
-
+#. You will likely also want to configure your own nginx server to 
+   sit in front the uwsgi server. See the nginx section at the end of the
+   'Full Install' instructions for setup info.
 
 Do a Full Install
 -----------------
@@ -299,3 +276,58 @@ Ubuntu 20.04 and may differ if you're using another operating system.
             uwsgi_pass unix://var/run/uwsgi/app/dashboard/socket;
           }
         }
+
+        
+Run a Development Instance
+--------------------------
+#. `Install Docker <https://docs.docker.com/get-docker/>`_, if you don't
+   already have it.
+#. Set up your datman config files as described `here. <http://imaging-genetics.camh.ca/datman/installation.html>`_
+#. Clone the `QC dashboard. <https://github.com/TIGRLab/dashboard.git>`_
+
+   .. code-block:: bash
+
+      git clone https://github.com/TIGRLab/dashboard.git
+#. Change to the dashboard folder and build your container.
+
+   .. code-block:: bash
+   
+      cd dashboard
+      docker build -t devel_dashboard:latest -f containers/devel/Dockerfile .
+#. Change to the ``containers/devel`` folder. 
+
+   .. code-block:: bash
+   
+      cd containers/devel
+#. Update the docker-compose.yml file 'volumes' section to provide the 
+   path to the folder where your data will be stored and the path to your 
+   datman config files. Note that your datman main config is expected to 
+   be named 'main_config.yml' and to contain a system config block named 
+   'docker', as described in the datman installation instructions.
+   
+   .. code-block:: yaml
+   
+      # Update this section with your paths
+      volumes:
+        - YOUR_DATA_PATH_HERE:/archive
+        - YOUR_CONFIG_PATH_HERE:/config
+        - logs:/logs
+#. Run the dashboard app with docker compose. Note that if you need to change
+   or set any app settings, you can modify the dashboard.env and database.env
+   files in this folder first.
+
+   .. code-block:: bash
+   
+      docker compose up
+#. If everything started up correctly, you'll be able to access the dashboard
+   in your browser at ``localhost:5000``. If you need to connect to the database
+   while the app is running, make sure you have ``psql`` installed (you can 
+   get it with ``sudo apt install postgresql-client`` on Ubuntu 20.04) and 
+   run this command from another terminal:
+   
+   .. code-block:: bash
+   
+      psql -U dashboard -p 5432 -h localhost dashboard
+      
+   You will be prompted for the ``POSTGRES_PASSWORD`` from the 
+   ``containers/devel/database.env`` file.   
