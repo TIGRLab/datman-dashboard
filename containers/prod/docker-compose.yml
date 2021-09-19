@@ -2,7 +2,7 @@ version: '3'
 services:
   app:
     env_file: dashboard.env
-    image: devel_dashboard:latest
+    image: tigrlab/dashboard:0.1
     ports:
       - 5000:5000
     command: /entrypoint.sh
@@ -12,7 +12,7 @@ services:
       - logs:/logs
   postgres:
     env_file: database.env
-    container_name: devel_postgres
+    container_name: dash_postgres
     image: postgres:12.8
     volumes:
       - ./database:/var/lib/postgresql
