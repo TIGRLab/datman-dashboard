@@ -6,35 +6,12 @@ Configuration Glossary
 
 Listed below are all configuration values that may be set for the QC dashboard.
 They're organized into sections based on the feature that they configure.
-These values should be set in your shell (or your uWSGI configuration file). To
-see more information about each feature you should view its separate documentation
-page.
-
-
-############## Add link to the separate documentation page for each feature.
-  - i.e. logging, database, etc.
-
-############# Add a link to the oauth configuration / explanation in the oauth
-   config section. Make sure to link to the github and gitlab docs on that page.
-
-############## ADD more info here about methods available for setting variables
-  - In uwsgi config (in container, out?)
-  - In shell
-  - In .env file
-
-
-############# In Cluster qsubmit_scripts add a link to the page explaining
-how queue jobs work.
-
-
-############## Add a link to datman's configuration documentation since it's
-needed
-
+These values should be set in your shell (or your uWSGI configuration file).
 
 
 Cluster
 *******
-Allow the dashboard to make use of a computing cluster (e.g. 
+Allows the dashboard to make use of a computing cluster (e.g. 
 `Slurm <https://slurm.schedmd.com/documentation.html>`_). 
 
 Optional
@@ -42,19 +19,20 @@ Optional
 * **DASHBOARD_QSUBMIT_CMD**
   
   * Description: Tells the dashboard which command to use when submitting
-    a job. 
-  * Default value: sbatch
+    a job. If the command is not available on your PATH, you should provide
+    the full path (e.g. /usr/bin/sbatch instead of sbatch).
+  * Default value: ``sbatch``
 * **DASHBOARD_QSUBMIT_OPTIONS**
   
   * Description: Options to use when submitting each queue job. This is the
     ideal place to set things like a default working directory or QOS.
-  * Default value: --chdir=/tmp/
+  * Default value: ``--chdir=/tmp/``
 * **DASHBOARD_QSUBMIT_SCRIPTS**
   
   * Description: The path to a folder that will hold all of the scripts the
     dashboard may submit to the queue. If unset, the dashboard will search for
     a folder named "queue_jobs" inside the folder where its code resides.
-  * Default value: ../dashboard/queue_jobs 
+  * Default value: ``../dashboard/queue_jobs``
 
 Example
 ^^^^^^^
@@ -266,20 +244,21 @@ Example
 
 User Authentication
 *******************
-These settings are used to configure user authentication by oauth. Note that at 
+These settings are used to configure user authentication by OAuth. Note that at 
 least one of these authentication methods MUST be configured, unless the 
 dashboard is running in development mode.
 
 Required
 ^^^^^^^^
-* Github configuration
+* GitHub configuration. You can see GitHub's instructions for acquiring a
+  client ID and secret `here <https://docs.github.com/en/developers/apps/building-oauth-apps/creating-an-oauth-app>`_
   
   * **OAUTH_CLIENT_GITHUB**
     
-    * Description: The OAuth client value provided by Github. 
+    * Description: The OAuth client value provided by GitHub. 
   * **OAUTH_SECRET_GITHUB**
   
-    * Description: The OAuth secret value provided by Github.
+    * Description: The OAuth secret value provided by GitHub.
     
 * Gitlab configuration
 
@@ -348,17 +327,13 @@ Optional
 
 Example
 ^^^^^^^
+.. code-block:: bash
 
-RedCap Scan Completed Survey Configuration
-******************************************
-Required
-^^^^^^^^
-
-Optional
-^^^^^^^^
-* **REDCAP_TOKEN**
-
-  * Description: The redcap API token 
+   export GITHUB_ISSUES_OWNER=TIGRLab
+   # Issues that are made will be added to the 'Admin' repo
+   export GITHUB_REPO=Admin
+   # Set to False to indicate the Admin repository is private
+   export GITHUB_ISSUES_PUBLIC=False
   
 Scheduler
 *********
