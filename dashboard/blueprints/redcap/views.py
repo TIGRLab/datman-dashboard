@@ -17,8 +17,6 @@ def redcap():
     A redcap server can send a notification to this URL when a survey is saved
     and the record will be retrieved and saved to the database.
     """
-    logger.debug('Received keys {} from REDcap from URL {}'.format(
-        list(request.form.keys()), request.form['project_url']))
     try:
         utils.create_from_request(request)
     except Exception as e:
