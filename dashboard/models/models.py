@@ -1289,6 +1289,12 @@ class Session(db.Model):
         any scans, redcap comments, blacklist entries or dismissed 'missing
         scans' errors)
         """
+        if (self.redcap_record and
+                self.redcap_record.record and
+                not self.redcap_record.record.is_shared):
+            # Without this, deletes wont propagate correctly to RedcapRecord
+            # and you end up with orphaned records
+            db.session.delete(self.redcap_record.record)
         db.session.delete(self)
         db.session.commit()
 
@@ -1837,6 +1843,10 @@ class RedcapRecord(db.Model):
     @property
     def redcap_version(self):
         return self.config.redcap_version
+
+    @property
+    def is_shared(self):
+        return len(self.sessions) > 1
 
     def __repr__(self):
         return "<RedcapRecord {}: record {}>".format(self.id, self.record)
