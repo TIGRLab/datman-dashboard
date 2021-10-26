@@ -1024,6 +1024,8 @@ class Timepoint(db.Model):
         This will cascade and also delete any records that reference
         the current timepoint, so be careful :)
         """
+        for num in self.sessions:
+            self.sessions[num].delete()
         db.session.delete(self)
         db.session.commit()
 
