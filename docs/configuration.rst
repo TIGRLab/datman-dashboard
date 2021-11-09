@@ -25,7 +25,7 @@ Optional
 * **DASHBOARD_QSUBMIT_OPTIONS**
   
   * Description: Options to use when submitting each queue job. This is the
-    ideal place to set things like a default working directory or QOS.
+    ideal place to set things like a default working directory or QoS.
   * Default value: ``--chdir=/tmp/``
 * **DASHBOARD_QSUBMIT_SCRIPTS**
   
@@ -41,7 +41,7 @@ Example
   # Using a non-standard submit command location
   export DASHBOARD_QSUBMIT_CMD=/home/user1/sbatch
   
-  # Override the working directory + add a QOS
+  # Override the working directory + add a QoS
   export DASHBOARD_QSUBMIT_OPTIONS=--qos=dashboard --chdir=/home/user1/
   
   # Set a location for submit scripts
@@ -64,12 +64,12 @@ Optional
 * **POSTGRES_DATABASE**
   
   * Description: The name of the database to connect to.
-  * Default value: dashboard
+  * Default value: ``dashboard``
 * **POSTGRES_SRVR**
 
   * Description: The postgres server to connect to. May be a fully qualified 
     domain name or an IP address.
-  * Default value: localhost
+  * Default value: ``localhost``
 * **POSTGRES_USER**
 
   * Description: The username to use when connecting to the database.
@@ -80,7 +80,7 @@ Optional
     should be represented as the number of minutes east of UTC. For example,
     Eastern Daylight Time is 240 minutes behind UTC so it would be represented 
     as -240.
-  * Default value: -240. This is equivalent to EDT.
+  * Default value: ``-240``. This is equivalent to EDT.
 
 Example
 ^^^^^^^
@@ -96,7 +96,7 @@ Example
 Email
 *****
 These settings configure email functionality for the dashboard. When configured
-correctly they enable the dashboard to send email notifications to 
+correctly, they enable the dashboard to send email notifications to 
 administrators and scheduled reminders to users.
 
 Optional
@@ -107,18 +107,18 @@ Optional
     These emails will be notified in case of code exceptions and may be sent
     reminder emails when QC reminders are enabled. If unset, no administrator 
     emails will be sent.
-  * Default value: None
+  * Default value: ``None``
   
 * **DASHBOARD_MAIL_SERVER**
 
   * Description: The server that will handle outgoing email. To turn off
     emails set this to 'disabled'.
-  * Default value: 'smtp.gmail.com'
+  * Default value: ``'smtp.gmail.com'``
 
 * **DASHBOARD_MAIL_PORT**
 
   * Description: The port on DASHBOARD_MAIL_SERVER to use.
-  * Default value: 465
+  * Default value: ``465``
 
 * **DASHBOARD_MAIL_UNAME**
 
@@ -127,50 +127,50 @@ Optional
     for all emails originating from the dashboard will be set to this value 
     if DASHBOARD_SUPPORT_EMAIL is left unset. If this is left unset as well,
     the sender will appear as 'no-reply@kimellab.ca'.
-  * Default value: None
+  * Default value: ``None``
 
 * **DASHBOARD_MAIL_PASS**
   
   * Description: The password to use when connecting to DASHBOARD_MAIL_SERVER.
     If authentication is not required it can be left unset.
-  * Default value: None
+  * Default value: ``None``
 
 * **DASHBOARD_SUPPORT_EMAIL**
   
   * Description: The email address to send user support requests to. If set, 
     this address will also appear as the sender for any email that originates 
     from the dashboard.
-  * Default value: DASHBOARD_MAIL_UNAME@DASHBOARD_MAIL_SERVER
+  * Default value: ``DASHBOARD_MAIL_UNAME@DASHBOARD_MAIL_SERVER``
 
 * **DASHBOARD_MAIL_SSL**
   
   * Description: Whether to use SSL when sending email. For certain mail 
-    servers, such as gmail's server, it must be true for email to be forwarded.
-  * Default value: True
+    servers, such as Gmail's server, it must be true for email to be forwarded.
+  * Default value: ``True``
 
 * **DASH_LOG_MAIL_SERVER**
 
   * Description: The server to email logs to. Log emails may be turned off by 
     setting this to 'disabled'. 
-  * Default value: smtp.camh.net
+  * Default value: ``smtp.camh.net``
 
 * **DASH_LOG_MAIL_PORT**
   
   * Description: The port on DASH_LOG_MAIL_SERVER to forward emails to.
-  * Default value: 25
+  * Default value: ``25``
 
 * **DASH_LOG_MAIL_USER**
 
   * Description: The username to use when for authentication on 
     DASH_LOG_MAIL_SERVER. Can be left unset if authentication is not required
     by the server.
-  * Default value: None
+  * Default value: ``None``
 
 * **DASH_LOG_MAIL_PASS**
 
   * Description: The password to use for authentication on DASH_LOG_MAIL_SERVER.
     Can be left unset if authentication is not required by the server.
-  * Default value: None
+  * Default value: ``None``
 
 Example
 ^^^^^^^
@@ -204,20 +204,20 @@ Optional
   
   * Description: Set the log level for all loggers that the dashboard uses.
   * Accepted values: DEBUG, INFO, WARNING, ERROR, CRITICAL.
-  * Default value: DEBUG
+  * Default value: ``DEBUG``
   
 * **DASHBOARD_LOG_SERVER**
 
   * Description: The fully qualified domain name or IP address of a server
     that is running `datman's log server <http://imaging-genetics.camh.ca/datman/>`_. 
     All log messages will also be sent to the log server, if one is provided.
-  * Default value: None
+  * Default value: ``None``
 
 * **DASHBOARD_LOG_SERVER_PORT**
 
   * Description: The port that DASHBOARD_LOG_SERVER is listening on. This 
     setting is not read if DASHBOARD_LOG_SERVER is not defined.
-  * Default value: 9020
+  * Default value: ``9020``
 
 * **DASH_LOG_DIR**
   
@@ -260,15 +260,15 @@ Required
   
     * Description: The OAuth secret value provided by GitHub.
     
-* Gitlab configuration
+* GitLab configuration
 
   * **OAUTH_CLIENT_GITLAB**
     
-    * Description: The OAuth client value provided by Gitlab.
+    * Description: The OAuth client value provided by GitLab.
   
   * **OAUTH_SECRET_GITLAB**
   
-    * Description: The OAuth secret value provided by Gitlab.
+    * Description: The OAuth secret value provided by GitLab.
    
 General Application Configuration
 *********************************
@@ -286,21 +286,21 @@ Optional
 
   * Description: Tells Flask what type of environment it is running within.
     `See here for more info <https://flask.palletsprojects.com/en/1.1.x/config/#ENV>`_
-  * Accepted values: 'production' or 'development'
-  * Default value: 'production'
+  * Accepted values: ``'production'`` or ``'development'``
+  * Default value: ``'production'``
 * **FLASK_DEBUG**
 
   * Description: Tells Flask and its plugins to run in debug mode. Setting 
     'FLASK_ENV' to development mode automatically turns on FLASK_DEBUG. 
     `See here for more info <https://flask.palletsprojects.com/en/1.1.x/config/#DEBUG>`_
-  * Accepted values: True (if it should run in debug mode) or False
-  * Default value: False
+  * Accepted values: ``True`` (if it should run in debug mode) or ``False``
+  * Default value: ``False``
 * **LOGIN_DISABLED**
 
   * Description: Whether to turn off OAuth authentication and allow access 
     without logging in. Do not set this to True on a production instance.
-  * Accepted values: True (if it should be disabled) or False
-  * Default value: False  
+  * Accepted values: ``True`` (if it should be disabled) or ``False``
+  * Default value: ``False``  
 
 Github Issues
 *************
@@ -323,7 +323,7 @@ Optional
   
   * Description: Indicates whether the GITHUB_REPO repository is public (True)
     or private (False)
-  * Default value: True
+  * Default value: ``True``
 
 Example
 ^^^^^^^
@@ -343,18 +343,18 @@ Configuration for the dashboard's job scheduler.
 
   * Description: Indicates whether to start (True) the dashboard scheduler 
     or not (False). Note that if the dashboard is just being imported 
-    by another python app the scheduler should NOT be started up or errors and 
+    by another python app, the scheduler should NOT be started up or errors and 
     unexpected behavior will occur.
-  * Accepted values: True or False
-  * Default value: False
+  * Accepted values: ``True`` or ``False``
+  * Default value: ``False``
 * **DASHBOARD_SCHEDULER_API**
 
   * Description: Controls whether remote job submission will be enabled (True) 
-    or disabled (False). Note that remote job submission occurs over HTTP and 
+    or disabled (False). Note that remote job submission occurs over HTTP, 
     so private information should never be bundled within jobs if they are 
     being sent over a non-private network. 
-  * Accepted values: True or False
-  * Default value: False
+  * Accepted values: ``True`` or ``False``
+  * Default value: ``False``
 * **DASHBOARD_SCHEDULER_USER**
   
   * Description: The username to use when submitting jobs to the scheduler.

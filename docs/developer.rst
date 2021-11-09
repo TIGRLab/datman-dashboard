@@ -94,7 +94,7 @@ SQLAlchemy Tips
 SQLAlchemy is awesome and very powerful BUT sometimes it makes really naive 
 queries. If you try to work with objects from ``dashboard.models`` like they're 
 normal python objects, you can very easily end up generating thousands of queries 
-without realizing. For instance, if you tried doing something like this:
+without realizing it. For instance, if you tried doing something like this:
 
   .. code-block:: python
 
@@ -115,6 +115,4 @@ In these sorts of cases it is often better to craft your own queries using
 Debugging Tips
 --------------
 * To help with debugging, consider using the `Flask Debug Toolbar. <https://flask-debugtoolbar.readthedocs.io/en/latest/index.html>`_
-  It can help identify what's generating most of the load time and help you 
-  identify if your SQLAlchemy code is accidentally generating a large number 
-  of queries.
+  It can assist in identifying bottlenecks in load time caused by excess querying by giving you a breakdown of your SQLAlchemy queries.

@@ -5,7 +5,7 @@ Welcome to QC Dashboard's documentation!
    :maxdepth: 2
 
    installation
-   glossary
+   configuration
    developer
    api/modules
 

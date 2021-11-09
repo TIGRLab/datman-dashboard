@@ -16,7 +16,7 @@ Run with Docker Compose
    already have it.
 #. Create the datman container config files as described `here <http://imaging-genetics.camh.ca/datman/installation.html>`_
 #. Get an OAuth client ID and client secret `from GitHub. <https://docs.github.com/en/developers/apps/building-oauth-apps/creating-an-oauth-app>`_
-   In the 'Authorization callback URL' field be sure to add ``/callback/github``
+   In the 'Authorization callback URL' field, be sure to add ``/callback/github``
    to the end of your homepage URL.
 
    You'll need to provide the Client ID and Client Secret to the dashboard
@@ -36,7 +36,7 @@ Run with Docker Compose
    * Add your dashboard configuration in ``containers/prod/dashboard.env``.
      At a minimum you should provide a flask secret key, a database password,
      an OAuth secret key, and an OAuth client ID. For information on 
-     configuring the dashboard :ref:`see here. <glossary>`
+     configuring the dashboard :ref:`see here <glossary>`.
    * Add your database configuration in ``containers/prod/database.env``.
      Note that the database password in this file should match the one in 
      ``dashboard.env``
@@ -71,7 +71,7 @@ Run with Docker Compose
    You will be prompted for the ``POSTGRES_PASSWORD`` from the 
    ``containers/devel/database.env`` file.   
 #. You will likely also want to configure your own nginx server to 
-   sit in front the uwsgi server. See the nginx section at the end of the
+   sit in front of the uwsgi server. See the nginx section at the end of the
    'Full Install' instructions for setup info.
 
 Do a Full Install
