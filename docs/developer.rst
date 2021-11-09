@@ -73,7 +73,7 @@ Some tips to get the most out of Jinja without adding too much overhead:
     snippet, it's better to keep the 'if' in your original file, so you don't
     need to open the snippet just to discover the 'if' statement failed
 
-Also note that if you're organizing your html snippets in a nested folder you 
+Also note that if you're organizing your HTML snippets in a nested folder, you 
 always need to give the full path from the root of the template directory to 
 the file you want to include. If you get an error about a missing template, 
 make sure you quoted the name of the file to be included.
