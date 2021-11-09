@@ -71,7 +71,7 @@ Some tips to get the most out of Jinja without adding too much overhead:
     opened and read once, rather than once per iteration)
   - If you have an 'if' statement and the body of it is included from another
     snippet, it's better to keep the 'if' in your original file, so you don't
-    need to open the snippet just to discover the if statement failed
+    need to open the snippet just to discover the 'if' statement failed
 
 Also note that if you're organizing your html snippets in a nested folder you 
 always need to give the full path from the root of the template directory to 
