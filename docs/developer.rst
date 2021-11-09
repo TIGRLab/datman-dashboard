@@ -59,7 +59,7 @@ another file and then importing it with something like this:
 
       {% include 'my_other_file.html' %}
 
-performance-wise this is not always a good idea. Each and every time the 
+performance-wise, this is not always a good idea. Each and every time the 
 'include' statement is read while the page is constructed the included 
 file has to be read from the filesystem. File reads are (relatively) slow and 
 if the include is inside of a loop with a large number of iterations you can 
