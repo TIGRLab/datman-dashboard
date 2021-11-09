@@ -28,7 +28,7 @@ All of the 'views.py' scripts define the *entry points* (i.e. valid URLs for
 the app). These have been organized into blueprints (``dashboard/blueprints``) that group related
 functionality together.
 
-If a blueprint requires any HTML it is stored inside a 'templates' folder 
+If a blueprint requires any HTML, it is stored inside a 'templates' folder 
 nested within the blueprint. All other HTML templates are in 
 ``dashboard/templates/``. Templates with `_snip.html` or in a 'snips' subfolder
 are used as reusable pieces embedded in other pages.
