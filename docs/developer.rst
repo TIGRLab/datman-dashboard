@@ -114,7 +114,7 @@ In these sorts of cases it is often better to craft your own queries using
 
 Debugging Tips
 --------------
-* To help with debugging consider using the `Flask Debug Toolbar. <https://flask-debugtoolbar.readthedocs.io/en/latest/index.html>`_
+* To help with debugging, consider using the `Flask Debug Toolbar. <https://flask-debugtoolbar.readthedocs.io/en/latest/index.html>`_
   It can help identify what's generating most of the load time and help you 
   identify if your SQLAlchemy code is accidentally generating a large number 
   of queries.
