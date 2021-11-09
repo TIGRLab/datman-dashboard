@@ -25,7 +25,7 @@ used by SQLAlchemy to map from the relational database to the python objects
 used in the code.
 
 All of the 'views.py' scripts define the *entry points* (i.e. valid URLs for
-the app). These have been organized into blueprints that group related
+the app). These have been organized into blueprints (``dashboard/blueprints``) that group related
 functionality together.
 
 If a blueprint requires any HTML it is stored inside a 'templates' folder 
