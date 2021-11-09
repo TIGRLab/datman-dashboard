@@ -52,7 +52,7 @@ Jinja Template Tips
 -------------------
 Flask's HTML templates use `Jinja <https://jinja.palletsprojects.com>`_ 
 to render pages. The most important thing to be aware of is that while you can 
-break up your pages into smaller, more readable, chunks by saving html in 
+break up your pages into smaller, more readable, chunks by saving HTML in 
 another file and then importing it with something like this:
 
    .. code-block:: jinja
