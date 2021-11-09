@@ -106,7 +106,7 @@ without realizing. For instance, if you tried doing something like this:
        # Do some stuff with the timepoint record here
 
 This loop would generate one query to the database for each timepoint that has
-the site 'CMH'. If code like that were embedded in a function called in a jinja
+the site 'CMH'. If code like that were embedded in a function called in a Jinja
 template, then those extra queries would hit every time a user loaded the page.
 In these sorts of cases it is often better to craft your own queries using
 `SQLAlchemy's query API. <http://docs.sqlalchemy.org/en/latest/orm/query.html>`_
