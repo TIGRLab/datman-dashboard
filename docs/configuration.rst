@@ -369,3 +369,27 @@ Configuration for the dashboard's job scheduler.
   
   * Description: The URL to send scheduler jobs to. This setting is needed 
     only by 'client' instances of the dashboard.
+    
+XNAT
+****
+Enable or disable the XNAT integration. A username and password to use when 
+logging in may be set here, or may be configured individually for each study 
+in the study config file. For more information see Datman's configuration 
+guide.
+
+Optional
+^^^^^^^^
+
+* **DASH_ENABLE_XNAT**
+
+  * Description: Controls whether XNAT features will be used.
+  * Accepted values: ``True`` or ``False``
+  * Default values: ``False``
+* **XNAT_USER**
+
+  * Description: May be used to provide an XNAT username if one is not set 
+    in the configuration files. If this is set, XNAT_PASS must be as well.
+* **XNAT_PASS**
+
+  * Description: May be used to provide an XNAT password if one is not set 
+    through the configuration files. If this is set, XNAT_USER must be as well.
