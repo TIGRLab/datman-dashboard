@@ -372,10 +372,13 @@ Configuration for the dashboard's job scheduler.
     
 XNAT
 ****
-Enable or disable the XNAT integration. A username and password to use when 
-logging in may be set here, or may be configured individually for each study 
-in the study config file. For more information see Datman's configuration 
-guide.
+Enable or disable the XNAT integration. Note that if you enable XNAT 
+configuration, you must ensure you have added the XNAT server settings to the 
+study_sites table of the database.
+
+A username and password to use when logging in may be set directly in the 
+dashboard, or may be configured individually for each study in the study config 
+file. For more information see Datman's configuration guide.
 
 Optional
 ^^^^^^^^
