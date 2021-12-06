@@ -55,3 +55,4 @@ uWSGI==2.0.18
 Werkzeug==0.16.0
 wrapt==1.11.2
 WTForms==2.2.1
+xnat==0.3.28
