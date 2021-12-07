@@ -5,6 +5,7 @@ import datetime
 import logging
 from random import randint
 
+from flask import current_app
 from flask_login import UserMixin
 from sqlalchemy import and_, or_, exists, func
 from sqlalchemy.dialects.postgresql import JSONB
@@ -1510,6 +1511,8 @@ class Scan(db.Model):
             checklist = self._new_checklist_entry(signing_user)
         checklist.update_entry(signing_user, comment, sign_off)
         checklist.save()
+        if current_app.config.get('XNAT_ENABLED'):
+            utils.update_xnat_usability(self, current_app)
 
     def is_linked(self):
         return self.source_id is not None

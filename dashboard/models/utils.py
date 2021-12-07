@@ -9,6 +9,7 @@ import logging
 from uuid import uuid4
 from datetime import datetime
 
+import xnat
 from sqlalchemy.orm.collections import MappedCollection, collection
 import flask_apscheduler
 
@@ -81,3 +82,64 @@ def schedule_email(email_func, input_args, input_kwargs=None):
     scheduler.add_job(uuid4().hex, email_func, trigger='date',
                       run_date=datetime.now(), args=input_args,
                       kwargs=input_kwargs)
+
+
+def update_xnat_usability(scan, current_app):
+    """Push user QC into XNAT's 'usability' fields.
+
+    Args:
+        scan (:obj:`dashboard.models.Scan`): The series to push QC data for.
+        current_app (:obj:`werkzeug.local.LocalProxy`): The current application
+            context.
+    """
+    study = scan.get_study()
+    site_settings = study.sites[scan.session.site.name]
+
+    xnat_session = getattr(
+        scan.session, site_settings.xnat_convention.lower() + "_name"
+    )
+    user, password = get_xnat_credentials(site_settings, current_app)
+    with xnat.connect(site_settings.xnat_server,
+                      user=user,
+                      password=password) as xcon:
+        project = xcon.projects[site_settings.xnat_archive]
+        xnat_exp = project.experiments[xnat_session]
+        xnat_scan = xnat_exp.scans[scan.series]
+
+        if scan.flagged():
+            xnat_scan.quality = 'questionable'
+        elif scan.blacklisted():
+            xnat_scan.quality = 'unusable'
+        else:
+            xnat_scan.quality = 'usable'
+        xnat_scan.note = scan.qc_review.comment
+
+
+def get_xnat_credentials(site_settings, current_app):
+    """Retrieve the xnat username and password for a given study/site.
+
+    Args:
+        site_settings (:obj:`dashboard.models.StudySite`): A StudySite record
+        current_app (:obj:`werkzeug.local.LocalProxy`): The current application
+            context.
+    """
+    if current_app.config.get('XNAT_USER'):
+        user = current_app.config.get('XNAT_USER')
+        password = current_app.config.get('XNAT_PASS')
+        return user, password
+
+    try:
+        with open(site_settings.xnat_credentials) as fh:
+            contents = fh.readlines()
+    except (FileNotFoundError, PermissionError) as e:
+        logger.error("Failed to read XNAT credentials file "
+                     f"{site_settings.xnat_credentials}. {e}")
+
+    try:
+        user = contents[0].strip()
+        password = contents[1].strip()
+    except (IndexError, AttributeError) as e:
+        logger.error("Failed to parse XNAT credentials file "
+                     f"{site_settings.xnat_credentials}. {e}")
+
+    return user, password
