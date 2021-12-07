@@ -104,7 +104,15 @@ def update_xnat_usability(scan, current_app):
                       password=password) as xcon:
         project = xcon.projects[site_settings.xnat_archive]
         xnat_exp = project.experiments[xnat_session]
-        xnat_scan = xnat_exp.scans[scan.series]
+        matched = [item for item in xnat_exp.scans[:]
+                   if item.id == str(scan.series)]
+
+        if not matched or len(matched) > 1:
+            logger.error(f"Couldnt locate {scan} on XNAT server. Usability "
+                         "will not be updated.")
+            return
+
+        xnat_scan = matched[0]
 
         if scan.flagged():
             xnat_scan.quality = 'questionable'
@@ -134,6 +142,7 @@ def get_xnat_credentials(site_settings, current_app):
     except (FileNotFoundError, PermissionError) as e:
         logger.error("Failed to read XNAT credentials file "
                      f"{site_settings.xnat_credentials}. {e}")
+        raise e
 
     try:
         user = contents[0].strip()
@@ -141,5 +150,6 @@ def get_xnat_credentials(site_settings, current_app):
     except (IndexError, AttributeError) as e:
         logger.error("Failed to parse XNAT credentials file "
                      f"{site_settings.xnat_credentials}. {e}")
+        raise e
 
     return user, password
