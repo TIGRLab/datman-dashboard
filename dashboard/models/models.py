@@ -1512,7 +1512,7 @@ class Scan(db.Model):
         checklist.update_entry(signing_user, comment, sign_off)
         checklist.save()
         if current_app.config.get('XNAT_ENABLED'):
-            utils.update_xnat_usability(self, current_app)
+            utils.update_xnat_usability(self, current_app.config)
 
     def is_linked(self):
         return self.source_id is not None
