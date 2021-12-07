@@ -99,7 +99,7 @@ def update_xnat_usability(scan, current_app):
         scan.session, site_settings.xnat_convention.lower() + "_name"
     )
     user, password = get_xnat_credentials(site_settings, current_app)
-    with xnat.connect(site_settings.xnat_server,
+    with xnat.connect(site_settings.xnat_url,
                       user=user,
                       password=password) as xcon:
         project = xcon.projects[site_settings.xnat_archive]

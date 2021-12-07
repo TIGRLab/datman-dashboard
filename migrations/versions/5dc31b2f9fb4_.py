@@ -17,16 +17,31 @@ depends_on = None
 
 
 def upgrade():
-    op.add_column('study_sites', sa.Column('xnat_archive', sa.String(length=32), nullable=True))
-    op.add_column('study_sites', sa.Column('xnat_convention', sa.String(length=10), nullable=True))
-    op.add_column('study_sites', sa.Column('xnat_credentials', sa.String(length=128), nullable=True))
-    op.add_column('study_sites', sa.Column('xnat_port', sa.Integer(), nullable=True))
-    op.add_column('study_sites', sa.Column('xnat_server', sa.String(length=128), nullable=True))
+    op.add_column(
+        'study_sites',
+        sa.Column('xnat_archive', sa.String(length=32), nullable=True)
+    )
+    op.add_column(
+        'study_sites',
+        sa.Column(
+            'xnat_convention',
+            sa.String(length=10),
+            nullable=True,
+            server_default='KCNI'
+        )
+    )
+    op.add_column(
+        'study_sites',
+        sa.Column('xnat_credentials', sa.String(length=128), nullable=True)
+    )
+    op.add_column(
+        'study_sites',
+        sa.Column('xnat_url', sa.String(length=128), nullable=True)
+    )
 
 
 def downgrade():
-    op.drop_column('study_sites', 'xnat_server')
-    op.drop_column('study_sites', 'xnat_port')
+    op.drop_column('study_sites', 'xnat_url')
     op.drop_column('study_sites', 'xnat_credentials')
     op.drop_column('study_sites', 'xnat_convention')
     op.drop_column('study_sites', 'xnat_archive')

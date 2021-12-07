@@ -2058,10 +2058,11 @@ class StudySite(db.Model):
     code = db.Column('code', db.String(32))
     download_script = db.Column('download_script', db.String(128))
     post_download_script = db.Column('post_download_script', db.String(128))
-    xnat_server = db.Column('xnat_server', db.String(128))
-    xnat_port = db.Column('xnat_port', db.Integer)
+    xnat_url = db.Column('xnat_url', db.String(128))
     xnat_archive = db.Column('xnat_archive', db.String(32))
-    xnat_convention = db.Column('xnat_convention', db.String(10))
+    xnat_convention = db.Column(
+        'xnat_convention', db.String(10), server_default='KCNI'
+    )
     xnat_credentials = db.Column('xnat_credentials', db.String(128))
 
     # Need to specify the terms of the join to ensure users with
