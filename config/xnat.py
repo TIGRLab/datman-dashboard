@@ -1,8 +1,11 @@
 """Configuration for XNAT integration
 """
+import logging
 import os
 
 from .utils import read_boolean
+
+logger = logging.getLogger(__name__)
 
 XNAT_ENABLED = read_boolean('DASH_ENABLE_XNAT')
 
