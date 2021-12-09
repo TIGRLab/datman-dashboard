@@ -27,6 +27,29 @@ from .emails import (account_request_email, account_activation_email,
 logger = logging.getLogger(__name__)
 
 
+class TableMixin:
+    """Adds simple methods commonly needed for tables.
+    """
+
+    def save(self):
+        db.session.add(self)
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            raise InvalidDataException("Failed to commit to database. Reason "
+                                       "- {}".format(e))
+
+    def delete(self):
+        db.session.delete(self)
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            raise InvalidDataException("Failed to delete from database. "
+                                       "Reason - {}".format(e))
+
+
 ###############################################################################
 # Association tables (i.e. basic many to many relationships)
 
@@ -45,7 +68,7 @@ study_timepoints_table = db.Table(
 # Plain entities
 
 
-class User(UserMixin, db.Model):
+class User(UserMixin, TableMixin, db.Model):
     __tablename__ = 'users'
 
     id = db.Column('id', db.Integer, primary_key=True)
@@ -139,7 +162,7 @@ class User(UserMixin, db.Model):
         if url is None or url == self.picture:
             return
         self.picture = url
-        self.save_changes()
+        self.save()
 
     def request_account(self, request_form):
         request_form.populate_obj(self)
@@ -147,10 +170,9 @@ class User(UserMixin, db.Model):
         # causes postgres to throw an error (it expects an int)
         self.id = None
         try:
-            self.save_changes()
+            self.save()
             request = AccountRequest(self.id)
-            db.session.add(request)
-            db.session.commit()
+            request.save()
         except IntegrityError:
             # Account exists or request is already pending
             db.session.rollback()
@@ -367,14 +389,6 @@ class User(UserMixin, db.Model):
 
         return True
 
-    def save_changes(self):
-        db.session.add(self)
-        db.session.commit()
-
-    def delete(self):
-        db.session.delete(self)
-        db.session.commit()
-
     def __repr__(self):
         return "<User {}: {} {}>".format(self.id, self.first_name,
                                          self.last_name)
@@ -383,7 +397,7 @@ class User(UserMixin, db.Model):
         return "{} {}".format(self.first_name, self.last_name)
 
 
-class AccountRequest(db.Model):
+class AccountRequest(TableMixin, db.Model):
     __tablename__ = 'account_requests'
 
     user_id = db.Column('user_id',
@@ -438,7 +452,7 @@ class AccountRequest(db.Model):
         return result
 
 
-class Study(db.Model):
+class Study(TableMixin, db.Model):
     __tablename__ = 'studies'
 
     id = db.Column('id', db.String(32), primary_key=True)
@@ -812,15 +826,11 @@ class Study(db.Model):
         next_idx = randint(0, len(user_list) - 1)
         return user_list[next_idx]
 
-    def save(self):
-        db.session.add(self)
-        db.session.commit()
-
     def __repr__(self):
         return "<Study {}>".format(self.id)
 
 
-class Site(db.Model):
+class Site(TableMixin, db.Model):
     __tablename__ = 'sites'
 
     name = db.Column('name', db.String(32), primary_key=True)
@@ -840,7 +850,7 @@ class Site(db.Model):
         return "<Site {}>".format(self.name)
 
 
-class Timepoint(db.Model):
+class Timepoint(TableMixin, db.Model):
     __tablename__ = 'timepoints'
 
     name = db.Column('name', db.String(64), primary_key=True)
@@ -1059,14 +1069,6 @@ class Timepoint(db.Model):
             raise Exception('Comment not found.')
         return match[0]
 
-    def save(self):
-        try:
-            db.session.add(self)
-            db.session.commit()
-        except Exception as e:
-            db.session.rollback()
-            raise e
-
     def __repr__(self):
         return "<Timepoint {}>".format(self.name)
 
@@ -1121,7 +1123,7 @@ class TimepointComment(db.Model):
             self.timepoint_id, self.user_id)
 
 
-class Session(db.Model):
+class Session(TableMixin, db.Model):
     __tablename__ = 'sessions'
 
     name = db.Column('name',
@@ -1301,10 +1303,6 @@ class Session(db.Model):
         db.session.delete(self)
         db.session.commit()
 
-    def save(self):
-        db.session.add(self)
-        db.session.commit()
-
     def add_task(self, file_path, name=None):
         for item in self.task_files:
             if file_path == item.file_path:
@@ -1412,7 +1410,7 @@ class SessionRedcap(db.Model):
             self.name, self.num, self.record_id)
 
 
-class Scan(db.Model):
+class Scan(TableMixin, db.Model):
     __tablename__ = 'scans'
 
     id = db.Column('id', db.Integer, primary_key=True)
@@ -1655,14 +1653,6 @@ class Scan(db.Model):
                                        "message for {}. Reason: {}".format(
                                            self, e))
 
-    def delete(self):
-        db.session.delete(self)
-        db.session.commit()
-
-    def save(self):
-        db.session.add(self)
-        db.session.commit()
-
     def __repr__(self):
         if self.source_id:
             repr = "<Scan {}: {} link to scan {}>".format(
@@ -1675,7 +1665,7 @@ class Scan(db.Model):
         return self.name
 
 
-class ScanChecklist(db.Model):
+class ScanChecklist(TableMixin, db.Model):
     __tablename__ = 'scan_checklist'
 
     id = db.Column('id', db.Integer, primary_key=True)
@@ -1720,20 +1710,12 @@ class ScanChecklist(db.Model):
         self._timestamp = datetime.datetime.now(
             FixedOffsetTimezone(offset=TZ_OFFSET))
 
-    def save(self):
-        db.session.add(self)
-        db.session.commit()
-
-    def delete(self):
-        db.session.delete(self)
-        db.session.commit()
-
     def __repr__(self):
         return "<ScanChecklist for {} by user {}>".format(
             self.scan_id, self.user_id)
 
 
-class Scantype(db.Model):
+class Scantype(TableMixin, db.Model):
     __tablename__ = 'scantypes'
 
     tag = db.Column('tag', db.String(64), primary_key=True)
@@ -1857,7 +1839,7 @@ class RedcapRecord(db.Model):
         return "<RedcapRecord {}: record {}>".format(self.id, self.record)
 
 
-class RedcapConfig(db.Model):
+class RedcapConfig(TableMixin, db.Model):
     __tablename__ = "redcap_config"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -2043,7 +2025,7 @@ class StudyUser(db.Model):
                                                      self.user_id)
 
 
-class StudySite(db.Model):
+class StudySite(TableMixin, db.Model):
     __tablename__ = 'study_sites'
 
     study_id = db.Column('study',
