@@ -9,7 +9,7 @@ import redcap as REDCAP
 
 from .monitors import monitor_scan_import, monitor_scan_download
 from dashboard.models import Session, Timepoint, RedcapRecord, RedcapConfig
-from dashboard.queries import get_study
+from dashboard.queries import get_studies
 from dashboard.exceptions import RedcapException
 import datman.scanid
 
@@ -149,7 +149,7 @@ def set_session(name):
 
 
 def find_study(ident):
-    study = get_study(tag=ident.study, site=ident.site)
+    study = get_studies(tag=ident.study, site=ident.site)
     if not study:
         raise RedcapException("Invalid study/site combination: {} {}"
                               "".format(ident.study, ident.site))
