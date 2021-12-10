@@ -482,12 +482,6 @@ class Study(TableMixin, db.Model):
         lazy='dynamic',
         cascade="all, delete",
     )
-    standards = db.relationship(
-        'GoldStandard',
-        secondary='expected_scans',
-        collection_class=lambda: utils.DictListCollection('site'),
-        viewonly=True,
-    )
 
     def __init__(self,
                  study_id,
