@@ -459,23 +459,35 @@ class Study(TableMixin, db.Model):
     name = db.Column('name', db.String(1024))
     description = db.Column('description', db.Text)
     read_me = deferred(db.Column('read_me', db.Text))
-    is_open = db.Column('is_open', db.Boolean)
+    is_open = db.Column('is_open', db.Boolean, default=True, nullable=False)
     email_qc = db.Column('email_on_trigger', db.Boolean)
 
     users = db.relationship(
         'StudyUser',
-        primaryjoin='Study.id==StudySite.study_id',
-        secondary='study_sites',
-        secondaryjoin='StudySite.study_id==StudyUser.study_id')
+        primaryjoin='and_(Study.id==foreign(StudyUser.study_id), '
+                    'StudySite.study_id==StudyUser.study_id)',
+        cascade='all, delete',
+    )
     sites = db.relationship(
         'StudySite',
         back_populates='study',
-        collection_class=attribute_mapped_collection('site_id'))
+        collection_class=attribute_mapped_collection('site_id'),
+        cascade="all, delete",
+    )
     scantypes = association_proxy('study_scantypes', 'scantype')
-    timepoints = db.relationship('Timepoint',
-                                 secondary=study_timepoints_table,
-                                 back_populates='studies',
-                                 lazy='dynamic')
+    timepoints = db.relationship(
+        'Timepoint',
+        secondary=study_timepoints_table,
+        back_populates='studies',
+        lazy='dynamic',
+        cascade="all, delete",
+    )
+    standards = db.relationship(
+        'GoldStandard',
+        secondary='expected_scans',
+        collection_class=lambda: utils.DictListCollection('site'),
+        viewonly=True,
+    )
 
     def __init__(self,
                  study_id,
@@ -839,8 +851,10 @@ class Site(TableMixin, db.Model):
     studies = db.relationship(
         'StudySite',
         back_populates='site',
-        collection_class=attribute_mapped_collection('study.id'))
-    timepoints = db.relationship('Timepoint')
+        collection_class=attribute_mapped_collection('study.id'),
+        cascade="all, delete"
+    )
+    timepoints = db.relationship('Timepoint', cascade="all, delete")
 
     def __init__(self, site_name, description=None):
         self.name = site_name
@@ -1030,15 +1044,15 @@ class Timepoint(TableMixin, db.Model):
         db.session.add(empty_session)
         db.session.commit()
 
-    def delete(self):
-        """
-        This will cascade and also delete any records that reference
-        the current timepoint, so be careful :)
-        """
-        for num in self.sessions:
-            self.sessions[num].delete()
-        db.session.delete(self)
-        db.session.commit()
+    # def delete(self):
+    #     """
+    #     This will cascade and also delete any records that reference
+    #     the current timepoint, so be careful :)
+    #     """
+    #     for num in self.sessions:
+    #         self.sessions[num].delete()
+    #     db.session.delete(self)
+    #     db.session.commit()
 
     def report_incidental_finding(self, user_id, comment):
         new_finding = IncidentalFinding(user_id, self.name, comment)
@@ -1453,7 +1467,7 @@ class Scan(TableMixin, db.Model):
                                     cascade='all, delete-orphan')
     header_diffs = db.relationship(
         'ScanGoldStandard',
-        cascade='all',
+        cascade='all, delete',
         order_by='desc(ScanGoldStandard.date_added)',
         back_populates='scan')
 
@@ -1511,6 +1525,7 @@ class Scan(TableMixin, db.Model):
         checklist.save()
         if current_app.config.get('XNAT_ENABLED'):
             utils.update_xnat_usability(self, current_app.config)
+        return checklist
 
     def is_linked(self):
         return self.source_id is not None
@@ -1719,10 +1734,20 @@ class Scantype(TableMixin, db.Model):
     __tablename__ = 'scantypes'
 
     tag = db.Column('tag', db.String(64), primary_key=True)
+    qc_type = db.Column('qc_type', db.String(64))
+    pha_type = db.Column('pha_type', db.String(64))
 
-    scans = db.relationship('Scan', back_populates='scantype')
+    scans = db.relationship(
+        'Scan',
+        back_populates='scantype',
+        cascade="all, delete"
+    )
+    metrictypes = db.relationship(
+        'Metrictype',
+        back_populates='scantype',
+        cascade="all, delete"
+    )
     studies = association_proxy('study_scantypes', 'study')
-    metrictypes = db.relationship('Metrictype', back_populates='scantype')
 
     def __init__(self, tag):
         self.tag = tag
@@ -1894,6 +1919,7 @@ class RedcapConfig(TableMixin, db.Model):
 
         cfg = RedcapConfig(project, instrument, url, version=version)
         cfg.save()
+        return cfg
 
     def __repr__(self):
         return "<RedcapConfig {}>".format(self.id)
@@ -1990,7 +2016,7 @@ class StudyUser(db.Model):
         secondaryjoin='StudySite.study_id==Study.id',
         uselist=False,
         viewonly=True)
-    user = db.relationship('User', back_populates='studies')
+    user = db.relationship('User', back_populates='studies', viewonly=True)
 
     __table_args__ = (
         UniqueConstraint('study', 'user_id', 'site'),
@@ -2037,6 +2063,7 @@ class StudySite(TableMixin, db.Model):
                         db.ForeignKey('sites.name'),
                         primary_key=True)
     uses_redcap = db.Column('uses_redcap', db.Boolean, default=False)
+    uses_notes = db.Column('uses_tech_notes', db.Boolean, default=False)
     code = db.Column('code', db.String(32))
     download_script = db.Column('download_script', db.String(128))
     post_download_script = db.Column('post_download_script', db.String(128))
@@ -2053,7 +2080,8 @@ class StudySite(TableMixin, db.Model):
         'StudyUser',
         primaryjoin='and_(StudySite.study_id==StudyUser.study_id,'
         'or_(StudySite.site_id==StudyUser.site_id,'
-        'StudyUser.site_id==None))')
+        'StudyUser.site_id==None))',
+        cascade='all, delete')
     site = db.relationship('Site', back_populates='studies')
     study = db.relationship('Study', back_populates='sites')
     alt_codes = db.relationship('AltStudyCode',
@@ -2064,10 +2092,12 @@ class StudySite(TableMixin, db.Model):
 
     __table_args__ = (UniqueConstraint(study_id, site_id), )
 
-    def __init__(self, study_id, site_id, uses_redcap=False, code=None):
+    def __init__(self, study_id, site_id, uses_redcap=False, uses_notes=None,
+                 code=None):
         self.study_id = study_id
         self.site_id = site_id
         self.uses_redcap = uses_redcap
+        self.uses_notes = uses_notes
         self.code = code
 
     def __repr__(self):
@@ -2139,14 +2169,21 @@ class StudyScantype(db.Model):
 class ScanGoldStandard(db.Model):
     __tablename__ = 'scan_gold_standard'
 
-    scan_id = db.Column('scan',
-                        db.Integer,
-                        db.ForeignKey('scans.id'),
-                        primary_key=True)
-    gold_standard_id = db.Column('gold_standard',
-                                 db.Integer,
-                                 db.ForeignKey('gold_standards.id'),
-                                 primary_key=True)
+    scan_id = db.Column(
+        'scan',
+        db.Integer,
+        db.ForeignKey('scans.id'),
+        primary_key=True
+    )
+    gold_standard_id = db.Column(
+        'gold_standard',
+        db.Integer,
+        db.ForeignKey(
+            'gold_standards.id',
+            name='scan_gold_standard_gold_standard_fkey'
+        ),
+        primary_key=True
+    )
     diffs = db.Column('header_diffs', JSONB)
     date_added = db.Column('date_added',
                            db.DateTime(timezone=True),
@@ -2157,8 +2194,10 @@ class ScanGoldStandard(db.Model):
     scan = db.relationship('Scan',
                            back_populates='header_diffs',
                            uselist=False)
-    gold_standard = db.relationship(GoldStandard,
-                                    backref=backref('scan_gold_standard'))
+    gold_standard = db.relationship(
+        GoldStandard,
+        backref=backref('scan_gold_standard', cascade="all, delete"),
+    )
 
     def __init__(self,
                  scan_id,
