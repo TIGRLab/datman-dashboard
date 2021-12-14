@@ -96,7 +96,7 @@ def user(user_id=None):
         if removed_studies:
             updated_user.remove_studies(removed_studies)
 
-        updated_user.save_changes()
+        updated_user.save()
 
         flash("User profile updated.")
         return redirect(url_for('users.user', user_id=submitted_id))
