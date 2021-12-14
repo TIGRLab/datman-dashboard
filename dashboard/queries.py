@@ -276,6 +276,17 @@ def get_scantypes(tag_id=None, create=False):
     return [new_tag]
 
 
+def get_redcap_config(project, instrument, url, create=False):
+    try:
+        project = int(project)
+    except ValueError:
+        raise InvalidDataException("Project must be an integer.")
+
+    return RedcapConfig.get_config(
+        project=project, instrument=instrument, url=url, create=create
+    )
+
+
 def query_metric_values_byid(**kwargs):
     """Queries the database for metrics matching the specifications.
         Arguments are lists of strings containing identifying names
