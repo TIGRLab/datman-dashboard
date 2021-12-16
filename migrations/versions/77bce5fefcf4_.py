@@ -88,10 +88,7 @@ def upgrade():
         ['study', 'site', 'scantype'],
     )
     op.drop_constraint(
-        'gold_standards_study_fkey', 'gold_standards', type_='foreignkey'
-    )
-    op.drop_constraint(
-        'gold_standards_study_fkey1', 'gold_standards', type_='foreignkey'
+        'gold_standards_study_scantype_fkey', 'gold_standards', type_='foreignkey'
     )
     op.drop_table('study_scantypes')
 
@@ -145,14 +142,7 @@ def downgrade():
         type_='foreignkey'
     )
     op.create_foreign_key(
-        'gold_standards_study_fkey1',
-        'gold_standards',
-        'study_sites',
-        ['study', 'site'],
-        ['study', 'site']
-    )
-    op.create_foreign_key(
-        'gold_standards_study_fkey',
+        'gold_standards_study_scantype_fkey',
         'gold_standards',
         'study_scantypes',
         ['study', 'scantype'],
