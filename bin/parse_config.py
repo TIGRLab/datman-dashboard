@@ -142,7 +142,7 @@ def update_study(study_id, config, skip_delete=False, delete_all=False):
     if ignore:
         return
 
-    study = dashboard.queries.get_studies(study_id, create=True)
+    study = dashboard.queries.get_studies(study_id, create=True)[0]
 
     # Metadata / study-wide settings here
     try:
@@ -246,7 +246,7 @@ def update_redcap(config):
 
 
 def read_token(config):
-    metadata = config.get_path('meta')
+    metadata = config.get_path("meta")
     token_file = config.get_key("RedcapToken")
     token_path = os.path.join(metadata, token_file)
     try:
@@ -274,64 +274,64 @@ def update_site(study, site_id, config, skip_delete=False, delete_all=False):
     except UndefinedSetting:
         notes = None
 
-    # try:
-    study.update_site(site_id, redcap=rc_setting, notes=notes, code=code,
-                      create=True)
-    # except Exception as e:
-    #     logger.error(f"Failed updating settings for study {study} and site "
-    #                  f"{site_id}. Reason - {e}")
+    try:
+        study.update_site(site_id, redcap=rc_setting, notes=notes, code=code,
+                          create=True)
+    except Exception as e:
+        logger.error(f"Failed updating settings for study {study} and site "
+                     f"{site_id}. Reason - {e}")
 
-    # update_expected_scans(study, site_id, config, skip_delete, delete_all)
+    update_expected_scans(study, site_id, config, skip_delete, delete_all)
 
 
-# def update_expected_scans(study, site_id, config, skip_delete=False,
-#                           delete_all=False):
-#     """Update number and type of expected scans for a site.
-#     Args:
-#         study (:obj:`dashboard.dashboard.models.Study`): A study from the
-#             database.
-#         site_id (:obj:`str`): The name of a site configured for the study.
-#         config (:obj:`datman.config.config`): A config instance for the study.
-#         skip_delete (bool, optional): Don't prompt the user and skip deletion
-#             of any scan records no longer in the config files.
-#         delete_all (bool, optional): Don't prompt the user and delete any
-#             scan records no longer in the config files.
-#     """
-#     try:
-#         tag_settings = config.get_tags(site_id)
-#     except UndefinedSetting:
-#         logger.debug(f"No tags defined for site {site_id}. Skipping update.")
-#         return
-#
-#     if site_id in study.scantypes:
-#         undefined = [entry for entry in study.scantypes[site_id]
-#                      if entry.scantype_id not in tag_settings]
-#         if undefined:
-#             delete_records(
-#                 undefined,
-#                 prompt="Expected scan type {} not defined in config files.",
-#                 skip_delete=skip_delete,
-#                 delete_all=delete_all
-#             )
-#
-#     for tag in tag_settings:
-#         try:
-#             sub = tag_settings.get(tag, 'Count')
-#         except KeyError:
-#             sub = None
-#
-#         try:
-#             pha = tag_settings.get(tag, 'PhaCount')
-#         except KeyError:
-#             pha = None
-#
-#         try:
-#             study.update_scantype(
-#                 site_id, tag, num=sub, pha_num=pha, create=True
-#             )
-#         except Exception as e:
-#             logger.error(f"Failed to update expected scans for {study.id} "
-#                          f"site {site_id} and tag {tag}. Reason - {e}.")
+def update_expected_scans(study, site_id, config, skip_delete=False,
+                          delete_all=False):
+    """Update number and type of expected scans for a site.
+    Args:
+        study (:obj:`dashboard.dashboard.models.Study`): A study from the
+            database.
+        site_id (:obj:`str`): The name of a site configured for the study.
+        config (:obj:`datman.config.config`): A config instance for the study.
+        skip_delete (bool, optional): Don't prompt the user and skip deletion
+            of any scan records no longer in the config files.
+        delete_all (bool, optional): Don't prompt the user and delete any
+            scan records no longer in the config files.
+    """
+    try:
+        tag_settings = config.get_tags(site_id)
+    except UndefinedSetting:
+        logger.debug(f"No tags defined for site {site_id}. Skipping update.")
+        return
+
+    if site_id in study.scantypes:
+        undefined = [entry for entry in study.scantypes[site_id]
+                     if entry.scantype_id not in tag_settings]
+        if undefined:
+            delete_records(
+                undefined,
+                prompt="Expected scan type {} not defined in config files.",
+                skip_delete=skip_delete,
+                delete_all=delete_all
+            )
+
+    for tag in tag_settings:
+        try:
+            sub = tag_settings.get(tag, 'Count')
+        except KeyError:
+            sub = None
+
+        try:
+            pha = tag_settings.get(tag, 'PhaCount')
+        except KeyError:
+            pha = None
+
+        try:
+            study.update_scantype(
+                site_id, tag, num=sub, pha_num=pha, create=True
+            )
+        except Exception as e:
+            logger.error(f"Failed to update expected scans for {study.id} "
+                         f"site {site_id} and tag {tag}. Reason - {e}.")
 
 
 def update_tags(config, skip_delete=False, delete_all=False):

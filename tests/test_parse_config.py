@@ -173,125 +173,125 @@ class TestDeleteRecords:
         return records
 
 
-# class TestUpdateExpectedScans:
-#
-#     def test_no_crash_if_site_undefined_in_config(self, config):
-#         pc.update_expected_scans(Mock(), 'BADSITE', config)
-#
-#     def test_no_crash_if_no_scans_defined_for_site(self, config):
-#         mock_study = Mock()
-#         mock_study.scantypes = {}
-#         pc.update_expected_scans(mock_study, 'NOSCANS', config)
-#
-#     def test_no_scantypes_added_if_none_defined_in_config(self, config):
-#         mock_study = Mock()
-#         mock_study.scantypes = {}
-#
-#         pc.update_expected_scans(mock_study, 'NOSCANS', config)
-#         assert mock_study.update_scantype.call_count == 0
-#
-#     @patch('bin.update_config.delete_records')
-#     def test_attempts_to_delete_database_scantypes_if_not_in_config(self,
-#             mock_delete, config):
-#         mock_study = Mock()
-#         mock_t1 = Mock()
-#         mock_t1.scantype_id = 'T1'
-#         mock_t2 = Mock()
-#         mock_t2.scantype_id = 'T2'
-#         mock_study.scantypes = {
-#             'SITE': [mock_t1, mock_t2]
-#         }
-#
-#         pc.update_expected_scans(mock_study, 'SITE', config)
-#         assert mock_delete.call_count == 1
-#         assert mock_delete.call_args_list[0].args[0][0] == mock_t2
-#
-#     def test_expected_tags_updated_in_database(self, config):
-#         mock_t1 = Mock()
-#         mock_t1.scantype_id = 'T1'
-#         mock_study = Mock()
-#         mock_study.scantypes = {
-#             'SITE': [mock_t1]
-#         }
-#
-#         pc.update_expected_scans(mock_study, 'SITE', config)
-#         assert mock_study.update_scantype.call_count == 1
-#         assert mock_study.update_scantype.call_args_list[0][0][1] == 'T1'
-#
-#     @pytest.fixture
-#     def config(self):
-#         tag_settings = {
-#             'T1': {
-#                 'formats': ['nii', 'dcm', 'mnc'],
-#                 'qc_type': 'anat',
-#                 'bids': {'class': 'anat', 'modality_label': 'T1w'},
-#                 'Pattern': {'SeriesDescription': ['T1', 'BRAVO']},
-#                 'Count': 1
-#             }
-#         }
-#
-#         def get_tags(name):
-#             if name == 'SITE':
-#                 return datman.config.TagInfo(tag_settings)
-#             if name == 'NOSCANS':
-#                 return datman.config.TagInfo({})
-#             raise datman.config.UndefinedSetting
-#
-#         config = Mock(spec="datman.config.config")
-#         config.get_tags.side_effect = get_tags
-#
-#         return config
+class TestUpdateExpectedScans:
+
+    def test_no_crash_if_site_undefined_in_config(self, config):
+        pc.update_expected_scans(Mock(), 'BADSITE', config)
+
+    def test_no_crash_if_no_scans_defined_for_site(self, config):
+        mock_study = Mock()
+        mock_study.scantypes = {}
+        pc.update_expected_scans(mock_study, 'NOSCANS', config)
+
+    def test_no_scantypes_added_if_none_defined_in_config(self, config):
+        mock_study = Mock()
+        mock_study.scantypes = {}
+
+        pc.update_expected_scans(mock_study, 'NOSCANS', config)
+        assert mock_study.update_scantype.call_count == 0
+
+    @patch('bin.parse_config.delete_records')
+    def test_attempts_to_delete_database_scantypes_if_not_in_config(self,
+            mock_delete, config):
+        mock_study = Mock()
+        mock_t1 = Mock()
+        mock_t1.scantype_id = 'T1'
+        mock_t2 = Mock()
+        mock_t2.scantype_id = 'T2'
+        mock_study.scantypes = {
+            'SITE': [mock_t1, mock_t2]
+        }
+
+        pc.update_expected_scans(mock_study, 'SITE', config)
+        assert mock_delete.call_count == 1
+        assert mock_delete.call_args_list[0].args[0][0] == mock_t2
+
+    def test_expected_tags_updated_in_database(self, config):
+        mock_t1 = Mock()
+        mock_t1.scantype_id = 'T1'
+        mock_study = Mock()
+        mock_study.scantypes = {
+            'SITE': [mock_t1]
+        }
+
+        pc.update_expected_scans(mock_study, 'SITE', config)
+        assert mock_study.update_scantype.call_count == 1
+        assert mock_study.update_scantype.call_args_list[0][0][1] == 'T1'
+
+    @pytest.fixture
+    def config(self):
+        tag_settings = {
+            'T1': {
+                'formats': ['nii', 'dcm', 'mnc'],
+                'qc_type': 'anat',
+                'bids': {'class': 'anat', 'modality_label': 'T1w'},
+                'Pattern': {'SeriesDescription': ['T1', 'BRAVO']},
+                'Count': 1
+            }
+        }
+
+        def get_tags(name):
+            if name == 'SITE':
+                return datman.config.TagInfo(tag_settings)
+            if name == 'NOSCANS':
+                return datman.config.TagInfo({})
+            raise datman.config.UndefinedSetting
+
+        config = Mock(spec=datman.config.config)
+        config.get_tags.side_effect = get_tags
+
+        return config
 
 
-# class TestUpdateSite:
-#
-#     # @patch('bin.parse_config.update_expected_scans')
-#     # def test_no_crash_with_undefined_settings(self, mock_expected, config):
-#     #     pc.update_site(Mock(), 'CMH', config)
-#
-#     # def test_raises_exception_when_given_undefined_site(self, config):
-#     #     with pytest.raises(Exception):
-#     #         pc.update_site(Mock(), 'BADSITE', config)
-#     #
-#     # # @patch('bin.parse_config.update_expected_scans')
-#     # def test_study_record_updated_for_given_site(self, mock_expected, config):
-#     #     mock_study = Mock()
-#     #     pc.update_site(mock_study, 'CMH', config)
-#     #
-#     #     assert mock_study.update_site.call_count == 1
-#     #     assert mock_study.update_site.call_args_list[0][0][0] == 'CMH'
-#
-#     @patch('bin.update_config.update_expected_scans')
-#     def test_expected_scans_updated_for_site(self, mock_expected, config):
-#         mock_study = Mock()
-#         pc.update_site(mock_study, 'CMH', config)
-#
-#         mock_expected.assert_called_once_with(
-#             mock_study, 'CMH', config, False, False
-#         )
-#
-#     @pytest.fixture
-#     def config(self):
-#         sites = {
-#             'CMH': {
-#                 'STUDY_TAG': 'TST01'
-#             }
-#         }
-#         def get_key(key, site=None):
-#             if not site:
-#                 raise datman.config.UndefinedSetting
-#             try:
-#                 site_conf = sites[site]
-#             except KeyError:
-#                 raise datman.config.ConfigException
-#             try:
-#                 return site_conf[key]
-#             except KeyError:
-#                 raise datman.config.UndefinedSetting
-#
-#         config = Mock(spec="datman.config.config")
-#         config.get_key.side_effect = get_key
-#         return config
+class TestUpdateSite:
+
+    @patch('bin.parse_config.update_expected_scans')
+    def test_no_crash_with_undefined_settings(self, mock_expected, config):
+        pc.update_site(Mock(), 'CMH', config)
+
+    def test_raises_exception_when_given_undefined_site(self, config):
+        with pytest.raises(Exception):
+            pc.update_site(Mock(), 'BADSITE', config)
+
+    @patch('bin.parse_config.update_expected_scans')
+    def test_study_record_updated_for_given_site(self, mock_expected, config):
+        mock_study = Mock()
+        pc.update_site(mock_study, 'CMH', config)
+
+        assert mock_study.update_site.call_count == 1
+        assert mock_study.update_site.call_args_list[0][0][0] == 'CMH'
+
+    @patch('bin.parse_config.update_expected_scans')
+    def test_expected_scans_updated_for_site(self, mock_expected, config):
+        mock_study = Mock()
+        pc.update_site(mock_study, 'CMH', config)
+
+        mock_expected.assert_called_once_with(
+            mock_study, 'CMH', config, False, False
+        )
+
+    @pytest.fixture
+    def config(self):
+        sites = {
+            'CMH': {
+                'STUDY_TAG': 'TST01'
+            }
+        }
+        def get_key(key, site=None):
+            if not site:
+                raise datman.config.UndefinedSetting
+            try:
+                site_conf = sites[site]
+            except KeyError:
+                raise datman.config.ConfigException
+            try:
+                return site_conf[key]
+            except KeyError:
+                raise datman.config.UndefinedSetting
+
+        config = Mock(spec=datman.config.config)
+        config.get_key = get_key
+        return config
 
 
 class TestUpdateStudy:
@@ -311,27 +311,32 @@ class TestUpdateStudy:
         config.get_sites = get_sites
         pc.update_study('STUDY', config)
 
-    # @patch('bin.parse_config.update_expected_scans')
-    # @patch('builtins.input')
-    # @patch('datman.dashboard')
-    # def test_site_records_deleted_if_no_longer_in_config(
-    #         self, mock_dash, mock_input, mock_expected):
-    #     mock_input.return_value = 'y'
-    #
-    #     config = Mock(spec="datman.config.config")
-    #     config.get_sites.return_value = ['CMH']
-    #
-    #     mock_study = Mock()
-    #     mock_study.sites = {
-    #         'CMH': Mock(),
-    #         'UTO': Mock()
-    #     }
-    #     def get_project(study, create=False):
-    #         return mock_study if study == 'STUDY' else None
-    #     mock_dash.get_project.side_effect = get_project
-    #
-    #     pc.update_study('STUDY', config)
-    #     mock_study.delete_site.assert_called_once_with('UTO')
+    @patch('bin.parse_config.update_expected_scans')
+    @patch('builtins.input')
+    @patch('dashboard.queries')
+    def test_site_records_deleted_if_no_longer_in_config(
+            self, mock_dash, mock_input, mock_expected):
+        mock_input.return_value = 'y'
+
+        config = Mock(spec=datman.config.config)
+        config.get_sites.return_value = ['CMH']
+        def get_key(key, **kwargs):
+            if key == 'DbIgnore':
+                return False
+            return True
+        config.get_key = get_key
+
+        mock_study = Mock()
+        mock_study.sites = {
+            'CMH': Mock(),
+            'UTO': Mock()
+        }
+        def get_studies(study, create=False):
+            return [mock_study] if study == 'STUDY' else []
+        mock_dash.get_studies = get_studies
+
+        pc.update_study('STUDY', config)
+        mock_study.delete_site.assert_called_once_with('UTO')
 
 
     @patch('bin.parse_config.update_site')
@@ -344,7 +349,7 @@ class TestUpdateStudy:
             'CMH': Mock(),
             'UTO': Mock()
         }
-        mock_dash.get_studies.return_value = mock_study
+        mock_dash.get_studies.return_value = [mock_study]
 
         config = Mock(spec=datman.config.config)
         config.get_key.return_value = False

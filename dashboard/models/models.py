@@ -1195,15 +1195,15 @@ class Timepoint(TableMixin, db.Model):
         db.session.add(empty_session)
         db.session.commit()
 
-    # def delete(self):
-    #     """
-    #     This will cascade and also delete any records that reference
-    #     the current timepoint, so be careful :)
-    #     """
-    #     for num in self.sessions:
-    #         self.sessions[num].delete()
-    #     db.session.delete(self)
-    #     db.session.commit()
+    def delete(self):
+        """
+        This will cascade and also delete any records that reference
+        the current timepoint, so be careful :)
+        """
+        for num in self.sessions:
+            self.sessions[num].delete()
+        db.session.delete(self)
+        db.session.commit()
 
     def report_incidental_finding(self, user_id, comment):
         new_finding = IncidentalFinding(user_id, self.name, comment)
@@ -1453,20 +1453,20 @@ class Session(TableMixin, db.Model):
             entries.append(scan.get_checklist_entry())
         return entries
 
-    # def delete(self):
-    #     """
-    #     This will also delete anything referencing the current session (i.e.
-    #     any scans, redcap comments, blacklist entries or dismissed 'missing
-    #     scans' errors)
-    #     """
-    #     if (self.redcap_record and
-    #             self.redcap_record.record and
-    #             not self.redcap_record.record.is_shared):
-    #         # Without this, deletes wont propagate correctly to RedcapRecord
-    #         # and you end up with orphaned records
-    #         db.session.delete(self.redcap_record.record)
-    #     db.session.delete(self)
-    #     db.session.commit()
+    def delete(self):
+        """
+        This will also delete anything referencing the current session (i.e.
+        any scans, redcap comments, blacklist entries or dismissed 'missing
+        scans' errors)
+        """
+        if (self.redcap_record and
+                self.redcap_record.record and
+                not self.redcap_record.record.is_shared):
+            # Without this, deletes wont propagate correctly to RedcapRecord
+            # and you end up with orphaned records
+            db.session.delete(self.redcap_record.record)
+        db.session.delete(self)
+        db.session.commit()
 
     def add_task(self, file_path, name=None):
         for item in self.task_files:
