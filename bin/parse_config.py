@@ -46,6 +46,7 @@ import logging
 from docopt import docopt
 
 import datman.config
+from datman.xnat import get_server
 from datman.exceptions import UndefinedSetting
 import dashboard
 
@@ -58,12 +59,12 @@ logger = logging.getLogger(os.path.basename(__file__))
 
 def main():
     args = docopt(__doc__)
-    study = args['<study>']
-    accept_all = args['--accept']
-    skip_all = args['--decline']
-    quiet = args['--quiet']
-    verbose = args['--verbose']
-    debug = args['--debug']
+    study = args["<study>"]
+    accept_all = args["--accept"]
+    skip_all = args["--decline"]
+    quiet = args["--quiet"]
+    verbose = args["--verbose"]
+    debug = args["--debug"]
 
     if verbose:
         logger.setLevel(logging.INFO)
@@ -118,9 +119,9 @@ def delete_records(records, prompt=None, delete_func=None, skip_delete=False,
 
 def prompt_user(message):
     answer = input(message).strip().lower()
-    if answer not in ['y', 'n', '']:
+    if answer not in ["y", "n", ""]:
         raise RuntimeError(f"Invalid user input {answer}")
-    return answer == 'y'
+    return answer == "y"
 
 
 def prompt_delete(message):
@@ -135,7 +136,7 @@ def update_study(study_id, config, skip_delete=False, delete_all=False):
         return
 
     try:
-        ignore = config.get_key('DbIgnore')
+        ignore = config.get_key("DbIgnore")
     except UndefinedSetting:
         ignore = False
 
@@ -146,21 +147,21 @@ def update_study(study_id, config, skip_delete=False, delete_all=False):
 
     # Metadata / study-wide settings here
     try:
-        descr = config.get_key('Description')
+        descr = config.get_key("Description")
     except UndefinedSetting:
         pass
     else:
         study.description = descr
 
     try:
-        full_name = config.get_key('FullName')
+        full_name = config.get_key("FullName")
     except UndefinedSetting:
         pass
     else:
         study.name = full_name
 
     try:
-        is_open = config.get_key('IsOpen')
+        is_open = config.get_key("IsOpen")
     except UndefinedSetting:
         pass
     else:
@@ -260,23 +261,49 @@ def read_token(config):
 
 def update_site(study, site_id, config, skip_delete=False, delete_all=False):
     try:
-        code = config.get_key('StudyTag', site=site_id)
+        code = config.get_key("StudyTag", site=site_id)
     except UndefinedSetting:
         code = None
 
     try:
-        rc_setting = config.get_key('UsesRedcap', site=site_id)
+        rc_setting = config.get_key("UsesRedcap", site=site_id)
     except UndefinedSetting:
         rc_setting = None
 
     try:
-        notes = config.get_key('UsesTechNotes', site=site_id)
+        notes = config.get_key("UsesTechNotes", site=site_id)
     except UndefinedSetting:
         notes = None
 
     try:
+        xnat_archive = config.get_key("XnatArchive", site=site_id)
+    except UndefinedSetting:
+        xnat_archive = None
+
+    try:
+        xnat_convention = config.get_key("XnatConvention", site=site_id)
+    except UndefinedSetting:
+        xnat_convention = "KCNI"
+
+    try:
+        xnat_fname = config.get_key("XnatCredentials", site=site_id)
+    except UndefinedSetting:
+        xnat_credentials = None
+    else:
+        xnat_credentials = os.path.join(config.get_path("meta"), xnat_fname)
+
+    try:
+        xnat_url = get_server(config)
+    except UndefinedSetting:
+        xnat_url = None
+
+    try:
         study.update_site(site_id, redcap=rc_setting, notes=notes, code=code,
-                          create=True)
+                          xnat_archive=xnat_archive,
+                          xnat_convention=xnat_convention,
+                          xnat_credentials=xnat_credentials,
+                          xnat_url=xnat_url, create=True
+        )
     except Exception as e:
         logger.error(f"Failed updating settings for study {study} and site "
                      f"{site_id}. Reason - {e}")
@@ -316,12 +343,12 @@ def update_expected_scans(study, site_id, config, skip_delete=False,
 
     for tag in tag_settings:
         try:
-            sub = tag_settings.get(tag, 'Count')
+            sub = tag_settings.get(tag, "Count")
         except KeyError:
             sub = None
 
         try:
-            pha = tag_settings.get(tag, 'PhaCount')
+            pha = tag_settings.get(tag, "PhaCount")
         except KeyError:
             pha = None
 
@@ -336,20 +363,20 @@ def update_expected_scans(study, site_id, config, skip_delete=False,
 
 def update_tags(config, skip_delete=False, delete_all=False):
     try:
-        tag_settings = config.get_key('ExportSettings')
+        tag_settings = config.get_key("ExportSettings")
     except UndefinedSetting:
-        logger.info('No defined tags found, skipping tag update.')
+        logger.info("No defined tags found, skipping tag update.")
         return
 
     for tag in tag_settings:
         db_entry = dashboard.queries.get_scantypes(tag, create=True)[0]
 
         try:
-            qc_type = tag_settings[tag]['QcType']
+            qc_type = tag_settings[tag]["QcType"]
         except KeyError:
             qc_type = None
         try:
-            pha_type = tag_settings[tag]['QcPha']
+            pha_type = tag_settings[tag]["QcPha"]
         except KeyError:
             pha_type = None
 
@@ -375,9 +402,9 @@ def update_tags(config, skip_delete=False, delete_all=False):
 
 def update_studies(config, skip_delete=False, delete_all=False):
     try:
-        studies = config.get_key('Projects').keys()
+        studies = config.get_key("Projects").keys()
     except UndefinedSetting:
-        logger.debug('No configured projects detected.')
+        logger.debug("No configured projects detected.")
         return
 
     all_studies = dashboard.queries.get_studies()
