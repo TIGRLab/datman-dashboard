@@ -592,7 +592,8 @@ class Study(TableMixin, db.Model):
             site.delete()
 
     def update_site(self, site_id, redcap=None, notes=None, code=None,
-                    create=False):
+                    xnat_archive=None, xnat_convention="KCNI",
+                    xnat_credentials=None, xnat_url=None, create=False):
         """Update a site configured for this study (or configure a new one).
 
         Args:
@@ -606,6 +607,16 @@ class Study(TableMixin, db.Model):
             code (str, optional): The study code used for IDs for this study
                 and site combination. Updates only if value provided.
                 Defaults to None.
+            xnat_archive (str, optional): The name of the archive on XNAT
+                where data for this site is stored. Updates only if value
+                provided. Defaults to None.
+            xnat_convention (str, optional): The naming convention used
+                on the XNAT server for this site. Defaults to 'KCNI'.
+            xnat_credentials (str, optional): The full path to the credentials
+                file to read when accessing this site's XNAT archive.
+                Defaults to None.
+            xnat_url (str, optional): The URL to use when accessing this
+                site's XNAT archive. Defaults to None.
             create (bool, optional): Whether to create the site and add it
                 to this study if it isnt already associated. Defaults to False.
 
@@ -639,6 +650,17 @@ class Study(TableMixin, db.Model):
 
         if code is not None:
             study_site.code = code
+
+        if xnat_archive is not None:
+            study_site.xnat_archive = xnat_archive
+
+        study_site.xnat_convention = xnat_convention
+
+        if xnat_credentials is not None:
+            study_site.xnat_credentials = xnat_credentials
+
+        if xnat_url is not None:
+            study_site.xnat_url = xnat_url
 
         db.session.add(study_site)
         try:
