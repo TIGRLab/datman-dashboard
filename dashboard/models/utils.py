@@ -168,7 +168,7 @@ def async_xnat_update(xnat_url, user, password, xnat_archive, exp_name,
         password (str): The password to log in with.
         xnat_archvie (str): The name of the XNAT archive that contains the
             experiment.
-        exp_name (str); The name of the experiment on XNAT.
+        exp_name (str): The name of the experiment on XNAT.
         series_num (int): The series number of the file to update.
         comment (str): The user's QC comment.
         quality (str): The quality label to apply based on whether data
