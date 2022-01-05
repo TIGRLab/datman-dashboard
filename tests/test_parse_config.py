@@ -315,16 +315,8 @@ class TestUpdateStudy:
     @patch('builtins.input')
     @patch('dashboard.queries')
     def test_site_records_deleted_if_no_longer_in_config(
-            self, mock_dash, mock_input, mock_expected):
+            self, mock_dash, mock_input, mock_expected, config):
         mock_input.return_value = 'y'
-
-        config = Mock(spec=datman.config.config)
-        config.get_sites.return_value = ['CMH']
-        def get_key(key, **kwargs):
-            if key == 'DbIgnore':
-                return False
-            return True
-        config.get_key = get_key
 
         mock_study = Mock()
         mock_study.sites = {
@@ -359,6 +351,28 @@ class TestUpdateStudy:
         mock_update_site.assert_called_once_with(
             mock_study, 'CMH', config, delete_all=False, skip_delete=False
         )
+
+    @pytest.fixture
+    def config(self):
+        def get_key(key, site=None, ignore_defaults=False,
+                    defaults_only=False):
+            try:
+                return {}[key]
+            except:
+                raise datman.config.UndefinedSetting
+
+        config = Mock(spec=datman.config.config)
+        config.get_key.side_effect = get_key
+
+        def get_path(path, study=None):
+            try:
+                return {}[path]
+            except:
+                raise datman.config.UndefinedSetting
+
+        config.get_sites.return_value = ['CMH']
+
+        return config
 
 
 @patch('dashboard.queries')
