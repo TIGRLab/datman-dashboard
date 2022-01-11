@@ -4,6 +4,7 @@ import pytest
 from mock import patch, Mock, call
 
 import datman.config
+import dashboard
 
 pc = importlib.import_module('bin.parse_config')
 
@@ -35,53 +36,50 @@ class TestPromptUser:
 
 class TestUpdateTags:
 
-    @patch('dashboard.queries.get_scantypes')
-    def test_tag_created_in_database_if_doesnt_exist(self, mock_db_tags):
-        config = self.get_config()
-        pc.update_tags(config)
-        assert call('T1', create=True) in mock_db_tags.call_args_list
-
-    @patch('dashboard.queries.get_scantypes')
-    def test_existing_tag_updated_when_settings_changed(self, mock_db_tags):
-        config = self.get_config()
-
-        db_tag = Mock()
-        db_tag.tag = 'T1'
-        db_tag.qc_type = 'func'
-        db_tag.pha_type = 'func'
-        existing_tags = [db_tag]
-
-        mock_db_tags.side_effect = self.get_scantype_func(existing_tags)
-
+    def test_tag_created_in_database_if_doesnt_already_exist(
+            self, dash_db, config
+        ):
+        assert dashboard.models.Scantype.query.all() == []
         pc.update_tags(config)
 
-        assert len(existing_tags) == 1
-        db_tag = existing_tags[0]
-        assert db_tag.tag == 'T1'
-        assert db_tag.qc_type == 'anat'
-        assert db_tag.pha_type is None
+        updated_tags = dashboard.models.Scantype.query.all()
+        assert len(updated_tags) == 1
+        assert updated_tags[0].tag == 'T1'
 
-    @patch('bin.parse_config.delete_records')
-    @patch('dashboard.queries.get_scantypes')
-    def test_calls_delete_records_if_undefined_tags_exist(
-            self, mock_db_tags, mock_delete):
-        config = self.get_config()
+    def test_existing_tag_updated_when_config_settings_differ(
+            self, dash_db, config
+        ):
+        t1 = dashboard.models.Scantype('T1')
+        t1.qc_type = 'func'
+        dash_db.session.add(t1)
+        dash_db.session.commit()
 
-        bad_tag = Mock()
-        bad_tag.tag = 'T2'
-        expected_tag = Mock()
-        expected_tag.tag = 'T1'
-        existing_tags = [bad_tag, expected_tag]
-
-        mock_db_tags.side_effect = self.get_scantype_func(existing_tags)
-
+        assert dashboard.models.Scantype.query.get('T1').qc_type == 'func'
         pc.update_tags(config)
+        assert dashboard.models.Scantype.query.get('T1').qc_type == 'anat'
 
-        assert mock_delete.call_count == 1
-        assert mock_delete.call_args[0] == ([bad_tag],)
+    def test_deletes_tag_record_if_not_defined_in_config_file(
+            self, dash_db, config
+        ):
+        t1 = dashboard.models.Scantype('T1')
+        t2 = dashboard.models.Scantype('T2')
 
-    def get_config(self):
-        def get_key(name):
+        for item in [t1, t2]:
+            dash_db.session.add(item)
+        dash_db.session.commit()
+
+        assert dashboard.models.Scantype.query.all() == [t1, t2]
+
+        pc.update_tags(config, delete_all=True)
+
+        assert dashboard.models.Scantype.query.all() == [t1]
+
+    @pytest.fixture
+    def config(self):
+        """A mock config with a single tag (T1) defined.
+        """
+        def get_key(name, site=None, ignore_defaults=False,
+                    defaults_only=False):
             if name == 'ExportSettings':
                 return {
                             'T1': {
@@ -96,57 +94,48 @@ class TestUpdateTags:
 
         return config
 
-    def get_scantype_func(self, existing_tags):
-        # Provide a mock dashboard.queries.get_scantypes interface
-        # with 'existing_tags' as the fake records.
-        def get_scantype(tag=None, create=False):
-            if not tag:
-                return existing_tags
-
-            found = [item for item in existing_tags if item.tag == tag]
-            if not found and create:
-                new_tag = Mock()
-                new_tag.tag = tag
-                existing_tags.append(new_tag)
-                return [new_tag]
-
-            return found
-        return get_scantype
-
 
 class TestDeleteRecords:
 
-    def test_nothing_deleted_when_skip_delete_flag_set(self):
-        records = self.get_mock_records()
+    def test_nothing_deleted_when_skip_delete_flag_set(self, dash_db):
+        records = self.add_records(dash_db)
+        assert len(records) != 0
+
         pc.delete_records(records, skip_delete=True)
-        for item in records:
-            assert item.delete.call_count == 0
+        assert len(dashboard.models.Scantype.query.all()) == len(records)
 
-    def test_all_given_records_deleted_when_delete_all_set(self):
-        records = self.get_mock_records()
+    def test_all_given_records_deleted_when_delete_all_set(self, dash_db):
+        records = self.add_records(dash_db)
+        assert len(records) != 0
+
         pc.delete_records(records, delete_all=True)
-        for item in records:
-            assert item.delete.call_count == 1
+        assert len(dashboard.models.Scantype.query.all()) == 0
 
-    @patch('builtins.input')
-    def test_delete_func_used_to_delete_when_provided(self, mock_input):
-        mock_input.return_value = 'y'
+    def test_delete_func_used_to_delete_when_provided(self, dash_db):
+        records = self.add_records(dash_db)
+        assert len(records) != 0
+
         def delete_func(x):
-            x.alt_delete()
-        records = self.get_mock_records()
-        pc.delete_records(records, delete_func=delete_func)
+            if x.qc_type == 'rest':
+                x.delete()
 
-        for item in records:
-            assert item.delete.call_count == 0
+        pc.delete_records(records, delete_func=delete_func, delete_all=True)
+        result = dashboard.models.Scantype.query.all()
 
-        for item in records:
-            assert item.alt_delete.call_count == 1
+        for record in result:
+            assert record.qc_type != 'rest'
+
+        for record in records:
+            if record.qc_type != 'rest':
+                assert record in result
 
     @patch('builtins.input')
     @patch('bin.parse_config.prompt_user')
-    def test_prompt_changed_when_flag_set(self, mock_prompt, mock_input):
+    def test_prompt_changed_when_message_given(
+            self, mock_prompt, mock_input, dash_db
+        ):
         mock_input.return_value = 'y'
-        records = self.get_mock_records()
+        records = self.add_records(dash_db)
 
         message = 'Testing prompt flag'
         pc.delete_records(records, prompt=message)
@@ -154,69 +143,104 @@ class TestDeleteRecords:
             assert message in call.args[0]
 
     @patch('builtins.input')
-    def test_records_only_deleted_when_user_consents(self, mock_input):
-        responses = ['n', 'n', 'y', 'n']
+    def test_records_only_deleted_when_user_consents(self, mock_input, dash_db):
+        responses = ['n', 'y']
         mock_input.side_effect = lambda x: responses.pop()
-        records = self.get_mock_records()
+        records = self.add_records(dash_db)
 
         pc.delete_records(records)
 
-        assert records[0].delete.call_count == 0
-        assert records[1].delete.call_count == 1
-        assert records[2].delete.call_count == 0
-        assert records[3].delete.call_count == 0
+        result = dashboard.models.Scantype.query.all()
+        assert records[0] not in result
+        assert records[1] in result
 
-    def get_mock_records(self):
-        records = []
-        for _ in range(4):
-            records.append(Mock())
-        return records
+    def add_records(self, db):
+        t1 = dashboard.models.Scantype('T1')
+        t1.qc_type = 'anat'
+
+        rest = dashboard.models.Scantype('REST')
+        rest.qc_type = 'func'
+
+        for item in [t1, rest]:
+            db.session.add(item)
+        db.session.commit()
+
+        assert dashboard.models.Scantype.query.all() == [t1, rest]
+        return [t1, rest]
 
 
+# class TestUpdateExpectedScans:
+#
+#     def test_no_crash_if_site_undefined_in_config(self, config):
+#         pc.update_expected_scans(Mock(), 'BADSITE', config)
+#
+#     def test_no_crash_if_no_scans_defined_for_site(self, config):
+#         mock_study = Mock()
+#         mock_study.scantypes = {}
+#         pc.update_expected_scans(mock_study, 'NOSCANS', config)
+#
+#     def test_no_scantypes_added_if_none_defined_in_config(self, config):
+#         mock_study = Mock()
+#         mock_study.scantypes = {}
+#
+#         pc.update_expected_scans(mock_study, 'NOSCANS', config)
+#         assert mock_study.update_scantype.call_count == 0
+#
+#     @patch('bin.parse_config.delete_records')
+#     def test_attempts_to_delete_database_scantypes_if_not_in_config(self,
+#             mock_delete, config):
+#         mock_study = Mock()
+#         mock_t1 = Mock()
+#         mock_t1.scantype_id = 'T1'
+#         mock_t2 = Mock()
+#         mock_t2.scantype_id = 'T2'
+#         mock_study.scantypes = {
+#             'SITE': [mock_t1, mock_t2]
+#         }
+#
+#         pc.update_expected_scans(mock_study, 'SITE', config)
+#         assert mock_delete.call_count == 1
+#         assert mock_delete.call_args_list[0].args[0][0] == mock_t2
+#
+#     def test_expected_tags_updated_in_database(self, config):
+#         mock_t1 = Mock()
+#         mock_t1.scantype_id = 'T1'
+#         mock_study = Mock()
+#         mock_study.scantypes = {
+#             'SITE': [mock_t1]
+#         }
+#
+#         pc.update_expected_scans(mock_study, 'SITE', config)
+#         assert mock_study.update_scantype.call_count == 1
+#         assert mock_study.update_scantype.call_args_list[0][0][1] == 'T1'
+#
+#     @pytest.fixture
+#     def config(self):
+#         tag_settings = {
+#             'T1': {
+#                 'formats': ['nii', 'dcm', 'mnc'],
+#                 'qc_type': 'anat',
+#                 'bids': {'class': 'anat', 'modality_label': 'T1w'},
+#                 'Pattern': {'SeriesDescription': ['T1', 'BRAVO']},
+#                 'Count': 1
+#             }
+#         }
+#
+#         def get_tags(name):
+#             if name == 'SITE':
+#                 return datman.config.TagInfo(tag_settings)
+#             if name == 'NOSCANS':
+#                 return datman.config.TagInfo({})
+#             raise datman.config.UndefinedSetting
+#
+#         config = Mock(spec=datman.config.config)
+#         config.get_tags.side_effect = get_tags
+#
+#         return config
 class TestUpdateExpectedScans:
 
-    def test_no_crash_if_site_undefined_in_config(self, config):
-        pc.update_expected_scans(Mock(), 'BADSITE', config)
-
-    def test_no_crash_if_no_scans_defined_for_site(self, config):
-        mock_study = Mock()
-        mock_study.scantypes = {}
-        pc.update_expected_scans(mock_study, 'NOSCANS', config)
-
-    def test_no_scantypes_added_if_none_defined_in_config(self, config):
-        mock_study = Mock()
-        mock_study.scantypes = {}
-
-        pc.update_expected_scans(mock_study, 'NOSCANS', config)
-        assert mock_study.update_scantype.call_count == 0
-
-    @patch('bin.parse_config.delete_records')
-    def test_attempts_to_delete_database_scantypes_if_not_in_config(self,
-            mock_delete, config):
-        mock_study = Mock()
-        mock_t1 = Mock()
-        mock_t1.scantype_id = 'T1'
-        mock_t2 = Mock()
-        mock_t2.scantype_id = 'T2'
-        mock_study.scantypes = {
-            'SITE': [mock_t1, mock_t2]
-        }
-
-        pc.update_expected_scans(mock_study, 'SITE', config)
-        assert mock_delete.call_count == 1
-        assert mock_delete.call_args_list[0].args[0][0] == mock_t2
-
-    def test_expected_tags_updated_in_database(self, config):
-        mock_t1 = Mock()
-        mock_t1.scantype_id = 'T1'
-        mock_study = Mock()
-        mock_study.scantypes = {
-            'SITE': [mock_t1]
-        }
-
-        pc.update_expected_scans(mock_study, 'SITE', config)
-        assert mock_study.update_scantype.call_count == 1
-        assert mock_study.update_scantype.call_args_list[0][0][1] == 'T1'
+    def test_no_crash_if_site_undefined_in_config(self, config, dash_db):
+        assert False
 
     @pytest.fixture
     def config(self):
