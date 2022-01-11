@@ -21,6 +21,15 @@ SQLALCHEMY_DATABASE_URI = 'postgresql://{user}:{pwd}@{srvr}/{db}'.format(
     srvr=server,
     db=db_name)
 
+# Configure the test database to use for unit tests
+test_db_name = os.environ.get('POSTGRES_TEST_DATABASE') or 'test_dashboard'
+
+SQLALCHEMY_TEST_DATABASE_URI = 'postgresql://{user}:{pwd}@{srvr}/{db}'.format(
+    user=user,
+    pwd=password,
+    srvr=server,
+    db=test_db_name)
+
 # Timezone offset used for timezone aware timestamps. Default is Eastern time
 # Used by psycopg2.tz.FixedOffsetTimezone in the models
 TZ_OFFSET = os.environ.get('TIMEZONE') or -240
