@@ -5,6 +5,7 @@ import datetime
 import logging
 from random import randint
 
+from flask import current_app
 from flask_login import UserMixin
 from sqlalchemy import and_, or_, exists, func
 from sqlalchemy.dialects.postgresql import JSONB
@@ -1510,6 +1511,8 @@ class Scan(db.Model):
             checklist = self._new_checklist_entry(signing_user)
         checklist.update_entry(signing_user, comment, sign_off)
         checklist.save()
+        if current_app.config.get('XNAT_ENABLED'):
+            utils.update_xnat_usability(self, current_app.config)
 
     def is_linked(self):
         return self.source_id is not None
@@ -2055,6 +2058,12 @@ class StudySite(db.Model):
     code = db.Column('code', db.String(32))
     download_script = db.Column('download_script', db.String(128))
     post_download_script = db.Column('post_download_script', db.String(128))
+    xnat_url = db.Column('xnat_url', db.String(128))
+    xnat_archive = db.Column('xnat_archive', db.String(32))
+    xnat_convention = db.Column(
+        'xnat_convention', db.String(10), server_default='KCNI'
+    )
+    xnat_credentials = db.Column('xnat_credentials', db.String(128))
 
     # Need to specify the terms of the join to ensure users with
     # access to all sites dont get left out of the list for a specific site

@@ -9,10 +9,12 @@ import logging
 from uuid import uuid4
 from datetime import datetime
 
+import xnat
 from sqlalchemy.orm.collections import MappedCollection, collection
 import flask_apscheduler
 
 from dashboard import scheduler
+from dashboard.emails import async_exec
 
 logger = logging.getLogger(__name__)
 
@@ -81,3 +83,108 @@ def schedule_email(email_func, input_args, input_kwargs=None):
     scheduler.add_job(uuid4().hex, email_func, trigger='date',
                       run_date=datetime.now(), args=input_args,
                       kwargs=input_kwargs)
+
+
+def update_xnat_usability(scan, app_config):
+    """Update XNAT usability data for a scan.
+
+    Args:
+        scan (:obj:`dashboard.models.Scan`): The series to push QC data for.
+        app_config (:obj:`dict`): Configuration of the current app instance,
+            as retrieved from current_app.config
+    """
+    study = scan.get_study()
+    site_settings = study.sites[scan.session.site.name]
+
+    exp_name = getattr(
+        scan.session, site_settings.xnat_convention.lower() + "_name"
+    )
+
+    user, password = get_xnat_credentials(site_settings, app_config)
+
+    if scan.flagged():
+        quality = 'questionable'
+    elif scan.blacklisted():
+        quality = 'unusable'
+    else:
+        quality = 'usable'
+
+    async_xnat_update(
+        site_settings.xnat_url,
+        user,
+        password,
+        site_settings.xnat_archive,
+        exp_name,
+        scan.series,
+        scan.qc_review.comment,
+        quality
+    )
+
+
+def get_xnat_credentials(site_settings, app_config):
+    """Retrieve the xnat username and password for a given study/site.
+
+    Args:
+        site_settings (:obj:`dashboard.models.StudySite`): A StudySite record
+        app_config (:obj:`dict`): Configuration of the current app instance,
+            as retrieved from current_app.config
+    """
+    if app_config.get('XNAT_USER'):
+        user = app_config.get('XNAT_USER')
+        password = app_config.get('XNAT_PASS')
+        return user, password
+
+    try:
+        with open(site_settings.xnat_credentials) as fh:
+            contents = fh.readlines()
+    except (FileNotFoundError, PermissionError) as e:
+        logger.error("Failed to read XNAT credentials file "
+                     f"{site_settings.xnat_credentials}. {e}")
+        raise e
+
+    try:
+        user = contents[0].strip()
+        password = contents[1].strip()
+    except (IndexError, AttributeError) as e:
+        logger.error("Failed to parse XNAT credentials file "
+                     f"{site_settings.xnat_credentials}. {e}")
+        raise e
+
+    return user, password
+
+
+@async_exec
+def async_xnat_update(xnat_url, user, password, xnat_archive, exp_name,
+                      series_num, comment, quality):
+    """Push usability data into XNAT.
+
+    This will update XNAT in a separate thread to reduce waiting time for the
+    user. Because it will run in another thread, database objects cannot be
+    passed in as arguments.
+
+    Args:
+        xnat_url (str): The full URL to use for the XNAT server.
+        user (str): The user to log in as.
+        password (str): The password to log in with.
+        xnat_archvie (str): The name of the XNAT archive that contains the
+            experiment.
+        exp_name (str): The name of the experiment on XNAT.
+        series_num (int): The series number of the file to update.
+        comment (str): The user's QC comment.
+        quality (str): The quality label to apply based on whether data
+            has been flagged, blacklisted or approved.
+    """
+    with xnat.connect(xnat_url, user=user, password=password) as xcon:
+        project = xcon.projects[xnat_archive]
+        xnat_exp = project.experiments[exp_name]
+        matched = [item for item in xnat_exp.scans[:]
+                   if item.id == str(series_num)]
+
+        if not matched or len(matched) > 1:
+            logger.error(f"Couldn't locate {exp_name} on XNAT server. "
+                         "Usability will not be updated.")
+            return
+
+        xnat_scan = matched[0]
+        xnat_scan.quality = quality
+        xnat_scan.note = comment
