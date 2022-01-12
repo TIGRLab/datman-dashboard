@@ -133,7 +133,7 @@ def get_xnat_credentials(site_settings, app_config):
         app_config (:obj:`dict`): Configuration of the current app instance,
             as retrieved from current_app.config
     """
-    if app_config.get('XNAT_USER'):
+    if not site_settings.xnat_credentials and app_config.get('XNAT_USER'):
         user = app_config.get('XNAT_USER')
         password = app_config.get('XNAT_PASS')
         return user, password
