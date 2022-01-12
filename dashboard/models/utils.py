@@ -97,7 +97,7 @@ def update_xnat_usability(scan, app_config):
     site_settings = study.sites[scan.session.site.name]
 
     if not site_settings.xnat_url:
-        logger.info(f"{study} - No xnat url. QC will not be pushed to XNAT.")
+        logger.info(f"{study.id} - No xnat url. Skipping QC push to XNAT.")
         return
 
     exp_name = getattr(
