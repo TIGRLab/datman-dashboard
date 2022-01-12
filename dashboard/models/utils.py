@@ -96,6 +96,10 @@ def update_xnat_usability(scan, app_config):
     study = scan.get_study()
     site_settings = study.sites[scan.session.site.name]
 
+    if not site_settings.xnat_url:
+        logger.info(f"{study} - No xnat url. QC will not be pushed to XNAT.")
+        return
+
     exp_name = getattr(
         scan.session, site_settings.xnat_convention.lower() + "_name"
     )
