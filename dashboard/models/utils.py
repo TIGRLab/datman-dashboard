@@ -138,6 +138,13 @@ def get_xnat_credentials(site_settings, app_config):
         password = app_config.get('XNAT_PASS')
         return user, password
 
+    if not site_settings.xnat_credentials:
+        logger.info(
+            f"No XNAT credentials provided for {site_settings.study.id}. "
+            "QC will not be pushed to XNAT database."
+        )
+        return
+
     try:
         with open(site_settings.xnat_credentials) as fh:
             contents = fh.readlines()
