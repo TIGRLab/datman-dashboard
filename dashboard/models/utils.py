@@ -198,4 +198,5 @@ def async_xnat_update(xnat_url, user, password, xnat_archive, exp_name,
 
         xnat_scan = matched[0]
         xnat_scan.quality = quality
-        xnat_scan.note = comment
+        if comment:
+            xnat_scan.note = comment
