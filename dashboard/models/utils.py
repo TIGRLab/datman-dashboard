@@ -199,4 +199,5 @@ def async_xnat_update(xnat_url, user, password, xnat_archive, exp_name,
         xnat_scan = matched[0]
         xnat_scan.quality = quality
         if comment:
-            xnat_scan.note = comment
+            # XNAT max comment length is 255 chars
+            xnat_scan.note = comment[0:255]
