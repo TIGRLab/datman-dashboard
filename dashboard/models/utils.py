@@ -6,6 +6,7 @@ import operator
 import json
 import time
 import logging
+from urllib.parse import quote, unquote
 from uuid import uuid4
 from datetime import datetime
 
@@ -96,6 +97,10 @@ def update_xnat_usability(scan, app_config):
     study = scan.get_study()
     site_settings = study.sites[scan.session.site.name]
 
+    if not site_settings.xnat_url:
+        logger.info(f"{study.id} - No xnat url. Skipping QC push to XNAT.")
+        return
+
     exp_name = getattr(
         scan.session, site_settings.xnat_convention.lower() + "_name"
     )
@@ -129,10 +134,17 @@ def get_xnat_credentials(site_settings, app_config):
         app_config (:obj:`dict`): Configuration of the current app instance,
             as retrieved from current_app.config
     """
-    if app_config.get('XNAT_USER'):
+    if not site_settings.xnat_credentials and app_config.get('XNAT_USER'):
         user = app_config.get('XNAT_USER')
         password = app_config.get('XNAT_PASS')
         return user, password
+
+    if not site_settings.xnat_credentials:
+        logger.info(
+            f"No XNAT credentials provided for {site_settings.study.id}. "
+            "QC will not be pushed to XNAT database."
+        )
+        return
 
     try:
         with open(site_settings.xnat_credentials) as fh:
@@ -187,4 +199,8 @@ def async_xnat_update(xnat_url, user, password, xnat_archive, exp_name,
 
         xnat_scan = matched[0]
         xnat_scan.quality = quality
-        xnat_scan.note = comment
+        if comment:
+            # XNAT max comment length is 255 chars
+            safe_comment = comment if len(quote(comment)) < 255 \
+                else unquote(quote(comment)[0:243]) + " [...]"
+            xnat_scan.note = safe_comment
