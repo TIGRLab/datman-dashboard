@@ -202,5 +202,5 @@ def async_xnat_update(xnat_url, user, password, xnat_archive, exp_name,
         if comment:
             # XNAT max comment length is 255 chars
             safe_comment = comment if len(quote(comment)) < 255 \
-                    else unquote(quote(comment)[0:243]) + " [...]"
+                else unquote(quote(comment)[0:243]) + " [...]"
             xnat_scan.note = safe_comment
