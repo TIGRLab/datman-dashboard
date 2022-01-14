@@ -6,6 +6,7 @@ import operator
 import json
 import time
 import logging
+from urllib.parse import quote, unquote
 from uuid import uuid4
 from datetime import datetime
 
@@ -200,4 +201,6 @@ def async_xnat_update(xnat_url, user, password, xnat_archive, exp_name,
         xnat_scan.quality = quality
         if comment:
             # XNAT max comment length is 255 chars
-            xnat_scan.note = comment[0:255]
+            safe_comment = comment if len(quote(comment)) < 255 \
+                    else unquote(quote(comment)[0:243]) + " [...]"
+            xnat_scan.note = safe_comment
