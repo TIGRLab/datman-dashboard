@@ -10,6 +10,7 @@ from sqlalchemy_utils import database_exists, create_database, drop_database
 
 import dashboard
 
+
 @pytest.fixture(scope="session")
 def dash_app(request):
     app = dashboard.create_app()
@@ -23,6 +24,7 @@ def dash_app(request):
 
     yield app
     drop_database(app.config['SQLALCHEMY_DATABASE_URI'])
+
 
 @pytest.fixture(scope="function")
 def dash_db(dash_app):
