@@ -34,8 +34,7 @@ Options:
     --decline       Automatically answer 'n' to all prompts. Records found in
                     the database that don't match configuration files will
                     be left as is and when there's a conflict between certain
-                    values (like the contents of the readme) no changes will
-                    be made.
+                    values no changes will be made.
     --quiet, -q     Only report errors.
     --verbose, -v   Be chatty.
     --debug, -d     Be extra chatty.
@@ -45,10 +44,10 @@ import logging
 
 from docopt import docopt
 
+import dashboard
 import datman.config
 from datman.xnat import get_server
 from datman.exceptions import UndefinedSetting
-import dashboard
 
 dashboard.connect_db()
 
@@ -85,6 +84,19 @@ def main():
 
 def delete_records(records, prompt=None, delete_func=None, skip_delete=False,
                    delete_all=False):
+    """Delete the provided records from the database.
+
+    Args:
+        records (:obj:`list`): A list of records from a dashboard database
+            table.
+        prompt (str, optional): A string to replace the default user prompt.
+        delete_func (function, optional): a function that will be called
+            to delete each record instead of the default '.delete()' method.
+        skip_delete (bool, optional): Don't prompt the user and skip deletion
+            of the records. Useful for debugging.
+        delete_all (bool, optional): Don't prompt the user and delete all
+            given records.
+    """
     logger.debug(f"Found {len(records)} records not defined in config files.")
 
     if skip_delete:
@@ -118,6 +130,11 @@ def delete_records(records, prompt=None, delete_func=None, skip_delete=False,
 
 
 def prompt_user(message):
+    """Prompt the user and return True if user responds with 'y'.
+
+    Args:
+        message (str): The message to show the user.
+    """
     answer = input(message).strip().lower()
     if answer not in ["y", "n", ""]:
         raise RuntimeError(f"Invalid user input {answer}")
@@ -129,6 +146,16 @@ def prompt_delete(message):
 
 
 def update_study(study_id, config, skip_delete=False, delete_all=False):
+    """Update all settings stored in the database for the given study.
+
+    Args:
+        study_id (str): The ID of the study to update.
+        config (:obj:`datman.config.config`): a Datman config object.
+        skip_delete (bool, optional): Don't prompt the user and skip deletion
+            of any records no longer defined in the config files.
+        delete_all (bool, optional): Don't prompt the user and delete any
+            records no longer defined in the config files.
+    """
     try:
         config.set_study(study_id)
     except Exception as e:
@@ -197,6 +224,11 @@ def update_study(study_id, config, skip_delete=False, delete_all=False):
 
 
 def update_redcap(config):
+    """Update the REDCap configuration in the dashboard's database.
+
+    Args:
+        config (:obj:`datman.config.config`): A datman config for a study.
+    """
     try:
         project = config.get_key("RedcapProjectId")
         instrument = config.get_key("RedcapInstrument")
@@ -247,6 +279,12 @@ def update_redcap(config):
 
 
 def read_token(config):
+    """Read the REDCap token from a file defined by the Datman config.
+
+    Args:
+        config (:obj:`datman.config.config`): A datman config object for a
+            specific study.
+    """
     metadata = config.get_path("meta")
     token_file = config.get_key("RedcapToken")
     token_path = os.path.join(metadata, token_file)
@@ -260,6 +298,20 @@ def read_token(config):
 
 
 def update_site(study, site_id, config, skip_delete=False, delete_all=False):
+    """Update the settings in the database for a study's scan site.
+
+    Args:
+        study (:obj:`dashboard.models.Study`): A study from the database.
+        site_id (:obj:`str`): The name of a site that should be associated
+            with this study or a site from the study that should have its
+            settings updated.
+        config (:obj:`datman.config.config`): A datman config instance
+            for the study.
+        skip_delete (bool, optional): Don't prompt the user and skip deletion
+            of any site records no longer in the config files.
+        delete_all (bool, optional): Don't prompt the user and delete any
+            site records no longer in the config files.
+    """
     try:
         code = config.get_key("StudyTag", site=site_id)
     except UndefinedSetting:
@@ -302,8 +354,7 @@ def update_site(study, site_id, config, skip_delete=False, delete_all=False):
                           xnat_archive=xnat_archive,
                           xnat_convention=xnat_convention,
                           xnat_credentials=xnat_credentials,
-                          xnat_url=xnat_url, create=True
-        )
+                          xnat_url=xnat_url, create=True)
     except Exception as e:
         logger.error(f"Failed updating settings for study {study} and site "
                      f"{site_id}. Reason - {e}")
@@ -314,15 +365,16 @@ def update_site(study, site_id, config, skip_delete=False, delete_all=False):
 def update_expected_scans(study, site_id, config, skip_delete=False,
                           delete_all=False):
     """Update number and type of expected scans for a site.
+
     Args:
         study (:obj:`dashboard.dashboard.models.Study`): A study from the
             database.
         site_id (:obj:`str`): The name of a site configured for the study.
         config (:obj:`datman.config.config`): A config instance for the study.
         skip_delete (bool, optional): Don't prompt the user and skip deletion
-            of any scan records no longer in the config files.
+            of any records no longer defined in the config files.
         delete_all (bool, optional): Don't prompt the user and delete any
-            scan records no longer in the config files.
+            records no longer defined in the config files.
     """
     try:
         tag_settings = config.get_tags(site_id)
@@ -362,6 +414,15 @@ def update_expected_scans(study, site_id, config, skip_delete=False,
 
 
 def update_tags(config, skip_delete=False, delete_all=False):
+    """Update the tags defined in the database.
+
+    Args:
+        config (:obj:`datman.datman.config`): A datman config object.
+        skip_delete (bool, optional): Don't prompt the user and skip deletion
+            of any scantype records no longer defined in the config files.
+        delete_all (bool, optional): Don't prompt the user and delete any
+            scantype records no longer defined in the config files.
+    """
     try:
         tag_settings = config.get_key("ExportSettings")
     except UndefinedSetting:
@@ -401,6 +462,15 @@ def update_tags(config, skip_delete=False, delete_all=False):
 
 
 def update_studies(config, skip_delete=False, delete_all=False):
+    """Update the settings in the database for all studies.
+
+    Args:
+        config (:obj:`datman.config.config`): a datman config object.
+        skip_delete (bool, optional): Don't prompt the user and skip deletion
+            of any study records no longer defined in the config files.
+        delete_all (bool, optional): Don't prompt the user and delete any
+            study records no longer defined in the config files.
+    """
     try:
         studies = config.get_key("Projects").keys()
     except UndefinedSetting:
