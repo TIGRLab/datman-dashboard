@@ -172,9 +172,9 @@ def update_study(study_id, config, skip_delete=False, delete_all=False):
 
     study = dashboard.queries.get_studies(study_id, create=True)[0]
 
-    update_setting(study, 'description', config, 'Description')
-    update_setting(study, 'name', config, 'FullName')
-    update_setting(study, 'is_open', config, 'IsOpen')
+    update_setting(study, "description", config, "Description")
+    update_setting(study, "name", config, "FullName")
+    update_setting(study, "is_open", config, "IsOpen")
     update_redcap(config)
 
     try:
@@ -230,11 +230,11 @@ def update_redcap(config):
     except Exception:
         pass
 
-    update_setting(rc_config, 'date_field', config, 'RedcapDate')
-    update_setting(rc_config, 'comment_field', config, 'RedcapComments')
-    update_setting(rc_config, 'session_id_field', config, 'RedcapSubj')
-    update_setting(rc_config, 'completed_field', config, 'RedcapStatus')
-    update_setting(rc_config, 'completed_value', config, 'RedcapStatusValue')
+    update_setting(rc_config, "date_field", config, "RedcapDate")
+    update_setting(rc_config, "comment_field", config, "RedcapComments")
+    update_setting(rc_config, "session_id_field", config, "RedcapSubj")
+    update_setting(rc_config, "completed_field", config, "RedcapStatus")
+    update_setting(rc_config, "completed_value", config, "RedcapStatusValue")
     rc_config.save()
 
 
@@ -275,29 +275,29 @@ def update_site(study, site_id, config, skip_delete=False, delete_all=False):
     settings = collect_settings(
         config,
         {
-            'code': 'StudyTag',
-            'redcap': 'UsesRedcap',
-            'notes': 'UsesTechNotes',
-            'xnat_archive': 'XnatArchive',
-            'xnat_convention': 'XnatConvention'
+            "code": "StudyTag",
+            "redcap": "UsesRedcap",
+            "notes": "UsesTechNotes",
+            "xnat_archive": "XnatArchive",
+            "xnat_convention": "XnatConvention"
         },
         site=site_id
     )
 
     try:
-        xnat_fname = config.get_key('XnatCredentials', site=site_id)
-        settings['xnat_credentials'] = os.path.join(
-            config.get_path('meta'), xnat_fname
+        xnat_fname = config.get_key("XnatCredentials", site=site_id)
+        settings["xnat_credentials"] = os.path.join(
+            config.get_path("meta"), xnat_fname
         )
     except UndefinedSetting:
         pass
 
     try:
-        settings['xnat_url'] = get_server(config)
+        settings["xnat_url"] = get_server(config)
     except UndefinedSetting:
         pass
 
-    settings['create'] = True
+    settings["create"] = True
 
     try:
         study.update_site(site_id, **settings)
@@ -449,6 +449,7 @@ def update_setting(record, attribute, config, key, site=None):
     else:
         setattr(record, attribute, value)
 
+
 def collect_settings(config, key_map, site=None):
     all_vals = {}
     for attr_name in key_map:
@@ -458,6 +459,7 @@ def collect_settings(config, key_map, site=None):
             val = None
         all_vals[attr_name] = val
     return all_vals
+
 
 if __name__ == "__main__":
     main()
