@@ -14,16 +14,16 @@ import dashboard
 @pytest.fixture(scope="session")
 def dash_app(request):
     app = dashboard.create_app()
-    app.config['TESTING'] = True
-    app.config['SQLALCHEMY_DATABASE_URI'] = app.config[
-        'SQLALCHEMY_TEST_DATABASE_URI'
+    app.config["TESTING"] = True
+    app.config["SQLALCHEMY_DATABASE_URI"] = app.config[
+        "SQLALCHEMY_TEST_DATABASE_URI"
     ]
 
-    if not database_exists(app.config['SQLALCHEMY_DATABASE_URI']):
-        create_database(app.config['SQLALCHEMY_DATABASE_URI'])
+    if not database_exists(app.config["SQLALCHEMY_DATABASE_URI"]):
+        create_database(app.config["SQLALCHEMY_DATABASE_URI"])
 
     yield app
-    drop_database(app.config['SQLALCHEMY_DATABASE_URI'])
+    drop_database(app.config["SQLALCHEMY_DATABASE_URI"])
 
 
 @pytest.fixture(scope="function")
