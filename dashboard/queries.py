@@ -8,6 +8,7 @@ from dashboard import db
 from .models import (Timepoint, Session, Scan, Study, Site, Metrictype,
                      MetricValue, Scantype, StudySite, AltStudyCode, User,
                      study_timepoints_table, RedcapConfig)
+from dashboard.exceptions import InvalidDataException
 import datman.scanid as scanid
 
 logger = logging.getLogger(__name__)

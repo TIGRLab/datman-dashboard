@@ -56,7 +56,8 @@ def upgrade():
             ['site'], ['sites.name'], name='expected_scans_site_fkey'
         ),
         sa.ForeignKeyConstraint(
-            ['scantype'], ['scantypes.tag'], name='expected_scans_scantype_fkey'
+            ['scantype'], ['scantypes.tag'],
+            name='expected_scans_scantype_fkey'
         ),
         sa.ForeignKeyConstraint(
             ['study', 'site'],
@@ -88,7 +89,8 @@ def upgrade():
         ['study', 'site', 'scantype'],
     )
     op.drop_constraint(
-        'gold_standards_study_scantype_fkey', 'gold_standards', type_='foreignkey'
+        'gold_standards_study_scantype_fkey', 'gold_standards',
+        type_='foreignkey'
     )
     op.drop_table('study_scantypes')
 
