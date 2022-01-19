@@ -172,28 +172,9 @@ def update_study(study_id, config, skip_delete=False, delete_all=False):
 
     study = dashboard.queries.get_studies(study_id, create=True)[0]
 
-    # Metadata / study-wide settings here
-    try:
-        descr = config.get_key("Description")
-    except UndefinedSetting:
-        pass
-    else:
-        study.description = descr
-
-    try:
-        full_name = config.get_key("FullName")
-    except UndefinedSetting:
-        pass
-    else:
-        study.name = full_name
-
-    try:
-        is_open = config.get_key("IsOpen")
-    except UndefinedSetting:
-        pass
-    else:
-        study.is_open = is_open
-
+    update_setting(study, 'description', config, 'Description')
+    update_setting(study, 'name', config, 'FullName')
+    update_setting(study, 'is_open', config, 'IsOpen')
     update_redcap(config)
 
     try:
@@ -249,32 +230,11 @@ def update_redcap(config):
     except Exception:
         pass
 
-    try:
-        rc_config.date_field = config.get_key("RedcapDate")
-    except UndefinedSetting:
-        pass
-
-    try:
-        rc_config.comment_field = config.get_key("RedcapComments")
-    except UndefinedSetting:
-        pass
-
-    try:
-        rc_config.session_id_field = config.get_key("RedcapSubj")
-    except UndefinedSetting:
-        pass
-
-    try:
-        rc_config.completed_field = config.get_key("RedcapStatus")
-    except UndefinedSetting:
-        pass
-
-    try:
-        # this could be an issue due to lists...
-        rc_config.completed_value = config.get_key("RedcapStatusValue")
-    except UndefinedSetting:
-        pass
-
+    update_setting(rc_config, 'date_field', config, 'RedcapDate')
+    update_setting(rc_config, 'comment_field', config, 'RedcapComments')
+    update_setting(rc_config, 'session_id_field', config, 'RedcapSubj')
+    update_setting(rc_config, 'completed_field', config, 'RedcapStatus')
+    update_setting(rc_config, 'completed_value', config, 'RedcapStatusValue')
     rc_config.save()
 
 
@@ -312,49 +272,35 @@ def update_site(study, site_id, config, skip_delete=False, delete_all=False):
         delete_all (bool, optional): Don't prompt the user and delete any
             site records no longer in the config files.
     """
-    try:
-        code = config.get_key("StudyTag", site=site_id)
-    except UndefinedSetting:
-        code = None
+    settings = collect_settings(
+        config,
+        {
+            'code': 'StudyTag',
+            'redcap': 'UsesRedcap',
+            'notes': 'UsesTechNotes',
+            'xnat_archive': 'XnatArchive',
+            'xnat_convention': 'XnatConvention'
+        },
+        site=site_id
+    )
 
     try:
-        rc_setting = config.get_key("UsesRedcap", site=site_id)
+        xnat_fname = config.get_key('XnatCredentials', site=site_id)
+        settings['xnat_credentials'] = os.path.join(
+            config.get_path('meta'), xnat_fname
+        )
     except UndefinedSetting:
-        rc_setting = None
+        pass
 
     try:
-        notes = config.get_key("UsesTechNotes", site=site_id)
+        settings['xnat_url'] = get_server(config)
     except UndefinedSetting:
-        notes = None
+        pass
+
+    settings['create'] = True
 
     try:
-        xnat_archive = config.get_key("XnatArchive", site=site_id)
-    except UndefinedSetting:
-        xnat_archive = None
-
-    try:
-        xnat_convention = config.get_key("XnatConvention", site=site_id)
-    except UndefinedSetting:
-        xnat_convention = "KCNI"
-
-    try:
-        xnat_fname = config.get_key("XnatCredentials", site=site_id)
-    except UndefinedSetting:
-        xnat_credentials = None
-    else:
-        xnat_credentials = os.path.join(config.get_path("meta"), xnat_fname)
-
-    try:
-        xnat_url = get_server(config)
-    except UndefinedSetting:
-        xnat_url = None
-
-    try:
-        study.update_site(site_id, redcap=rc_setting, notes=notes, code=code,
-                          xnat_archive=xnat_archive,
-                          xnat_convention=xnat_convention,
-                          xnat_credentials=xnat_credentials,
-                          xnat_url=xnat_url, create=True)
+        study.update_site(site_id, **settings)
     except Exception as e:
         logger.error(f"Failed updating settings for study {study} and site "
                      f"{site_id}. Reason - {e}")
@@ -494,6 +440,24 @@ def update_studies(config, skip_delete=False, delete_all=False):
     for study in studies:
         update_study(study, config, skip_delete, delete_all)
 
+
+def update_setting(record, attribute, config, key, site=None):
+    try:
+        value = config.get_key(key, site=site)
+    except UndefinedSetting:
+        pass
+    else:
+        setattr(record, attribute, value)
+
+def collect_settings(config, key_map, site=None):
+    all_vals = {}
+    for attr_name in key_map:
+        try:
+            val = config.get_key(key_map[attr_name], site=site)
+        except UndefinedSetting:
+            val = None
+        all_vals[attr_name] = val
+    return all_vals
 
 if __name__ == "__main__":
     main()
