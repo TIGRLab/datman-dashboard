@@ -26,51 +26,55 @@ Run with Docker Compose
    .. code-block:: bash
 
       git clone https://github.com/TIGRLab/dashboard.git
-#. Switch to the 'containers' folder inside the dashboard's folder.
+#. Fill in your configuration. 
+
+   * Add your dashboard configuration in ``dashboard/containers/dashboard.env``.
+     At a minimum you should provide a flask secret key, a database password,
+     an OAuth secret key, and an OAuth client ID. For information on 
+     configuring the dashboard :ref:`see here <glossary>`.
+   * Add your database configuration in ``dashboard/containers/database.env``.
+     Note that the database password in this file should match the one in 
+     ``dashboard.env``
+   * Create two environment variables, ``DASH_ARCHIVE`` and ``DASH_CONFIG``,
+     that hold the full path to your archive (data) folder and config file
+     directory, respectively. If they're left unset, the container will use
+     ``dashboard/containers/prod/`` for both locations. Note that your config file
+     directory should have your datman main config file. By default the
+     container expects this to be named ``main_config.yml`` and expects it to
+     contain a system config block named 'docker' as described in the Datman
+     installation instructions.
+#. Switch to the production container folder and run the app
 
    .. code-block:: bash
 
       cd dashboard/containers/prod
-#. Fill in your configuration. 
-
-   * Add your dashboard configuration in ``containers/prod/dashboard.env``.
-     At a minimum you should provide a flask secret key, a database password,
-     an OAuth secret key, and an OAuth client ID. For information on 
-     configuring the dashboard :ref:`see here <glossary>`.
-   * Add your database configuration in ``containers/prod/database.env``.
-     Note that the database password in this file should match the one in 
-     ``dashboard.env``
-   * Update the ``containers/prod/docker-compose.yml`` file 'volumes' section
-     with the full path to your data folder and your datman config files. 
-     Note that your datman main config is expected to be named 'main_config.yml'
-     and to contain a system config block named 'docker', as described in 
-     the datman installation instructions.
-     
-     .. code-block:: yaml
-     
-        # Update this section with your paths
-        volumes:
-          - YOUR_DATA_PATH_HERE:/archive
-          - YOUR_CONFIG_PATH_HERE:/config
-          - logs:/logs
-#. Run the app
-
-   .. code-block:: bash
-
       docker compose up
 #. If everything started up correctly, you'll be able to access the dashboard
    in your browser at ``localhost:5000``. If you need to connect to the database
-   while the app is running, make sure you have ``psql`` installed (you can 
-   get it with ``sudo apt install postgresql-client`` on Ubuntu 20.04) and 
+   while the app is running, you can do it by connecting to the postgres
+   container and then running psql as shown below.
+
+   .. code-block:: bash
+
+      # Open an interactive shell inside the running dash_postgres container
+      docker exec -it dash_postgres /bin/bash
+      # Connect to the database as user dashboard inside the
+      # dash_postgres container
+      psql -U dashboard dashboard
+
+   You can also connect to it from your local machine with psql. First, make
+   sure you have ``psql`` installed (you can get it with
+   ``sudo apt install postgresql-client`` on Ubuntu 20.04) and
    run this command from another terminal:
    
    .. code-block:: bash
    
+      # You can run this directly from your terminal
       psql -U dashboard -p 5432 -h localhost dashboard
       
    You will be prompted for the ``POSTGRES_PASSWORD`` from the 
-   ``containers/devel/database.env`` file.   
-#. You will likely also want to configure your own nginx server to 
+   ``containers/database.env`` file.
+#. You will likely also want to configure your own nginx server to
    sit in front of the uwsgi server. See the nginx section at the end of the
    'Full Install' instructions for setup info.
 
@@ -288,46 +292,45 @@ Run a Development Instance
    .. code-block:: bash
 
       git clone https://github.com/TIGRLab/dashboard.git
-#. Change to the dashboard folder and build your container.
+#. Create two environment variables, ``DASH_ARCHIVE`` and ``DASH_CONFIG``,
+   that hold the full path to your archive (data) folder and config file
+   directory, respectively. If they're left unset, the container will use
+   ``containers/devel/`` for both locations. Note that your config file
+   directory should have your datman main config file. By default the
+   container expects this to be named ``main_config.yml`` and expects it to
+   contain a system config block named 'docker' as described in the Datman
+   installation instructions.
+#. Change to the `dashboard/containers/devel` folder and run the dashboard
+   app with docker compose. Note that if you need to change or set any app
+   settings, you can modify the dashboard.env and database.env
+   files in ``dashboard/containers`` first.
 
    .. code-block:: bash
-   
-      cd dashboard
-      docker build -t devel_dashboard:latest -f containers/devel/Dockerfile .
-#. Change to the ``containers/devel`` folder. 
-
-   .. code-block:: bash
-   
-      cd containers/devel
-#. Update the docker-compose.yml file 'volumes' section to provide the 
-   path to the folder where your data will be stored and the path to your 
-   datman config files. Note that your datman main config is expected to 
-   be named 'main_config.yml' and to contain a system config block named 
-   'docker', as described in the datman installation instructions.
-   
-   .. code-block:: yaml
-   
-      # Update this section with your paths
-      volumes:
-        - YOUR_DATA_PATH_HERE:/archive
-        - YOUR_CONFIG_PATH_HERE:/config
-        - logs:/logs
-#. Run the dashboard app with docker compose. Note that if you need to change
-   or set any app settings, you can modify the dashboard.env and database.env
-   files in this folder first.
-
-   .. code-block:: bash
-   
+      cd dashboard/containers/devel
       docker compose up
+
 #. If everything started up correctly, you'll be able to access the dashboard
    in your browser at ``localhost:5000``. If you need to connect to the database
-   while the app is running, make sure you have ``psql`` installed (you can 
-   get it with ``sudo apt install postgresql-client`` on Ubuntu 20.04) and 
-   run this command from another terminal:
-   
+   while the app is running, you can do it by connecting to
+   the postgres container and then running psql as shown below.
+
    .. code-block:: bash
-   
+
+      # Open an interactive shell inside the running dash_postgres container
+      docker exec -it devel_postgres /bin/bash
+      # Connect to the database as user 'dashboard' inside the
+      # dash_postgres container
+      psql -U dashboard dashboard
+
+   You can also connect to it from your local machine with psql. First, make
+   sure you have ``psql`` installed (you can get it with
+   ``sudo apt install postgresql-client`` on Ubuntu 20.04) and
+   run this command from another terminal:
+
+   .. code-block:: bash
+
+      # You can run this directly from your terminal
       psql -U dashboard -p 5432 -h localhost dashboard
-      
-   You will be prompted for the ``POSTGRES_PASSWORD`` from the 
-   ``containers/devel/database.env`` file.   
+
+   If you connect this way you will be prompted for the ``POSTGRES_PASSWORD``
+   you set in the ``containers/database.env`` file.
