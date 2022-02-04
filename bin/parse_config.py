@@ -13,8 +13,7 @@ for a study, like 'FMAP', will also delete all scan records for that study with
 that tag).
 
 To prevent a project's settings file from being added to the database
-add the key 'DB_IGNORE', with any value other than the boolean False, to
-the settings file.
+add 'DB_IGNORE: True' to the settings file.
 
 Usage:
     parse_config.py [options]
