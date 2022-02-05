@@ -2,46 +2,73 @@
 """
 import logging
 
-from sqlalchemy import and_, func
+from sqlalchemy import and_, or_, func
 
 from dashboard import db
 from .models import (Timepoint, Session, Scan, Study, Site, Metrictype,
                      MetricValue, Scantype, StudySite, AltStudyCode, User,
-                     study_timepoints_table)
+                     study_timepoints_table, RedcapConfig)
+from dashboard.exceptions import InvalidDataException
 import datman.scanid as scanid
 
 logger = logging.getLogger(__name__)
 
 
-def get_study(name=None, tag=None, site=None):
-    """Retrieve a study from the database.
+def get_studies(name=None, tag=None, site=None, create=False):
+    """Find a study or studies based on search terms.
 
-    Requires enough information to uniquely identify a match in the database,
-    if one exists. This means either a 'name' or a 'tag' / 'site' pair.
+    If no terms are provided all studies in the database will be returned.
 
     Args:
-        name (str, optional): A short-form study name (e.g. 'SPINS'). Defaults
-            to None.
-        tag (str, optional): The session study ID tag (i.e. the code used for
-            the first field of datman style IDs). This may be the same as
-            'name' in some cases. Defaults to None.
-        site (str, optional): A session site ID tag (i.e. the code used to
-            identify scan site). Defaults to None.
+        name (str, optional): The name of a specific study. If given other
+            search terms will be ignored. Defaults to None.
+        tag (str, optional): A study tag / code (e.g. SPN01) as found in the
+            first part of datman style subject IDs. Defaults to None.
+        site (str, optional): A site tag (e.g. CMH) as found in the second
+            part of datman style subject IDs. Defaults to None.
+        create (bool, optional): Whether to create the study if it doesnt
+            exist. This option is ignored if 'name' isn't provided.
+            Defaults to False.
 
     Returns:
-        :obj:`list`: a list of :obj:`dashboard.models.Study` objects that match
-            the given values or the empty list.
+        list: A list of matching :obj:`dashboard.models.Study` records. May
+            be empty if no matches found.
     """
+    query = Study.query
+
+    if not (name or tag or site):
+        return query.all()
+
     if name:
-        return Study.query.filter(Study.id == name).all()
-    studies = StudySite.query.filter(StudySite.code == tag)
+        found = query.filter(Study.id == name).all()
+        if create and not found:
+            study = Study(name)
+            try:
+                db.session.add(study)
+                db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                raise e
+            found = [study]
+        return found
+
+    query = query.filter(Study.id == StudySite.study_id)
+
+    if tag:
+        query = query.filter(
+            or_(StudySite.code == tag,
+                and_(Study.id == AltStudyCode.study_id,
+                     StudySite.site_id == AltStudyCode.site_id,
+                     AltStudyCode.code == tag))
+        )
+
     if site:
-        studies = studies.filter(StudySite.site_id == site)
-    if not studies.all():
-        studies = AltStudyCode.query.filter(AltStudyCode.code == tag)
-        if site:
-            studies = studies.filter(AltStudyCode.site_id == site)
-    return studies.all()
+        query = query.filter(
+            and_(Study.id == StudySite.study_id,
+                 StudySite.site_id == site)
+        )
+
+    return query.all()
 
 
 def find_subjects(search_str):
@@ -97,7 +124,7 @@ def get_study_timepoints(study, site=None, phantoms=False):
     """
 
     try:
-        study = get_study(study)[0]
+        study = get_studies(study)[0]
     except IndexError:
         logger.error('Study {} does not exist!'.format(study))
         return None
@@ -215,6 +242,50 @@ def get_user(username):
     query = User.query.filter(
         func.lower(User._username).contains(func.lower(username)))
     return query.all()
+
+
+def get_scantypes(tag_id=None, create=False):
+    """Get all tags (or one specific tag) defined in the database.
+
+    Args:
+        tag_id (str, optional): A single tag to look up. Defaults to None.
+        create (bool, optional): Whether to create a new record if tag_id
+            doesnt exist. Defaults to False.
+
+    Returns:
+        :obj:`list`: A list of Scantype records.
+    """
+    if not tag_id:
+        return Scantype.query.all()
+
+    found = Scantype.query.get(tag_id)
+    if found:
+        return [found]
+
+    if not create:
+        return []
+
+    new_tag = Scantype(tag_id)
+
+    try:
+        db.session.add(new_tag)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        raise e
+
+    return [new_tag]
+
+
+def get_redcap_config(project, instrument, url, create=False):
+    try:
+        project = int(project)
+    except ValueError:
+        raise InvalidDataException("Project must be an integer.")
+
+    return RedcapConfig.get_config(
+        project=project, instrument=instrument, url=url, create=create
+    )
 
 
 def query_metric_values_byid(**kwargs):

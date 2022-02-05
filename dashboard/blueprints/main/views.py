@@ -147,7 +147,6 @@ def study(study_id=None, active_tab=None):
     form.study_id.data = study_id
 
     return render_template('study.html',
-                           metricnames=study.get_valid_metric_names(),
                            study=study,
                            form=form,
                            active_tab=active_tab,

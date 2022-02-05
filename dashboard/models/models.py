@@ -27,6 +27,29 @@ from .emails import (account_request_email, account_activation_email,
 logger = logging.getLogger(__name__)
 
 
+class TableMixin:
+    """Adds simple methods commonly needed for tables.
+    """
+
+    def save(self):
+        db.session.add(self)
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            raise InvalidDataException("Failed to commit to database. Reason "
+                                       "- {}".format(e))
+
+    def delete(self):
+        db.session.delete(self)
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            raise InvalidDataException("Failed to delete from database. "
+                                       "Reason - {}".format(e))
+
+
 ###############################################################################
 # Association tables (i.e. basic many to many relationships)
 
@@ -45,7 +68,7 @@ study_timepoints_table = db.Table(
 # Plain entities
 
 
-class User(UserMixin, db.Model):
+class User(UserMixin, TableMixin, db.Model):
     __tablename__ = 'users'
 
     id = db.Column('id', db.Integer, primary_key=True)
@@ -139,7 +162,7 @@ class User(UserMixin, db.Model):
         if url is None or url == self.picture:
             return
         self.picture = url
-        self.save_changes()
+        self.save()
 
     def request_account(self, request_form):
         request_form.populate_obj(self)
@@ -147,10 +170,9 @@ class User(UserMixin, db.Model):
         # causes postgres to throw an error (it expects an int)
         self.id = None
         try:
-            self.save_changes()
+            self.save()
             request = AccountRequest(self.id)
-            db.session.add(request)
-            db.session.commit()
+            request.save()
         except IntegrityError:
             # Account exists or request is already pending
             db.session.rollback()
@@ -367,14 +389,6 @@ class User(UserMixin, db.Model):
 
         return True
 
-    def save_changes(self):
-        db.session.add(self)
-        db.session.commit()
-
-    def delete(self):
-        db.session.delete(self)
-        db.session.commit()
-
     def __repr__(self):
         return "<User {}: {} {}>".format(self.id, self.first_name,
                                          self.last_name)
@@ -383,7 +397,7 @@ class User(UserMixin, db.Model):
         return "{} {}".format(self.first_name, self.last_name)
 
 
-class AccountRequest(db.Model):
+class AccountRequest(TableMixin, db.Model):
     __tablename__ = 'account_requests'
 
     user_id = db.Column('user_id',
@@ -438,30 +452,46 @@ class AccountRequest(db.Model):
         return result
 
 
-class Study(db.Model):
+class Study(TableMixin, db.Model):
     __tablename__ = 'studies'
 
     id = db.Column('id', db.String(32), primary_key=True)
     name = db.Column('name', db.String(1024))
     description = db.Column('description', db.Text)
     read_me = deferred(db.Column('read_me', db.Text))
-    is_open = db.Column('is_open', db.Boolean)
+    is_open = db.Column('is_open', db.Boolean, default=True, nullable=False)
     email_qc = db.Column('email_on_trigger', db.Boolean)
 
     users = db.relationship(
         'StudyUser',
-        primaryjoin='Study.id==StudySite.study_id',
-        secondary='study_sites',
-        secondaryjoin='StudySite.study_id==StudyUser.study_id')
+        primaryjoin='and_(Study.id==foreign(StudyUser.study_id), '
+                    'StudySite.study_id==StudyUser.study_id)',
+        cascade='all, delete',
+    )
     sites = db.relationship(
         'StudySite',
         back_populates='study',
-        collection_class=attribute_mapped_collection('site_id'))
-    scantypes = association_proxy('study_scantypes', 'scantype')
-    timepoints = db.relationship('Timepoint',
-                                 secondary=study_timepoints_table,
-                                 back_populates='studies',
-                                 lazy='dynamic')
+        collection_class=attribute_mapped_collection('site_id'),
+        cascade="all, delete",
+    )
+    scantypes = db.relationship(
+        'ExpectedScan',
+        collection_class=lambda: utils.DictListCollection('site_id'),
+        cascade="all, delete",
+    )
+    timepoints = db.relationship(
+        'Timepoint',
+        secondary=study_timepoints_table,
+        back_populates='studies',
+        lazy='dynamic',
+        cascade="all, delete",
+    )
+    standards = db.relationship(
+        'GoldStandard',
+        secondary='expected_scans',
+        collection_class=lambda: utils.DictListCollection('site'),
+        viewonly=True,
+    )
 
     def __init__(self,
                  study_id,
@@ -528,20 +558,178 @@ class Study(db.Model):
         except IntegrityError as e:
             db.session.rollback()
             str_err = str(e)
-            if 'study_scantypes' in str_err:
+            if 'not present in table "expected_scans"' in str_err:
                 raise InvalidDataException(
-                    "Attempted to add gold standard for "
-                    "invalid study / scan type - {}".format(gs_file))
-            elif 'study_sites' in str_err:
+                    "Attempted to add gold standard with invalid "
+                    "Study/Site/Tag combination."
+                )
+            else:
                 raise InvalidDataException(
-                    "Attempted to add gold standard for "
-                    "invalid study / site - {}".format(gs_file))
-            elif 'gold_standards_json_path_contents_constraint' in str_err:
-                raise InvalidDataException("Failed to add gold standard {}. "
-                                           "Record already exists "
-                                           "in database - {}".format(
-                                               gs_file, e))
+                    "Failed to add gold standard {}. Reason - "
+                    "{}".format(gs_file, e)
+                )
         return new_gs
+
+    def delete_scantype(self, site_id, scantype):
+        if site_id not in self.sites:
+            raise InvalidDataException(
+                "Invalid site {} for {}".format(site_id, self.id)
+            )
+
+        found = [entry for entry in self.scantypes[site_id]
+                 if entry.scantype_id == scantype]
+        if not found:
+            return
+        found[0].delete()
+
+    def delete_site(self, site):
+        if site not in self.sites:
+            return
+        study_site = self.sites[site]
+        site = study_site.site
+        study_site.delete()
+        if not site.studies:
+            site.delete()
+
+    def update_site(self, site_id, redcap=None, notes=None, code=None,
+                    xnat_archive=None, xnat_convention="KCNI",
+                    xnat_credentials=None, xnat_url=None, create=False):
+        """Update a site configured for this study (or configure a new one).
+
+        Args:
+            site_id (str or Site): The ID of a site associated with this study
+                or its record from the database.
+            redcap (bool, optional): True if redcap scan completed records are
+                used by this site. Updates only if value provided.
+                Defaults to None.
+            notes (bool, optional): True if tech notes are provided by this
+                site. Updates only if value provided. Defaults to None.
+            code (str, optional): The study code used for IDs for this study
+                and site combination. Updates only if value provided.
+                Defaults to None.
+            xnat_archive (str, optional): The name of the archive on XNAT
+                where data for this site is stored. Updates only if value
+                provided. Defaults to None.
+            xnat_convention (str, optional): The naming convention used
+                on the XNAT server for this site. Defaults to 'KCNI'.
+            xnat_credentials (str, optional): The full path to the credentials
+                file to read when accessing this site's XNAT archive.
+                Defaults to None.
+            xnat_url (str, optional): The URL to use when accessing this
+                site's XNAT archive. Defaults to None.
+            create (bool, optional): Whether to create the site and add it
+                to this study if it isnt already associated. Defaults to False.
+
+        Raises:
+            InvalidDataException: If the site doesnt exist or isn't associated
+                with this study (and create wasnt given) or if the update
+                fails.
+        """
+        if isinstance(site_id, Site):
+            site_id = Site.id
+        elif not Site.query.get(site_id):
+            if not create:
+                raise InvalidDataException("Site {} does not exist.".format(
+                    site_id))
+            site = Site(site_id)
+            db.session.add(site)
+
+        if site_id not in self.sites:
+            if not create:
+                raise InvalidDataException("Invalid site {} for study "
+                                           "{}".format(site_id, self.id))
+            study_site = StudySite(self.id, site_id)
+        else:
+            study_site = self.sites[site_id]
+
+        if redcap is not None:
+            study_site.uses_redcap = redcap
+
+        if notes is not None:
+            study_site.uses_notes = notes
+
+        if code is not None:
+            study_site.code = code
+
+        if xnat_archive is not None:
+            study_site.xnat_archive = xnat_archive
+
+        study_site.xnat_convention = xnat_convention
+
+        if xnat_credentials is not None:
+            study_site.xnat_credentials = xnat_credentials
+
+        if xnat_url is not None:
+            study_site.xnat_url = xnat_url
+
+        db.session.add(study_site)
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            raise InvalidDataException(
+                "Failed to update site {} for study {}. Reason - {}".format(
+                    site_id, self.id, e
+                )
+            )
+
+    def update_scantype(self, site_id, scantype, num=None, pha_num=None,
+                        create=False):
+        """Update the number of scans expected for each site / tag combination.
+
+        Args:
+            site_id (str or Site): The site to configure.
+            scantype (str or Scantype): The scan type to configure.
+            num (int, optional): The number of scans expected with this tag for
+                human subjects at this site. Only updates if value given.
+                Defaults to None.
+            pha_only (int, optional): The number of scans with this tag
+                expected for phantoms at this site. Only updates if value
+                given. Defaults to None.
+            create (bool, optional): Whether to add a new record for the
+                study/site/tag combination if one doesnt exist.
+
+        Raises:
+            InvalidDataException: If a site is given that isn't configured for
+                this study, if the scan type does not exist, or if an error
+                occurs during database update.
+        """
+        if isinstance(site_id, Site):
+            site_id = site_id.id
+
+        if site_id not in self.sites:
+            raise InvalidDataException("Invalid site {} for {}".format(
+                site_id, self.id))
+
+        if not isinstance(scantype, Scantype):
+            found = Scantype.query.get(scantype)
+            if not found:
+                raise InvalidDataException("Undefined scan type "
+                                           "{}.".format(scantype))
+            scantype = found
+
+        expected = ExpectedScan.query.get((self.id, site_id, scantype.tag))
+        if expected:
+            if num:
+                expected.count = num
+            if pha_num:
+                expected.pha_count = pha_num
+        elif create:
+            expected = ExpectedScan(self.id, site_id, scantype.tag, num,
+                                    pha_num)
+        else:
+            raise InvalidDataException(
+                "Tag {} not accepted for study {} and site {} combination."
+                "".format(scantype.tag, self.id, site_id)
+            )
+
+        db.session.add(expected)
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            raise InvalidDataException("Failed to update expected scans for "
+                                       "{}. Reason - {}".format(self.id, e))
 
     def num_timepoints(self, type=''):
         if type.lower() == 'human':
@@ -812,15 +1000,23 @@ class Study(db.Model):
         next_idx = randint(0, len(user_list) - 1)
         return user_list[next_idx]
 
-    def save(self):
-        db.session.add(self)
-        db.session.commit()
+    def delete(self):
+        for study_site in self.sites.values():
+            if len(study_site.site.studies) == 1:
+                # Clean up sites not used by any other study
+                study_site.site.delete()
+        for site in self.scantypes:
+            for expected_scan in self.scantypes[site]:
+                if len(expected_scan.scantype.studies) == 1:
+                    # Clean up tags not used by any other study
+                    expected_scan.scantype.delete()
+        super().delete()
 
     def __repr__(self):
         return "<Study {}>".format(self.id)
 
 
-class Site(db.Model):
+class Site(TableMixin, db.Model):
     __tablename__ = 'sites'
 
     name = db.Column('name', db.String(32), primary_key=True)
@@ -829,8 +1025,10 @@ class Site(db.Model):
     studies = db.relationship(
         'StudySite',
         back_populates='site',
-        collection_class=attribute_mapped_collection('study.id'))
-    timepoints = db.relationship('Timepoint')
+        collection_class=attribute_mapped_collection('study.id'),
+        cascade="all, delete"
+    )
+    timepoints = db.relationship('Timepoint', cascade="all, delete")
 
     def __init__(self, site_name, description=None):
         self.name = site_name
@@ -840,7 +1038,7 @@ class Site(db.Model):
         return "<Site {}>".format(self.name)
 
 
-class Timepoint(db.Model):
+class Timepoint(TableMixin, db.Model):
     __tablename__ = 'timepoints'
 
     name = db.Column('name', db.String(64), primary_key=True)
@@ -1059,14 +1257,6 @@ class Timepoint(db.Model):
             raise Exception('Comment not found.')
         return match[0]
 
-    def save(self):
-        try:
-            db.session.add(self)
-            db.session.commit()
-        except Exception as e:
-            db.session.rollback()
-            raise e
-
     def __repr__(self):
         return "<Timepoint {}>".format(self.name)
 
@@ -1121,7 +1311,7 @@ class TimepointComment(db.Model):
             self.timepoint_id, self.user_id)
 
 
-class Session(db.Model):
+class Session(TableMixin, db.Model):
     __tablename__ = 'sessions'
 
     name = db.Column('name',
@@ -1301,10 +1491,6 @@ class Session(db.Model):
         db.session.delete(self)
         db.session.commit()
 
-    def save(self):
-        db.session.add(self)
-        db.session.commit()
-
     def add_task(self, file_path, name=None):
         for item in self.task_files:
             if file_path == item.file_path:
@@ -1412,7 +1598,7 @@ class SessionRedcap(db.Model):
             self.name, self.num, self.record_id)
 
 
-class Scan(db.Model):
+class Scan(TableMixin, db.Model):
     __tablename__ = 'scans'
 
     id = db.Column('id', db.Integer, primary_key=True)
@@ -1455,7 +1641,7 @@ class Scan(db.Model):
                                     cascade='all, delete-orphan')
     header_diffs = db.relationship(
         'ScanGoldStandard',
-        cascade='all',
+        cascade='all, delete',
         order_by='desc(ScanGoldStandard.date_added)',
         back_populates='scan')
 
@@ -1513,6 +1699,7 @@ class Scan(db.Model):
         checklist.save()
         if current_app.config.get('XNAT_ENABLED'):
             utils.update_xnat_usability(self, current_app.config)
+        return checklist
 
     def is_linked(self):
         return self.source_id is not None
@@ -1655,14 +1842,6 @@ class Scan(db.Model):
                                        "message for {}. Reason: {}".format(
                                            self, e))
 
-    def delete(self):
-        db.session.delete(self)
-        db.session.commit()
-
-    def save(self):
-        db.session.add(self)
-        db.session.commit()
-
     def __repr__(self):
         if self.source_id:
             repr = "<Scan {}: {} link to scan {}>".format(
@@ -1675,7 +1854,7 @@ class Scan(db.Model):
         return self.name
 
 
-class ScanChecklist(db.Model):
+class ScanChecklist(TableMixin, db.Model):
     __tablename__ = 'scan_checklist'
 
     id = db.Column('id', db.Integer, primary_key=True)
@@ -1720,27 +1899,81 @@ class ScanChecklist(db.Model):
         self._timestamp = datetime.datetime.now(
             FixedOffsetTimezone(offset=TZ_OFFSET))
 
-    def save(self):
-        db.session.add(self)
-        db.session.commit()
-
-    def delete(self):
-        db.session.delete(self)
-        db.session.commit()
-
     def __repr__(self):
         return "<ScanChecklist for {} by user {}>".format(
             self.scan_id, self.user_id)
 
 
-class Scantype(db.Model):
+class ExpectedScan(TableMixin, db.Model):
+    __tablename__ = 'expected_scans'
+
+    study_id = db.Column('study', db.String(32), primary_key=True)
+    site_id = db.Column('site', db.String(32), primary_key=True)
+    scantype_id = db.Column('scantype', db.String(64), primary_key=True)
+    count = db.Column('num_expected', db.Integer, default=0)
+    pha_count = db.Column('pha_num_expected', db.Integer, default=0)
+
+    scantype = db.relationship('Scantype', back_populates='expected_scans')
+    standards = db.relationship(
+        'GoldStandard',
+        back_populates='expected_scan',
+        cascade='all, delete'
+    )
+
+    __table_args__ = (
+        ForeignKeyConstraint(['study'], ['studies.id'],
+                             name='expected_scans_study_fkey'),
+        ForeignKeyConstraint(['site'], ['sites.name'],
+                             name='expected_scans_site_fkey'),
+        ForeignKeyConstraint(['scantype'], ['scantypes.tag'],
+                             name='expected_scans_scantype_fkey'),
+        ForeignKeyConstraint(
+            ['study', 'site'],
+            ['study_sites.study', 'study_sites.site'],
+            name='expected_scans_allowed_sites_fkey'
+        ),
+    )
+
+    def __init__(self, study, site, scantype, count=0, pha_count=0):
+        self.study_id = study
+        self.site_id = site
+        self.scantype_id = scantype
+        self.count = count
+        self.pha_count = pha_count
+
+    def __repr__(self):
+        return "<ExpectedScan {}-{}: {}>".format(
+            self.study_id, self.site_id, self.scantype_id)
+
+
+class Scantype(TableMixin, db.Model):
     __tablename__ = 'scantypes'
 
     tag = db.Column('tag', db.String(64), primary_key=True)
+    qc_type = db.Column('qc_type', db.String(64))
+    pha_type = db.Column('pha_type', db.String(64))
 
-    scans = db.relationship('Scan', back_populates='scantype')
-    studies = association_proxy('study_scantypes', 'study')
-    metrictypes = db.relationship('Metrictype', back_populates='scantype')
+    scans = db.relationship(
+        'Scan',
+        back_populates='scantype',
+        cascade="all, delete"
+    )
+    metrictypes = db.relationship(
+        'Metrictype',
+        back_populates='scantype',
+        cascade="all, delete"
+    )
+    expected_scans = db.relationship(
+        'ExpectedScan',
+        back_populates='scantype',
+        cascade='all, delete'
+    )
+    # viewonly=True to avoid breaking delete cascade through expected_scans
+    studies = db.relationship(
+        'Study',
+        secondary='expected_scans',
+        viewonly=True
+    )
 
     def __init__(self, tag):
         self.tag = tag
@@ -1760,24 +1993,18 @@ class GoldStandard(db.Model):
     json_contents = db.Column('contents', JSONB)
     json_path = db.Column('json_path', db.String(1028))
 
-    study_site = db.relationship('StudySite',
-                                 uselist=False,
-                                 back_populates='standards',
-                                 viewonly=True)
-    study_scantype = db.relationship('StudyScantype',
-                                     uselist=False,
-                                     back_populates='standards',
-                                     viewonly=True)
     scans = association_proxy('scan_gold_standard', 'scan')
+    expected_scan = db.relationship('ExpectedScan', back_populates='standards')
 
     __table_args__ = (
         ForeignKeyConstraint(
-            ['study', 'scantype'],
-            ['study_scantypes.study', 'study_scantypes.scantype']),
-        ForeignKeyConstraint(
-            ['study', 'site'],
-            ['study_sites.study', 'study_sites.site']),
-        UniqueConstraint(json_path, json_contents))
+            ['study', 'site', 'scantype'],
+            ['expected_scans.study', 'expected_scans.site',
+             'expected_scans.scantype'],
+            name='gold_standards_expected_scan_fkey',
+        ),
+        UniqueConstraint(json_path, json_contents)
+    )
 
     def __init__(self, study, gs_json):
         try:
@@ -1857,7 +2084,7 @@ class RedcapRecord(db.Model):
         return "<RedcapRecord {}: record {}>".format(self.id, self.record)
 
 
-class RedcapConfig(db.Model):
+class RedcapConfig(TableMixin, db.Model):
     __tablename__ = "redcap_config"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -1912,6 +2139,7 @@ class RedcapConfig(db.Model):
 
         cfg = RedcapConfig(project, instrument, url, version=version)
         cfg.save()
+        return cfg
 
     def __repr__(self):
         return "<RedcapConfig {}>".format(self.id)
@@ -2008,7 +2236,7 @@ class StudyUser(db.Model):
         secondaryjoin='StudySite.study_id==Study.id',
         uselist=False,
         viewonly=True)
-    user = db.relationship('User', back_populates='studies')
+    user = db.relationship('User', back_populates='studies', viewonly=True)
 
     __table_args__ = (
         UniqueConstraint('study', 'user_id', 'site'),
@@ -2043,7 +2271,7 @@ class StudyUser(db.Model):
                                                      self.user_id)
 
 
-class StudySite(db.Model):
+class StudySite(TableMixin, db.Model):
     __tablename__ = 'study_sites'
 
     study_id = db.Column('study',
@@ -2055,6 +2283,7 @@ class StudySite(db.Model):
                         db.ForeignKey('sites.name'),
                         primary_key=True)
     uses_redcap = db.Column('uses_redcap', db.Boolean, default=False)
+    uses_notes = db.Column('uses_tech_notes', db.Boolean, default=False)
     code = db.Column('code', db.String(32))
     download_script = db.Column('download_script', db.String(128))
     post_download_script = db.Column('post_download_script', db.String(128))
@@ -2071,21 +2300,24 @@ class StudySite(db.Model):
         'StudyUser',
         primaryjoin='and_(StudySite.study_id==StudyUser.study_id,'
         'or_(StudySite.site_id==StudyUser.site_id,'
-        'StudyUser.site_id==None))')
+        'StudyUser.site_id==None))',
+        cascade='all, delete')
     site = db.relationship('Site', back_populates='studies')
     study = db.relationship('Study', back_populates='sites')
     alt_codes = db.relationship('AltStudyCode',
                                 back_populates='study_site',
                                 cascade='all, delete',
                                 lazy='joined')
-    standards = db.relationship('GoldStandard', back_populates='study_site')
+    expected_scans = db.relationship('ExpectedScan', cascade="all, delete")
 
     __table_args__ = (UniqueConstraint(study_id, site_id), )
 
-    def __init__(self, study_id, site_id, uses_redcap=False, code=None):
+    def __init__(self, study_id, site_id, uses_redcap=False, uses_notes=None,
+                 code=None):
         self.study_id = study_id
         self.site_id = site_id
         self.uses_redcap = uses_redcap
+        self.uses_notes = uses_notes
         self.code = code
 
     def __repr__(self):
@@ -2128,43 +2360,24 @@ class AltStudyCode(db.Model):
                                                    self.code)
 
 
-class StudyScantype(db.Model):
-    __tablename__ = 'study_scantypes'
-
-    study_id = db.Column('study',
-                         db.String(32),
-                         db.ForeignKey('studies.id'),
-                         primary_key=True)
-    scantype_id = db.Column('scantype',
-                            db.String(64),
-                            db.ForeignKey('scantypes.tag'),
-                            primary_key=True)
-
-    study = db.relationship(Study,
-                            backref=backref('study_scantypes',
-                                            cascade="all, delete-orphan"))
-    scantype = db.relationship(Scantype,
-                               backref=backref('study_scantypes',
-                                               cascade="all, delete-orphan"))
-    standards = db.relationship('GoldStandard',
-                                back_populates='study_scantype')
-
-    def __repr__(self):
-        return "<StudyScantype {} - {}>".format(self.study_id,
-                                                self.scantype_id)
-
-
 class ScanGoldStandard(db.Model):
     __tablename__ = 'scan_gold_standard'
 
-    scan_id = db.Column('scan',
-                        db.Integer,
-                        db.ForeignKey('scans.id'),
-                        primary_key=True)
-    gold_standard_id = db.Column('gold_standard',
-                                 db.Integer,
-                                 db.ForeignKey('gold_standards.id'),
-                                 primary_key=True)
+    scan_id = db.Column(
+        'scan',
+        db.Integer,
+        db.ForeignKey('scans.id'),
+        primary_key=True
+    )
+    gold_standard_id = db.Column(
+        'gold_standard',
+        db.Integer,
+        db.ForeignKey(
+            'gold_standards.id',
+            name='scan_gold_standard_gold_standard_fkey'
+        ),
+        primary_key=True
+    )
     diffs = db.Column('header_diffs', JSONB)
     date_added = db.Column('date_added',
                            db.DateTime(timezone=True),
@@ -2175,8 +2388,10 @@ class ScanGoldStandard(db.Model):
     scan = db.relationship('Scan',
                            back_populates='header_diffs',
                            uselist=False)
-    gold_standard = db.relationship(GoldStandard,
-                                    backref=backref('scan_gold_standard'))
+    gold_standard = db.relationship(
+        GoldStandard,
+        backref=backref('scan_gold_standard', cascade="all, delete"),
+    )
 
     def __init__(self,
                  scan_id,
