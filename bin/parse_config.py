@@ -296,10 +296,8 @@ def update_site(study, site_id, config, skip_delete=False, delete_all=False):
     except UndefinedSetting:
         pass
 
-    settings["create"] = True
-
     try:
-        study.update_site(site_id, **settings)
+        study.update_site(site_id, create=True, **settings)
     except Exception as e:
         logger.error(f"Failed updating settings for study {study} and site "
                      f"{site_id}. Reason - {e}")
