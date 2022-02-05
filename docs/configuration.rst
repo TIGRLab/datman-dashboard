@@ -65,6 +65,10 @@ Optional
   
   * Description: The name of the database to connect to.
   * Default value: ``dashboard``
+* **POSTGRES_TEST_DATABASE**
+
+  * Description: The name of the database to create / delete when running tests.
+  * Default value: ``test_dashboard``
 * **POSTGRES_SRVR**
 
   * Description: The postgres server to connect to. May be a fully qualified 
