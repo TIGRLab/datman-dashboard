@@ -38,6 +38,18 @@ class TestGetStudies:
         studies = dashboard.queries.get_studies(tag="PRE01", create=True)
         assert not studies
 
+    def test_find_studies_can_locate_by_alt_study_code(self, records):
+        alt_code = dashboard.models.AltStudyCode()
+        alt_code.study_id = "SPINS"
+        alt_code.site_id = "UT1"
+        alt_code.code = "SPN02"
+        dashboard.models.db.session.add(alt_code)
+        dashboard.models.db.session.commit()
+
+        studies = dashboard.queries.get_studies(tag="SPN02")
+        assert len(studies) == 1
+        assert studies[0].id == "SPINS"
+
     @pytest.fixture
     def records(self, dash_db):
         study1 = dashboard.models.Study("SPINS")
@@ -45,7 +57,6 @@ class TestGetStudies:
 
         study1.update_site("CMH", code="SPN01", create=True)
         study1.update_site("UT1", code="SPN01", create=True)
-        study1.update_site("MRC", code="SPN02", create=True)
 
         study2 = dashboard.models.Study("ASCEND")
         dash_db.session.add(study2)
