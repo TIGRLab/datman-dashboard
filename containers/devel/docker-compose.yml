@@ -1,19 +1,34 @@
 version: '3'
 services:
   app:
-    env_file: dashboard.env
-    image: devel_dashboard:latest
+    container_name: devel_dashboard
+    build:
+      context: ../../
+      dockerfile: containers/Dockerfile
+      target: devel
+    env_file: ../dashboard.env
+    environment:
+      - FLASK_SECRET_KEY=temporarysecretkeyfordevelopment
+      - POSTGRES_PASS=devdatabasepassword
+      - POSTGRES_SRVR=devel_postgres
+      - FLASK_ENV=development
+      - LOGIN_DISABLED=True
+      - OAUTH_SECRET_GITHUB
+      - OAUTH_CLIENT_GITHUB
     ports:
       - 5000:5000
     command: /entrypoint.sh
     volumes:
-      - YOUR_DATA_PATH_HERE:/archive
-      - YOUR_CONFIG_PATH_HERE:/config
+      - ../../:/dashboard
+      - ${DASH_ARCHIVE:-.}:/archive
+      - ${DASH_CONFIG:-.}:/config
       - logs:/logs
   postgres:
-    env_file: database.env
     container_name: devel_postgres
-    image: postgres:12.8
+    env_file: ../database.env
+    environment:
+      - POSTGRES_PASSWORD=devdatabasepassword
+    image: postgres:13
     volumes:
       - ./database:/var/lib/postgresql
     ports:

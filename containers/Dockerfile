@@ -1,19 +1,19 @@
-FROM tigrlab/datman:0.1
+FROM tigrlab/datman:0.1 as prod
 
 # NOTE: When building this container, do it from
 # inside the dashboard folder and build with
-#       docker build -f containers/devel/Dockerfile .
+#       docker build -f containers/Dockerfile .
 # or the build context will be incorrect and files may not
 # be copied
 
-COPY containers/devel/entrypoint.sh /entrypoint.sh
+COPY containers/entrypoint.sh /entrypoint.sh
 
 # Copy the requirements and set up the python env first so
 # that rebuilds are faster.
 COPY ./requirements.txt /
+
 RUN pip install --upgrade pip && \
-    pip install -r /requirements.txt && \
-    pip install flask-debugtoolbar
+    pip install -r /requirements.txt
 
 ENV PATH="/dashboard:${PATH}"
 ENV PYTHONPATH="/dashboard:${PYTHONPATH}"
@@ -26,3 +26,8 @@ CMD ["uwsgi", \
         "--wsgi-file=/dashboard/wsgi.py", \
         "--callable=app", \
         "--enable-threads"]
+
+FROM prod as devel
+RUN pip install flask-debugtoolbar \
+                pytest \
+                sqlalchemy-utils

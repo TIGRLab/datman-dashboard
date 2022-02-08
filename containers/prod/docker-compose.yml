@@ -1,19 +1,23 @@
 version: '3'
 services:
   app:
-    env_file: dashboard.env
-    image: tigrlab/dashboard:0.1
+    container_name: dashboard
+    build:
+      context: ../../
+      dockerfile: containers/Dockerfile
+      target: prod
+    env_file: ../dashboard.env
     ports:
       - 5000:5000
     command: /entrypoint.sh
     volumes:
-      - YOUR_DATA_PATH_HERE:/archive
-      - YOUR_CONFIG_PATH_HERE:/config
+      - ${DASH_ARCHIVE:-.}:/archive
+      - ${DASH_CONFIG:-.}:/config
       - logs:/logs
   postgres:
-    env_file: database.env
+    env_file: ../database.env
     container_name: dash_postgres
-    image: postgres:12.8
+    image: postgres:13
     volumes:
       - ./database:/var/lib/postgresql
     ports:
