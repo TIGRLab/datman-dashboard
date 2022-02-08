@@ -55,12 +55,16 @@ def get_studies(name=None, tag=None, site=None, create=False):
     query = query.filter(Study.id == StudySite.study_id)
 
     if tag:
-        query = query.filter(
-            or_(StudySite.code == tag,
-                and_(Study.id == AltStudyCode.study_id,
-                     StudySite.site_id == AltStudyCode.site_id,
-                     AltStudyCode.code == tag))
-        )
+        conditions = [StudySite.code == tag]
+        if AltStudyCode.query.count():
+            conditions.append(
+                and_(
+                    Study.id == AltStudyCode.study_id,
+                    StudySite.site_id == AltStudyCode.site_id,
+                    AltStudyCode.code == tag
+                )
+            )
+        query = query.filter(or_(*conditions))
 
     if site:
         query = query.filter(
