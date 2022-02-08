@@ -1,0 +1,44 @@
+name: Run tests and update docs
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+    types: [opened, synchronize, reopened]
+
+jobs:
+  test:
+    runs-on: ubuntu-20.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v2
+      - name: Start up the dashboard
+        run: cd containers/devel && docker-compose up -d
+      - name: Run tests
+        run: docker exec -t devel_dashboard pytest -v dashboard/tests
+      - name: Stop containers
+        if: always()
+        run: cd containers/devel && docker-compose down
+  build-docs:
+    runs-on: ubuntu-20.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v2
+      - name: Start up the dashboard
+        run: cd containers/devel && docker-compose up -d
+      - name: Build docs
+        run: docker exec -t devel_dashboard /bin/bash -c "sphinx-build dashboard/docs dashboard/docs/_build"
+      - name: Repeat build in case non-deterministic build issue arose in last step
+        run: docker exec -t devel_dashboard /bin/bash -c "sphinx-build dashboard/docs dashboard/docs/_build"
+      - name: Add .nojekyll file to build folder
+        run: sudo touch docs/_build/.nojekyll
+      - name: Deploy docs if the branch has updated
+        uses: JamesIves/github-pages-deploy-action@v4.2.2
+        with:
+          branch: gh-pages
+          folder: docs/_build
+        if: github.event_name == 'push'
+      - name: Stop containers
+        if: always()
+        run: cd containers/devel && docker-compose down
