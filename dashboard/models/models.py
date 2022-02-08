@@ -2100,7 +2100,7 @@ class RedcapConfig(TableMixin, db.Model):
     session_id_field = db.Column('session_id_field', db.String(128))
     completed_field = db.Column('completed_form_field', db.String(128))
     completed_value = db.Column('completed_value', db.String(10))
-
+    event_ids = db.Column('event_ids', JSONB)
     token = db.Column('token', db.String(64))
 
     records = db.relationship('RedcapRecord', back_populates='config')
