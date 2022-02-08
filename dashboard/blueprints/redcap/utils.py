@@ -131,7 +131,7 @@ def create_from_request(request):
 
 
 def set_session(name):
-    name = name.upper()
+    name = name.strip().upper()
     try:
         ident = datman.scanid.parse(name)
     except datman.scanid.ParseException:
