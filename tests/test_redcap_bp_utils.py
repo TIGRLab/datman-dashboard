@@ -12,7 +12,7 @@ class TestSetSession:
         session = rc_utils.set_session(name)
         assert str(session) == name
 
-    def test_valid_id_with_space_padding_is_accepted(self, dash_db):
+    def test_valid_id_with_space_padding_is_accepted(self, records):
         name = " STU01_CMH_0001_01_01 "
         session = rc_utils.set_session(name)
         assert session is not None
