@@ -131,7 +131,7 @@ def create_from_request(request):
 
 
 def set_session(name):
-    name = name.upper()
+    name = name.strip().upper()
     try:
         ident = datman.scanid.parse(name)
     except datman.scanid.ParseException:
@@ -159,8 +159,6 @@ def find_study(ident):
 def get_timepoint(ident):
     timepoint = Timepoint.query.get(ident.get_full_subjectid_with_timepoint())
     if not timepoint:
-        study = find_study(ident)
-        if isinstance(study, list):
-            study = study[0].study
+        study = find_study(ident)[0]
         timepoint = study.add_timepoint(ident)
     return timepoint
