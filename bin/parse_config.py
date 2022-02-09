@@ -234,6 +234,7 @@ def update_redcap(config):
     update_setting(rc_config, "session_id_field", config, "RedcapSubj")
     update_setting(rc_config, "completed_field", config, "RedcapStatus")
     update_setting(rc_config, "completed_value", config, "RedcapStatusValue")
+    update_setting(rc_config, "event_ids", config, "RedcapEventId")
     rc_config.save()
 
 
