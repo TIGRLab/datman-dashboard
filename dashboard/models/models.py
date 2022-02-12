@@ -1397,7 +1397,7 @@ class Session(TableMixin, db.Model):
 
         cfg = RedcapConfig.get_config(
             config_id=config, project=project, instrument=instrument, url=url,
-            create=True, version=redcap_version
+            create=True
         )
 
         if self.redcap_record:

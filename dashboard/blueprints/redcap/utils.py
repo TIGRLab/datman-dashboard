@@ -112,7 +112,8 @@ def create_from_request(request):
 
     try:
         new_record = session.add_redcap(
-            record, date, config=cfg.id, rc_user=redcap_user, comment=comment
+            record, date, config=cfg.id, rc_user=redcap_user, comment=comment,
+            redcap_version=version
         )
     except Exception as e:
         raise RedcapException("Failed adding record {} from project {} on "
