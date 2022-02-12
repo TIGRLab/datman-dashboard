@@ -2054,11 +2054,15 @@ class RedcapRecord(db.Model):
         date,
         name='redcap_records_unique_record'), )
 
-    def __init__(self, record, config_id, date, version):
+    def __init__(self, record, config_id, date, redcap_version=None):
         self.record = record
         self.form_config = config_id
         self.date = date
-        self.redcap_version = version
+        if redcap_version:
+            # Add to session to populate the config, or setting version fails
+            db.session.add(self)
+            db.session.flush()
+            self.redcap_version = redcap_version
 
     @property
     def url(self):
@@ -2075,6 +2079,10 @@ class RedcapRecord(db.Model):
     @property
     def redcap_version(self):
         return self.config.redcap_version
+
+    @redcap_version.setter
+    def redcap_version(self, value):
+        self.config.redcap_version = value
 
     @property
     def is_shared(self):
