@@ -108,7 +108,7 @@ class TestCreateFromRequest:
 
     def test_no_records_added_when_matching_redcap_config_not_found(
             self, mock_http, mock_monitor, det, records):
-        det.form["project_id"] = "0001"
+        det.form["project_id"] = 1111
         assert det.form["project_id"] != self.pid
 
         before_det = self.get_db_records()
