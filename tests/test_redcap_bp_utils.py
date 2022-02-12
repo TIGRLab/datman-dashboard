@@ -207,7 +207,7 @@ class TestCreateFromRequest:
 
         assert db_record.event_id == self.event_ids[self.event_name]
 
-    def test_det_with_newer_version_causes_redcap_config_version_update(
+    def test_det_with_different_version_causes_redcap_config_version_update(
             self, mock_http, mock_monitor, det, records):
         mock_http.return_value = self.mock_redcap_export()
 
@@ -274,8 +274,8 @@ class TestCreateFromRequest:
         # version 11.1.21 and prior
         det_request.form = {
             "redcap_url": self.url,
-            "project_url": "{self.url}redcap_v{self.version}/index.php?" +
-                           "pid={self.pid}",
+            "project_url": f"{self.url}redcap_v{self.version}/index.php?" +
+                           f"pid={self.pid}",
             "project_id": self.pid,
             "username": "redcap_user",
             "record": self.record_id,
