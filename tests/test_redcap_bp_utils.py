@@ -207,6 +207,21 @@ class TestCreateFromRequest:
 
         assert db_record.event_id == self.event_ids[self.event_name]
 
+    def test_doesnt_fail_if_config_event_ids_not_set(
+            self, mock_http, mock_monitor, det, records):
+        mock_http.return_value = self.mock_redcap_export()
+
+        # Delete the event_ids from config
+        rc = dashboard.models.RedcapConfig.query.get(1)
+        rc.event_ids = None
+        dashboard.models.db.session.add(rc)
+        dashboard.models.db.session.commit()
+
+        assert not rc.event_ids
+        rc_utils.create_from_request(det)
+        record = dashboard.models.RedcapRecord.query.get(1)
+        assert record is not None
+
     def test_det_with_different_version_causes_redcap_config_version_update(
             self, mock_http, mock_monitor, det, records):
         mock_http.return_value = self.mock_redcap_export()

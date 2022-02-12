@@ -66,7 +66,7 @@ def create_from_request(request):
     if 'redcap_event_name' in request.form:
         event_name = request.form['redcap_event_name']
         event_id = (
-            cfg.event_ids[event_name] if event_name in cfg.event_ids else None
+            cfg.event_ids.get(event_name) if cfg.event_ids else None
         )
     else:
         event_name = None
