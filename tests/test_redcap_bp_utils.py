@@ -100,6 +100,55 @@ class TestCreateFromRequest:
         session_field: session
     }]
 
+    @pytest.fixture
+    def det(self):
+        det_request = Mock()
+        # 'form' is the contents of a REDCap DET
+        # The below fields are all fields expected in a DET for
+        # version 11.1.21 and prior
+        det_request.form = {
+            "redcap_url": self.url,
+            "project_url": f"{self.url}redcap_v{self.version}/index.php?" +
+                           f"pid={self.pid}",
+            "project_id": self.pid,
+            "username": "redcap_user",
+            "record": self.record_id,
+            "redcap_event_name": self.event_name,
+            "instrument": self.instrument,
+            self.completed_field: self.completed_value
+        }
+        return det_request
+
+    @pytest.fixture
+    def records(self, dash_db):
+        # Create study STUDY with site ABC
+        study = dashboard.models.Study("STUDY")
+        dash_db.session.add(study)
+        study.update_site("ABC", code="STU01", create=True)
+
+        # Add a timepoint and session 01
+        timepoint = dashboard.models.Timepoint(self.session[:-3], "ABC")
+        study.add_timepoint(timepoint)
+        timepoint.add_session(1)
+
+        # Add a redcap_config entry
+        rc = dashboard.models.RedcapConfig(
+            self.pid,
+            self.instrument,
+            self.url
+        )
+        rc.date_field = self.date_field
+        rc.comment_field = self.comment_field
+        rc.session_id_field = self.session_field
+        rc.completed_field = self.completed_field
+        rc.completed_value = self.completed_value
+        rc.event_ids = self.event_ids
+        rc.token = self.token
+        dash_db.session.add(rc)
+        dash_db.session.commit()
+
+        return dash_db
+
     def test_raises_exception_when_malformed_request_received(
             self, mock_http, mock_monitor, det, records):
         del det.form["project_id"]
@@ -217,7 +266,7 @@ class TestCreateFromRequest:
         dashboard.models.db.session.add(rc)
         dashboard.models.db.session.commit()
 
-        assert not rc.event_ids
+        assert rc.event_ids is None
         rc_utils.create_from_request(det)
         record = dashboard.models.RedcapRecord.query.get(1)
         assert record is not None
@@ -280,52 +329,3 @@ class TestCreateFromRequest:
             dashboard.models.Session.query.all(),
             dashboard.models.RedcapConfig.query.all()
         ]
-
-    @pytest.fixture
-    def det(self):
-        det_request = Mock()
-        # 'form' is the contents of a REDCap DET
-        # The below fields are all fields expected in a DET for
-        # version 11.1.21 and prior
-        det_request.form = {
-            "redcap_url": self.url,
-            "project_url": f"{self.url}redcap_v{self.version}/index.php?" +
-                           f"pid={self.pid}",
-            "project_id": self.pid,
-            "username": "redcap_user",
-            "record": self.record_id,
-            "redcap_event_name": self.event_name,
-            "instrument": self.instrument,
-            self.completed_field: self.completed_value
-        }
-        return det_request
-
-    @pytest.fixture
-    def records(self, dash_db):
-        # Create study STUDY with site ABC
-        study = dashboard.models.Study("STUDY")
-        dash_db.session.add(study)
-        study.update_site("ABC", code="STU01", create=True)
-
-        # Add a timepoint and session 01
-        timepoint = dashboard.models.Timepoint(self.session[:-3], "ABC")
-        study.add_timepoint(timepoint)
-        timepoint.add_session(1)
-
-        # Add a redcap_config entry
-        rc = dashboard.models.RedcapConfig(
-            self.pid,
-            self.instrument,
-            self.url
-        )
-        rc.date_field = self.date_field
-        rc.comment_field = self.comment_field
-        rc.session_id_field = self.session_field
-        rc.completed_field = self.completed_field
-        rc.completed_value = self.completed_value
-        rc.event_ids = self.event_ids
-        rc.token = self.token
-        dash_db.session.add(rc)
-        dash_db.session.commit()
-
-        return dash_db
