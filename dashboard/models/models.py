@@ -1397,7 +1397,7 @@ class Session(TableMixin, db.Model):
 
         cfg = RedcapConfig.get_config(
             config_id=config, project=project, instrument=instrument, url=url,
-            create=True, version=redcap_version
+            create=True
         )
 
         if self.redcap_record:
@@ -2054,11 +2054,15 @@ class RedcapRecord(db.Model):
         date,
         name='redcap_records_unique_record'), )
 
-    def __init__(self, record, config_id, date, version):
+    def __init__(self, record, config_id, date, redcap_version=None):
         self.record = record
         self.form_config = config_id
         self.date = date
-        self.redcap_version = version
+        if redcap_version:
+            # Add to session to populate the config, or setting version fails
+            db.session.add(self)
+            db.session.flush()
+            self.redcap_version = redcap_version
 
     @property
     def url(self):
@@ -2075,6 +2079,10 @@ class RedcapRecord(db.Model):
     @property
     def redcap_version(self):
         return self.config.redcap_version
+
+    @redcap_version.setter
+    def redcap_version(self, value):
+        self.config.redcap_version = value
 
     @property
     def is_shared(self):
@@ -2100,7 +2108,7 @@ class RedcapConfig(TableMixin, db.Model):
     session_id_field = db.Column('session_id_field', db.String(128))
     completed_field = db.Column('completed_form_field', db.String(128))
     completed_value = db.Column('completed_value', db.String(10))
-
+    event_ids = db.Column('event_ids', JSONB)
     token = db.Column('token', db.String(64))
 
     records = db.relationship('RedcapRecord', back_populates='config')

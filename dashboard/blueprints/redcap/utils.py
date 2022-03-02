@@ -65,8 +65,12 @@ def create_from_request(request):
 
     if 'redcap_event_name' in request.form:
         event_name = request.form['redcap_event_name']
+        event_id = (
+            cfg.event_ids.get(event_name) if cfg.event_ids else None
+        )
     else:
         event_name = None
+        event_id = None
 
     rc = REDCAP.Project(url + 'api/', cfg.token)
     server_record = rc.export_records([record])
@@ -112,7 +116,8 @@ def create_from_request(request):
 
     try:
         new_record = session.add_redcap(
-            record, date, config=cfg.id, rc_user=redcap_user, comment=comment
+            record, date, config=cfg.id, rc_user=redcap_user, comment=comment,
+            redcap_version=version, event_id=event_id
         )
     except Exception as e:
         raise RedcapException("Failed adding record {} from project {} on "
