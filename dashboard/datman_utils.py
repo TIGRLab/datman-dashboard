@@ -231,7 +231,7 @@ def get_manifests(timepoint):
             with open(manifest, "r") as in_file:
                 try:
                     contents = json.load(in_file)
-                except Exception as e:
+                except Exception:
                     contents = {
                         "error": f"Unreadable manifest file: {manifest}"
                     }
