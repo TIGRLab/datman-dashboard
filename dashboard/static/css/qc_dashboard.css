@@ -291,6 +291,11 @@ thead {
   font-size: 0.8em;
 }
 
+.session-files {
+  display: inline-block;
+  width: 100%;
+}
+
 .scan-table {
   margin: 10px 0;
 }
@@ -352,9 +357,9 @@ thead {
 }
 
 /**********************************************
-* Scans page styling
+* Timepoint QC styling
 ***********************************************/
-#comment-container {
+.qc-comment-container {
   display: inline-block;
   width: 100%;
   height: 56px;
@@ -362,22 +367,18 @@ thead {
   padding-bottom: 0px;
 }
 
-#scan-qc-comment {
+.qc-scan-comment {
   display: inline-block;
   max-height: 56px;
 }
 
-#qc-badge {
+.qc-badge {
   padding-top: 12px;
   margin-bottom: 10px;
 }
 
-#scan-qc-status {
+.qc-approved, .qc-flagged, .qc-blacklisted {
   font-size: 1.5em;
-}
-
-#scan-qc-signature {
-  font-size: .7em;
 }
 
 #papaya-nav {

@@ -3,10 +3,10 @@ import logging
 
 from flask import session as flask_session
 from flask import (render_template, flash, url_for, redirect,
-                   send_from_directory)
+                   send_from_directory, jsonify, request, Response)
 from flask_login import current_user, login_required, fresh_login_required
 
-from . import time_bp
+from . import time_bp, ajax_bp
 from . import utils
 from .emails import incidental_finding_email
 from .forms import (EmptySessionForm, IncidentalFindingsForm,
@@ -289,3 +289,49 @@ def tech_notes(study_id, timepoint_id, notes_path):
     # timepoint_id only included as an arg because of the url_prefix
     resources_folder = dm_utils.get_study_path(study_id, 'resources')
     return send_from_directory(resources_folder, notes_path)
+
+
+@ajax_bp.route("/review", methods=["POST"])
+@login_required
+def review_scan():
+    try:
+        scan_id = request.json["scan"]
+        study_id = request.json["study"]
+    except KeyError:
+        return Response({"error": "Bad study or scan ID."}, status=400)
+
+    scan = get_scan(
+        scan_id,
+        study_id,
+        current_user,
+        fail_url=url_for("main.study", study_id=study_id)
+    )
+
+    sign_off = bool(request.json.get("approve", False))
+    delete = bool(request.json.get("delete", False))
+    update = bool(request.json.get("update", False))
+    comment = request.json.get("comment", None)
+
+    if delete:
+        entry = scan.get_checklist_entry()
+        entry.delete()
+        return jsonify(success=True)
+
+    if update:
+        # Update is done separately so that a review entry can't accidentally
+        # be changed from 'flagged' to blacklisted.
+        if comment is None:
+            return Response({"error": "Can't update without comment provided"},
+                            status=400)
+
+        new_entry = scan.add_checklist_entry(current_user.id, comment)
+    else:
+        new_entry = scan.add_checklist_entry(
+            current_user.id, comment, sign_off)
+
+    response = {
+        "user": str(new_entry.user),
+        "timestamp": new_entry.timestamp,
+    }
+
+    return jsonify(response)

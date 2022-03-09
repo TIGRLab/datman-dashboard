@@ -1,7 +1,6 @@
 """Setup and initialization for the QC Dashboard.
 """
 
-import os
 import logging.config
 
 from flask import Flask
@@ -9,6 +8,7 @@ from flask_mail import Mail
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_migrate import Migrate
+from flask_wtf import CSRFProtect
 from werkzeug.routing import BaseConverter
 
 from config import (SCHEDULER_ENABLED, SCHEDULER_API_ENABLED, SCHEDULER_USER,
@@ -28,6 +28,7 @@ lm.login_view = 'users.login'
 lm.refresh_view = 'users.refresh_login'
 mail = Mail()
 scheduler = Scheduler()
+csrf = CSRFProtect()
 
 if SCHEDULER_API_ENABLED:
     # If this instance is acting as a scheduler server + the api should be
@@ -124,6 +125,7 @@ def create_app(config=None):
     lm.init_app(app)
     mail.init_app(app)
     scheduler.init_app(app)
+    csrf.init_app(app)
     scheduler.start()
     try:
         scheduler._scheduler.app = app
@@ -137,7 +139,7 @@ def create_app(config=None):
     from dashboard.blueprints.main import main_bp
     from dashboard.blueprints.users import user_bp
     from dashboard.blueprints.auth import auth_bp
-    from dashboard.blueprints.timepoints import time_bp
+    from dashboard.blueprints.timepoints import time_bp, ajax_bp
     from dashboard.blueprints.scans import scan_bp
     from dashboard.blueprints.redcap import rcap_bp
     from dashboard.blueprints.handlers import handler_bp
@@ -146,6 +148,7 @@ def create_app(config=None):
     app.register_blueprint(user_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(time_bp)
+    app.register_blueprint(ajax_bp)
     app.register_blueprint(rcap_bp)
     app.register_blueprint(scan_bp)
     app.register_blueprint(handler_bp)
