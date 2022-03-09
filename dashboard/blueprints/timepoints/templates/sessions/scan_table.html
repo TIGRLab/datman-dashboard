@@ -4,22 +4,26 @@
       <tr>
         <th class="col-md-1">Series</th>
         <th class="col-md-1">Tag</th>
-        <th class="col-md-3">Description</th>
+        <th class="col-md-1">Length</th>
+        <th class="col-md-2">Description</th>
         <th class="col-md-1">Status</th>
         <th class="col-md-1">Warnings</th>
         <th class="col-md-5">Comment</th>
       </tr>
     </thead>
     <tbody>
+      {% set counts = session.get_expected_scans() %}
       {% for scan in session.scans %}
         <tr class="scan-row" id="scan_{{ scan.id }}">
           <td class="scan_series"> {{ scan.series }}</td>
           <td class="scan_type"> {{ scan.tag }}</td>
+          <td class="scan_length"> {{ scan.length }}</td>
           <td class="scan_desc">
-            <a href="{{ url_for('scans.scan', study_id=study_id, scan_id=scan.id ) }}">
+            <a href="#{{ scan.name }}">
               {{ scan.description }}
             </a>
             {% if scan.source_id %}
+              <!-- Must ensure scan viewer move to timepoint page takes source data into account -->
               <a href="{{ url_for('scans.scan', study_id=scan.source_data.get_study().id, scan_id=scan.source_id) }}">
                 <span class="badge" title="Click to visit source scan">
                   linked scan
@@ -57,6 +61,17 @@
                 dcm2niix error
               </span>
             {% endif %}
+            {% if scan.tag not in counts %}
+              <span class="badge" style="background-color: var(--bootstrap-danger);">
+                Unexpected Tag
+              </span>
+            {% elif counts[scan.tag] == 0 %}
+              <span class="badge" style="background-color: var(--bootstrap-danger);">
+                Repeated Scan
+              </span>
+            {% else %}
+              {% do counts.update({scan.tag: (counts[scan.tag] - 1)}) %}
+            {% endif %}
           </td>
 
           <td>
@@ -74,6 +89,20 @@
             </a>
           </td>
         </tr>
+      {% endfor %}
+      {% for tag in counts %}
+        <!-- Add a table row for any tag missing an expected file -->
+        {% if counts[tag] > 0 %}
+          <tr class="scan-row">
+            <td class="scan_series"></td>
+            <td class="scan_type">{{ tag }}</td>
+            <td class="scan_length"></td>
+            <td class="scan_desc"></td>
+            <td class="scan-status"></td>
+            <td></td>
+            <td>Missing File ({{ counts[tag] }})</td>
+          </tr>
+        {% endif %}
       {% endfor %}
     </tbody>
   </table>
