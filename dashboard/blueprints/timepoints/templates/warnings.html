@@ -7,37 +7,6 @@
     </h3>
   </div>
   <div class="panel-body collapse in" id="subjectwarnings">
-
-    <!-- The missing QC doc warning -->
-    {% if not timepoint.static_page %}
-      <div>
-        <h4 style="display: inline-block;">
-          <span class="label label-warning">
-            <i class="fas fa-info-circle"></i> No QC Doc available:
-          </span>
-        </h4>
-        <span>
-          If more than three days have passed since scan data was discovered
-          please create a GitHub issue.
-        </span>
-      </div>
-    {% endif %}
-
-    <!-- The static QC page rewrite warning -->
-    {% if timepoint.needs_rewrite() %}
-      <div>
-        <h4 style="display: inline-block;">
-          <span class="label label-danger">
-            <i class="fas fa-exclamation-circle"></i> QC page out of date:
-          </span>
-        </h4>
-        <span>
-          A session has been added since the static QC page was last updated.
-          Contact an admin about regenerating the page.
-        </span>
-      </div>
-    {% endif %}
-
     {% set needs_redcap = timepoint.needs_redcap_survey(study_id) %}
     {% for session in timepoint.sessions.values() %}
       {% if needs_redcap and not session.redcap_record %}
