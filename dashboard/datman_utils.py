@@ -185,14 +185,5 @@ def update_header_diffs(scan):
     except Exception:
         ignore = []
 
-    tags = config.get_tags(site=site)
-    try:
-        qc_type = tags.get(scan.tag, "qc_type")
-    except KeyError:
-        check_bvals = False
-    else:
-        check_bvals = qc_type == 'dti'
-
     scan.update_header_diffs(ignore=ignore,
-                             tolerance=tolerance,
-                             bvals=check_bvals)
+                             tolerance=tolerance)
