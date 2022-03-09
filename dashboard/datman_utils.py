@@ -17,6 +17,8 @@ import os
 import shutil
 import glob
 import logging
+import json
+from collections import OrderedDict
 
 import datman.config
 import datman.scanid
@@ -187,3 +189,64 @@ def update_header_diffs(scan):
 
     scan.update_header_diffs(ignore=ignore,
                              tolerance=tolerance)
+
+
+def get_manifests(timepoint):
+    """Collects and organizes all QC manifest files for a timepoint.
+
+    Args:
+        timepoint (:obj:`dashboard.models.Timepoint`): A timepoint from the
+            database.
+
+    Returns:
+        A dictionary mapping session numbers to a dictionary of input nifti
+        files and their manifest contents.
+
+        For example:
+        {
+            1: {nifti_1: nifti_1_manifest,
+                nifti_2: nifti_2_manifest},
+            2: {nifti_3: nifti_3_manifest}
+         }
+    """
+    study = timepoint.get_study().id
+    config = datman.config.config(study=study)
+    try:
+        qc_dir = config.get_path("qc")
+    except Exception:
+        logger.error("No QC path defined for study {}".format(study))
+        return {}
+
+    qc_path = os.path.join(qc_dir, str(timepoint))
+    found = {}
+    for num in timepoint.sessions:
+        session = timepoint.sessions[num]
+        found[num] = {}
+
+        manifests = glob.glob(
+            os.path.join(qc_path, f"{session}_*_manifest.json")
+        )
+
+        for manifest in manifests:
+            with open(manifest, "r") as in_file:
+                try:
+                    contents = json.load(in_file)
+                except Exception as e:
+                    contents = {
+                        "error": f"Unreadable manifest file: {manifest}"
+                    }
+
+            _, _, _, description = datman.scanid.parse_filename(manifest)
+            scan_name = os.path.basename(manifest).replace(
+                f"{description}.json",
+                ""
+            ).strip("_")
+
+            # Needed to ensure ordering respected
+            ordered_contents = OrderedDict(
+                sorted(contents.items(), key=lambda x: x[1].get('order', 999))
+            )
+
+            found[num][scan_name] = ordered_contents
+
+    return found
