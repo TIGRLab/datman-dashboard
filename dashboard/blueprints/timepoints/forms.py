@@ -62,3 +62,17 @@ class NewIssueForm(FlaskForm):
 class DataDeletionForm(FlaskForm):
     raw_data = BooleanField('Raw Data')
     database_records = BooleanField('Database Records')
+
+
+class ScanChecklistForm(FlaskForm):
+    comment = TextAreaField(
+        'Comment:',
+        id='scan-comment',
+        validators=[DataRequired()],
+        render_kw={
+            'placeholder': 'Add description',
+            'rows': 12,
+            'required': True,
+            'maxlength': '1028'
+        })
+    submit = SubmitField('Submit')
