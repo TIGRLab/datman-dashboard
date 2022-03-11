@@ -14,7 +14,7 @@ from .forms import (EmptySessionForm, IncidentalFindingsForm,
                     ScanChecklistForm)
 from ...utils import (report_form_errors, get_timepoint, get_session,
                       get_scan, dashboard_admin_required,
-                      study_admin_required)
+                      study_admin_required, read_bool)
 import dashboard.datman_utils as dm_utils
 
 logger = logging.getLogger(__name__)
@@ -294,6 +294,8 @@ def tech_notes(study_id, timepoint_id, notes_path):
 @ajax_bp.route("/review", methods=["POST"])
 @login_required
 def review_scan():
+    """Add a QC review from an AJAX request.
+    """
     try:
         scan_id = request.json["scan"]
         study_id = request.json["study"]
@@ -307,10 +309,10 @@ def review_scan():
         fail_url=url_for("main.study", study_id=study_id)
     )
 
-    sign_off = bool(request.json.get("approve", False))
-    delete = bool(request.json.get("delete", False))
-    update = bool(request.json.get("update", False))
-    comment = request.json.get("comment", None)
+    sign_off = read_bool(request.json.get("approve"))
+    delete = read_bool(request.json.get("delete"))
+    update = read_bool(request.json.get("update"))
+    comment = request.json.get("comment")
 
     if delete:
         entry = scan.get_checklist_entry()
