@@ -357,6 +357,40 @@ thead {
 }
 
 /**********************************************
+* Scans page styling
+***********************************************/
+#comment-container {
+  display: inline-block;
+  width: 100%;
+  height: 56px;
+  padding-top: 5px;
+  padding-bottom: 0px;
+}
+
+#scan-qc-comment {
+  display: inline-block;
+  max-height: 56px;
+}
+
+#qc-badge {
+  padding-top: 12px;
+  margin-bottom: 10px;
+}
+
+#scan-qc-status {
+  font-size: 1.5em;
+}
+
+#scan-qc-signature {
+  font-size: .7em;
+}
+
+#papaya-nav {
+  position: absolute;
+  padding-top: 200px;
+}
+
+/**********************************************
 * Timepoint QC styling
 ***********************************************/
 .qc-comment-container {
@@ -379,33 +413,6 @@ thead {
 
 .qc-approved, .qc-flagged, .qc-blacklisted {
   font-size: 1.5em;
-}
-
-#papaya-nav {
-  position: absolute;
-  padding-top: 200px;
-  left: 30%;
-  width: 160px;
-  height: 208px;
-  display: block;
-}
-
-#loop-series {
-  margin-left: 35px !important;
-}
-
-#papaya-nav > #play-speed-controls {
-  display: none;
-  margin: 10px 0px 20px 0px;
-}
-
-#play-speed-controls > input {
-  display: block;
-  margin-bottom: 5px;
-}
-
-#papaya-nav > #change-volume-controls {
-  margin-top: 20px;
 }
 
 /**********************************************
