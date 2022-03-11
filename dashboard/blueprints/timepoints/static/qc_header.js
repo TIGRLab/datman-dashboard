@@ -184,6 +184,7 @@ $('.qc-delete').off().on('click', function() {
   function successFunc() {
     $('#qc-status-' + scanData['scan']).remove();
     $('#qc-display-' + scanData['scan']).hide();
+    $('#qc-btns-' + scanData['scan'])[0].removeAttribute('data-comment');
     delQcComment(scanData['scan']);
     delLoading(scanData['scan']);
     $('#qc-btns-' + scanData['scan']).show();
@@ -223,8 +224,6 @@ $('.qc-update').off().on('click', function() {
       response['scan'] = scanData['scan'];
       qcFailFunc(response);
     }
-
-    console.log("scandata = " + scanData);
 
     reviewScan(scanData, successFunc, failFunc);
   });
