@@ -6,6 +6,11 @@
 
 {{ super() }}
 
+  <script type="text/javascript">
+    // Variables needed by javascript functions
+    const csrfToken = "{{ csrf_token() }}";
+    const reviewScanUrl = "{{ url_for('ajax_timepoints.review_scan') }}";
+  </script>
 
 {% endblock %}
 
@@ -67,5 +72,9 @@
   {% include 'modals/review_scan.html' %}
 
 </div>
+
+  {% block footer_scripts %}
+      <script type="text/javascript" src="{{ url_for('ajax_timepoints.static', filename='qc_header.js') }}"></script>
+  {% endblock %}
 
 {% endblock %}
