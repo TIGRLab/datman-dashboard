@@ -69,7 +69,7 @@ function qcSuccessFunc(response, status) {
   $(status).insertBefore(qcSig);
 
   delLoading(scan);
-  $("#scan-comment").val("");
+  $('#scan-comment').val('');
   $('#qc-btns-' + scan).hide();
   $('#qc-display-' + scan).show();
 }
@@ -77,7 +77,7 @@ function qcSuccessFunc(response, status) {
 
 function addQcComment(scan, comment) {
   /* Update the UI to show a new QC comment for a scan */
-  var display = "#qc-display-" + scan;
+  var display = '#qc-display-' + scan;
   $(display + ' .qc-scan-comment').text(comment);
   $(display + ' .comment-display').show();
 }
@@ -85,7 +85,7 @@ function addQcComment(scan, comment) {
 
 function delQcComment(scan) {
   /* Remove a scan's QC comment from the UI */
-  var display = "#qc-display-" + scan;
+  var display = '#qc-display-' + scan;
   $(display + ' .qc-scan-comment').text('');
   $(display + ' .comment-display').hide();
 }
@@ -100,7 +100,7 @@ $('.approve-scan').off().on('click', function() {
   function successFunc(response) {
     response['scan'] = scanData['scan'];
     var status = '<span id="' + 'qc-status-' + scanData['scan'] +
-      '" class="qc-approved"><span class="fas fa-check circle">' +
+      '" class="qc-approved approved"><span class="fas fa-check circle">' +
       '</span> Reviewed</span>';
     qcSuccessFunc(response, status);
   }
@@ -128,7 +128,7 @@ $('.flag-scan').off().on('click', function() {
     function successFunc(response) {
       addQcComment(scanData['scan'], scanData['comment']);
       var status = '<span id="qc-status-' + scanData['scan'] +
-          '" class="qc-flagged"><span class="fas fa-exclamation-triangle"' +
+          '" class="qc-flagged flagged"><span class="fas fa-exclamation-triangle"' +
           '></span> Flagged </span>';
       response['scan'] = scanData['scan'];
       qcSuccessFunc(response, status);
@@ -158,7 +158,7 @@ $('.blacklist-scan').off().on('click', function() {
     function successFunc(response) {
       addQcComment(scanData['scan'], scanData['comment']);
       var status = '<span id="qc-status-' + scanData['scan'] +
-          '" class="qc-blacklisted"><span class="fas fa-ban">' +
+          '" class="qc-blacklisted blacklisted"><span class="fas fa-ban">' +
           '</span> Blacklisted</span>';
       response['scan'] = scanData['scan'];
       qcSuccessFunc(response, status);
