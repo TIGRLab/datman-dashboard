@@ -19,7 +19,7 @@
           <td class="scan_type"> {{ scan.tag }}</td>
           <td class="scan_length"> {{ scan.length }}</td>
           <td class="scan_desc">
-            <a href="#{{ scan.name }}">
+            <a href="{{ url_for('scans.scan', study_id=study_id, scan_id=scan.id ) }}">
               {{ scan.description }}
             </a>
             {% if scan.source_id %}
