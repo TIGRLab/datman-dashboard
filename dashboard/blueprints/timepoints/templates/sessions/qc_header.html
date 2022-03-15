@@ -20,24 +20,26 @@
 
   <div id="qc-display-{{ scan.id }}"
        {% if scan.is_new() %} style="display: none;" {% endif%}>
-    <div class="comment-display col-xs-9"
-        {% if not (scan.blacklisted() or scan.flagged())%}
-          style="display: none;"
-        {% endif %}>
-      <div class="row">
-        <span class="qc-comment-container well">
-          <span class="qc-scan-comment">
-            {{ scan.get_comment() }}
+    <div class="col-xs-9">
+      <div class="comment-display "
+          {% if not (scan.blacklisted() or scan.flagged())%}
+            style="display: none;"
+          {% endif %}>
+        <div class="row">
+          <span class="qc-comment-container well">
+            <span class="qc-scan-comment">
+              {{ scan.get_comment() }}
+            </span>
           </span>
-        </span>
-      </div>
+        </div>
 
-      <div class="row">
-        <a class="qc-update text-muted pull-right" data-scan="{{ scan.id }}"
-            data-study="{{ study_id }}" href="#add-review-modal"
-            data-toggle="modal">
-          View
-        </a>
+        <div class="row">
+          <a class="qc-update text-muted pull-right" data-scan="{{ scan.id }}"
+              data-study="{{ study_id }}" href="#add-review-modal"
+              data-toggle="modal">
+            View
+          </a>
+        </div>
       </div>
     </div>
 
