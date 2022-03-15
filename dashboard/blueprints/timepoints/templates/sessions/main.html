@@ -49,7 +49,7 @@
     {% if session.scans|count %}
       {% include 'sessions/scan_table.html' %}
       {% for scan in session.scans %}
-        <h3 id="{{ scan.name }}">{{ scan.name }}</h3>
+        <h2 id="{{ scan.name }}">{{ scan.name }}</h2>
         {% include 'sessions/qc_header.html' %}
         {% if scan.name in manifests[session.num] %}
           {% for image in manifests[session.num][scan.name] %}
@@ -60,7 +60,7 @@
             {% if settings['caption'] %}
               <div>{{ settings['caption'] }}</div>
             {% endif %}
-            <img width=100% src={{ url_for("timepoints.qc_files", study_id=study_id, timepoint_id=timepoint.name, item_path=image) }}>
+            <img class="qc-img" width=100% src={{ url_for("timepoints.qc_files", study_id=study_id, timepoint_id=timepoint.name, item_path=image) }}>
           {% endfor %}
         {% endif %}
       {% endfor %}

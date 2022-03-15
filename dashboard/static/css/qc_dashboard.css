@@ -415,6 +415,11 @@ thead {
   font-size: 1.5em;
 }
 
+.qc-img {
+  margin-top: 20px;
+  margin-bottom: 10px;
+}
+
 /**********************************************
 * User profile styling
 ***********************************************/
