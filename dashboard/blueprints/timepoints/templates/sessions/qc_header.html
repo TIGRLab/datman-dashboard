@@ -30,8 +30,6 @@
         </span>
       </span>
 
-      <!-- This needs to be updated (might need access to scan and study etc.) -->
-
       <a class="qc-update text-muted pull-right" data-scan="{{ scan.id }}"
           data-study="{{ study_id }}" href="#add-review-modal"
           data-toggle="modal">
@@ -42,15 +40,15 @@
     <div class="col-xs-3">
       <div class="qc-badge pull-right">
         {% if scan.signed_off() %}
-            <span id="qc-status-{{ scan.id }}" class="qc-approved">
+            <span id="qc-status-{{ scan.id }}" class="qc-approved approved">
               <span class="fas fa-check-circle"></span> Reviewed
             </span>
         {% elif scan.flagged() %}
-            <span id="qc-status-{{ scan.id }}" class="qc-flagged">
+            <span id="qc-status-{{ scan.id }}" class="qc-flagged flagged">
               <span class="fas fa-exclamation-triangle"></span> Flagged
             </span>
         {% elif scan.blacklisted() %}
-            <span id="qc-status-{{ scan.id }}" class="qc-blacklisted">
+            <span id="qc-status-{{ scan.id }}" class="qc-blacklisted blacklisted">
               <span class="fas fa-ban"></span> Blacklisted
             </span>
         {% endif %}
