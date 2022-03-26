@@ -22,6 +22,7 @@ from collections import OrderedDict
 
 import datman.config
 import datman.scanid
+from datman.exceptions import UndefinedSetting
 
 logger = logging.getLogger(__name__)
 
@@ -213,7 +214,7 @@ def get_manifests(timepoint):
     config = datman.config.config(study=study)
     try:
         qc_dir = config.get_path("qc")
-    except Exception:
+    except UndefinedSetting:
         logger.error("No QC path defined for study {}".format(study))
         return {}
 
@@ -228,13 +229,7 @@ def get_manifests(timepoint):
         )
 
         for manifest in manifests:
-            with open(manifest, "r") as in_file:
-                try:
-                    contents = json.load(in_file)
-                except Exception:
-                    contents = {
-                        "error": f"Unreadable manifest file: {manifest}"
-                    }
+            contents = read_json(manifest)
 
             _, _, _, description = datman.scanid.parse_filename(manifest)
             scan_name = os.path.basename(manifest).replace(
@@ -244,9 +239,30 @@ def get_manifests(timepoint):
 
             # Needed to ensure ordering respected
             ordered_contents = OrderedDict(
-                sorted(contents.items(), key=lambda x: x[1].get('order', 999))
+                sorted(contents.items(), key=lambda x: x[1].get("order", 999))
             )
 
             found[num][scan_name] = ordered_contents
 
     return found
+
+
+def read_json(in_file):
+    """Read a json file.
+
+    Args:
+        in_file (:obj:`str`): The full path the the json file to load.
+
+    Returns:
+        dict: A dictionary of the json contents or an error message.
+    """
+    with open(in_file, "r") as fh:
+        try:
+            contents = json.load(fh)
+        except json.JSONDecodeError:
+            contents = {
+                "Error": {
+                    in_file: "Unreadable manifest file."
+                }
+            }
+    return contents
