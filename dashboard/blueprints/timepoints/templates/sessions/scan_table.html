@@ -17,7 +17,11 @@
         <tr class="scan-row" id="scan_{{ scan.id }}">
           <td class="scan_series"> {{ scan.series }}</td>
           <td class="scan_type"> {{ scan.tag }}</td>
-          <td class="scan_length"> {{ scan.length }}</td>
+          <td class="scan_length">
+            {% if scan.length %}
+              {{ scan.length }}
+            {% endif %}
+          </td>
           <td class="scan_desc">
             <a href="{{ url_for('scans.scan', study_id=study_id, scan_id=scan.id ) }}">
               {{ scan.description }}
