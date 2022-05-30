@@ -111,7 +111,9 @@ def load_blueprints(app):
     A blueprint must be in the dashboard's blueprint folder and must
     implement the 'register_bp' function to be loaded by this function.
     """
-    bp_dir = "dashboard/blueprints"
+    bp_dir = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)),
+        "blueprints")
     blueprints = [
         x for x in os.listdir(bp_dir)
         if os.path.isdir(os.path.join(bp_dir, x)) and
