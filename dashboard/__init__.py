@@ -116,8 +116,8 @@ def load_blueprints(app):
         "blueprints")
     blueprints = [
         x for x in os.listdir(bp_dir)
-        if os.path.isdir(os.path.join(bp_dir, x)) and
-            x != "__pycache__"]
+        if (os.path.isdir(os.path.join(bp_dir, x)) and
+            x != "__pycache__")]
 
     for item in blueprints:
         bp = __import__("dashboard.blueprints." + str(item),

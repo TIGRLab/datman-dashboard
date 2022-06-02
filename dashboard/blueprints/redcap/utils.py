@@ -102,9 +102,8 @@ def create_from_request(request):
             server_record[cfg.user_id_field] if cfg.user_id_field else None
         )
     except KeyError:
-        raise RedcapException('Redcap record {} from server {} missing a '
-                              'required field. Found keys: {}'.format(
-                                  record, list(server_record.keys())))
+        raise RedcapException(f'Redcap record {record} missing required field.'
+                              f' Found keys: {list(server_record.keys())}')
 
     try:
         session = set_session(session_name)

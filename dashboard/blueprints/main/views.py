@@ -426,7 +426,7 @@ def analysis(analysis_id=None):
 @main.route('/study/<string:study_id>/data/RESOURCES/<path:tech_notes_path>')
 @main.route('/study/<string:study_id>/qc/<string:timepoint_id>/index.html')
 @main.route('/study/<string:study_id>/qc/<string:timepoint_id>'
-           '/<regex(".*\.png"):image>')  # noqa: W605
+            '/<regex(".*\.png"):image>')  # noqa: W605
 @login_required
 def static_qc_page(study_id,
                    timepoint_id=None,
