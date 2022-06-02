@@ -80,7 +80,7 @@ Most of the html in the divs is extracted into a snippet file and rendered
         </li>
         {% for item in study.get_pipelines('study') %}
           <li role="presentation">
-            <a href="{{ url_for(item.view, study=item.study_id, pipeline=item.pipeline_key) }}">
+            <a href="{{ url_for(item.view, study=item.study_id, pipeline=item.pipeline_id) }}">
               {{ item.name }}
             </a>
           </li>
