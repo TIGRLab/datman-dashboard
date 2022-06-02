@@ -7,7 +7,7 @@ user = os.environ.get('POSTGRES_USER')
 
 # Password to connect with. Can be None if no password set or using identd or
 # other passwordless authentication method
-password = os.environ.get('POSTGRES_PASS')
+password = os.environ.get('POSTGRES_PASS', '')
 
 # Server to connect to. If unset, will attempt to find database locally
 server = os.environ.get('POSTGRES_SRVR') or 'localhost'
