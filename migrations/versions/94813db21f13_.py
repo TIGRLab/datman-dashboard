@@ -23,23 +23,23 @@ def upgrade():
         sa.PrimaryKeyConstraint('scope')
     )
 
-    conn = op.get_bind()
     op.bulk_insert(
         scope,
         [{'scope': item}
          for item in ['study', 'timepoint', 'scan']]
     )
 
-    op.create_table('study_pipeline',
-    sa.Column('study', sa.String(length=32), nullable=False),
-    sa.Column('pipeline_key', sa.String(), nullable=False),
-    sa.Column('view', sa.String(), nullable=False),
-    sa.Column('name', sa.String(), nullable=False),
-    sa.Column('scope', sa.String(length=32), nullable=False),
-    sa.ForeignKeyConstraint(['scope'], ['pipeline_scope.scope'], ),
-    sa.ForeignKeyConstraint(['study'], ['studies.id'], ),
-    sa.PrimaryKeyConstraint('study', 'pipeline_key'),
-    sa.UniqueConstraint('study', 'pipeline_key')
+    op.create_table(
+        'study_pipeline',
+        sa.Column('study', sa.String(length=32), nullable=False),
+        sa.Column('pipeline_key', sa.String(), nullable=False),
+        sa.Column('view', sa.String(), nullable=False),
+        sa.Column('name', sa.String(), nullable=False),
+        sa.Column('scope', sa.String(length=32), nullable=False),
+        sa.ForeignKeyConstraint(['scope'], ['pipeline_scope.scope'], ),
+        sa.ForeignKeyConstraint(['study'], ['studies.id'], ),
+        sa.PrimaryKeyConstraint('study', 'pipeline_key'),
+        sa.UniqueConstraint('study', 'pipeline_key')
     )
 
 
