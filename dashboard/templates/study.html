@@ -36,18 +36,18 @@ Most of the html in the divs is extracted into a snippet file and rendered
     <div class="row">
       {% set pending_qc = study.outstanding_issues() %}
       {% if pending_qc|count and nightly_log["contents"] != "" %}
-        {% set qc_width = 6 %}
-        {% set log_width = 6 %}
+        {% set qc_classes = "col-xs-6" %}
+        {% set log_classes = "col-xs-6" %}
       {% elif pending_qc|count %}
-        {% set qc_width = 12 %}
-        {% set log_width = 0 %}
+        {% set qc_classes = "col-xs-6 col-xs-offset-3" %}
+        {% set log_classes = "col-xs-0" %}
       {% else %}
-        {% set qc_width = 0 %}
-        {% set log_width = 12%}
+        {% set qc_classes = "col-xs-0" %}
+        {% set log_classes = "col-xs-6 col-xs-offset-3" %}
       {% endif %}
 
       <!-- The 'Outstanding QC' panel -->
-      <div class="col-xs-{{ qc_width }}">
+      <div class="{{ qc_classes }}">
         {% if pending_qc|count %}
           <div class="panel panel-danger">
             <div class="panel-heading collapsible-heading" data-toggle="collapse" data-target="#qclist">
@@ -70,7 +70,7 @@ Most of the html in the divs is extracted into a snippet file and rendered
       </div>
 
       <!-- The run log display panel -->
-      <div class="col-xs-{{ log_width }}">
+      <div class="{{ log_classes }}">
         {% if nightly_log["contents"] != "" %}
           <div class="panel panel-info" title="The Most Recent Nightly Run Log" width="100%">
             <div class="panel-heading collapsible-heading" data-toggle="collapse" data-target="#run-log">
