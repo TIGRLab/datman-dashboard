@@ -33,27 +33,56 @@ Most of the html in the divs is extracted into a snippet file and rendered
         </p>
     </div>
 
-    <!-- The 'Outstanding QC' panel -->
-    {% set pending_qc = study.outstanding_issues() %}
-    {% if pending_qc|count %}
-      <div id="qc-panel" class="panel panel-danger">
-        <div class="panel-heading collapsible-heading" data-toggle="collapse" data-target="#qclist">
-          <h3 class="panel-title chevron-toggle">Outstanding QC</h3>
-        </div>
-        <div class="panel-body collapse in" id="qclist">
-          <table class="table table-striped table-hover table-condensed">
-            {% for timepoint in pending_qc | sort %}
-              <tr class="clickable-row" data-href="{{ url_for('timepoints.timepoint', study_id=study.id, timepoint_id=timepoint) }}">
-                <td class="col-xs-2">{{ timepoint }}</td>
-                  {% for column in pending_qc[timepoint] %}
-                    {{ column|safe }}
-                  {% endfor %}
-              </tr>
-            {% endfor %}
-          </table>
-        </div>
+    <div class="row">
+      {% set pending_qc = study.outstanding_issues() %}
+      {% if pending_qc|count and nightly_log["contents"] != "" %}
+        {% set qc_width = 6 %}
+        {% set log_width = 6 %}
+      {% elif pending_qc|count %}
+        {% set qc_width = 12 %}
+        {% set log_width = 0 %}
+      {% else %}
+        {% set qc_width = 0 %}
+        {% set log_width = 12%}
+      {% endif %}
+
+      <!-- The 'Outstanding QC' panel -->
+      <div class="col-xs-{{ qc_width }}">
+        {% if pending_qc|count %}
+          <div class="panel panel-danger">
+            <div class="panel-heading collapsible-heading" data-toggle="collapse" data-target="#qclist">
+              <h3 class="panel-title chevron-toggle">Outstanding QC</h3>
+            </div>
+            <div class="panel-body collapse in" id="qclist">
+              <table class="table table-striped table-hover table-condensed">
+                {% for timepoint in pending_qc | sort %}
+                  <tr class="clickable-row" data-href="{{ url_for('timepoints.timepoint', study_id=study.id, timepoint_id=timepoint) }}">
+                    <td class="col-xs-2">{{ timepoint }}</td>
+                      {% for column in pending_qc[timepoint] %}
+                        {{ column|safe }}
+                      {% endfor %}
+                  </tr>
+                {% endfor %}
+              </table>
+            </div>
+          </div>
+        {% endif %}
       </div>
-    {% endif %}
+
+      <!-- The run log display panel -->
+      <div class="col-xs-{{ log_width }}">
+        {% if nightly_log["contents"] != "" %}
+          <div class="panel panel-info" title="The Most Recent Nightly Run Log" width="100%">
+            <div class="panel-heading collapsible-heading" data-toggle="collapse" data-target="#run-log">
+              <h3 class="panel-title chevron-toggle">Nightly Run Log ({{ nightly_log["header"] }})</h3>
+            </div>
+            <div class="panel-body collapse in" id="run-log">
+              <div>{{ nightly_log["contents"]|safe }}</div>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
 
     <!-- The tab menu -->
     <div role="navigation">
