@@ -1,4 +1,5 @@
 import os
+import html
 import logging
 import re
 
@@ -24,7 +25,7 @@ def read_log(log_file):
     except Exception as e:
         logger.error(f"Failed to read run log file {log_file}. {e}")
         return ""
-    result = [line.replace("\n", "<br>") for line in result]
+    result = [html.escape(line).replace("\n", "<br>") for line in result]
     return "<br>".join(result)
 
 
@@ -32,4 +33,6 @@ def make_header_msg(log_contents, done_regex, error_regex):
     if not re.search(done_regex, log_contents):
         return "Running..."
     error_count = len(re.findall(error_regex, log_contents))
+    if error_count == 1:
+        return "1 error reported"
     return f"{error_count} errors reported"
