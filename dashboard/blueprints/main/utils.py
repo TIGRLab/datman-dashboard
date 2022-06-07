@@ -6,6 +6,9 @@ logger = logging.getLogger(__name__)
 
 
 def get_run_log(log_dir, study, done_regex, error_regex):
+    if not log_dir:
+        return {"contents": "", "header": ""}
+
     log_file = os.path.join(log_dir, f"{study}_latest.log")
     output = {}
     output["contents"] = read_log(log_file)
