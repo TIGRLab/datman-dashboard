@@ -374,6 +374,37 @@ Configuration for the dashboard's job scheduler.
   * Description: The URL to send scheduler jobs to. This setting is needed 
     only by 'client' instances of the dashboard.
     
+Run Log Reporting
+*****************
+Configures whether to display nightly pipeline run logs. If nightly scripts
+are run for a study's data, the base directory where logs are stored can be
+provided to ensure the most recent run log is displayed on the study's landing
+page. Note that the most recent log for each study should be named
+``STUDY_latest.log``, where STUDY is the name datman recognizes the study by.
+
+Required
+^^^^^^^^
+
+Optional
+^^^^^^^^
+* **DATMAN_RUN_LOGS**
+
+  * Description: The directory to read recent nightly run logs from. If
+    left unset run log reporting will be turned off. Log files in this
+    directory should be named ``STUDY_latest.log``, where study is
+    the datman nickname.
+* **DATMAN_RUN_LOGS_DONE**
+
+  * Description: The pattern to search for in the log to identify whether
+    or not the nightly run has finished.
+  * Default value: ``: Done.``
+* **DATMAN_RUN_LOGS_ERROR**
+
+  * Description: The pattern to use to identify log lines that contain errors.
+    Used to construct a count of the number of errors in the log, which is
+    then displayed in the summary line of the log display.
+  * Default value: ``- ERROR -``
+
 XNAT
 ****
 Enable or disable the XNAT integration. Note that if you enable XNAT 

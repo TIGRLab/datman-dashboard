@@ -31,10 +31,10 @@ REDCAP_TOKEN = os.environ.get('REDCAP_TOKEN')
 RUN_LOG_DIR = os.environ.get('DATMAN_RUN_LOGS', '')
 
 # The regex to use when parsing the run log to tell if nightly run is complete
-RUN_COMPLETE_REGEX = os.environ.get('DATMAN_RUN_LOGS_REGEX', ': Done.')
+RUN_COMPLETE_REGEX = os.environ.get('DATMAN_RUN_LOGS_DONE', ': Done.')
 
 # The regex to use when parsing the run log to detect errors
-RUN_ERROR_REGEX = os.environ.get('DATMAN_RUN_LOGS_ERROR_REGEX', '- ERROR -')
+RUN_ERROR_REGEX = os.environ.get('DATMAN_RUN_LOGS_ERROR', '- ERROR -')
 
 # Metrics to display.
 # NOTE: The code that uses this is currently broken and might be scrapped
