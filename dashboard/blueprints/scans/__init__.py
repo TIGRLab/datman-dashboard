@@ -6,4 +6,10 @@ scan_bp = Blueprint(
     template_folder='templates',
     url_prefix='/study/<string:study_id>/scan/<int:scan_id>')
 
+
+def register_bp(app):
+    app.register_blueprint(scan_bp)
+    return app
+
+
 from . import views

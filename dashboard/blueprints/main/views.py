@@ -18,7 +18,7 @@ from ...queries import (query_metric_values_byid, query_metric_types,
 from ...models import Study, Site, Timepoint, Analysis
 from ...forms import (SelectMetricsForm, StudyOverviewForm, AnalysisForm)
 from ...utils import get_timepoint
-from ...datman_utils import get_study_path
+import dashboard.datman_utils
 
 logger = logging.getLogger(__name__)
 
@@ -426,14 +426,15 @@ def analysis(analysis_id=None):
 @main.route('/study/<string:study_id>/data/RESOURCES/<path:tech_notes_path>')
 @main.route('/study/<string:study_id>/qc/<string:timepoint_id>/index.html')
 @main.route('/study/<string:study_id>/qc/<string:timepoint_id>'
-           '/<regex(".*\.png"):image>')  # noqa: W605
+            '/<regex(".*\.png"):image>')  # noqa: W605
 @login_required
 def static_qc_page(study_id,
                    timepoint_id=None,
                    image=None,
                    tech_notes_path=None):
     if tech_notes_path:
-        resources = get_study_path(study_id, 'resources')
+        resources = dashboard.datman_utils.get_study_path(
+            study_id, 'resources')
         return send_from_directory(resources, tech_notes_path)
     timepoint = get_timepoint(study_id, timepoint_id, current_user)
     if image:

@@ -8,6 +8,7 @@ from flask import current_app
 
 logger = logging.getLogger(__name__)
 
+
 def submit_job(script, input_args=None):
     """Attempt to submit a job to the configured computing cluster.
 

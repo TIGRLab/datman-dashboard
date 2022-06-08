@@ -54,3 +54,4 @@ venv/
 *.log
 logs/
 dashboard/output.csv
+dashboard/static/niviz_rater

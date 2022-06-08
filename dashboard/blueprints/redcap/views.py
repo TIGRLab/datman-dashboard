@@ -1,6 +1,6 @@
 import logging
 
-from flask import (render_template, redirect, request)
+from flask import (redirect, request)
 from flask_login import login_required
 
 from . import rcap_bp
