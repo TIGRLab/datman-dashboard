@@ -105,6 +105,31 @@ def setup_devel_ext(app):
     return toolbar
 
 
+def load_blueprints(app):
+    """Register all blueprints for the app.
+
+    A blueprint must be in the dashboard's blueprint folder and must
+    implement the 'register_bp' function to be loaded by this function.
+    """
+    bp_dir = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)),
+        "blueprints")
+    blueprints = [
+        x for x in os.listdir(bp_dir)
+        if (os.path.isdir(os.path.join(bp_dir, x)) and
+            x != "__pycache__")]
+
+    for item in blueprints:
+        bp = __import__("dashboard.blueprints." + str(item),
+                        fromlist=["register_bp"])
+        try:
+            app = bp.register_bp(app)
+        except AttributeError:
+            app.logger.error(
+                f"Ignoring blueprint {item}, 'register_bp' undefined.")
+    return app
+
+
 def create_app(config=None):
     """Generate an application instance from the given configuration.
 
@@ -133,21 +158,7 @@ def create_app(config=None):
 
     app.url_map.converters['regex'] = RegexConverter
 
-    from dashboard.blueprints.main import main_bp
-    from dashboard.blueprints.users import user_bp
-    from dashboard.blueprints.auth import auth_bp
-    from dashboard.blueprints.timepoints import time_bp
-    from dashboard.blueprints.scans import scan_bp
-    from dashboard.blueprints.redcap import rcap_bp
-    from dashboard.blueprints.handlers import handler_bp
-
-    app.register_blueprint(main_bp)
-    app.register_blueprint(user_bp)
-    app.register_blueprint(auth_bp)
-    app.register_blueprint(time_bp)
-    app.register_blueprint(rcap_bp)
-    app.register_blueprint(scan_bp)
-    app.register_blueprint(handler_bp)
+    load_blueprints(app)
 
     if app.debug and app.env == 'development':
         # Never run this on a production server!
