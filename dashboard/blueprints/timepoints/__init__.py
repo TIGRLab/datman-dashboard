@@ -18,6 +18,7 @@ ajax_bp = Blueprint(
 
 def register_bp(app):
     app.register_blueprint(time_bp)
+    app.register_blueprint(ajax_bp)
     return app
 
 
