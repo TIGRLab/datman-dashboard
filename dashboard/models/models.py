@@ -417,8 +417,10 @@ class User(PermissionMixin, UserMixin, TableMixin, db.Model):
 
 class AnonymousUser(PermissionMixin, AnonymousUserMixin):
     # This is only used by devel instances of the dashboard
-    # It's safe to give the anonymous user full access to everything
+    # It's safe to give the anonymous user full access to studies
     # because when LOGIN_DISABLED=False, this user cant access views
+    # However, it's NOT safe to give the anonymous user 'dashboard_admin' or
+    # 'account_active' status, be careful :)
 
     id = -1
     first_name = "Guest"
