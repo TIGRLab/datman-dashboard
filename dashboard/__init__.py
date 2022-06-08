@@ -120,10 +120,14 @@ def create_app(config=None):
 
     db.init_app(app)
     migrate.init_app(app, db)
-    lm.init_app(app)
     mail.init_app(app)
     scheduler.init_app(app)
     scheduler.start()
+
+    from dashboard.models import AnonymousUser
+    lm.anonymous_user = AnonymousUser
+    lm.init_app(app)
+
     try:
         scheduler._scheduler.app = app
     except AttributeError:

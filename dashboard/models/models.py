@@ -3,10 +3,11 @@
 import os
 import datetime
 import logging
+from abc import abstractmethod
 from random import randint
 
 from flask import current_app
-from flask_login import UserMixin
+from flask_login import UserMixin, AnonymousUserMixin
 from sqlalchemy import and_, or_, exists, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import deferred, backref
@@ -50,6 +51,41 @@ class TableMixin:
                                        "Reason - {}".format(e))
 
 
+class PermissionMixin:
+    """Adds methods needed for user authentication.
+    """
+
+    @abstractmethod
+    def get_studies(self):
+        pass
+
+    @abstractmethod
+    def get_disabled_sites(self):
+        pass
+
+    @abstractmethod
+    def _get_permissions(self, study, site=None, perm=None):
+        pass
+
+    def has_study_access(self, study, site=None):
+        return self._get_permissions(study, site)
+
+    def is_study_admin(self, study, site=None):
+        return self._get_permissions(study, site, perm='is_admin')
+
+    def is_primary_contact(self, study, site=None):
+        return self._get_permissions(study, site, perm='primary_contact')
+
+    def is_kimel_contact(self, study, site=None):
+        return self._get_permissions(study, site, perm='kimel_contact')
+
+    def is_study_RA(self, study, site=None):
+        return self._get_permissions(study, site, perm='study_RA')
+
+    def does_qc(self, study, site=None):
+        return self._get_permissions(study, site, perm='does_qc')
+
+
 ###############################################################################
 # Association tables (i.e. basic many to many relationships)
 
@@ -68,7 +104,7 @@ study_timepoints_table = db.Table(
 # Plain entities
 
 
-class User(UserMixin, TableMixin, db.Model):
+class User(PermissionMixin, UserMixin, TableMixin, db.Model):
     __tablename__ = 'users'
 
     id = db.Column('id', db.Integer, primary_key=True)
@@ -320,24 +356,6 @@ class User(UserMixin, TableMixin, db.Model):
             found.setdefault(study, []).append(site)
         return found
 
-    def has_study_access(self, study, site=None):
-        return self._get_permissions(study, site)
-
-    def is_study_admin(self, study, site=None):
-        return self._get_permissions(study, site, perm='is_admin')
-
-    def is_primary_contact(self, study, site=None):
-        return self._get_permissions(study, site, perm='primary_contact')
-
-    def is_kimel_contact(self, study, site=None):
-        return self._get_permissions(study, site, perm='kimel_contact')
-
-    def is_study_RA(self, study, site=None):
-        return self._get_permissions(study, site, perm='study_RA')
-
-    def does_qc(self, study, site=None):
-        return self._get_permissions(study, site, perm='does_qc')
-
     def _get_permissions(self, study, site=None, perm=None):
         """Check if a user has general access rights or a specific permission
 
@@ -395,6 +413,27 @@ class User(UserMixin, TableMixin, db.Model):
 
     def __str__(self):
         return "{} {}".format(self.first_name, self.last_name)
+
+
+class AnonymousUser(PermissionMixin, AnonymousUserMixin):
+    # This is only used by devel instances of the dashboard
+    # It's safe to give the anonymous user full access to everything
+    # because when LOGIN_DISABLED=False, this user cant access views
+
+    id = -1
+    first_name = "Guest"
+
+    def get_studies(self):
+        return Study.query.all()
+
+    def get_disabled_sites(self):
+        return {}
+
+    def _get_permissions(self, study, site=None, perm=None):
+        return True
+
+    def __repr__(self):
+        return "<AnonymousUser>"
 
 
 class AccountRequest(TableMixin, db.Model):
