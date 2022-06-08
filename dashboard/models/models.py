@@ -492,6 +492,7 @@ class Study(TableMixin, db.Model):
         collection_class=lambda: utils.DictListCollection('site'),
         viewonly=True,
     )
+    _pipelines = db.relationship('StudyPipeline', cascade='all, delete')
 
     def __init__(self,
                  study_id,
@@ -965,6 +966,21 @@ class Study(TableMixin, db.Model):
                     # Clean up tags not used by any other study
                     expected_scan.scantype.delete()
         super().delete()
+
+    def get_pipelines(self, scope=None):
+        if scope:
+            return [item for item in self._pipelines if item.scope == scope]
+        return self._pipelines
+
+    def add_pipeline(self, pipeline_key, view, name, scope):
+        record = StudyPipeline.query.get((self.id, pipeline_key))
+        if not record:
+            record = StudyPipeline(study_id=self.id, pipeline_id=pipeline_key)
+        record.view = view
+        record.name = name
+        record.scope = scope
+        record.save()
+        return record
 
     def __repr__(self):
         return "<Study {}>".format(self.id)
@@ -2314,6 +2330,39 @@ class StudySite(TableMixin, db.Model):
 
     def __repr__(self):
         return "<StudySite {} - {}>".format(self.study_id, self.site_id)
+
+
+class StudyPipeline(TableMixin, db.Model):
+    """Define QC pipelines enabled for a study.
+    """
+    study_id = db.Column('study',
+                         db.String(32),
+                         db.ForeignKey('studies.id'),
+                         primary_key=True)
+    pipeline_id = db.Column('pipeline_key',
+                            db.String,
+                            primary_key=True)
+    view = db.Column('view',
+                     db.String,
+                     nullable=False)
+    name = db.Column('name',
+                     db.String,
+                     nullable=False)
+    scope = db.Column('scope',
+                      db.ForeignKey('pipeline_scope.scope'),
+                      nullable=False)
+
+    __table_args__ = (UniqueConstraint(study_id, pipeline_id), )
+
+    def __repr__(self):
+        return f'<StudyPipeline {self.study_id} - {self.pipeline_id}>'
+
+
+class PipelineScope(db.Model):
+    scope = db.Column('scope', db.String(32), primary_key=True)
+
+    def __repr__(self):
+        return f'<PipelineScope {self.scope}>'
 
 
 class AltStudyCode(db.Model):

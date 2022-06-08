@@ -15,4 +15,10 @@ ajax_bp = Blueprint(
     url_prefix='/timepoint'
 )
 
+
+def register_bp(app):
+    app.register_blueprint(time_bp)
+    return app
+
+
 from . import views
