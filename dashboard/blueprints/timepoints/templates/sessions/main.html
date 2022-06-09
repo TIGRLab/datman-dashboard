@@ -34,9 +34,38 @@
       {% include 'sessions/redcap_report.html' %}
     {% endif %}
 
+    <span class="session-files">
+      {% if session.tech_notes %}
+        <a href="{{ url_for('timepoints.tech_notes', study_id=study_id, timepoint_id=session.name, notes_path=session.tech_notes) }}"
+           class="btn btn-primary pull-right"
+           id="tech-notes-btn"
+           target="_blank">
+              <span class="button-text">View Tech Notes</span>
+              <span class="glyphicon glyphicon-share-alt"></span>
+        </a>
+      {% endif %}
+    </span>
+
     {% if session.scans|count %}
       {% include 'sessions/scan_table.html' %}
+      {% for scan in session.scans %}
+        <h2 id="{{ scan.name }}">{{ scan.name }}</h2>
+        {% include 'sessions/qc_header.html' %}
+        {% if scan.name in manifests[session.num] %}
+          {% for image in manifests[session.num][scan.name] %}
+            {% set settings = manifests[session.num][scan.name][image] %}
+            {% if settings['title'] %}
+              <h4>{{ settings['title'] }}</h4>
+            {% endif %}
+            {% if settings['caption'] %}
+              <div>{{ settings['caption'] }}</div>
+            {% endif %}
+            <img class="qc-img" width=100% src={{ url_for("timepoints.qc_files", study_id=study_id, timepoint_id=timepoint.name, item_path=image) }}>
+          {% endfor %}
+        {% endif %}
+      {% endfor %}
     {% elif session.empty_session %}
       {% include 'sessions/empty_session.html' %}
     {% endif %}
+
 {% endblock %}

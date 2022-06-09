@@ -1,13 +1,11 @@
 import json
 import csv
 import io
-import os
 import logging
 
 from flask import session as flask_session
 from flask import (current_app, render_template, flash, url_for, redirect,
-                   request, jsonify, make_response, send_file,
-                   send_from_directory)
+                   request, jsonify, make_response, send_file)
 from flask_login import current_user, login_required
 
 from dashboard import db
@@ -17,8 +15,6 @@ from ...queries import (query_metric_values_byid, query_metric_types,
                         find_sessions, find_scans)
 from ...models import Study, Site, Timepoint, Analysis
 from ...forms import (SelectMetricsForm, StudyOverviewForm, AnalysisForm)
-from ...utils import get_timepoint
-import dashboard.datman_utils
 
 logger = logging.getLogger(__name__)
 
@@ -420,24 +416,3 @@ def analysis(analysis_id=None):
         analysis.user_names = ' '.join([user.realname for user in users])
 
     return render_template('analyses.html', analyses=analyses, form=form)
-
-
-# These functions serve up static files from the local filesystem
-@main.route('/study/<string:study_id>/data/RESOURCES/<path:tech_notes_path>')
-@main.route('/study/<string:study_id>/qc/<string:timepoint_id>/index.html')
-@main.route('/study/<string:study_id>/qc/<string:timepoint_id>'
-            '/<regex(".*\.png"):image>')  # noqa: W605
-@login_required
-def static_qc_page(study_id,
-                   timepoint_id=None,
-                   image=None,
-                   tech_notes_path=None):
-    if tech_notes_path:
-        resources = dashboard.datman_utils.get_study_path(
-            study_id, 'resources')
-        return send_from_directory(resources, tech_notes_path)
-    timepoint = get_timepoint(study_id, timepoint_id, current_user)
-    if image:
-        qc_dir, _ = os.path.split(timepoint.static_page)
-        return send_from_directory(qc_dir, image)
-    return send_file(timepoint.static_page)

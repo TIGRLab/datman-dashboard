@@ -752,7 +752,6 @@ class Study(TableMixin, db.Model):
         # the other queries
         new_sessions = self.get_new_sessions().from_self(
             Session.name, Session.num).all()
-        need_rewrite = self.needs_rewrite()
         missing_redcap = self.get_missing_redcap()
         missing_scans = self.get_missing_scans()
 
@@ -762,11 +761,6 @@ class Study(TableMixin, db.Model):
                     '<span class="fa-layers-text fa-inverse" ' + \
                     'data-fa-transform="shrink-11.5 rotate--30" ' + \
                     'style="font-weight:900">NEW</span></span></td>'
-        rewrite_label = '<td class="col-xs-2"><span class="label ' + \
-                        'qc-warnings label-danger" title="Repeat session ' + \
-                        'not on QC page. Regenerate page by running ' + \
-                        'dm_qc_report.py with the --rewrite flag">Needs ' + \
-                        'Rewrite</span></td>'
         scans_label = '<td class="col-xs-2"><span class="label ' + \
                       'qc-warnings label-warning" title="Participant ' + \
                       'exists in REDCap but does not have scans">Missing ' + \
@@ -782,8 +776,6 @@ class Study(TableMixin, db.Model):
         default_row = ['<td></td>'] * 4
         for session in new_sessions:
             issues.setdefault(session[0], default_row[:])[0] = new_label
-        for session in need_rewrite:
-            issues.setdefault(session[0], default_row[:])[1] = rewrite_label
         for session in missing_scans:
             issues.setdefault(session[0], default_row[:])[2] = scans_label
         for session in missing_redcap:
@@ -858,35 +850,6 @@ class Study(TableMixin, db.Model):
                                   Session.name, Session.num)
         return sessions.all()
 
-    def needs_rewrite(self):
-        """
-        Return a list of (Session.name, Session.num) that aren't on their
-        timepoint's QC page (i.e. sessions that require the timepoint static
-        pages to be rewritten).
-        """
-        repeated = db.session.query(Session.name,
-                                    func.count(Session.name).label('num')) \
-                             .join(Timepoint) \
-                             .group_by(Session.name) \
-                             .having(func.count(Session.name) > 1).subquery()
-
-        need_rewrite = db.session.query(Session)\
-                                 .join(Timepoint)\
-                                 .join(study_timepoints_table,
-                                       and_(study_timepoints_table.c.timepoint
-                                            == Timepoint.name,
-                                            study_timepoints_table.c.study
-                                            == self.id))\
-                                 .join(repeated)\
-                                 .filter(Timepoint.static_page != None)\
-                                 .filter(Timepoint.last_qc_repeat_generated <
-                                         repeated.c.num) \
-                                 .filter(Session.num >
-                                         Timepoint.last_qc_repeat_generated) \
-                                 .from_self(Session.name, Session.num)
-
-        return need_rewrite.all()
-
     def get_blacklisted_scans(self):
         query = self._get_checklist()
         blacklisted_scans = query.filter(
@@ -908,6 +871,22 @@ class Study(TableMixin, db.Model):
                  ScanChecklist.comment == None))
         return reviewed_scans.all()
 
+    def get_tag_counts(self, site, pha=False):
+        """Return the number of scans expected for each tag.
+
+        Args:
+            site (str): The name of a site for this study.
+            pha (bool, optional): Whether to look up the number expected
+                for phantoms.
+        """
+        if not pha:
+            return {
+                item.scantype_id: item.count for item in self.scantypes[site]
+            }
+        return {
+            item.scantype_id: item.pha_count for item in self.scantypes[site]
+        }
+
     def _get_checklist(self):
         query = db.session.query(ScanChecklist) \
                           .join(Scan) \
@@ -917,31 +896,6 @@ class Study(TableMixin, db.Model):
                                      (study_timepoints_table.c.study ==
                                       self.id)))
         return query
-
-    def get_valid_metric_names(self):
-        """
-        Return a list of metric names with duplicates removed.
-
-        TODO: This entire method needs to be updated to be less hard-coded. We
-        should get the 'type' of scan from our config file 'qc_type' field
-        instead (and store it in the database). For now I just got it
-        working with the new schema - Dawn
-        """
-        valid_fmri_scantypes = [
-            'IMI', 'RST', 'EMP', 'OBS', 'SPRL-COMB', 'VN-SPRL-COMB'
-        ]
-        names = []
-        for scantype in self.scantypes:
-            for metrictype in scantype.metrictypes:
-                if scantype.tag.startswith('DTI'):
-                    names.append(('DTI', metrictype.name))
-                elif scantype.tag in valid_fmri_scantypes:
-                    names.append(('FMRI', metrictype.name))
-                elif scantype.tag == 'T1':
-                    names.append(('T1', metrictype.name))
-
-        names = sorted(set(names))
-        return names
 
     def get_primary_contacts(self):
         contacts = [
@@ -1069,12 +1023,6 @@ class Timepoint(TableMixin, db.Model):
                            db.Boolean,
                            nullable=False,
                            default=False)
-    # Delete these columns when the static QC pages are made obsolete
-    last_qc_repeat_generated = db.Column('last_qc_generated',
-                                         db.Integer,
-                                         nullable=False,
-                                         default=1)
-    static_page = db.Column('static_page', db.String(1028))
 
     site = db.relationship('Site', uselist=False, back_populates='timepoints')
     studies = db.relationship(
@@ -1093,11 +1041,10 @@ class Timepoint(TableMixin, db.Model):
     incidental_findings = db.relationship('IncidentalFinding',
                                           cascade='all, delete')
 
-    def __init__(self, name, site, is_phantom=False, static_page=None):
+    def __init__(self, name, site, is_phantom=False):
         self.name = name
         self.site_id = site
         self.is_phantom = is_phantom
-        self.static_page = static_page
 
     def add_bids(self, name, session):
         self.bids_name = name
@@ -1210,11 +1157,12 @@ class Timepoint(TableMixin, db.Model):
         return uses_redcap and any(not sess.redcap_record
                                    for sess in self.sessions.values())
 
-    def needs_rewrite(self):
-        if self.static_page and (self.last_qc_repeat_generated < len(
-                self.sessions)):
-            return True
-        return False
+    def expects_notes(self, study=None):
+        if self.is_phantom:
+            return False
+        study = self.get_study(study)
+        study_site = study.sites[self.site.name]
+        return study_site.uses_notes
 
     def missing_scans(self):
         if self.is_phantom:
@@ -1340,6 +1288,7 @@ class Session(TableMixin, db.Model):
     signed_off = db.Column('signed_off', db.Boolean, default=False)
     reviewer_id = db.Column('reviewer', db.Integer, db.ForeignKey('users.id'))
     review_date = db.Column('review_date', db.DateTime(timezone=True))
+    tech_notes = db.Column('tech_notes', db.String(1028))
 
     reviewer = db.relationship('User',
                                uselist=False,
@@ -1522,6 +1471,15 @@ class Session(TableMixin, db.Model):
             return None
         return new_task
 
+    def expects_notes(self, study=None):
+        study = self.get_study(study)
+        study_site = study.sites[self.site.name]
+        return study_site.uses_notes
+
+    def get_expected_scans(self, study_id=None):
+        study = self.get_study(study_id)
+        return study.get_tag_counts(self.site.name, self.timepoint.is_phantom)
+
     def __repr__(self):
         return "<Session {}, {}>".format(self.name, self.num)
 
@@ -1628,6 +1586,7 @@ class Scan(TableMixin, db.Model):
                     db.ForeignKey('scantypes.tag'),
                     nullable=False)
     description = db.Column('description', db.String(128))
+    length = db.Column('length', db.String(10), nullable=True)
     conv_errors = db.Column('conversion_errors', db.Text)
     json_path = db.Column('json_path', db.String(1028))
     json_contents = db.Column('json_contents', JSONB)
@@ -1770,11 +1729,7 @@ class Scan(TableMixin, db.Model):
 
         return gs
 
-    def update_header_diffs(self,
-                            standard=None,
-                            ignore=None,
-                            tolerance=None,
-                            bvals=False):
+    def update_header_diffs(self, standard=None, ignore=None, tolerance=None):
         if not self.json_contents:
             raise InvalidDataException("No JSON data found for series {}"
                                        "".format(self.name))
@@ -1795,12 +1750,12 @@ class Scan(TableMixin, db.Model):
                                               gs.json_contents,
                                               ignore=ignore,
                                               tolerance=tolerance)
-        if bvals:
+        if self.scantype.qc_type == 'dti':
             result = header_checks.check_bvals(self.json_path, gs.json_path)
             if result:
                 diffs['bvals'] = result
 
-        found = False
+        found = []
         if self.header_diffs:
             found = [
                 item for item in self.header_diffs
@@ -1831,6 +1786,19 @@ class Scan(TableMixin, db.Model):
             return {}
         return self.header_diffs[0].diffs
 
+    def is_outdated_header_diffs(self):
+        """Reports whether an update to the header diffs is needed.
+        """
+        if not self.gold_standards:
+            return False
+        if not self.json_contents:
+            return False
+        if not self.header_diffs:
+            return True
+        return (
+            self.header_diffs[0].gold_standard_id != self.gold_standards[0].id
+        )
+
     def add_json(self, json_file, timestamp=None):
         self.json_contents = utils.read_json(json_file)
         self.json_path = json_file
@@ -1857,6 +1825,12 @@ class Scan(TableMixin, db.Model):
             raise InvalidDataException("Failed to add conversion error "
                                        "message for {}. Reason: {}".format(
                                            self, e))
+
+    @property
+    def qc_type(self):
+        if self.session.timepoint.is_phantom:
+            return self.scantype.pha_type or self.scantype.qc_type
+        return self.scantype.qc_type
 
     def __repr__(self):
         if self.source_id:
@@ -2123,7 +2097,7 @@ class RedcapConfig(TableMixin, db.Model):
     user_id_field = db.Column('user_id_field', db.String(128))
     session_id_field = db.Column('session_id_field', db.String(128))
     completed_field = db.Column('completed_form_field', db.String(128))
-    completed_value = db.Column('completed_value', db.String(10))
+    _completed_value = db.Column('completed_value', db.String(10))
     event_ids = db.Column('event_ids', JSONB)
     token = db.Column('token', db.String(64))
 
@@ -2134,6 +2108,16 @@ class RedcapConfig(TableMixin, db.Model):
         self.instrument = instrument
         self.url = url
         self.redcap_version = version
+
+    @property
+    def completed_value(self):
+        return self._completed_value.split(",")
+
+    @completed_value.setter
+    def completed_value(self, user_value):
+        if '__iter__' not in dir(user_value):
+            user_value = [user_value]
+        self._completed_value = ",".join([str(item) for item in user_value])
 
     def get_config(config_id=None, project=None, instrument=None, url=None,
                    version=None, create=False):

@@ -29,6 +29,9 @@
     <!-- Autosize version 4.0.2: Automatically adjusts textarea height as input is added/deleted. -->
     <!-- source: http://www.jacklmoore.com/autosize/ -->
     <script src="/static/js/autosize.min.js"></script>
+
+    {% block header_scripts %}{% endblock %}
+
   </head>
   <body>
     <nav class="navbar navbar-default navbar-static-top navbar-collapse">
@@ -179,5 +182,7 @@
         });
       {% endif %}
     </script>
+
+    {% block footer_scripts %}{% endblock %}
   </body>
 </html>

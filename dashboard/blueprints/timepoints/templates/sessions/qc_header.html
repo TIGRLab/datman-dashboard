@@ -1,0 +1,78 @@
+<div class="row" id="qc-bar-{{ scan.id }}">
+  <div id="qc-btns-{{ scan.id }}" class="pull-right" role="group"
+       {% if not scan.is_new() %} style="display: none;" {% endif %}
+       data-study="{{ study_id }}"
+       data-scan="{{ scan.id }}"
+       data-source="{{ scan.source_data }}"
+       data-children="{{ ';'.join(scan.list_children()) }}">
+    <a class="approve-scan button btn btn-success">
+      <span class="fas fa-check-circle"></span> Sign Off
+    </a>
+    <a href="#add-review-modal" data-toggle="modal"
+       class="flag-scan button btn btn-warning">
+      <span class="fas fa-exclamation-triangle"></span> Flag
+    </a>
+    <a href="#add-review-modal" data-toggle="modal"
+       class="blacklist-scan button btn btn-danger">
+      <span class="fas fa-ban"></span> Blacklist
+    </a>
+  </div>
+
+  <div id="qc-display-{{ scan.id }}"
+       {% if scan.is_new() %} style="display: none;" {% endif%}>
+    <div class="col-xs-9">
+      <div class="comment-display "
+          {% if not (scan.blacklisted() or scan.flagged())%}
+            style="display: none;"
+          {% endif %}>
+        <div class="row">
+          <span class="qc-comment-container well">
+            <span class="qc-scan-comment">
+              {{ scan.get_comment() }}
+            </span>
+          </span>
+        </div>
+
+        <div class="row">
+          <a class="qc-update text-muted pull-right" data-scan="{{ scan.id }}"
+              data-study="{{ study_id }}" href="#add-review-modal"
+              data-toggle="modal">
+            View
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xs-3">
+      <div class="row">
+        <div class="qc-badge pull-right">
+          {% if scan.signed_off() %}
+              <span id="qc-status-{{ scan.id }}" class="qc-approved approved">
+                <span class="fas fa-check-circle"></span> Reviewed
+              </span>
+          {% elif scan.flagged() %}
+              <span id="qc-status-{{ scan.id }}" class="qc-flagged flagged">
+                <span class="fas fa-exclamation-triangle"></span> Flagged
+              </span>
+          {% elif scan.blacklisted() %}
+              <span id="qc-status-{{ scan.id }}" class="qc-blacklisted blacklisted">
+                <span class="fas fa-ban"></span> Blacklisted
+              </span>
+          {% endif %}
+          <div id="qc-signature-{{ scan.id }}" style="font-size: .7em;" class="text-muted">
+            {% if scan.get_checklist_entry() %}
+              {{ scan.get_checklist_entry().user }} at {{ scan.get_checklist_entry().timestamp }}
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <a class="qc-delete text-muted pull-right" data-study="{{ study_id }}"
+           data-scan="{{ scan.id }}">
+          Remove Entry
+        </a>
+      </div>
+    </div>
+  </div>
+
+</div>

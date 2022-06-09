@@ -15,6 +15,16 @@ from .models import Timepoint, Scan
 logger = logging.getLogger(__name__)
 
 
+def read_bool(value):
+    """Converts a value to boolean.
+
+    bool(value) misreads "false"/"False" as True, so we use this instead
+    when parsing booleans from JSON requests.
+    """
+    if value in [False, None, "false", "False"]:
+        return False
+    return True
+
 def report_form_errors(form):
     for field_name, errors in form.errors.items():
         try:

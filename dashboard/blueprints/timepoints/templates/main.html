@@ -1,6 +1,19 @@
 <!-- Overview of a single timepoint's data -->
 {% extends "base.html" %}
 {% include "flash.html" %}
+
+{% block header_scripts %}
+
+{{ super() }}
+
+  <script type="text/javascript">
+    // Variables needed by javascript functions
+    const csrfToken = "{{ csrf_token() }}";
+    const reviewScanUrl = "{{ url_for('ajax_timepoints.review_scan') }}";
+  </script>
+
+{% endblock %}
+
 {% block content %}
 <div class="container">
 
@@ -30,8 +43,6 @@
 
       <div id="timepoint-body" style="margin-top:30px;">
         {% if (timepoint.needs_redcap_survey(study_id)
-               or timepoint.needs_rewrite()
-               or not timepoint.static_page
                or timepoint.missing_scans()) %}
           {% include 'warnings.html' %}
         {% endif %}
@@ -49,14 +60,6 @@
     </div>
   </div>
 
-  {% if timepoint.static_page %}
-    <a href="{{ url_for('main.static_qc_page', study_id=study_id, timepoint_id=timepoint.name) }}"
-        class="btn btn-primary pull-right" id="doc-page" target="_blank">
-      <span class="button-text">View QC page</span>
-      <span class="glyphicon glyphicon-share-alt"></span>
-    </a>
-  {% endif %}
-
   <div id="session-reporting">
     {% for session in timepoint.sessions.values() %}
       {% include 'sessions/main.html' %}
@@ -66,6 +69,12 @@
   {% include 'modals/incidental_findings.html' %}
   {% include 'modals/delete_data.html' %}
   {% include 'modals/new_issue.html' %}
+  {% include 'modals/review_scan.html' %}
 
 </div>
+
+  {% block footer_scripts %}
+      <script type="text/javascript" src="{{ url_for('ajax_timepoints.static', filename='qc_header.js') }}"></script>
+  {% endblock %}
+
 {% endblock %}

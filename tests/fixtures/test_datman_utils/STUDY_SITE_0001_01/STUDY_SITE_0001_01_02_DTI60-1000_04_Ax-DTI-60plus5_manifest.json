@@ -1,0 +1,17 @@
+{
+    "STUDY_SITE_0001_01_02_DTI60-1000_04_Ax-DTI-60plus5_montage.png": {
+        "order": 1,
+        "title": null,
+        "caption": null
+    },
+    "STUDY_SITE_0001_01_02_DTI60-1000_04_Ax-DTI-60plus5_b0.png": {
+        "order": 2,
+        "title": "b0 Montage",
+        "caption": null
+    },
+    "STUDY_SITE_0001_01_02_DTI60-1000_04_Ax-DTI-60plus5_directions.png": {
+        "order": 3,
+        "title": "bvec Directions",
+        "caption": null
+    }
+}

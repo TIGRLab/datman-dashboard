@@ -1,6 +1,5 @@
 """Setup and initialization for the QC Dashboard.
 """
-
 import os
 import logging.config
 
@@ -9,6 +8,7 @@ from flask_mail import Mail
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_migrate import Migrate
+from flask_wtf import CSRFProtect
 from werkzeug.routing import BaseConverter
 
 from config import (SCHEDULER_ENABLED, SCHEDULER_API_ENABLED, SCHEDULER_USER,
@@ -28,6 +28,7 @@ lm.login_view = 'users.login'
 lm.refresh_view = 'users.refresh_login'
 mail = Mail()
 scheduler = Scheduler()
+csrf = CSRFProtect()
 
 if SCHEDULER_API_ENABLED:
     # If this instance is acting as a scheduler server + the api should be
@@ -137,6 +138,7 @@ def create_app(config=None):
     and register all blueprints.
     """
     app = Flask(__name__)
+    app.jinja_env.add_extension('jinja2.ext.do')
 
     if config is None:
         app.config.from_object('config')
@@ -148,6 +150,7 @@ def create_app(config=None):
     lm.init_app(app)
     mail.init_app(app)
     scheduler.init_app(app)
+    csrf.init_app(app)
     scheduler.start()
     try:
         scheduler._scheduler.app = app
