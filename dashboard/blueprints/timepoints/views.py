@@ -1,17 +1,20 @@
+import os
 import logging
 
 from flask import session as flask_session
-from flask import render_template, flash, url_for, redirect
+from flask import (render_template, flash, url_for, redirect,
+                   send_from_directory, jsonify, request, Response)
 from flask_login import current_user, login_required, fresh_login_required
 
-from . import time_bp
+from . import time_bp, ajax_bp
 from . import utils
 from .emails import incidental_finding_email
 from .forms import (EmptySessionForm, IncidentalFindingsForm,
-                    TimepointCommentsForm, NewIssueForm, DataDeletionForm)
+                    TimepointCommentsForm, NewIssueForm, DataDeletionForm,
+                    ScanChecklistForm)
 from ...utils import (report_form_errors, get_timepoint, get_session,
                       get_scan, dashboard_admin_required,
-                      study_admin_required)
+                      study_admin_required, read_bool)
 import dashboard.datman_utils as dm_utils
 
 logger = logging.getLogger(__name__)
@@ -39,21 +42,25 @@ def timepoint(study_id, timepoint_id):
                          "access denied.".format(current_user))
             github_issues = None
 
+    manifests = dm_utils.get_manifests(timepoint)
     empty_form = EmptySessionForm()
     findings_form = IncidentalFindingsForm()
     comments_form = TimepointCommentsForm()
     new_issue_form = NewIssueForm()
     delete_form = DataDeletionForm()
+    qc_form = ScanChecklistForm()
     new_issue_form.title.data = timepoint.name + " - "
     return render_template('main.html',
                            study_id=study_id,
                            timepoint=timepoint,
+                           manifests=manifests,
                            empty_session_form=empty_form,
                            incidental_findings_form=findings_form,
                            timepoint_comments_form=comments_form,
                            issues=github_issues,
                            issue_form=new_issue_form,
-                           delete_form=delete_form)
+                           delete_form=delete_form,
+                           qc_form=qc_form)
 
 
 @time_bp.route('/sign_off/<int:session_num>', methods=['GET', 'POST'])
@@ -264,3 +271,69 @@ def create_issue(study_id, timepoint_id):
     utils.handle_issue(token, form, study_id, timepoint.name)
 
     return redirect(dest_URL)
+
+
+@time_bp.route('/qc/<string:item_path>')
+@login_required
+def qc_files(study_id, timepoint_id, item_path):
+    qc_folder = os.path.join(
+        dm_utils.get_study_path(study_id, 'qc'),
+        timepoint_id
+    )
+    return send_from_directory(qc_folder, item_path)
+
+
+@time_bp.route('/RESOURCES/<path:notes_path>')
+@login_required
+def tech_notes(study_id, timepoint_id, notes_path):
+    # timepoint_id only included as an arg because of the url_prefix
+    resources_folder = dm_utils.get_study_path(study_id, 'resources')
+    return send_from_directory(resources_folder, notes_path)
+
+
+@ajax_bp.route("/review", methods=["POST"])
+@login_required
+def review_scan():
+    """Add a QC review from an AJAX request.
+    """
+    try:
+        scan_id = request.json["scan"]
+        study_id = request.json["study"]
+    except KeyError:
+        return Response({"error": "Bad study or scan ID."}, status=400)
+
+    scan = get_scan(
+        scan_id,
+        study_id,
+        current_user,
+        fail_url=url_for("main.study", study_id=study_id)
+    )
+
+    sign_off = read_bool(request.json.get("approve"))
+    delete = read_bool(request.json.get("delete"))
+    update = read_bool(request.json.get("update"))
+    comment = request.json.get("comment")
+
+    if delete:
+        entry = scan.get_checklist_entry()
+        entry.delete()
+        return jsonify(success=True)
+
+    if update:
+        # Update is done separately so that a review entry can't accidentally
+        # be changed from 'flagged' to blacklisted.
+        if comment is None:
+            return Response({"error": "Can't update without comment provided"},
+                            status=400)
+
+        new_entry = scan.add_checklist_entry(current_user.id, comment)
+    else:
+        new_entry = scan.add_checklist_entry(
+            current_user.id, comment, sign_off)
+
+    response = {
+        "user": str(new_entry.user),
+        "timestamp": new_entry.timestamp,
+    }
+
+    return jsonify(response)

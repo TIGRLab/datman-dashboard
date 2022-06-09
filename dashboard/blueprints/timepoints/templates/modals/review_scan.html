@@ -1,0 +1,33 @@
+<div id="add-review-modal" class="modal fade" role="dialog">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">
+          <i class="fas fa-times"></i>
+        </button>
+        <h4>Add comment</h4>
+      </div>
+      <div class="modal-body">
+        <form action="#" method="post" name="scan-comment" class="form"
+            id="scan-comment-form">
+          <!-- Message for linked scans / source of links go here -->
+
+          <!-- Old comment (if any) needs to be shown here from checklist_form -->
+
+          {{ qc_form.hidden_tag() }}
+          {{ qc_form.comment() }}
+
+          <div>
+            {{ qc_form.submit(class_="btn btn-primary") }}
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary"
+            data-dismiss="modal">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

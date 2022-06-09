@@ -291,6 +291,11 @@ thead {
   font-size: 0.8em;
 }
 
+.session-files {
+  display: inline-block;
+  width: 100%;
+}
+
 .scan-table {
   margin: 10px 0;
 }
@@ -383,28 +388,36 @@ thead {
 #papaya-nav {
   position: absolute;
   padding-top: 200px;
-  left: 30%;
-  width: 160px;
-  height: 208px;
-  display: block;
 }
 
-#loop-series {
-  margin-left: 35px !important;
+/**********************************************
+* Timepoint QC styling
+***********************************************/
+.qc-comment-container {
+  display: inline-block;
+  width: 100%;
+  height: 56px;
+  padding-top: 5px;
+  padding-bottom: 0px;
 }
 
-#papaya-nav > #play-speed-controls {
-  display: none;
-  margin: 10px 0px 20px 0px;
+.qc-scan-comment {
+  display: inline-block;
+  max-height: 56px;
 }
 
-#play-speed-controls > input {
-  display: block;
-  margin-bottom: 5px;
+.qc-badge {
+  padding-top: 12px;
+  margin-bottom: 10px;
 }
 
-#papaya-nav > #change-volume-controls {
+.qc-approved, .qc-flagged, .qc-blacklisted {
+  font-size: 1.5em;
+}
+
+.qc-img {
   margin-top: 20px;
+  margin-bottom: 10px;
 }
 
 /**********************************************

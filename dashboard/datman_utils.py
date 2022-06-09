@@ -17,9 +17,12 @@ import os
 import shutil
 import glob
 import logging
+import json
+from collections import OrderedDict
 
 import datman.config
 import datman.scanid
+from datman.exceptions import UndefinedSetting
 
 logger = logging.getLogger(__name__)
 
@@ -185,14 +188,81 @@ def update_header_diffs(scan):
     except Exception:
         ignore = []
 
-    tags = config.get_tags(site=site)
-    try:
-        qc_type = tags.get(scan.tag, "qc_type")
-    except KeyError:
-        check_bvals = False
-    else:
-        check_bvals = qc_type == 'dti'
-
     scan.update_header_diffs(ignore=ignore,
-                             tolerance=tolerance,
-                             bvals=check_bvals)
+                             tolerance=tolerance)
+
+
+def get_manifests(timepoint):
+    """Collects and organizes all QC manifest files for a timepoint.
+
+    Args:
+        timepoint (:obj:`dashboard.models.Timepoint`): A timepoint from the
+            database.
+
+    Returns:
+        A dictionary mapping session numbers to a dictionary of input nifti
+        files and their manifest contents.
+
+        For example:
+        {
+            1: {nifti_1: nifti_1_manifest,
+                nifti_2: nifti_2_manifest},
+            2: {nifti_3: nifti_3_manifest}
+         }
+    """
+    study = timepoint.get_study().id
+    config = datman.config.config(study=study)
+    try:
+        qc_dir = config.get_path("qc")
+    except UndefinedSetting:
+        logger.error("No QC path defined for study {}".format(study))
+        return {}
+
+    qc_path = os.path.join(qc_dir, str(timepoint))
+    found = {}
+    for num in timepoint.sessions:
+        session = timepoint.sessions[num]
+        found[num] = {}
+
+        manifests = glob.glob(
+            os.path.join(qc_path, f"{session}_*_manifest.json")
+        )
+
+        for manifest in manifests:
+            contents = read_json(manifest)
+
+            _, _, _, description = datman.scanid.parse_filename(manifest)
+            scan_name = os.path.basename(manifest).replace(
+                f"{description}.json",
+                ""
+            ).strip("_")
+
+            # Needed to ensure ordering respected
+            ordered_contents = OrderedDict(
+                sorted(contents.items(), key=lambda x: x[1].get("order", 999))
+            )
+
+            found[num][scan_name] = ordered_contents
+
+    return found
+
+
+def read_json(in_file):
+    """Read a json file.
+
+    Args:
+        in_file (:obj:`str`): The full path the the json file to load.
+
+    Returns:
+        dict: A dictionary of the json contents or an error message.
+    """
+    with open(in_file, "r") as fh:
+        try:
+            contents = json.load(fh)
+        except json.JSONDecodeError:
+            contents = {
+                "Error": {
+                    in_file: "Unreadable manifest file."
+                }
+            }
+    return contents
