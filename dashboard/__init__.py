@@ -1,6 +1,6 @@
 """Setup and initialization for the QC Dashboard.
 """
-
+import os
 import logging.config
 
 from flask import Flask
