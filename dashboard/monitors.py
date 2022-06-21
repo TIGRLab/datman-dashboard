@@ -25,7 +25,7 @@ from datetime import datetime, timedelta
 from dashboard import scheduler
 from .models import Session
 from .emails import missing_redcap_email
-from .exceptions import MonitorException
+from .exceptions import MonitorException, SchedulerException
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +80,11 @@ def add_monitor(check_function,
     if not job_id:
         job_id = uuid4().hex
 
-    return scheduler.add_job(job_id, check_function, **extra_args)
+    try:
+        job = scheduler.add_job(job_id, check_function, **extra_args)
+    except SchedulerException as e:
+        raise MonitorException(f"Adding monitor failed - {e}")
+    return job
 
 
 def get_emails(users):
