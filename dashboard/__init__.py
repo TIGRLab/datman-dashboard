@@ -14,6 +14,7 @@ from werkzeug.routing import BaseConverter
 from config import (SCHEDULER_ENABLED, SCHEDULER_API_ENABLED, SCHEDULER_USER,
                     SCHEDULER_PASS, TZ_OFFSET, LOGGING_CONFIG)
 
+from .task_scheduler import disable_scheduler_csrf
 if SCHEDULER_ENABLED:
     from flask_apscheduler import APScheduler as Scheduler
 else:
@@ -106,6 +107,18 @@ def setup_devel_ext(app):
     return toolbar
 
 
+def configure_scheduler(app, csrf):
+    scheduler.init_app(app)
+    scheduler.start()
+    disable_scheduler_csrf(app, csrf)
+    try:
+        scheduler._scheduler.app = app
+    except AttributeError:
+        # Unlike APScheduler, RemoteScheduler doesnt have _scheduler and
+        # doesnt need app access. Ignore it.
+        pass
+
+
 def load_blueprints(app):
     """Register all blueprints for the app.
 
@@ -149,15 +162,8 @@ def create_app(config=None):
     migrate.init_app(app, db)
     lm.init_app(app)
     mail.init_app(app)
-    scheduler.init_app(app)
     csrf.init_app(app)
-    scheduler.start()
-    try:
-        scheduler._scheduler.app = app
-    except AttributeError:
-        # Unlike APScheduler, RemoteScheduler doesnt have _scheduler and
-        # doesnt need app access. Ignore it.
-        pass
+    configure_scheduler(app, csrf)
 
     app.url_map.converters['regex'] = RegexConverter
 

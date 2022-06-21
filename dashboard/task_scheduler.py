@@ -48,11 +48,6 @@ class ContextThreadExecutor(ThreadPoolExecutor):
         f.add_done_callback(callback)
 
 
-def context_run(app, job, jobstore_alias, run_times, logger_name):
-    with app.app_context():
-        return run_job(job, jobstore_alias, run_times, logger_name)
-
-
 class RemoteScheduler(object):
     """A client scheduler that submits jobs to a scheduler server's API.
 
@@ -131,5 +126,28 @@ class RemoteScheduler(object):
         return "<RemoteScheduler for {}>".format(self.url)
 
 
+def context_run(app, job, jobstore_alias, run_times, logger_name):
+    with app.app_context():
+        return run_job(job, jobstore_alias, run_times, logger_name)
+
+
 def format_job_function(job_function):
     return job_function.__module__ + ":" + job_function.__name__
+
+
+def disable_scheduler_csrf(app, csrf):
+    """Disable csrf for scheduler views.
+
+    Enabling csrf for an app is a good idea, however the scheduler doesnt
+    use it and will raise 'CSRF token not found' errors if they arent
+    disabled for its views. This turns it off *only* for these views.
+
+    Args:
+        app (:obj:`flask.app.Flask`): The current app object.
+        csrf (:obj:`flask_wtf.csrf.CSRFProtect`): The initialized csrf object.
+    """
+    for key in app.view_functions.keys():
+        if not key.startswith('scheduler'):
+            continue
+        view = app.view_functions[key]
+        csrf.exempt(view)
