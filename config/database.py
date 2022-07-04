@@ -15,7 +15,11 @@ server = os.environ.get('POSTGRES_SRVR') or 'localhost'
 # Name of database to connect to
 db_name = os.environ.get('POSTGRES_DATABASE') or 'dashboard'
 
-DATABASE_ROOT_URI = f'postgresql://{user}:{password}@{server}'
+# Port the database (or connection pooler) is listening on
+port = (':' + os.environ.get('POSTGRES_PORT')
+        if os.environ.get('POSTGRES_PORT') else '')
+
+DATABASE_ROOT_URI = f'postgresql://{user}:{password}@{server}{port}'
 
 SQLALCHEMY_DATABASE_URI = f'{DATABASE_ROOT_URI}/{db_name}'
 
