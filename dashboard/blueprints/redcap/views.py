@@ -6,11 +6,13 @@ from flask_login import login_required
 from . import rcap_bp
 from . import utils
 from ...exceptions import InvalidUsage
+from dashboard import csrf
 
 logger = logging.getLogger(__name__)
 
 
 @rcap_bp.route('/redcap', methods=['POST'])
+@csrf.exempt
 def redcap():
     """URL endpoint to receive redcap data entry triggers.
 
