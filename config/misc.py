@@ -27,6 +27,15 @@ GITHUB_PUBLIC = read_boolean('GITHUB_ISSUES_PUBLIC', default=True)
 # The REDCap token to use when retrieving records after a data entry trigger
 REDCAP_TOKEN = os.environ.get('REDCAP_TOKEN')
 
+# The directory to read nightly run logs from, if any
+RUN_LOG_DIR = os.environ.get('DATMAN_RUN_LOGS', '')
+
+# The regex to use when parsing the run log to tell if nightly run is complete
+RUN_COMPLETE_REGEX = os.environ.get('DATMAN_RUN_LOGS_DONE', ': Done.')
+
+# The regex to use when parsing the run log to detect errors
+RUN_ERROR_REGEX = os.environ.get('DATMAN_RUN_LOGS_ERROR', '- ERROR -')
+
 # Metrics to display.
 # NOTE: The code that uses this is currently broken and might be scrapped
 # entirely

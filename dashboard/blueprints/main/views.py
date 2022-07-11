@@ -10,6 +10,7 @@ from flask_login import current_user, login_required
 
 from dashboard import db
 from . import main_bp as main
+from .utils import get_run_log
 from ...queries import (query_metric_values_byid, query_metric_types,
                         query_metric_values_byname, find_subjects,
                         find_sessions, find_scans)
@@ -142,10 +143,17 @@ def study(study_id=None, active_tab=None):
     form.readme_txt.data = study.read_me
     form.study_id.data = study_id
 
+    nightly_log = get_run_log(
+        current_app.config['RUN_LOG_DIR'],
+        study_id,
+        current_app.config['RUN_COMPLETE_REGEX'],
+        current_app.config['RUN_ERROR_REGEX'])
+
     return render_template('study.html',
                            study=study,
                            form=form,
                            active_tab=active_tab,
+                           nightly_log=nightly_log,
                            display_metrics=display_metrics)
 
 
