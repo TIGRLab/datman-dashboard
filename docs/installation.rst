@@ -36,9 +36,17 @@ Development
 ^^^^^^^^^^^
 If you're running a development instance of the dashboard, after completing the
 above steps you can change to the ``dashboard/containers/devel`` folder and run
-the dashboard app with docker compose. Note that if you need to change or set
-any app settings, you can modify the ``dashboard.env`` and ``database.env``
-files in ``dashboard/containers`` first.
+the dashboard app with docker compose.
+
+By default the development instance runs with ``login_disabled=True`` set
+so OAuth doesn't need to be configured. However, if you need to test login
+related features or features that require a user to be a dashboard admin you
+must set up OAuth and add a user to the database's 'users' table. Set
+``dashboard_admin`` and ``account_active`` to true for this user, in addition
+to setting ``login_disabled=False`` in the docker-compose file.
+
+Note that if you need to change or set any app settings, you can modify the
+``dashboard.env`` and ``database.env`` files in ``dashboard/containers``.
 
    .. code-block:: bash
       cd dashboard/containers/devel

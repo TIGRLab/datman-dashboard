@@ -143,14 +143,14 @@ thead {
 /**********************************************
 * Study page styling
 ***********************************************/
-#qc-panel {
-  width: 60%;
-  margin-left: auto;
-  margin-right: auto;
-}
-
 #qclist {
   /* Make the qc panel body scrollable if the list is too long */
+  height: auto;
+  max-height: 300px;
+  overflow-x: hidden;
+}
+
+#run-log {
   height: auto;
   max-height: 300px;
   overflow-x: hidden;

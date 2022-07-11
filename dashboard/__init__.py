@@ -21,6 +21,7 @@ else:
     from .task_scheduler import RemoteScheduler as Scheduler
 
 logging.config.dictConfig(LOGGING_CONFIG)
+logger = logging.getLogger(__name__)
 
 db = SQLAlchemy()
 migrate = Migrate()
@@ -137,9 +138,9 @@ def load_blueprints(app):
         bp = __import__("dashboard.blueprints." + str(item),
                         fromlist=["register_bp"])
         try:
-            app = bp.register_bp(app)
+            bp.register_bp(app)
         except AttributeError:
-            app.logger.error(
+            logger.error(
                 f"Ignoring blueprint {item}, 'register_bp' undefined.")
     return app
 
@@ -160,10 +161,13 @@ def create_app(config=None):
 
     db.init_app(app)
     migrate.init_app(app, db)
-    lm.init_app(app)
     mail.init_app(app)
     csrf.init_app(app)
     configure_scheduler(app, csrf)
+
+    from dashboard.models import AnonymousUser
+    lm.anonymous_user = AnonymousUser
+    lm.init_app(app)
 
     app.url_map.converters['regex'] = RegexConverter
 
