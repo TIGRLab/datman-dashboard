@@ -78,6 +78,10 @@ Optional
 
   * Description: The username to use when connecting to the database.
   * Default value: The username that the dashboard runs under.
+* **POSTGRES_PORT**
+
+  * Description: The port to use when connecting to the database.
+  * Default value: ``5432``
 * **TIMEZONE**
   
   * Description: The time zone to use when storing timestamps. Note that this 
