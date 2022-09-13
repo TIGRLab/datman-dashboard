@@ -68,3 +68,47 @@ class TestGetStudies:
 
         dash_db.session.commit()
         return [study1, study2, study3]
+
+
+class TestGetScanQc:
+
+    def test_finds_all_scan_qc_when_no_search_terms(self, records):
+        assert False
+
+    def test_finds_all_qc_matching_study(self, records):
+        assert False
+
+    def test_finds_all_qc_matching_studies(self, records):
+        assert False
+
+    def test_finds_all_qc_matching_author(self, records):
+        assert False
+
+    def test_finds_all_qc_matching_authors(self, records):
+        assert False
+
+    def test_finds_all_qc_matching_tag(self, records):
+        assert False
+
+    def test_finds_all_qc_matching_tags(self, records):
+        assert False
+
+    def test_finds_approved_scans(self, records):
+        assert False
+
+    def test_finds_flagged_scans(self, records):
+        assert False
+
+    def test_finds_blacklisted_scans(self, records):
+        assert False
+
+    def test_finds_unreviewed_scans_when_user_sets_all_flags_to_false(
+            self, records):
+        assert False
+
+    def test_finds_entries_matching_comment(self, records):
+        assert False
+
+    @pytest.fixture
+    def records(self, dash_db):
+        return

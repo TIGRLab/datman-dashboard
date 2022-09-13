@@ -292,6 +292,75 @@ def get_redcap_config(project, instrument, url, create=False):
     )
 
 
+def get_scan_qc(study=None, author=None, tag=None, phantom=False,
+                approved=False, blacklisted=False, flagged=False,
+                include_new=False, comment=None):
+    # 'Phantom' flag can INCLUDE phantom, not return only phantom
+
+    # If bl, flag, app == False and not allow_new, raise error.
+    # ditto but if allow_new = True, return new only
+    # If flags == True, all QC must be returned
+    # If comment, find only entries with matching comment (ignore other flags)
+    # study, author, tags narrow these searches (so must happen later)
+
+    # if include_new:
+    #     query = db.session.query(Scan, ScanChecklist).outerjoin(ScanChecklist)
+    # else:
+    #     query = db.session.query(ScanChecklist)
+    if not (comment or approved or blacklisted or flagged):
+        # This should probably raise a different exception than
+        #   'InvalidDataException' but doing so breaks assumption this
+        #   module raises only that
+        raise
+
+
+    def get_list(input_var):
+        return input_var if isinstance(input_var, list) else [input_var]
+
+    query = db.session.query(Scan, ScanChecklist).outerjoin(ScanChecklist)
+
+    if study:
+        query = query.join(
+            study_timepoints_table.c.timepoint == Scan.timepoints)\
+                .filter(study_timepoints_table.c.study.in_(get_list(study)))
+
+    if author:
+        # Must make sure author search cant circumvent study access restrictions
+        #   e.g. user who can only read spins can search for author and get TAY entries
+        # Easy way, dashboard side, is to make sure view always sets study and
+        # always restricts it to studies user can access
+        # must also convert author first/last name into user ids in view
+        query = query.filter(ScanChecklist.user_id.in_(get_list(tag)))
+
+    if tag:
+        query = query.filter(Scan.tag.in_(get_list(tag)))
+
+    if not phantom:
+        query = query.join(Timepoint, Scan.timepoint == Timepoint.name)\
+            .filter(Timepoint.is_phantom == False)
+
+    if not approved:
+        query = query.filter(ScanChecklist.approved == False)
+
+    if not blacklisted:
+        query = query.filter(ScanChecklist.approved == True)
+
+    if not flagged:
+        query = query.filter(
+            or_(
+                and_(ScanChecklist.approved == True,
+                    ScanChecklist.comment == None),
+                and_(ScanChecklist.approved == False,
+                    ScanChecklist.comment != None)
+            )
+        )
+
+    if comment:
+        # May need to escape complicated user input comments here
+        query = query.filter(ScanChecklist.comment.in_(get_list(comment))
+    return
+
+
 def query_metric_values_byid(**kwargs):
     """Queries the database for metrics matching the specifications.
         Arguments are lists of strings containing identifying names
