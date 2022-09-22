@@ -1,4 +1,5 @@
 import pytest
+import sqlalchemy
 
 import dashboard.queries
 
@@ -72,131 +73,254 @@ class TestGetStudies:
 
 class TestGetScanQc:
 
-    qc_entries = {
-        "approved": [
-            "STUDY1_CMH_0001_01_01_T1_10",
-            "STUDY2_CMH_4444_01_01_T2_04"
-        ],
-        "blacklisted": [
-            "STUDY1_UTO_0002_01_01_T1_10",
-            "STUDY2_CMH_4444_01_01_T2_03"
-        ],
-        "flagged": ["STUDY1_CMH_0001_01_01_DTI60-1000_11"],
-        "new": ["STUDY2_CMH_4444_01_01_RST_05"],
-        "approved_phantom": ["STUDY1_CMH_PHA_FBN190428_T1_01"],
-        "blacklist_phantom": ["STUDY2_CMH_PHA_FBN220920_T2_01"]
-    }
-
-    def assert_all_entries_found(self, found, expected):
-        """Raises AssertionError if any 'expected' scans missing from 'found'.
-        """
-        scan_list = [item[0] for item in found]
-        for scan in expected:
-            assert scan in scan_list
-
-    def test_finds_all_reviewed_scans_when_no_search_terms(self):
+    def test_finds_all_reviewed_human_scans_when_no_search_terms(self):
         result = dashboard.queries.get_scan_qc()
+        expected = self.query_db(
+            "SELECT s.name"
+            "  FROM scans as s, scan_checklist as sc, timepoints as t"
+            "  WHERE s.id = sc.scan_id"
+            "      AND t.name = s.timepoint"
+            "      AND t.is_phantom = false;"
+        )
 
-        expected = []
-        expected.extend(self.qc_entries["approved"])
-        expected.extend(self.qc_entries["flagged"])
-        expected.extend(self.qc_entries["blacklisted"])
+        self.assert_result_matches_expected(result, expected)
 
-        assert len(result) == len(expected)
-        self.assert_all_entries_found(result, expected)
-
-    def test_finds_all_except_approved_when_flag_is_false(self):
+    def test_finds_all_human_qc_except_approved_when_flag_is_false(self):
         result = dashboard.queries.get_scan_qc(approved=False)
+        expected = self.query_db(
+            "SELECT s.name"
+            "  FROM scans as s, scan_checklist as sc, timepoints as t"
+            "  WHERE s.id = sc.scan_id"
+            "      AND t.name = s.timepoint"
+            "      AND t.is_phantom = false"
+            "      AND NOT (sc.signed_off = true AND sc.comment IS NULL);"
+        )
 
-        expected = []
-        expected.extend(self.qc_entries["flagged"])
-        expected.extend(self.qc_entries["blacklisted"])
+        self.assert_result_matches_expected(result, expected)
 
-        assert len(result) == len(expected)
-        self.assert_all_entries_found(result, expected)
-
-    def test_finds_all_except_flagged_when_flag_is_false(self):
+    def test_finds_all_human_qc_except_flagged_when_flag_is_false(self):
         result = dashboard.queries.get_scan_qc(flagged=False)
+        expected = self.query_db(
+            "SELECT s.name"
+            "  FROM scans as s, scan_checklist as sc, timepoints as t"
+            "  WHERE s.id = sc.scan_id"
+            "      AND t.name = s.timepoint"
+            "      AND t.is_phantom = false"
+            "      AND NOT (sc.signed_off = true AND sc.comment IS NOT NULL);"
+        )
 
-        expected = []
-        expected.extend(self.qc_entries["approved"])
-        expected.extend(self.qc_entries["blacklisted"])
+        self.assert_result_matches_expected(result, expected)
 
-        assert len(result) == len(expected)
-        self.assert_all_entries_found(result, expected)
-
-    def test_finds_all_except_blacklisted_when_flag_is_false(self):
+    def test_finds_all_human_qc_except_blacklisted_when_flag_is_false(self):
         result = dashboard.queries.get_scan_qc(blacklisted=False)
+        expected = self.query_db(
+            "SELECT s.name"
+            "  FROM scans as s, scan_checklist as sc, timepoints as t"
+            "  WHERE s.id = sc.scan_id"
+            "      AND t.name = s.timepoint"
+            "      AND t.is_phantom = false"
+            "      AND NOT (sc.signed_off = false AND sc.comment IS NOT NULL);"
+        )
 
-        expected = []
-        expected.extend(self.qc_entries["approved"])
-        expected.extend(self.qc_entries["flagged"])
-
-        assert len(result) == len(expected)
-        self.assert_all_entries_found(result, expected)
+        self.assert_result_matches_expected(result, expected)
 
     def test_can_return_only_approved_entries(self):
         result = dashboard.queries.get_scan_qc(
             blacklisted=False, flagged=False)
-        expected = self.qc_entries["approved"]
+        expected = self.query_db(
+            "SELECT s.name"
+            "  FROM scans as s, scan_checklist as sc, timepoints as t"
+            "  WHERE s.id = sc.scan_id"
+            "      AND t.name = s.timepoint"
+            "      AND t.is_phantom = false"
+            "      AND sc.signed_off = true AND sc.comment IS NULL"
+        )
 
-        assert len(result) == len(expected)
-        self.assert_all_entries_found(result, expected)
+        self.assert_result_matches_expected(result, expected)
 
     def test_can_return_only_flagged_entries(self):
         result = dashboard.queries.get_scan_qc(
             approved=False, blacklisted=False)
-        expected = self.qc_entries["flagged"]
+        expected = self.query_db(
+            "SELECT s.name"
+            "  FROM scans as s, scan_checklist as sc, timepoints as t"
+            "  WHERE s.id = sc.scan_id"
+            "      AND t.name = s.timepoint"
+            "      AND t.is_phantom = false"
+            "      AND sc.signed_off = true AND sc.comment IS NOT NULL"
+        )
 
-        assert len(result) == len(expected)
-        self.assert_all_entries_found(result, expected)
+        self.assert_result_matches_expected(result, expected)
 
     def test_can_return_only_blacklisted_entries(self):
         result = dashboard.queries.get_scan_qc(
             approved=False, flagged=False)
-        expected = self.qc_entries["blacklisted"]
+        expected = self.query_db(
+            "SELECT s.name"
+            "  FROM scans as s, scan_checklist as sc, timepoints as t"
+            "  WHERE s.id = sc.scan_id"
+            "      AND t.name = s.timepoint"
+            "      AND t.is_phantom = false"
+            "      AND sc.signed_off = false AND sc.comment IS NOT NULL"
+        )
 
+        self.assert_result_matches_expected(result, expected)
+
+    def test_finds_all_qc_matching_study(self):
+        result = dashboard.queries.get_scan_qc(study="STUDY1")
+        expected = self.query_db(
+            "SELECT s.name"
+            "  FROM scans as s, scan_checklist as sc, timepoints as t, "
+            "      study_timepoints as st"
+            "  WHERE s.id = sc.scan_id"
+            "      AND t.name = s.timepoint"
+            "      AND st.timepoint = t.name"
+            "      AND t.is_phantom = false"
+            "      AND st.study = 'STUDY1';"
+        )
+
+        self.assert_result_matches_expected(result, expected)
+
+    def test_finds_all_qc_matching_studies(self):
+        result = dashboard.queries.get_scan_qc(study=["STUDY1", "STUDY3"])
+        expected = self.query_db(
+            "SELECT s.name"
+            "  FROM scans as s, scan_checklist as sc, timepoints as t, "
+            "      study_timepoints as st"
+            "  WHERE s.id = sc.scan_id"
+            "      AND t.name = s.timepoint"
+            "      AND st.timepoint = t.name"
+            "      AND t.is_phantom = false"
+            "      AND st.study in ('STUDY1', 'STUDY3');"
+        )
+
+        self.assert_result_matches_expected(result, expected)
+
+    def test_finds_all_qc_matching_site(self):
+        result = dashboard.queries.get_scan_qc(site="CMH")
+        expected = self.query_db(
+            "SELECT s.name"
+            "  FROM scans as s, scan_checklist as sc, timepoints as t"
+            "  WHERE s.id = sc.scan_id"
+            "      AND t.name = s.timepoint"
+            "      AND t.is_phantom = false"
+            "      AND t.site = 'CMH';"
+        )
+
+        self.assert_result_matches_expected(result, expected)
+
+    def test_finds_all_qc_matching_sites(self):
+        result = dashboard.queries.get_scan_qc(site=["UTO", "ABC"])
+        expected = self.query_db(
+            "SELECT s.name"
+            "  FROM scans as s, scan_checklist as sc, timepoints as t"
+            "  WHERE s.id = sc.scan_id"
+            "      AND t.name = s.timepoint"
+            "      AND t.is_phantom = false"
+            "      AND t.site in ('UTO', 'ABC');"
+        )
+
+        self.assert_result_matches_expected(result, expected)
+
+    def test_finds_all_qc_matching_tag(self):
+        result = dashboard.queries.get_scan_qc(tag="T2")
+        expected = self.query_db(
+            "SELECT s.name"
+            "  FROM scans as s, scan_checklist as sc, timepoints as t"
+            "  WHERE s.id = sc.scan_id"
+            "      AND t.name = s.timepoint"
+            "      AND t.is_phantom = false"
+            "      AND s.tag = 'T2';"
+        )
+
+        self.assert_result_matches_expected(result, expected)
+
+    def test_finds_all_qc_matching_tags(self):
+        result = dashboard.queries.get_scan_qc(tag=["T1", "DTI60-1000"])
+        expected = self.query_db(
+            "SELECT s.name"
+            "  FROM scans as s, scan_checklist as sc, timepoints as t"
+            "  WHERE s.id = sc.scan_id"
+            "      AND t.name = s.timepoint"
+            "      AND t.is_phantom = false"
+            "      AND s.tag in ('T1', 'DTI60-1000');"
+        )
+
+        self.assert_result_matches_expected(result, expected)
+
+    def test_finds_qc_matching_provided_comment(self):
+        result = dashboard.queries.get_scan_qc(comment="bad scan")
+        expected = self.query_db(
+            "SELECT s.name"
+            "  FROM scans as s, scan_checklist as sc, timepoints as t"
+            "  WHERE s.id = sc.scan_id"
+            "      AND t.name = s.timepoint"
+            "      AND t.is_phantom = false"
+            "      AND sc.comment ilike 'bad scan';"
+        )
+
+        self.assert_result_matches_expected(result, expected)
+
+    def test_finds_qc_matching_comment_when_case_differs(self):
+        result = dashboard.queries.get_scan_qc(comment="Bad Scan")
+        expected = self.query_db(
+            "SELECT s.name"
+            " FROM scans as s, scan_checklist as sc"
+            " WHERE s.id = sc.scan_id AND sc.comment ilike 'Bad Scan';"
+        )
+
+        self.assert_result_matches_expected(result, expected)
+
+    def test_finds_all_qc_matches_when_multiple_comments_given(self):
+        result = dashboard.queries.get_scan_qc(comment=["meh", "bad scan"])
+        expected = self.query_db(
+            "SELECT s.name"
+            " FROM scans as s, scan_checklist as sc"
+            " WHERE s.id = sc.scan_id "
+            "    AND lower(sc.comment) in ('bad scan', 'meh');"
+        )
+
+        self.assert_result_matches_expected(result, expected)
+
+    def test_finds_unreviewed_scans_when_flag_is_true(self):
+        result = dashboard.queries.get_scan_qc(include_new=True)
+        expected = self.query_db(
+            "SELECT s.name"
+            "  FROM scans as s"
+            "  JOIN timepoints as t on t.name = s.timepoint"
+            "  LEFT JOIN scan_checklist as sc ON s.id = sc.scan_id"
+            "  WHERE t.is_phantom = false;"
+        )
+
+        self.assert_result_matches_expected(result, expected)
+
+    def test_finds_records_for_phantoms_when_flag_is_true(self):
+        result = dashboard.queries.get_scan_qc(include_phantoms=True)
+        expected = self.query_db(
+            "SELECT s.name"
+            " FROM scans as s, scan_checklist as sc"
+            " WHERE s.id = sc.scan_id;"
+        )
+
+        self.assert_result_matches_expected(result, expected)
+
+    def query_db(self, sql_query):
+        try:
+            records = dashboard.models.db.session.execute(sql_query).fetchall()
+        except sqlalchemy.exc.ProgrammingError:
+            # A test gave bad sql, rollback or all tests after fail
+            dashboard.models.db.session.rollback()
+            raise
+        return [item[0] for item in records]
+
+    def assert_result_matches_expected(self, result, expected):
+        # Ensure there are no extra entries
         assert len(result) == len(expected)
-        self.assert_all_entries_found(result, expected)
 
-    ##### Need to test combinations of options (sigh)
-    # approve = False, plus phantoms
-    # approve = False, plus new
-    # approve = False, flagged = False
-    # etc... All combinations for (approve, flag, blacklist) and (new, phantom)
-
-    # def test_finds_all_qc_matching_study(self, records):
-    #     assert False
-
-    # def test_finds_all_qc_matching_studies(self, records):
-    #     assert False
-    #
-    # def test_finds_all_qc_matching_author(self, records):
-    #     assert False
-    #
-    # def test_finds_all_qc_matching_authors(self, records):
-    #     assert False
-    #
-    # def test_finds_all_qc_matching_tag(self, records):
-    #     assert False
-    #
-    # def test_finds_all_qc_matching_tags(self, records):
-    #     assert False
-    #
-
-    #
-    # def test_finds_flagged_scans(self, records):
-    #     assert False
-    #
-    # def test_finds_blacklisted_scans(self, records):
-    #     assert False
-    #
-    # def test_finds_unreviewed_scans_when_user_sets_all_flags_to_false(
-    #         self, records):
-    #     assert False
-    #
-    # def test_finds_entries_matching_comment(self, records):
-    #     assert False
+        # Ensure every entry expected is found in the actual result
+        scan_list = [item[0] for item in result]
+        for scan in expected:
+            assert scan in scan_list
 
     @pytest.fixture(autouse=True, scope="class")
     def records(self, read_only_db):
@@ -216,6 +340,7 @@ class TestGetScanQc:
         STUDY2_CMH_4444_01_01_T2_04          2        approve
         STUDY2_CMH_4444_01_01_RST_05
         STUDY2_CMH_PHA_FBN220920_T2_01       2        blacklist  corrupted
+        STUDY3_ABC_1234_01_01_DTI60-1000_11  1        approve
         """
         user1 = dashboard.models.User('Jane', 'Doe')
         user2 = dashboard.models.User('John', 'Doe')
@@ -250,7 +375,7 @@ class TestGetScanQc:
         tp2 = dashboard.models.Timepoint("STUDY1_UTO_0002_01", "UTO")
         study1.add_timepoint(tp2)
         tp2.add_session(1)
-        scan3 = tp1.sessions[1].add_scan(
+        scan3 = tp2.sessions[1].add_scan(
             "STUDY1_UTO_0002_01_01_T1_10", 10, "T1")
         scan3.add_checklist_entry(user2.id, comment="bad scan", sign_off=False)
 
@@ -280,8 +405,7 @@ class TestGetScanQc:
         scan6 = tp4.sessions[1].add_scan(
             "STUDY2_CMH_4444_01_01_T2_04", 4, "T2")
         scan6.add_checklist_entry(user2.id, sign_off=True)
-        scan7 = tp4.sessions[1].add_scan(
-            "STUDY2_CMH_4444_01_01_RST_05", 5, "RST")
+        tp4.sessions[1].add_scan("STUDY2_CMH_4444_01_01_RST_05", 5, "RST")
 
         tp5 = dashboard.models.Timepoint(
             "STUDY2_CMH_PHA_FBN220920", "CMH", is_phantom=True)
@@ -291,5 +415,18 @@ class TestGetScanQc:
             "STUDY2_CMH_PHA_FBN220920_T2_01", 1, "T2")
         scan8.add_checklist_entry(
             user2.id, sign_off=False, comment="corrupted")
+
+        # Add a third study and mock data
+        study3 = dashboard.models.Study("STUDY3")
+        read_only_db.session.add(study3)
+        study3.update_site("ABC", create=True)
+        study3.update_scantype("ABC", "DTI60-1000", create=True)
+
+        tp6 = dashboard.models.Timepoint("STUDY3_ABC_1234_01", "ABC")
+        study3.add_timepoint(tp6)
+        tp6.add_session(1)
+        scan9 = tp6.sessions[1].add_scan(
+            "STUDY3_ABC_1234_01_01_DTI60-1000_11", 11, "DTI60-1000")
+        scan9.add_checklist_entry(user1.id, sign_off=True)
 
         return read_only_db
