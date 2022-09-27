@@ -1,10 +1,10 @@
 /* Functions to implement the QC search form and display */
 
-$('.qc-search-submit').off().on('click', function(e) {
+$('#qc-search-form').submit(function(e) {
   e.preventDefault();
 
   function failFunc(response) {
-    console.log(response);
+    console.log("Failed to handle request");
   }
 
   $.ajaxSetup({
@@ -19,8 +19,9 @@ $('.qc-search-submit').off().on('click', function(e) {
   $.ajax({
     type: 'POST',
     url: searchUrl,
-    contentType: 'application/json',
+    data: $(this).serialize(),
     success: function() {console.log("Success!");},
     error: failFunc
   });
+
 });

@@ -15,6 +15,7 @@
 <div class="row">
   <div id="qc-search-terms-display" class="col-xs-6">
     <form action="{{ url_for('qc_search.lookup_data') }}" method="post" id="qc-search-form">
+      {{ search_form.hidden_tag() }}
       {% for fname in search_form._fields %}
         {% if fname not in ['submit', 'csrf_token'] %}
           <span class="qc-search-label">

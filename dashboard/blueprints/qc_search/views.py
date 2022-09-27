@@ -1,9 +1,9 @@
-from flask import render_template, request
+from flask import render_template, request, jsonify
 from flask_login import current_user, login_required
 from sqlalchemy import or_
 
 from . import checklist_bp
-from .forms import QcSearchForm
+from .forms import QcSearchForm, get_form_contents
 from ...models import ExpectedScan, StudyUser
 from ...queries import get_scan_qc
 
@@ -33,7 +33,22 @@ def qc_search():
 def lookup_data():
     """Use AJAX to submit search terms and get a set of QC reviews.
     """
-    return {}
+    form = QcSearchForm if request.args else QcSearchForm(request.values)
+
+    if not (form.is_submitted() or form.validate()):
+        return jsonify(form.errors)
+
+    # This function needs to ensure that all terms submitted are actually
+    # accessible (e.g. study, site, tag are restricted to user permissions)
+
+    contents = get_form_contents(form)
+    results = get_scan_qc(**contents)
+
+    print(f"Form contents = {contents}")
+    print(f"Search results = {results}")
+
+
+    return jsonify(results)
 
 
 def get_tags(user):
