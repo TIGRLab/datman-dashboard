@@ -1,0 +1,41 @@
+<!-- Provides a page users can use to search and download QC reviews -->
+{% extends 'base.html' %}
+{% include 'flash.html' %}
+
+{% block header_scripts %}
+  {{ super() }}
+  <script type="text/javascript">
+    // Variables needed by javascript functions
+    const csrfToken = "{{ csrf_token() }}";
+    const searchUrl = "{{ url_for('qc_search.lookup_data') }}";
+  </script>
+{% endblock%}
+
+{% block content %}
+<div class="row">
+  <div id="qc-search-terms-display" class="col-xs-6">
+    <form action="{{ url_for('qc_search.lookup_data') }}" method="post" id="qc-search-form">
+      {% for fname in search_form._fields %}
+        {% if fname not in ['submit', 'csrf_token'] %}
+          <span class="qc-search-label">
+            {{ search_form._fields[fname].label }}
+          </span>
+          <span class="qc-search-value">
+            {{ search_form._fields[fname] }}
+          </span>
+        {% endif %}
+      {% endfor %}
+      <div>
+        {{ search_form.submit(class_="btn btn-primary qc-search-submit") }}
+      </div>
+    </form>
+  </div>
+  <div id="qc-search-results-display" class="col-xs-6">
+    Results of search should go here.
+  </div>
+</div>
+{% endblock %}
+
+{% block footer_scripts %}
+  <script type="text/javascript" src="{{ url_for('qc_search.static', filename='qc-search.js') }}"></script>
+{% endblock %}
