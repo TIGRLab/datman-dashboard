@@ -23,8 +23,6 @@ class QcSearchForm(FlaskForm):
         "Enter a semi-colon delimited list of comments to search for",
         render_kw={"class": "qc-search-text"})
 
-    submit = SubmitField("Search")
-
 
 def get_form_contents(form):
     """Retrieve the contents of a form (excluding fields only WTForms needs).

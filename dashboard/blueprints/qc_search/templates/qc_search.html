@@ -27,9 +27,14 @@
         {% endif %}
       {% endfor %}
       <div class="row">
-        <div class="btn-group pull-right">
-          {{ search_form.submit(class_="btn btn-primary qc-search-submit") }}
-          <span id="qc-search-reset" class="btn btn-primary">Clear</span>
+        <div id="qc-search-interface" class="btn-group pull-right">
+          <button id="qc-search-btn" class="button btn btn-primary">
+            <span class="fas fa-search"></span> Search
+          </button>
+          <span id="qc-search-reset" class="btn btn-primary">
+            <span class="fas fa-backspace"></span>
+            Clear
+          </span>
         </div>
       </div>
     </form>
