@@ -44,10 +44,6 @@ def lookup_data():
     contents = get_form_contents(form)
     results = get_scan_qc(**contents)
 
-    print(f"Form contents = {contents}")
-    print(f"Search results = {results}")
-
-
     return jsonify(results)
 
 

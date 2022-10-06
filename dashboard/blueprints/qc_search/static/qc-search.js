@@ -87,11 +87,6 @@ $("#qc-search-form").submit(function(e) {
   /* Submit the search terms to the server and handle response. */
   e.preventDefault();
 
-  function failFunc(response) {
-    console.log("Failed to handle request");
-    delLoadingStatus();
-  }
-
   $.ajaxSetup({
     beforeSend: function(xhr, settings) {
       if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type) &&
