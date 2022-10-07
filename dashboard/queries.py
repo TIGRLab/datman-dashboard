@@ -295,7 +295,7 @@ def get_redcap_config(project, instrument, url, create=False):
 
 def get_scan_qc(approved=True, blacklisted=True, flagged=True,
                 study=None, site=None, tag=None, include_phantoms=False,
-                include_new=False, comment=None, user_id=None):
+                include_new=False, comment=None, user_id=None, sort=False):
 
     def get_list(input_var):
         return input_var if isinstance(input_var, list) else [input_var]
@@ -380,6 +380,9 @@ def get_scan_qc(approved=True, blacklisted=True, flagged=True,
                     )
                 )
             )
+
+    if sort:
+        query = query.order_by(Scan.name)
 
     # Restrict output values to only needed columns
     query = query.with_entities(Scan.name, ScanChecklist.approved,

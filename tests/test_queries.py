@@ -361,6 +361,20 @@ class TestGetScanQc:
 
         assert result == expected == []
 
+    def test_sorts_output_by_scan_when_flag_given(self):
+        result = dashboard.queries.get_scan_qc(sort=True)
+        expected = self.query_db(
+            "SELECT s.name, sc.signed_off, sc.comment"
+            "  FROM scans as s, scan_checklist as sc, timepoints as t"
+            "  WHERE s.id = sc.scan_id"
+            "      AND t.name = s.timepoint"
+            "      AND t.is_phantom = false"
+            "  ORDER BY s.name;"
+        )
+
+        result_names = [item[0] for item in result]
+        assert result_names == expected
+
     def query_db(self, sql_query):
         try:
             records = dashboard.models.db.session.execute(sql_query).fetchall()
