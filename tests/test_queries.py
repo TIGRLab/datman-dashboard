@@ -311,12 +311,13 @@ class TestGetScanQc:
             "  FROM scans as s, scan_checklist as sc, timepoints as t, "
             "      study_timepoints as st, study_users as su"
             "  WHERE s.id = sc.scan_id"
+            "      AND sc.user_id = 2"
+            "      AND sc.user_id = su.user_id"
             "      AND t.name = s.timepoint"
             "      AND st.timepoint = t.name"
             "      AND t.is_phantom = false"
             "      AND st.study = su.study"
-            "      AND (su.site IS NULL OR su.site = t.site)"
-            "      AND su.user_id = 2;"
+            "      AND (su.site IS NULL OR su.site = t.site);"
         )
 
         self.assert_result_matches_expected(result, expected)
@@ -329,13 +330,14 @@ class TestGetScanQc:
             "  FROM scans as s, scan_checklist as sc, timepoints as t, "
             "      study_timepoints as st, study_users as su"
             "  WHERE s.id = sc.scan_id"
+            "      AND su.user_id = 1"
+            "      AND sc.user_id = su.user_id"
             "      AND t.name = s.timepoint"
             "      AND st.timepoint = t.name"
             "      AND t.is_phantom = false"
             "      AND t.site in ('CMH', 'UTO')"
             "      AND st.study = su.study"
-            "      AND (su.site IS NULL OR su.site = t.site)"
-            "      AND su.user_id = 1;"
+            "      AND (su.site IS NULL OR su.site = t.site);"
         )
 
         self.assert_result_matches_expected(result, expected)
@@ -350,13 +352,14 @@ class TestGetScanQc:
             "  FROM scans as s, scan_checklist as sc, timepoints as t, "
             "      study_timepoints as st, study_users as su"
             "  WHERE s.id = sc.scan_id"
+            "      AND su.user_id = 2"
+            "      AND sc.user_id = su.user_id"
             "      AND t.name = s.timepoint"
             "      AND st.timepoint = t.name"
             "      AND t.is_phantom = false"
             "      AND st.study = 'STUDY3'"
             "      AND st.study = su.study"
-            "      AND (su.site IS NULL OR su.site = t.site)"
-            "      AND su.user_id = 2;"
+            "      AND (su.site IS NULL OR su.site = t.site);"
         )
 
         assert result == expected == []

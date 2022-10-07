@@ -296,6 +296,10 @@ def get_redcap_config(project, instrument, url, create=False):
 def get_scan_qc(approved=True, blacklisted=True, flagged=True,
                 study=None, site=None, tag=None, include_phantoms=False,
                 include_new=False, comment=None, user_id=None, sort=False):
+    ## !!!! Doc string should mention that using user_id doesnt take into
+    ## account when user is an admin. i.e. a dashboard admin will have no
+    ## records returned if they dont have entries in study_user, despite
+    ## global access
 
     def get_list(input_var):
         return input_var if isinstance(input_var, list) else [input_var]
@@ -373,6 +377,7 @@ def get_scan_qc(approved=True, blacklisted=True, flagged=True,
                 study_timepoints_table.c.study == StudyUser.study_id)\
             .filter(
                 and_(
+                    ScanChecklist.user_id == StudyUser.user_id,
                     StudyUser.user_id == user_id,
                     or_(
                         StudyUser.site_id == None,
