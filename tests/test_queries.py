@@ -304,6 +304,63 @@ class TestGetScanQc:
 
         self.assert_result_matches_expected(result, expected)
 
+    def test_finds_records_when_user_id_given(self):
+        result = dashboard.queries.get_scan_qc(user_id=2)
+        expected = self.query_db(
+            "SELECT s.name"
+            "  FROM scans as s, scan_checklist as sc, timepoints as t, "
+            "      study_timepoints as st, study_users as su"
+            "  WHERE s.id = sc.scan_id"
+            "      AND t.name = s.timepoint"
+            "      AND st.timepoint = t.name"
+            "      AND t.is_phantom = false"
+            "      AND st.study = su.study"
+            "      AND (su.site IS NULL OR su.site = t.site)"
+            "      AND su.user_id = 2;"
+        )
+
+        self.assert_result_matches_expected(result, expected)
+
+    def test_limits_records_based_on_user_access_rights_when_user_id_given(
+            self):
+        result = dashboard.queries.get_scan_qc(site=["CMH", "UTO"], user_id=1)
+        expected = self.query_db(
+            "SELECT s.name"
+            "  FROM scans as s, scan_checklist as sc, timepoints as t, "
+            "      study_timepoints as st, study_users as su"
+            "  WHERE s.id = sc.scan_id"
+            "      AND t.name = s.timepoint"
+            "      AND st.timepoint = t.name"
+            "      AND t.is_phantom = false"
+            "      AND t.site in ('CMH', 'UTO')"
+            "      AND st.study = su.study"
+            "      AND (su.site IS NULL OR su.site = t.site)"
+            "      AND su.user_id = 1;"
+        )
+
+        self.assert_result_matches_expected(result, expected)
+        # An extra check, to confirm no UTO records are found for this user
+        for item in result:
+            assert '_UTO_' not in item[0]
+
+    def test_returns_empty_list_when_user_access_rights_prevents_access(self):
+        result = dashboard.queries.get_scan_qc(study=["STUDY3"], user_id=2)
+        expected = self.query_db(
+            "SELECT s.name"
+            "  FROM scans as s, scan_checklist as sc, timepoints as t, "
+            "      study_timepoints as st, study_users as su"
+            "  WHERE s.id = sc.scan_id"
+            "      AND t.name = s.timepoint"
+            "      AND st.timepoint = t.name"
+            "      AND t.is_phantom = false"
+            "      AND st.study = 'STUDY3'"
+            "      AND st.study = su.study"
+            "      AND (su.site IS NULL OR su.site = t.site)"
+            "      AND su.user_id = 2;"
+        )
+
+        assert result == expected == []
+
     def query_db(self, sql_query):
         try:
             records = dashboard.models.db.session.execute(sql_query).fetchall()
@@ -428,5 +485,16 @@ class TestGetScanQc:
         scan9 = tp6.sessions[1].add_scan(
             "STUDY3_ABC_1234_01_01_DTI60-1000_11", 11, "DTI60-1000")
         scan9.add_checklist_entry(user1.id, sign_off=True)
+
+        # Give test users limited study access
+        user1.add_studies({
+            "STUDY1": ["CMH"],
+            "STUDY2": [],
+            "STUDY3": []
+        })
+        user2.add_studies({
+            "STUDY1": ["UTO"],
+            "STUDY2": ["CMH"]
+        })
 
         return read_only_db
