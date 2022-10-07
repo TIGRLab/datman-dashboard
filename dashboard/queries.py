@@ -7,7 +7,8 @@ from sqlalchemy import not_, and_, or_, func
 from dashboard import db
 from .models import (Timepoint, Session, Scan, Study, Site, Metrictype,
                      MetricValue, Scantype, StudySite, AltStudyCode, User,
-                     study_timepoints_table, RedcapConfig, ScanChecklist)
+                     study_timepoints_table, RedcapConfig, ScanChecklist,
+                     StudyUser)
 from dashboard.exceptions import InvalidDataException
 import datman.scanid as scanid
 
@@ -294,16 +295,22 @@ def get_redcap_config(project, instrument, url, create=False):
 
 def get_scan_qc(approved=True, blacklisted=True, flagged=True,
                 study=None, site=None, tag=None, include_phantoms=False,
-                include_new=False, comment=None):
+                include_new=False, comment=None, user_id=None):
 
     def get_list(input_var):
         return input_var if isinstance(input_var, list) else [input_var]
 
     query = db.session.query(Scan, ScanChecklist).outerjoin(ScanChecklist)
 
-    if site or not include_phantoms:
+    if site or user_id or not include_phantoms:
         # Must join Timepoint table for these flags
         query = query.join(Timepoint, Scan.timepoint == Timepoint.name)
+
+    if study or user_id:
+        # Must join study_timepoints_table for these flags
+        query = query.join(
+            study_timepoints_table,
+            study_timepoints_table.c.timepoint == Scan.timepoint)
 
     if not include_phantoms:
         query = query.filter(Timepoint.is_phantom == False)
@@ -312,26 +319,38 @@ def get_scan_qc(approved=True, blacklisted=True, flagged=True,
         query = query.filter(ScanChecklist.approved != None)
 
     if not approved:
-        query = query.filter(not_(
-            and_(ScanChecklist.approved == True, ScanChecklist.comment == None)
-        ))
+        query = query.filter(
+            not_(
+                and_(
+                    ScanChecklist.approved == True,
+                    ScanChecklist.comment == None
+                )
+            )
+        )
 
     if not flagged:
-        query = query.filter(not_(
-            and_(ScanChecklist.approved == True, ScanChecklist.comment != None)
-        ))
+        query = query.filter(
+            not_(
+                and_(
+                    ScanChecklist.approved == True,
+                    ScanChecklist.comment != None
+                )
+            )
+        )
 
     if not blacklisted:
-        query = query.filter(not_(
-            and_(ScanChecklist.approved == False,
-                 ScanChecklist.comment != None)
-        ))
+        query = query.filter(
+            not_(
+                and_(
+                    ScanChecklist.approved == False,
+                    ScanChecklist.comment != None
+                )
+            )
+        )
 
     if study:
-        query = query.join(
-            study_timepoints_table,
-            study_timepoints_table.c.timepoint == Scan.timepoint)\
-            .filter(study_timepoints_table.c.study.in_(get_list(study)))
+        query = query.filter(
+            study_timepoints_table.c.study.in_(get_list(study)))
 
     if site:
         query = query.filter(Timepoint.site_id.in_(get_list(site)))
@@ -340,11 +359,27 @@ def get_scan_qc(approved=True, blacklisted=True, flagged=True,
         query = query.filter(Scan.tag.in_(get_list(tag)))
 
     if comment:
-        query = query.filter(
-            func.lower(ScanChecklist.comment).in_(
-                [item.lower() for item in get_list(comment)]
+        query = query\
+            .filter(
+                func.lower(ScanChecklist.comment).in_(
+                    [item.lower() for item in get_list(comment)]
+                )
             )
-        )
+
+    if user_id:
+        query = query\
+            .join(
+                StudyUser,
+                study_timepoints_table.c.study == StudyUser.study_id)\
+            .filter(
+                and_(
+                    StudyUser.user_id == user_id,
+                    or_(
+                        StudyUser.site_id == None,
+                        StudyUser.site_id == Timepoint.site_id
+                    )
+                )
+            )
 
     # Restrict output values to only needed columns
     query = query.with_entities(Scan.name, ScanChecklist.approved,
