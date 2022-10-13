@@ -21,16 +21,27 @@ Most of the html in the divs is extracted into a snippet file and rendered
 
     <!-- The jumbotron page header -->
     <div class="jumbotron">
-      <h1>{{ study.name }}</h1>
-      {% if study.description %}
-        <p class="lead">{{ study.description }}</p>
-      {% endif %}
-        <p class="lead">
-          <ul class="list-inline">
-            <li>Human: <span class="badge">{{study.num_timepoints('human')}}</span></li>
-            <li>Phantom: <span class="badge">{{study.num_timepoints('phantom')}}</span></li>
-          </ul>
-        </p>
+      <div class="row">
+        <div class="col-sm-8">
+          <h1>{{ study.name }}</h1>
+          {% if study.description %}
+            <p class="lead">{{ study.description }}</p>
+          {% endif %}
+            <p class="lead">
+              <ul class="list-inline">
+                <li>Human: <span class="badge">{{study.num_timepoints('human')}}</span></li>
+                <li>Phantom: <span class="badge">{{study.num_timepoints('phantom')}}</span></li>
+              </ul>
+            </p>
+        </div>
+        <div class="col-sm-4">
+          <div class="btn-group pull-right">
+            <a class="btn btn-primary" href="{{ url_for('qc_search.qc_search') }}">
+              <span class="fas fa-search"></span> Search QC Records
+            </a>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="row">
