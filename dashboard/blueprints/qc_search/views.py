@@ -38,10 +38,11 @@ def lookup_data():
     if not (form.is_submitted() or form.validate()):
         return jsonify(form.errors)
 
-    # This function needs to ensure that all terms submitted are actually
-    # accessible (e.g. study, site, tag are restricted to user permissions)
-
     contents = get_form_contents(form)
+
+    if not current_user.dashboard_admin:
+        contents["user_id"] = current_user.id
+
     results = get_scan_qc(**contents)
 
     return jsonify(results)
