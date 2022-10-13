@@ -449,6 +449,8 @@ class AnonymousUser(PermissionMixin, AnonymousUserMixin):
     # 'account_active' status, be careful :)
 
     id = -1
+    dashboard_admin = False
+    account_active = False
     first_name = "Guest"
 
     def get_studies(self):
