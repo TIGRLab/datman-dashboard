@@ -8,6 +8,7 @@ class QcSearchForm(FlaskForm):
     flagged = BooleanField("Include Flagged Scans", default=True)
     include_phantoms = BooleanField("Include Phantoms", default=False)
     include_new = BooleanField("Include Scans Without Review", default=False)
+    sort = BooleanField("Sort Results", default=False)
     study = SelectMultipleField("Limit to selected studies",
                                 render_kw={"class": "qc-search-select"})
     site = SelectMultipleField("Limit to selected sites",
