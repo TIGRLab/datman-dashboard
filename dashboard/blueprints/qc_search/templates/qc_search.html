@@ -9,6 +9,7 @@
     const csrfToken = "{{ csrf_token() }}";
     const searchUrl = "{{ url_for('qc_search.lookup_data') }}";
   </script>
+  <link href="{{ url_for('qc_search.static', filename='qc-search.css') }}" rel="stylesheet"/>
 {% endblock%}
 
 {% block content %}
@@ -16,16 +17,61 @@
   <div id="qc-search-terms-display" class="col-xs-4">
     <form action="{{ url_for('qc_search.lookup_data') }}" method="post" id="qc-search-form">
       {{ search_form.hidden_tag() }}
-      {% for fname in search_form._fields %}
-        {% if fname not in ['submit', 'csrf_token'] %}
-          <span class="qc-search-label">
-            {{ search_form._fields[fname].label }}
-          </span>
-          <span class="qc-search-value">
-            {{ search_form._fields[fname] }}
-          </span>
-        {% endif %}
-      {% endfor %}
+      <div class="row">
+        <div class="col-sm-6">
+          {{ search_form.approved.label }}{{ search_form.approved(class_="pull-right") }}
+        </div>
+        <div class="col-sm-6">
+          {{ search_form.blacklisted.label }}{{ search_form.blacklisted(class_="pull-right") }}
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-6">
+          {{ search_form.flagged.label }}{{ search_form.flagged(class_="pull-right") }}
+        </div>
+        <div class="col-sm-6">
+          {{ search_form.include_phantoms.label }}{{ search_form.include_phantoms(class_="pull-right") }}
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-6">
+          {{ search_form.include_new.label }}{{ search_form.include_new(class_="pull-right") }}
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-6">
+          {{ search_form.study.label }}
+        </div>
+        <div class="col-sm-6">
+          {{ search_form.study }}
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-6">
+          {{ search_form.site.label }}
+        </div>
+        <div class="col-sm-6">
+          {{ search_form.site }}
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-6">
+          {{ search_form.tag.label }}
+        </div>
+        <div class="col-sm-6">
+          {{ search_form.tag }}
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-12">
+          {{ search_form.comment.label(style="margin-top: 10px;") }}
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-12">
+          {{ search_form.comment(style="width: 100%;") }}
+        </div>
+      </div>
     </form>
     <div class="row">
       <div id="qc-search-interface" class="btn-group pull-right">

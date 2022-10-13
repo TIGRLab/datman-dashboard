@@ -3,24 +3,20 @@ from wtforms import SubmitField, BooleanField, SelectMultipleField, TextField
 from wtforms.csrf.core import CSRFTokenField
 
 class QcSearchForm(FlaskForm):
-    approved = BooleanField("Include Approved Scans", default=True,
-                            render_kw={"class": "qc-search-bool"})
-    blacklisted = BooleanField("Include Blacklisted Scans", default=True,
-                               render_kw={"class": "qc-search-bool"})
-    flagged = BooleanField("Include Flagged Scans", default=True,
-                           render_kw={"class": "qc-search-bool"})
-    include_phantoms = BooleanField("Include Phantoms", default=False,
-                                    render_kw={"class": "qc-search-bool"})
-    include_new = BooleanField("Include Scans Without Review", default=False,
-                               render_kw={"class": "qc-search-bool"})
-    study = SelectMultipleField("Select all studies to search",
+    approved = BooleanField("Include Approved Scans", default=True)
+    blacklisted = BooleanField("Include Blacklisted Scans", default=True)
+    flagged = BooleanField("Include Flagged Scans", default=True)
+    include_phantoms = BooleanField("Include Phantoms", default=False)
+    include_new = BooleanField("Include Scans Without Review", default=False)
+    study = SelectMultipleField("Limit to selected studies",
                                 render_kw={"class": "qc-search-select"})
-    site = SelectMultipleField("Select all sites to search",
+    site = SelectMultipleField("Limit to selected sites",
                                render_kw={"class": "qc-search-select"})
-    tag = SelectMultipleField("Select all tags to search",
+    tag = SelectMultipleField("Limit to selected tags",
                               render_kw={"class": "qc-search-select"})
     comment = TextField(
-        "Enter a semi-colon delimited list of comments to search for",
+        "Limit to records containing select comments "
+        "(use semi-colons to separate multiple comments)",
         render_kw={"class": "qc-search-text"})
 
 
