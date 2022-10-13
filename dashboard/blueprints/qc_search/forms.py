@@ -39,5 +39,25 @@ def get_form_contents(form):
         field = form._fields[fname]
         if isinstance(field, CSRFTokenField) or isinstance(field, SubmitField):
             continue
-        contents[fname] = field.data
+
+        if fname == "comment":
+            contents[fname] = parse_comment(field.data)
+        else:
+            contents[fname] = field.data
+
     return contents
+
+
+def parse_comment(user_input):
+    # Strip quotation marks and white space and split by semi-colon
+    if not user_input:
+        return []
+
+    strip = ['"', "'"]
+    search_terms = []
+    for term in user_input.split(";"):
+        term = term.strip()
+        for item in strip:
+            term = term.lstrip(item).rstrip(item)
+        search_terms.append(term)
+    return search_terms
