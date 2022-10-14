@@ -296,10 +296,42 @@ def get_redcap_config(project, instrument, url, create=False):
 def get_scan_qc(approved=True, blacklisted=True, flagged=True,
                 study=None, site=None, tag=None, include_phantoms=False,
                 include_new=False, comment=None, user_id=None, sort=False):
-    ## !!!! Doc string should mention that using user_id doesnt take into
-    ## account when user is an admin. i.e. a dashboard admin will have no
-    ## records returned if they dont have entries in study_user, despite
-    ## global access
+    """Get a set of QC records matching the given search terms.
+
+    Args:
+        approved (bool, optional): If True scan QC records that have been
+            approved will be included in the result. Defaults to True.
+        blacklisted (bool, optional): If True scan QC records that have been
+            blacklisted will be included in the result. Defaults to True.
+        flagged (bool, optional): If True scan QC records that have been
+            flagged will be included in the result. Defaults to True.
+        study (str or list(str), optional): A study ID or list of study IDs
+            to restrict the search to. Defaults to None.
+        site (str or list(str), optional): A site ID or list of site IDs to
+            restrict the search to. Defaults to None.
+        tag (str or list(str), optional): A tag or list of tags to restrict
+            the search to. Defaults to None.
+        include_phantoms (bool, optional): Whether to include phantom QC
+            records in the result. Defaults to False.
+        include_new (bool, optional): Whether to include scans that have
+            not yet been reviewed in the output. Defaults to False.
+        comment (str, optional): A semi-colon delimited list of QC comments
+            to search for. Defaults to None.
+        user_id (int, optional): The ID of a valid user. If this is given
+            the records returned will be restricted to those that the
+            user has permission to view. Note that this does not take into
+            account permissions for dashboard admins. That is, if the user
+            ID given is for a dashboard admin, the results will be overly
+            restrictive.
+        sort (bool, optional): Whether to sort the results. Sorting is done
+            by scan name. Defaults to False.
+
+    Returns:
+        list(tuple): A list of tuples of the format
+            (scan name, status, comment), where 'status' is a boolean value
+            that represents whether the scan was approved or
+            flagged/blacklisted.
+    """
 
     def get_list(input_var):
         return input_var if isinstance(input_var, list) else [input_var]

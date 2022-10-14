@@ -1,21 +1,18 @@
-import pytest
-
-import dashboard
 import dashboard.blueprints.qc_search.forms as forms
 
 
-class TestGetFormContents:
+class TestGetSearchFormContents:
 
     def test_excludes_csrftoken_and_submit_fields(self, dash_app):
         with dash_app.test_request_context(
             "/submit-query", method="POST", data={}
         ):
             search_form = forms.QcSearchForm()
-            contents = forms.get_form_contents(search_form)
+            contents = forms.get_search_form_contents(search_form)
 
-        assert 'csrf_token' in search_form._fields
-        assert 'csrf_token' not in contents
-        assert 'submit' not in contents
+        assert "csrf_token" in search_form._fields
+        assert "csrf_token" not in contents
+        assert "submit" not in contents
 
     def test_parses_comments_field(self, dash_app):
         data = {"comment": "Corrupted scan;    Truncated"}
@@ -23,7 +20,7 @@ class TestGetFormContents:
             "/submit-query", method="POST", data=data
         ):
             search_form = forms.QcSearchForm()
-            contents = forms.get_form_contents(search_form)
+            contents = forms.get_search_form_contents(search_form)
 
         assert contents["comment"] == ["Corrupted scan", "Truncated"]
 

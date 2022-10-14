@@ -1,17 +1,19 @@
+"""Provides views related to searching through and downloading QC records.
+"""
 from flask import render_template, request, jsonify
 from flask_login import current_user, login_required
 from sqlalchemy import or_
 
 from . import checklist_bp
-from .forms import QcSearchForm, get_form_contents
+from .forms import QcSearchForm, get_search_form_contents
 from ...models import ExpectedScan, StudyUser
 from ...queries import get_scan_qc
 
 
-@checklist_bp.route('/', methods=["GET"])
+@checklist_bp.route("/", methods=["GET"])
 @login_required
 def qc_search():
-    """Get the QC review search form page.
+    """Get the QC record search form.
     """
 
     form = QcSearchForm()
@@ -25,20 +27,20 @@ def qc_search():
         (tag, tag) for tag, *rest in get_tags(current_user)
     ]
 
-    return render_template('qc_search.html', search_form=form)
+    return render_template("qc_search.html", search_form=form)
 
 
-@checklist_bp.route('/submit-query', methods=["POST"])
+@checklist_bp.route("/submit-query", methods=["POST"])
 @login_required
 def lookup_data():
-    """Use AJAX to submit search terms and get a set of QC reviews.
+    """Use AJAX to submit search terms and get a set of QC records.
     """
-    form = QcSearchForm if request.args else QcSearchForm(request.values)
+    form = QcSearchForm() if request.args else QcSearchForm(request.values)
 
     if not (form.is_submitted() or form.validate()):
         return jsonify(form.errors)
 
-    contents = get_form_contents(form)
+    contents = get_search_form_contents(form)
 
     if not current_user.dashboard_admin:
         contents["user_id"] = current_user.id
@@ -49,6 +51,16 @@ def lookup_data():
 
 
 def get_tags(user):
+    """Get a list of scan tags that the user has access to.
+
+    Args:
+        user (dashboard.models.User or dashboard.models.AnonymousUser): The
+            current user viewing the page.
+
+    Returns:
+        list: A list of tuples of the form ("tagname",).
+            e.g. [("T1",), ("T2",)]
+    """
     query = ExpectedScan.query.join(
         StudyUser,
         StudyUser.study_id == ExpectedScan.study_id)\

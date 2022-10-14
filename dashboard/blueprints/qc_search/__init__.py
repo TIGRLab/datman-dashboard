@@ -1,7 +1,7 @@
 from flask import Blueprint
 
 checklist_bp = Blueprint(
-    'qc_search',
+    "qc_search",
     __name__,
     template_folder="templates",
     static_folder="static",

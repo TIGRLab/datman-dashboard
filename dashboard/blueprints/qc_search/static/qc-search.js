@@ -2,7 +2,7 @@
 
 function parseValue(value) {
   /* Convert 'nulls' to empty strings and perform any other formatting needed
-     for table values
+     for table values.
   */
   if (value === null) {
     return ""
@@ -12,6 +12,7 @@ function parseValue(value) {
 }
 
 function displayRecords(records) {
+  /* Update the qc search results table with the given list of records. */
   let tableBody = $("#qc-search-results-table tbody")[0];
 
   let body = "";
@@ -67,7 +68,7 @@ function delLoadingStatus() {
 }
 
 function failedSearch(response) {
-  console.log("Firing off fail function");
+  /* Inform the user that the server failed to handle their search. */
   $("#qc-search-terms-display").prepend(
     '<div id="qc-search-fail" class="alert alert-danger" role="alert">' +
     'Failed to search database, please contact an admin.' +
@@ -107,6 +108,6 @@ $("#qc-search-form").submit(function(e) {
 });
 
 $("#qc-search-reset").on("click", function() {
-  // Reset the form when the 'clear' button is clicked
+  /* Reset the form when the 'clear' button is clicked. */
   $("#qc-search-form")[0].reset();
 });
