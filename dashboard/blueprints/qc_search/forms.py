@@ -1,8 +1,14 @@
+"""Forms and helper functions for use by the qc_search blueprint.
+"""
+
 from flask_wtf import FlaskForm
-from wtforms import SubmitField, BooleanField, SelectMultipleField, TextField
+from wtforms import SubmitField, BooleanField, SelectMultipleField, StringField
 from wtforms.csrf.core import CSRFTokenField
 
+
 class QcSearchForm(FlaskForm):
+    """Collect search terms to use when looking up QC records.
+    """
     approved = BooleanField("Include Approved Scans", default=True)
     blacklisted = BooleanField("Include Blacklisted Scans", default=True)
     flagged = BooleanField("Include Flagged Scans", default=True)
@@ -15,26 +21,30 @@ class QcSearchForm(FlaskForm):
                                render_kw={"class": "qc-search-select"})
     tag = SelectMultipleField("Limit to selected tags",
                               render_kw={"class": "qc-search-select"})
-    comment = TextField(
+    comment = StringField(
         "Limit to records containing select comments "
         "(use semi-colons to separate multiple comments)",
         render_kw={"class": "qc-search-text"})
 
 
-def get_form_contents(form):
-    """Retrieve the contents of a form (excluding fields only WTForms needs).
+def get_search_form_contents(form):
+    """Convert the contents of a search form to a dictionary.
+
+    This method will get the contents of a search form, excluding fields like
+    csrf_token that only wtforms needs, and parses the contents of fields
+    that require modification, and returns the result as a dictionary.
 
     Args:
         form (wtforms.form.FormMeta): An instance of a WTForm (or FlaskWTForm).
 
     Returns:
-        dict: A dictionary of all field names mapped to their value (excluding
+        dict: A dictionary of field names mapped to their value (excludes
             any CSRFToken fields or submit fields).
     """
     contents = {}
     for fname in form._fields:
         field = form._fields[fname]
-        if isinstance(field, CSRFTokenField) or isinstance(field, SubmitField):
+        if isinstance(field, (CSRFTokenField, SubmitField)):
             continue
 
         if fname == "comment":
@@ -46,7 +56,18 @@ def get_form_contents(form):
 
 
 def parse_comment(user_input):
-    # Strip quotation marks and white space and split by semi-colon
+    """Parse the comment field of a QcSearchForm.
+
+    This will strip extra white space, remove surrounding quotes, and the
+    user input by semi-colon.
+
+    Args:
+        user_input (str): A semi-colon delimited string of comments to
+            parse.
+
+    Returns:
+        list: A list of properly formatted strings.
+    """
     if not user_input:
         return []
 
@@ -57,4 +78,5 @@ def parse_comment(user_input):
         for item in strip:
             term = term.lstrip(item).rstrip(item)
         search_terms.append(term)
+
     return search_terms
