@@ -21,7 +21,7 @@ def qc_search():
         (study.id, study.id) for study in current_user.get_studies()
     ]
     form.site.choices = [
-        (site, site) for site in current_user.get_sites()
+        (site, site) for site, *rest in current_user.get_sites()
     ]
     form.tag.choices = [
         (tag, tag) for tag, *rest in get_tags(current_user)
