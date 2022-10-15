@@ -343,7 +343,7 @@ class TestGetScanQc:
         self.assert_result_matches_expected(result, expected)
         # An extra check, to confirm no UTO records are found for this user
         for item in result:
-            assert '_UTO_' not in item[0]
+            assert "_UTO_" not in item[0]
 
     def test_returns_empty_list_when_user_access_rights_prevents_access(self):
         result = dashboard.queries.get_scan_qc(study=["STUDY3"], user_id=2)
@@ -416,8 +416,8 @@ class TestGetScanQc:
         STUDY2_CMH_PHA_FBN220920_T2_01       2        blacklist  corrupted
         STUDY3_ABC_1234_01_01_DTI60-1000_11  1        approve
         """
-        user1 = dashboard.models.User('Jane', 'Doe')
-        user2 = dashboard.models.User('John', 'Doe')
+        user1 = dashboard.models.User("Jane", "Doe")
+        user2 = dashboard.models.User("John", "Doe")
         read_only_db.session.add(user1)
         read_only_db.session.add(user2)
 
@@ -427,7 +427,7 @@ class TestGetScanQc:
         read_only_db.session.add(dashboard.models.Scantype("RST"))
 
         # Add the first study and mock data
-        study1 = dashboard.models.Study('STUDY1')
+        study1 = dashboard.models.Study("STUDY1")
         read_only_db.session.add(study1)
         study1.update_site("CMH", create=True)
         study1.update_site("UTO", create=True)
@@ -462,7 +462,7 @@ class TestGetScanQc:
         scan4.add_checklist_entry(user1.id, sign_off=True)
 
         # Add the second study and mock data
-        study2 = dashboard.models.Study('STUDY2')
+        study2 = dashboard.models.Study("STUDY2")
         read_only_db.session.add(study2)
         study2.update_site("CMH", create=True)
         study2.update_scantype("CMH", "T2", create=True)

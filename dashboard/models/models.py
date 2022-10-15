@@ -348,7 +348,8 @@ class User(PermissionMixin, UserMixin, TableMixin, db.Model):
             list: A list of string site names.
         """
         if self.dashboard_admin:
-            sites = Site.query.with_entities(Site.name).all()
+            sites = [item[0]
+                     for item in Site.query.with_entities(Site.name).all()]
         else:
             sites = set()
             for study in self.studies:
