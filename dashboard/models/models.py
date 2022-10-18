@@ -335,7 +335,10 @@ class User(PermissionMixin, UserMixin, TableMixin, db.Model):
         if self.dashboard_admin:
             studies = Study.query.order_by(Study.id).all()
         else:
-            studies = [su[0].study for su in self.studies.values()]
+            studies = sorted(
+                [su[0].study for su in self.studies.values()],
+                key=lambda x: x.id
+            )
         return studies
 
     def get_sites(self):
@@ -455,7 +458,7 @@ class AnonymousUser(PermissionMixin, AnonymousUserMixin):
     first_name = "Guest"
 
     def get_studies(self):
-        return Study.query.all()
+        return Study.query.order_by(Study.id).all()
 
     def get_sites(self):
         return [site.name for site in Site.query.all()]

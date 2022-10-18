@@ -41,6 +41,31 @@ class TestUser:
         result = admin.get_sites()
         assert all(isinstance(item, str) for item in result)
 
+    def test_get_studies_sorts_results_for_user(self):
+        user = models.User.query.get(1)
+        assert user.dashboard_admin is False
+
+        result = [item.id for item in user.get_studies()]
+        expected = self.get_result(
+            "SELECT DISTINCT su.study"
+            "  FROM study_users as su"
+            "  WHERE su.user_id = 1"
+            "  ORDER BY su.study"
+        )
+        assert result == expected
+
+    def test_get_studies_sorts_results_for_admins(self):
+        admin = models.User.query.get(2)
+        assert admin.dashboard_admin is True
+
+        result = [item.id for item in admin.get_studies()]
+        expected = self.get_result(
+            "SELECT DISTINCT s.id"
+            "  FROM studies as s"
+            "  ORDER BY s.id"
+        )
+        assert result == expected
+
     def get_result(self, sql_query):
         return [item[0] for item in query_db(sql_query)]
 
