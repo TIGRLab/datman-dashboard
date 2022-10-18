@@ -41,6 +41,20 @@ class TestUser:
         result = admin.get_sites()
         assert all(isinstance(item, str) for item in result)
 
+    def test_get_sites_sorts_results_for_user(self):
+        user = models.User.query.get(1)
+        assert user.dashboard_admin is False
+
+        result = user.get_sites()
+        assert result == sorted(result)
+
+    def test_get_sites_sorts_results_for_admin(self):
+        user = models.User.query.get(2)
+        assert user.dashboard_admin is True
+
+        result = user.get_sites()
+        assert result == sorted(result)
+
     def test_get_studies_sorts_results_for_user(self):
         user = models.User.query.get(1)
         assert user.dashboard_admin is False

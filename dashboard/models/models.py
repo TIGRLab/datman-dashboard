@@ -362,7 +362,7 @@ class User(PermissionMixin, UserMixin, TableMixin, db.Model):
                         sites = sites.union(study_site.study.sites)
                     else:
                         sites.add(study_site.site_id)
-        return list(sites)
+        return list(sorted(sites))
 
     def get_disabled_sites(self):
         """Get a dict of study IDs mapped to sites this user cant access
@@ -461,7 +461,7 @@ class AnonymousUser(PermissionMixin, AnonymousUserMixin):
         return Study.query.order_by(Study.id).all()
 
     def get_sites(self):
-        return [site.name for site in Site.query.all()]
+        return sorted([site.name for site in Site.query.all()])
 
     def get_disabled_sites(self):
         return {}
