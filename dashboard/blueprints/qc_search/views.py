@@ -68,5 +68,6 @@ def get_tags(user):
         .filter(
             or_(StudyUser.site_id == None,
                 StudyUser.site_id == ExpectedScan.site_id))\
-        .with_entities(ExpectedScan.scantype_id)
+        .with_entities(ExpectedScan.scantype_id)\
+        .distinct()
     return query.all()

@@ -2,8 +2,8 @@
 """
 
 import pytest
-import sqlalchemy
 
+from tests.utils import query_db, add_studies
 from dashboard import models
 
 
@@ -45,17 +45,6 @@ class TestUser:
         return [item[0] for item in query_db(sql_query)]
 
 
-def query_db(sql_query):
-    """Use raw SQL to query the database.
-    """
-    try:
-        records = models.db.session.execute(sql_query).fetchall()
-    except sqlalchemy.exc.ProgrammingError:
-        models.db.session.rollback()
-        raise
-    return records
-
-
 @pytest.fixture(autouse=True)
 def user_records(dash_db):
     """Adds some user records and access permissions for testing.
@@ -68,18 +57,18 @@ def user_records(dash_db):
     assert user.id == 1
     assert admin.id == 2
 
-    study1 = models.Study("STUDY1")
-    dash_db.session.add(study1)
-    study1.update_site("CMH", create=True)
-    study1.update_site("UTO", create=True)
-
-    study2 = models.Study("STUDY2")
-    dash_db.session.add(study2)
-    study2.update_site("CMH", create=True)
-
-    study3 = models.Study("STUDY3")
-    dash_db.session.add(study3)
-    study3.update_site("ABC", create=True)
+    add_studies({
+        "STUDY1": {
+            "CMH": [],
+            "UTO": []
+        },
+        "STUDY2": {
+            "CMH": []
+        },
+        "STUDY3": {
+            "ABC": []
+        }
+    })
 
     user.add_studies({
         "STUDY1": ["CMH"],
