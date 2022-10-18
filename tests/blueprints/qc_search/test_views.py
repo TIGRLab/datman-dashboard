@@ -21,6 +21,16 @@ class TestGetTags:
         expected = self.get_tags_from_db()
         assert tags == sorted(expected)
 
+    def test_admin_user_has_access_to_all_tags(self):
+        admin = models.User.query.get(2)
+        tags = views.get_tags(admin)
+        expected = tests.utils.query_db(
+            "SELECT DISTINCT scantypes.tag"
+            "  FROM scantypes"
+            "  ORDER BY scantypes.tag"
+        )
+        assert tags == expected
+
     def get_tags_from_db(self):
         tags = tests.utils.query_db(
             "SELECT DISTINCT e.scantype"
@@ -37,9 +47,12 @@ def records(dash_db):
     """Adds some user records and tags for testing.
     """
     user = models.User("Donald", "Duck")
+    admin = models.User("Mickey", "Mouse", dashboard_admin=True)
     dash_db.session.add(user)
+    dash_db.session.add(admin)
     dash_db.session.commit()
     assert user.id == 1
+    assert admin.id == 2
 
     tests.utils.add_studies({
         "STUDY1": {

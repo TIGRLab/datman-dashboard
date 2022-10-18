@@ -6,7 +6,7 @@ from sqlalchemy import or_
 
 from . import checklist_bp
 from .forms import QcSearchForm, get_search_form_contents
-from ...models import ExpectedScan, StudyUser
+from ...models import ExpectedScan, StudyUser, Scantype
 from ...queries import get_scan_qc
 
 
@@ -61,13 +61,17 @@ def get_tags(user):
         list: A list of tuples of the form ("tagname",).
             e.g. [("T1",), ("T2",)]
     """
-    query = ExpectedScan.query.join(
-        StudyUser,
-        StudyUser.study_id == ExpectedScan.study_id)\
-        .filter(StudyUser.user_id == user.id)\
-        .filter(
-            or_(StudyUser.site_id == None,
-                StudyUser.site_id == ExpectedScan.site_id))\
-        .with_entities(ExpectedScan.scantype_id)\
-        .distinct()
-    return query.all()
+    if user.dashboard_admin:
+        query = Scantype.query.order_by(Scantype.tag)\
+            .with_entities(Scantype.tag)
+    else:
+        query = ExpectedScan.query.join(
+            StudyUser,
+            StudyUser.study_id == ExpectedScan.study_id)\
+            .filter(StudyUser.user_id == user.id)\
+            .filter(
+                or_(StudyUser.site_id == None,
+                    StudyUser.site_id == ExpectedScan.site_id))\
+            .with_entities(ExpectedScan.scantype_id)\
+            .order_by(ExpectedScan.scantype_id)
+    return query.distinct().all()
