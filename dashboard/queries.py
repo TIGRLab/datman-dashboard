@@ -2,12 +2,13 @@
 """
 import logging
 
-from sqlalchemy import and_, or_, func
+from sqlalchemy import not_, and_, or_, func
 
 from dashboard import db
 from .models import (Timepoint, Session, Scan, Study, Site, Metrictype,
                      MetricValue, Scantype, StudySite, AltStudyCode, User,
-                     study_timepoints_table, RedcapConfig)
+                     study_timepoints_table, RedcapConfig, ScanChecklist,
+                     StudyUser)
 from dashboard.exceptions import InvalidDataException
 import datman.scanid as scanid
 
@@ -290,6 +291,141 @@ def get_redcap_config(project, instrument, url, create=False):
     return RedcapConfig.get_config(
         project=project, instrument=instrument, url=url, create=create
     )
+
+
+def get_scan_qc(approved=True, blacklisted=True, flagged=True,
+                study=None, site=None, tag=None, include_phantoms=False,
+                include_new=False, comment=None, user_id=None, sort=False):
+    """Get a set of QC records matching the given search terms.
+
+    Args:
+        approved (bool, optional): If True scan QC records that have been
+            approved will be included in the result. Defaults to True.
+        blacklisted (bool, optional): If True scan QC records that have been
+            blacklisted will be included in the result. Defaults to True.
+        flagged (bool, optional): If True scan QC records that have been
+            flagged will be included in the result. Defaults to True.
+        study (str or list(str), optional): A study ID or list of study IDs
+            to restrict the search to. Defaults to None.
+        site (str or list(str), optional): A site ID or list of site IDs to
+            restrict the search to. Defaults to None.
+        tag (str or list(str), optional): A tag or list of tags to restrict
+            the search to. Defaults to None.
+        include_phantoms (bool, optional): Whether to include phantom QC
+            records in the result. Defaults to False.
+        include_new (bool, optional): Whether to include scans that have
+            not yet been reviewed in the output. Defaults to False.
+        comment (str, optional): A semi-colon delimited list of QC comments
+            to search for. Defaults to None.
+        user_id (int, optional): The ID of a valid user. If this is given
+            the records returned will be restricted to those that the
+            user has permission to view. Note that this does not take into
+            account permissions for dashboard admins. That is, if the user
+            ID given is for a dashboard admin, the results will be overly
+            restrictive.
+        sort (bool, optional): Whether to sort the results. Sorting is done
+            by scan name. Defaults to False.
+
+    Returns:
+        list(tuple): A list of tuples of the format
+            (scan name, status, comment), where 'status' is a boolean value
+            that represents whether the scan was approved or
+            flagged/blacklisted.
+    """
+
+    def get_list(input_var):
+        return input_var if isinstance(input_var, list) else [input_var]
+
+    query = db.session.query(Scan, ScanChecklist).outerjoin(ScanChecklist)
+
+    if site or user_id or not include_phantoms:
+        # Must join Timepoint table for these flags
+        query = query.join(Timepoint, Scan.timepoint == Timepoint.name)
+
+    if study or user_id:
+        # Must join study_timepoints_table for these flags
+        query = query.join(
+            study_timepoints_table,
+            study_timepoints_table.c.timepoint == Scan.timepoint)
+
+    if not include_phantoms:
+        query = query.filter(Timepoint.is_phantom == False)
+
+    if not include_new:
+        query = query.filter(ScanChecklist.approved != None)
+
+    if not approved:
+        query = query.filter(
+            not_(
+                and_(
+                    ScanChecklist.approved == True,
+                    ScanChecklist.comment == None
+                )
+            )
+        )
+
+    if not flagged:
+        query = query.filter(
+            not_(
+                and_(
+                    ScanChecklist.approved == True,
+                    ScanChecklist.comment != None
+                )
+            )
+        )
+
+    if not blacklisted:
+        query = query.filter(
+            not_(
+                and_(
+                    ScanChecklist.approved == False,
+                    ScanChecklist.comment != None
+                )
+            )
+        )
+
+    if study:
+        query = query.filter(
+            study_timepoints_table.c.study.in_(get_list(study)))
+
+    if site:
+        query = query.filter(Timepoint.site_id.in_(get_list(site)))
+
+    if tag:
+        query = query.filter(Scan.tag.in_(get_list(tag)))
+
+    if comment:
+        query = query\
+            .filter(
+                func.lower(ScanChecklist.comment).in_(
+                    [item.lower() for item in get_list(comment)]
+                )
+            )
+
+    if user_id:
+        query = query\
+            .join(
+                StudyUser,
+                study_timepoints_table.c.study == StudyUser.study_id)\
+            .filter(
+                and_(
+                    ScanChecklist.user_id == StudyUser.user_id,
+                    StudyUser.user_id == user_id,
+                    or_(
+                        StudyUser.site_id == None,
+                        StudyUser.site_id == Timepoint.site_id
+                    )
+                )
+            )
+
+    if sort:
+        query = query.order_by(Scan.name)
+
+    # Restrict output values to only needed columns
+    query = query.with_entities(Scan.name, ScanChecklist.approved,
+                                ScanChecklist.comment)
+
+    return query.all()
 
 
 def query_metric_values_byid(**kwargs):

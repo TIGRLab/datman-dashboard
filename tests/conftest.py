@@ -28,6 +28,17 @@ def dash_app(request):
 
 @pytest.fixture(scope="function")
 def dash_db(dash_app):
+    yield from _make_db(dash_app)
+
+
+@pytest.fixture(scope="class")
+def read_only_db(dash_app):
+    """Use this fixture when tests in a class wont modify records.
+    """
+    yield from _make_db(dash_app)
+
+
+def _make_db(dash_app):
     with dash_app.app_context():
         dashboard.models.db.create_all()
         yield dashboard.models.db

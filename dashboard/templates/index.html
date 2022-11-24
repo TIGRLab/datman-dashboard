@@ -22,6 +22,9 @@
           </tr>
         </thead>
         <tbody>
+          <a class="btn btn-primary pull-right" style="margin-bottom: 5px;" href="{{ url_for('qc_search.qc_search') }}">
+            <span class="fas fa-search"></span> Search QC Records
+          </a>
           {% for study in studies %}
           <tr class="clickable-row" data-href="{{ url_for('main.study', study_id=study.id) }}">
             <td> {{ study.id }} </td>

@@ -60,6 +60,10 @@ class PermissionMixin:
         pass
 
     @abstractmethod
+    def get_sites(self):
+        pass
+
+    @abstractmethod
     def get_disabled_sites(self):
         pass
 
@@ -322,7 +326,7 @@ class User(PermissionMixin, UserMixin, TableMixin, db.Model):
                                            self.id, e))
 
     def get_studies(self):
-        """Get a list of studies that user has any even partial access to
+        """Get a list of studies that user has even partial access to
 
         Returns:
             list: A list of Study objects, one for each study where the user
@@ -331,8 +335,34 @@ class User(PermissionMixin, UserMixin, TableMixin, db.Model):
         if self.dashboard_admin:
             studies = Study.query.order_by(Study.id).all()
         else:
-            studies = [su[0].study for su in self.studies.values()]
+            studies = sorted(
+                [su[0].study for su in self.studies.values()],
+                key=lambda x: x.id
+            )
         return studies
+
+    def get_sites(self):
+        """Get a list of sites the user has even partial access to.
+
+        Caution: If using this to determine data access you must still restrict
+        by study.
+
+        Returns:
+            list: A list of string site names.
+        """
+        if self.dashboard_admin:
+            sites = [item[0]
+                     for item in Site.query.with_entities(Site.name).all()]
+        else:
+            sites = set()
+            for study in self.studies:
+                for study_site in self.studies[study]:
+                    if not study_site.site_id:
+                        # All sites are enabled
+                        sites = sites.union(study_site.study.sites)
+                    else:
+                        sites.add(study_site.site_id)
+        return list(sorted(sites))
 
     def get_disabled_sites(self):
         """Get a dict of study IDs mapped to sites this user cant access
@@ -423,10 +453,15 @@ class AnonymousUser(PermissionMixin, AnonymousUserMixin):
     # 'account_active' status, be careful :)
 
     id = -1
+    dashboard_admin = False
+    account_active = False
     first_name = "Guest"
 
     def get_studies(self):
-        return Study.query.all()
+        return Study.query.order_by(Study.id).all()
+
+    def get_sites(self):
+        return sorted([site.name for site in Site.query.all()])
 
     def get_disabled_sites(self):
         return {}
