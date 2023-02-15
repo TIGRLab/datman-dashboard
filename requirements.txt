@@ -52,7 +52,7 @@ Tempita==0.5.2
 tzlocal==2.0.0
 urllib3>=1.25.8
 uWSGI==2.0.18
-Werkzeug==0.16.0
+Werkzeug==2.2.3
 wrapt==1.11.2
 WTForms==2.2.1
 xnat==0.3.28
