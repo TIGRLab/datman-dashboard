@@ -51,6 +51,9 @@
       {% for scan in session.scans %}
         <h2 id="{{ scan.name }}">{{ scan.name }}</h2>
         {% include 'sessions/qc_header.html' %}
+        {% if scan.conv_errors %}
+          {% include 'sessions/conversion_error.html' %}
+        {% endif %}
         {% if scan.name in manifests[session.num] %}
           {% for image in manifests[session.num][scan.name] %}
             {% set settings = manifests[session.num][scan.name][image] %}
