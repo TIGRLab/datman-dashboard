@@ -1893,6 +1893,8 @@ class Scan(TableMixin, db.Model):
                                        "{}".format(self, json_file, e))
 
     def add_error(self, error_message):
+        if isinstance(error_message, list):
+            error_message = "\n".join(error_message)
         self.conv_errors = error_message
         try:
             self.save()
