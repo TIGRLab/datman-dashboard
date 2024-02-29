@@ -1,10 +1,6 @@
 <div role="navigation">
   <div class="btn-group-vertical pull-right" role="group">
     {% if current_user.is_study_admin(study_id) %}
-      <a class="button btn btn-primary" id="print_brain">
-        <span class="pull-right glyphicon glyphicon-print"></span>
-        <span class="button-text">Print Brain</span>
-      </a>
       <a class="button btn btn-primary" id="delete-timepoint"
           data-toggle="modal" href="#delete-modal">
         <span class="pull-right glyphicon glyphicon-trash"></span>
@@ -16,5 +12,14 @@
       <span class="pull-right glyphicon glyphicon-flag"></span>
       <span class="button-text">Flag Incidental Finding</span>
     </a>
+    {% if 'timepoint' in config['MENU_CONFIG'] %}
+      {% for btn in config['MENU_CONFIG']['timepoint'] %}
+        <a class="button btn btn-primary"
+          href="{{ btn.url }}"
+          {% if btn.hover_text %}title="{{ btn.hover_text }}"{% endif %}>
+          {{ btn.btn_text }}
+        </a>
+      {% endfor %}
+    {% endif %}
   </div>
 </div>
