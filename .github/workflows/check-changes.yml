@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-20.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Start up the dashboard
         run: cd containers/devel && docker-compose up -d
       - name: Run tests
@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-20.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Start up the dashboard
         run: cd containers/devel && docker-compose up -d
       - name: Build docs
@@ -36,7 +36,7 @@ jobs:
       - name: Add .nojekyll file to build folder
         run: sudo touch docs/_build/.nojekyll
       - name: Deploy docs if the branch has updated
-        uses: JamesIves/github-pages-deploy-action@v4.2.2
+        uses: JamesIves/github-pages-deploy-action@v4.4.1
         with:
           branch: gh-pages
           folder: docs/_build
