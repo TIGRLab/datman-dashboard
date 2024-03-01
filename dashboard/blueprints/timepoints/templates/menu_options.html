@@ -12,8 +12,8 @@
       <span class="pull-right glyphicon glyphicon-flag"></span>
       <span class="button-text">Flag Incidental Finding</span>
     </a>
-    {% if 'timepoint' in config['MENU_CONFIG'] %}
-      {% for btn in config['MENU_CONFIG']['timepoint'] %}
+    {% if 'timepoint' in config['MENU_ITEMS'] %}
+      {% for btn in config['MENU_ITEMS']['timepoint'] %}
         <a class="button btn btn-primary"
           href="{{ btn.url }}"
           {% if btn.hover_text %}title="{{ btn.hover_text }}"{% endif %}>

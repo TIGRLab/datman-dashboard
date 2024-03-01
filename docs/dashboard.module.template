@@ -41,6 +41,10 @@ setenv		POSTGRES_DATABASE 	dashboard
 setenv		REDCAP_TOKEN 		<your token here>
 
 
+# Add user configured menu items to the dashboard
+setenv      DASH_MENU_CONFIG         <path to your config file here>
+
+
 # Configure datman
 # The dashboard requires datman. You can install it whereever you like but
 # the site wide configuration file, site name, and the location of the code

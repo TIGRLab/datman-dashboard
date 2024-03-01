@@ -27,8 +27,8 @@ def get_menu_config():
         with open(menu_file) as fh:
             contents = yaml.load(fh, Loader=yaml.SafeLoader)
     except (FileNotFoundError, PermissionError, yaml.parser.ParserError) as e:
-        logger.error(f"Could not read 'DASH_MENU_CONFIG' file {menu_file}."
-                     "Custom menu items can not be added. Reason - {e}")
+        logger.error(f"Could not read 'DASH_MENU_CONFIG' file {menu_file}. "
+                     f"Custom menu items can not be added. Reason - {e}")
         return {}
 
     menu_config = {}
@@ -46,4 +46,4 @@ def get_menu_config():
     return menu_config
 
 
-MENU_CONFIG = get_menu_config()
+MENU_ITEMS = get_menu_config()
