@@ -10,6 +10,8 @@ logger = logging.getLogger(__name__)
 
 
 class MenuItem(BaseModel):
+    """Create a MenuItem object for each button to add to dashboard menus.
+    """
     menu: str
     btn_text: str
     url: str
@@ -18,6 +20,8 @@ class MenuItem(BaseModel):
 
 
 def get_menu_config():
+    """Gets the menu config file and parses it for the dashboard to use.
+    """
     menu_file = os.environ.get("DASH_MENU_CONFIG")
 
     if not menu_file:
