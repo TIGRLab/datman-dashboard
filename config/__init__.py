@@ -6,3 +6,4 @@ from .scheduler import *
 from .logging import *
 from .cluster import *
 from .xnat import *
+from .menu import *
