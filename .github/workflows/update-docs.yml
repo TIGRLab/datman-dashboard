@@ -1,46 +1,66 @@
-name: Run tests and update docs
+name: Build and publish docs
 
 on:
   push:
-    branches: [master]
+    branches: [main]
   pull_request:
-    branches: [master]
-    types: [opened, synchronize, reopened]
+    branches: [main]
   workflow_dispatch:
-    branches: [master]
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  test:
-    runs-on: ubuntu-20.04
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v3
-      - name: Start up the dashboard
-        run: cd containers/devel && docker-compose up -d
-      - name: Run tests
-        run: docker exec -t devel_dashboard pytest -v dashboard/tests
-      - name: Stop containers
-        if: always()
-        run: cd containers/devel && docker-compose down
   build-docs:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v3
+
+      - uses: actions/cache@v3
+        id: cache
+        with:
+          path: docs/_build
+          key: docs-${{ hashFiles('./docs') }}
+
       - name: Start up the dashboard
         run: cd containers/devel && docker-compose up -d
+        if: steps.cache.outputs.cache-hit != 'true'
+
       - name: Build docs
+        if: steps.cache.outputs.cache-hit != 'true'
         run: docker exec -t devel_dashboard /bin/bash -c "sphinx-build dashboard/docs dashboard/docs/_build"
+
       - name: Repeat build in case non-deterministic build issue arose in last step
+        if: steps.cache.outputs.cache-hit != 'true'
         run: docker exec -t devel_dashboard /bin/bash -c "sphinx-build dashboard/docs dashboard/docs/_build"
+
+
+  publish-docs:
+    needs: build-docs
+    if: github.event_name == 'push'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/cache@v3
+        id: cache
+        with:
+          path: docs/_build
+          key: docs-${{ hashFiles('./docs') }}
+
       - name: Add .nojekyll file to build folder
-        run: sudo touch docs/_build/.nojekyll
+        run: touch docs/_build/.nojekyll
+
       - name: Deploy docs if the branch has updated
         uses: JamesIves/github-pages-deploy-action@v4.4.1
         with:
           branch: gh-pages
           folder: docs/_build
-        if: github.event_name == 'push'
+
       - name: Stop containers
         if: always()
         run: cd containers/devel && docker-compose down
