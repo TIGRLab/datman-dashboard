@@ -1,0 +1,677 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>Configuration Glossary &#8212; QC Dashboard 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Menu Configuration" href="menu_conf.html" />
+    <link rel="prev" title="Installation" href="installation.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="configuration-glossary">
+<span id="glossary"></span><h1>Configuration Glossary<a class="headerlink" href="#configuration-glossary" title="Permalink to this heading">¶</a></h1>
+<p>Listed below are all configuration values that may be set for the QC dashboard.
+They’re organized into sections based on the feature that they configure.
+These values should be set in your shell (or your uWSGI configuration file).</p>
+<section id="cluster">
+<h2>Cluster<a class="headerlink" href="#cluster" title="Permalink to this heading">¶</a></h2>
+<p>Allows the dashboard to make use of a computing cluster (e.g.
+<a class="reference external" href="https://slurm.schedmd.com/documentation.html">Slurm</a>).</p>
+<section id="optional">
+<h3>Optional<a class="headerlink" href="#optional" title="Permalink to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><strong>DASHBOARD_QSUBMIT_CMD</strong></p>
+<ul>
+<li><p>Description: Tells the dashboard which command to use when submitting
+a job. If the command is not available on your PATH, you should provide
+the full path (e.g. /usr/bin/sbatch instead of sbatch).</p></li>
+<li><p>Default value: <code class="docutils literal notranslate"><span class="pre">sbatch</span></code></p></li>
+</ul>
+</li>
+<li><p><strong>DASHBOARD_QSUBMIT_OPTIONS</strong></p>
+<ul>
+<li><p>Description: Options to use when submitting each queue job. This is the
+ideal place to set things like a default working directory or QoS.</p></li>
+<li><p>Default value: <code class="docutils literal notranslate"><span class="pre">--chdir=/tmp/</span></code></p></li>
+</ul>
+</li>
+<li><p><strong>DASHBOARD_QSUBMIT_SCRIPTS</strong></p>
+<ul>
+<li><p>Description: The path to a folder that will hold all of the scripts the
+dashboard may submit to the queue. If unset, the dashboard will search for
+a folder named “queue_jobs” inside the folder where its code resides.</p></li>
+<li><p>Default value: <code class="docutils literal notranslate"><span class="pre">../dashboard/queue_jobs</span></code></p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="example">
+<h3>Example<a class="headerlink" href="#example" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Using a non-standard submit command location</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">DASHBOARD_QSUBMIT_CMD</span><span class="o">=</span>/home/user1/sbatch
+
+<span class="c1"># Override the working directory + add a QoS</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">DASHBOARD_QSUBMIT_OPTIONS</span><span class="o">=</span>--qos<span class="o">=</span>dashboard<span class="w"> </span>--chdir<span class="o">=</span>/home/user1/
+
+<span class="c1"># Set a location for submit scripts</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">DASHBOARD_QSUBMIT_SCRIPTS</span><span class="o">=</span>/home/user1/job_scripts
+</pre></div>
+</div>
+</section>
+</section>
+<section id="database">
+<h2>Database<a class="headerlink" href="#database" title="Permalink to this heading">¶</a></h2>
+<p>Configure the database backend for the dashboard.</p>
+<section id="required">
+<h3>Required<a class="headerlink" href="#required" title="Permalink to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><strong>POSTGRES_PASS</strong></p>
+<ul>
+<li><p>Description: The password to use when connecting to the database. Can be
+left unset ONLY if a password-less authentication method like identd has
+been configured for the database.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="id1">
+<h3>Optional<a class="headerlink" href="#id1" title="Permalink to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><strong>POSTGRES_DATABASE</strong></p>
+<ul>
+<li><p>Description: The name of the database to connect to.</p></li>
+<li><p>Default value: <code class="docutils literal notranslate"><span class="pre">dashboard</span></code></p></li>
+</ul>
+</li>
+<li><p><strong>POSTGRES_TEST_DATABASE</strong></p>
+<ul>
+<li><p>Description: The name of the database to create / delete when running tests.</p></li>
+<li><p>Default value: <code class="docutils literal notranslate"><span class="pre">test_dashboard</span></code></p></li>
+</ul>
+</li>
+<li><p><strong>POSTGRES_SRVR</strong></p>
+<ul>
+<li><p>Description: The postgres server to connect to. May be a fully qualified
+domain name or an IP address.</p></li>
+<li><p>Default value: <code class="docutils literal notranslate"><span class="pre">localhost</span></code></p></li>
+</ul>
+</li>
+<li><p><strong>POSTGRES_USER</strong></p>
+<ul>
+<li><p>Description: The username to use when connecting to the database.</p></li>
+<li><p>Default value: The username that the dashboard runs under.</p></li>
+</ul>
+</li>
+<li><p><strong>POSTGRES_PORT</strong></p>
+<ul>
+<li><p>Description: The port to use when connecting to the database.</p></li>
+<li><p>Default value: <code class="docutils literal notranslate"><span class="pre">5432</span></code></p></li>
+</ul>
+</li>
+<li><p><strong>TIMEZONE</strong></p>
+<ul>
+<li><p>Description: The time zone to use when storing timestamps. Note that this
+should be represented as the number of minutes east of UTC. For example,
+Eastern Daylight Time is 240 minutes behind UTC so it would be represented
+as -240.</p></li>
+<li><p>Default value: <code class="docutils literal notranslate"><span class="pre">-240</span></code>. This is equivalent to EDT.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="id2">
+<h3>Example<a class="headerlink" href="#id2" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">POSTGRES_USER</span><span class="o">=</span>dashboard_user
+<span class="nb">export</span><span class="w"> </span><span class="nv">POSTGRES_PASS</span><span class="o">=</span>somepassword
+<span class="nb">export</span><span class="w"> </span><span class="nv">POSTGRES_SRVR</span><span class="o">=</span><span class="m">127</span>.0.0.1
+<span class="nb">export</span><span class="w"> </span><span class="nv">POSTGRES_DATABASE</span><span class="o">=</span>mydatabasename
+<span class="c1"># -300 == central time</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">TIMEZONE</span><span class="o">=</span>-300
+</pre></div>
+</div>
+</section>
+</section>
+<section id="email">
+<h2>Email<a class="headerlink" href="#email" title="Permalink to this heading">¶</a></h2>
+<p>These settings configure email functionality for the dashboard. When configured
+correctly, they enable the dashboard to send email notifications to
+administrators and scheduled reminders to users.</p>
+<section id="id3">
+<h3>Optional<a class="headerlink" href="#id3" title="Permalink to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><strong>ADMINS</strong></p>
+<ul>
+<li><p>Description: A comma separated list of dashboard administrator emails.
+These emails will be notified in case of code exceptions and may be sent
+reminder emails when QC reminders are enabled. If unset, no administrator
+emails will be sent.</p></li>
+<li><p>Default value: <code class="docutils literal notranslate"><span class="pre">None</span></code></p></li>
+</ul>
+</li>
+<li><p><strong>DASHBOARD_MAIL_SERVER</strong></p>
+<ul>
+<li><p>Description: The server that will handle outgoing email. To turn off
+emails set this to ‘disabled’.</p></li>
+<li><p>Default value: <code class="docutils literal notranslate"><span class="pre">'smtp.gmail.com'</span></code></p></li>
+</ul>
+</li>
+<li><p><strong>DASHBOARD_MAIL_PORT</strong></p>
+<ul>
+<li><p>Description: The port on DASHBOARD_MAIL_SERVER to use.</p></li>
+<li><p>Default value: <code class="docutils literal notranslate"><span class="pre">465</span></code></p></li>
+</ul>
+</li>
+<li><p><strong>DASHBOARD_MAIL_UNAME</strong></p>
+<ul>
+<li><p>Description: The username to use when connecting to DASHBOARD_MAIL_SERVER.
+If authentication is not required it can be left unset. The ‘sender’ field
+for all emails originating from the dashboard will be set to this value
+if DASHBOARD_SUPPORT_EMAIL is left unset. If this is left unset as well,
+the sender will appear as <a class="reference external" href="mailto:'no-reply&#37;&#52;&#48;kimellab&#46;ca">‘no-reply<span>&#64;</span>kimellab<span>&#46;</span>ca</a>’.</p></li>
+<li><p>Default value: <code class="docutils literal notranslate"><span class="pre">None</span></code></p></li>
+</ul>
+</li>
+<li><p><strong>DASHBOARD_MAIL_PASS</strong></p>
+<ul>
+<li><p>Description: The password to use when connecting to DASHBOARD_MAIL_SERVER.
+If authentication is not required it can be left unset.</p></li>
+<li><p>Default value: <code class="docutils literal notranslate"><span class="pre">None</span></code></p></li>
+</ul>
+</li>
+<li><p><strong>DASHBOARD_SUPPORT_EMAIL</strong></p>
+<ul>
+<li><p>Description: The email address to send user support requests to. If set,
+this address will also appear as the sender for any email that originates
+from the dashboard.</p></li>
+<li><p>Default value: <code class="docutils literal notranslate"><span class="pre">DASHBOARD_MAIL_UNAME&#64;DASHBOARD_MAIL_SERVER</span></code></p></li>
+</ul>
+</li>
+<li><p><strong>DASHBOARD_MAIL_SSL</strong></p>
+<ul>
+<li><p>Description: Whether to use SSL when sending email. For certain mail
+servers, such as Gmail’s server, it must be true for email to be forwarded.</p></li>
+<li><p>Default value: <code class="docutils literal notranslate"><span class="pre">True</span></code></p></li>
+</ul>
+</li>
+<li><p><strong>DASH_LOG_MAIL_SERVER</strong></p>
+<ul>
+<li><p>Description: The server to email logs to. Log emails may be turned off by
+setting this to ‘disabled’.</p></li>
+<li><p>Default value: <code class="docutils literal notranslate"><span class="pre">smtp.camh.net</span></code></p></li>
+</ul>
+</li>
+<li><p><strong>DASH_LOG_MAIL_PORT</strong></p>
+<ul>
+<li><p>Description: The port on DASH_LOG_MAIL_SERVER to forward emails to.</p></li>
+<li><p>Default value: <code class="docutils literal notranslate"><span class="pre">25</span></code></p></li>
+</ul>
+</li>
+<li><p><strong>DASH_LOG_MAIL_USER</strong></p>
+<ul>
+<li><p>Description: The username to use when for authentication on
+DASH_LOG_MAIL_SERVER. Can be left unset if authentication is not required
+by the server.</p></li>
+<li><p>Default value: <code class="docutils literal notranslate"><span class="pre">None</span></code></p></li>
+</ul>
+</li>
+<li><p><strong>DASH_LOG_MAIL_PASS</strong></p>
+<ul>
+<li><p>Description: The password to use for authentication on DASH_LOG_MAIL_SERVER.
+Can be left unset if authentication is not required by the server.</p></li>
+<li><p>Default value: <code class="docutils literal notranslate"><span class="pre">None</span></code></p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="id4">
+<h3>Example<a class="headerlink" href="#id4" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Configure logs to be sent to email.</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">DASH_LOG_MAIL_SERVER</span><span class="o">=</span>myemailserver.ca
+<span class="nb">export</span><span class="w"> </span><span class="nv">DASH_LOG_MAIL_USER</span><span class="o">=</span>myuser
+<span class="nb">export</span><span class="w"> </span><span class="nv">DASH_LOG_MAIL_PASS</span><span class="o">=</span>myuserspassword
+<span class="c1"># Use when the mail server uses a non-standard smtp port</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">DASHBOARD_MAIL_PORT</span><span class="o">=</span><span class="m">8888</span>
+
+<span class="c1"># Configure email notifications</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">DASHBOARD_MAIL_SERVER</span><span class="o">=</span>myotheremailserver.ca
+<span class="nb">export</span><span class="w"> </span><span class="nv">DASH_LOG_MAIL_USER</span><span class="o">=</span>myotheruser
+<span class="nb">export</span><span class="w"> </span><span class="nv">DASH_LOG_MAIL_PASS</span><span class="o">=</span>myotherpassword
+
+<span class="c1"># Configure recipient of support requests</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">DASHBOARD_SUPPORT_EMAIL</span><span class="o">=</span>support@myemailserver.ca
+
+<span class="c1"># Configure administrator emails for notifications</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ADMINS</span><span class="o">=</span>admin1@gmail.ca,admin2@outlook.com,admin3@myemailserver.ca
+</pre></div>
+</div>
+</section>
+</section>
+<section id="logging">
+<h2>Logging<a class="headerlink" href="#logging" title="Permalink to this heading">¶</a></h2>
+<p>Configure the amount and type of logging that the dashboard does.</p>
+<section id="id5">
+<h3>Optional<a class="headerlink" href="#id5" title="Permalink to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><strong>DASH_LOG_LEVEL</strong></p>
+<ul>
+<li><p>Description: Set the log level for all loggers that the dashboard uses.</p></li>
+<li><p>Accepted values: DEBUG, INFO, WARNING, ERROR, CRITICAL.</p></li>
+<li><p>Default value: <code class="docutils literal notranslate"><span class="pre">DEBUG</span></code></p></li>
+</ul>
+</li>
+<li><p><strong>DASHBOARD_LOG_SERVER</strong></p>
+<ul>
+<li><p>Description: The fully qualified domain name or IP address of a server
+that is running <a class="reference external" href="http://imaging-genetics.camh.ca/datman/">datman’s log server</a>.
+All log messages will also be sent to the log server, if one is provided.</p></li>
+<li><p>Default value: <code class="docutils literal notranslate"><span class="pre">None</span></code></p></li>
+</ul>
+</li>
+<li><p><strong>DASHBOARD_LOG_SERVER_PORT</strong></p>
+<ul>
+<li><p>Description: The port that DASHBOARD_LOG_SERVER is listening on. This
+setting is not read if DASHBOARD_LOG_SERVER is not defined.</p></li>
+<li><p>Default value: <code class="docutils literal notranslate"><span class="pre">9020</span></code></p></li>
+</ul>
+</li>
+<li><p><strong>DASH_LOG_DIR</strong></p>
+<ul>
+<li><p>Description: The directory to store log files in. Log files will only be
+written when the dashboard is running in development mode with FLASK_DEBUG
+set. The destination folder must be writable for the user that the
+dashboard runs under.</p></li>
+<li><p>Default value: a folder named ‘logs’ with the dashboard’s base directory.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="id6">
+<h3>Example<a class="headerlink" href="#id6" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Turn down logging</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">DASH_LOG_LEVEL</span><span class="o">=</span>ERROR
+
+<span class="c1"># Log to datman&#39;s log server</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">DASHBOARD_LOG_SERVER</span><span class="o">=</span>mylogserver.ca
+<span class="c1"># using a non-standard port</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">DASHBOARD_LOG_SERVER_PORT</span><span class="o">=</span><span class="m">7777</span>
+
+<span class="c1"># Tell the dashboard where to store file logs, if it&#39;s using them</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">DASH_LOG_DIR</span><span class="o">=</span>/var/log/dashboard
+</pre></div>
+</div>
+</section>
+</section>
+<section id="menu-configuration">
+<h2>Menu Configuration<a class="headerlink" href="#menu-configuration" title="Permalink to this heading">¶</a></h2>
+<p>These settings allow the user to add items to the dashboard’s menus.</p>
+<section id="id7">
+<h3>Optional<a class="headerlink" href="#id7" title="Permalink to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><strong>DASH_MENU_CONFIG</strong></p>
+<ul>
+<li><p>Description: The full path to a yaml file defining buttons to add to
+the dashboard’s configurable menus. See <span class="xref std std-ref">here</span> for
+information on how to create this file.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+</section>
+<section id="user-authentication">
+<h2>User Authentication<a class="headerlink" href="#user-authentication" title="Permalink to this heading">¶</a></h2>
+<p>These settings are used to configure user authentication by OAuth. Note that at
+least one of these authentication methods MUST be configured, unless the
+dashboard is running in development mode.</p>
+<section id="id8">
+<h3>Required<a class="headerlink" href="#id8" title="Permalink to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>GitHub configuration. You can see GitHub’s instructions for acquiring a
+client ID and secret <a class="reference external" href="https://docs.github.com/en/developers/apps/building-oauth-apps/creating-an-oauth-app">here</a></p>
+<ul>
+<li><p><strong>OAUTH_CLIENT_GITHUB</strong></p>
+<ul>
+<li><p>Description: The OAuth client value provided by GitHub.</p></li>
+</ul>
+</li>
+<li><p><strong>OAUTH_SECRET_GITHUB</strong></p>
+<ul>
+<li><p>Description: The OAuth secret value provided by GitHub.</p></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>GitLab configuration</p>
+<ul>
+<li><p><strong>OAUTH_CLIENT_GITLAB</strong></p>
+<ul>
+<li><p>Description: The OAuth client value provided by GitLab.</p></li>
+</ul>
+</li>
+<li><p><strong>OAUTH_SECRET_GITLAB</strong></p>
+<ul>
+<li><p>Description: The OAuth secret value provided by GitLab.</p></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</section>
+</section>
+<section id="general-application-configuration">
+<h2>General Application Configuration<a class="headerlink" href="#general-application-configuration" title="Permalink to this heading">¶</a></h2>
+<section id="id9">
+<h3>Required<a class="headerlink" href="#id9" title="Permalink to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><strong>FLASK_SECRET_KEY</strong></p>
+<ul>
+<li><p>Description: A secret value that must be provided before startup to allow
+the dashboard to encrypt session information and cookies. This value
+should be hard to guess and kept as secret as possible.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="id10">
+<h3>Optional<a class="headerlink" href="#id10" title="Permalink to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><strong>FLASK_ENV</strong></p>
+<ul>
+<li><p>Description: Tells Flask what type of environment it is running within.
+<a class="reference external" href="https://flask.palletsprojects.com/en/1.1.x/config/#ENV">See here for more info</a></p></li>
+<li><p>Accepted values: <code class="docutils literal notranslate"><span class="pre">'production'</span></code> or <code class="docutils literal notranslate"><span class="pre">'development'</span></code></p></li>
+<li><p>Default value: <code class="docutils literal notranslate"><span class="pre">'production'</span></code></p></li>
+</ul>
+</li>
+<li><p><strong>FLASK_DEBUG</strong></p>
+<ul>
+<li><p>Description: Tells Flask and its plugins to run in debug mode. Setting
+‘FLASK_ENV’ to development mode automatically turns on FLASK_DEBUG.
+<a class="reference external" href="https://flask.palletsprojects.com/en/1.1.x/config/#DEBUG">See here for more info</a></p></li>
+<li><p>Accepted values: <code class="docutils literal notranslate"><span class="pre">True</span></code> (if it should run in debug mode) or <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+<li><p>Default value: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+</ul>
+</li>
+<li><p><strong>LOGIN_DISABLED</strong></p>
+<ul>
+<li><p>Description: Whether to turn off OAuth authentication and allow access
+without logging in. Do not set this to True on a production instance.</p></li>
+<li><p>Accepted values: <code class="docutils literal notranslate"><span class="pre">True</span></code> (if it should be disabled) or <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+<li><p>Default value: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+</ul>
+</li>
+</ul>
+</section>
+</section>
+<section id="github-issues">
+<h2>Github Issues<a class="headerlink" href="#github-issues" title="Permalink to this heading">¶</a></h2>
+<p>Allow the dashboard to automatically create and display Github issues.</p>
+<section id="id12">
+<h3>Required<a class="headerlink" href="#id12" title="Permalink to this heading">¶</a></h3>
+</section>
+<section id="id13">
+<h3>Optional<a class="headerlink" href="#id13" title="Permalink to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><strong>GITHUB_REPO</strong></p>
+<ul>
+<li><p>Description: The name of the repository that will host the user-reported
+data issues created through the dashboard.</p></li>
+</ul>
+</li>
+<li><p><strong>GITHUB_ISSUES_OWNER</strong></p>
+<ul>
+<li><p>Description: The user that owns the GITHUB_REPO repository.</p></li>
+</ul>
+</li>
+<li><p><strong>GITHUB_ISSUES_PUBLIC</strong></p>
+<ul>
+<li><p>Description: Indicates whether the GITHUB_REPO repository is public (True)
+or private (False)</p></li>
+<li><p>Default value: <code class="docutils literal notranslate"><span class="pre">True</span></code></p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="id14">
+<h3>Example<a class="headerlink" href="#id14" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">GITHUB_ISSUES_OWNER</span><span class="o">=</span>TIGRLab
+<span class="c1"># Issues that are made will be added to the &#39;Admin&#39; repo</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">GITHUB_REPO</span><span class="o">=</span>Admin
+<span class="c1"># Set to False to indicate the Admin repository is private</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">GITHUB_ISSUES_PUBLIC</span><span class="o">=</span>False
+</pre></div>
+</div>
+</section>
+</section>
+<section id="scheduler">
+<h2>Scheduler<a class="headerlink" href="#scheduler" title="Permalink to this heading">¶</a></h2>
+<p>Configuration for the dashboard’s job scheduler.</p>
+<ul class="simple">
+<li><p><strong>DASHBOARD_SCHEDULER</strong></p>
+<ul>
+<li><p>Description: Indicates whether to start (True) the dashboard scheduler
+or not (False). Note that if the dashboard is just being imported
+by another python app, the scheduler should NOT be started up or errors and
+unexpected behavior will occur.</p></li>
+<li><p>Accepted values: <code class="docutils literal notranslate"><span class="pre">True</span></code> or <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+<li><p>Default value: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+</ul>
+</li>
+<li><p><strong>DASHBOARD_SCHEDULER_API</strong></p>
+<ul>
+<li><p>Description: Controls whether remote job submission will be enabled (True)
+or disabled (False). Note that remote job submission occurs over HTTP,
+so private information should never be bundled within jobs if they are
+being sent over a non-private network.</p></li>
+<li><p>Accepted values: <code class="docutils literal notranslate"><span class="pre">True</span></code> or <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+<li><p>Default value: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+</ul>
+</li>
+<li><p><strong>DASHBOARD_SCHEDULER_USER</strong></p>
+<ul>
+<li><p>Description: The username to use when submitting jobs to the scheduler.
+Clients submitting jobs will need to provide the same user as the
+instance of the dashboard receiving jobs.</p></li>
+</ul>
+</li>
+<li><p><strong>DASHBOARD_SCHEDULER_PASS</strong></p>
+<ul>
+<li><p>Description: The password to use when submitting jobs to the scheduler.
+Clients submitting jobs will need to provide the same password that
+has been set by the instance of the dashboard that is receiving jobs.</p></li>
+</ul>
+</li>
+<li><p><strong>DASHBOARD_URL</strong></p>
+<ul>
+<li><p>Description: The URL to send scheduler jobs to. This setting is needed
+only by ‘client’ instances of the dashboard.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="run-log-reporting">
+<h2>Run Log Reporting<a class="headerlink" href="#run-log-reporting" title="Permalink to this heading">¶</a></h2>
+<p>Configures whether to display nightly pipeline run logs. If nightly scripts
+are run for a study’s data, the base directory where logs are stored can be
+provided to ensure the most recent run log is displayed on the study’s landing
+page. Note that the most recent log for each study should be named
+<code class="docutils literal notranslate"><span class="pre">STUDY_latest.log</span></code>, where STUDY is the name datman recognizes the study by.</p>
+<section id="id15">
+<h3>Required<a class="headerlink" href="#id15" title="Permalink to this heading">¶</a></h3>
+</section>
+<section id="id16">
+<h3>Optional<a class="headerlink" href="#id16" title="Permalink to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><strong>DATMAN_RUN_LOGS</strong></p>
+<ul>
+<li><p>Description: The directory to read recent nightly run logs from. If
+left unset run log reporting will be turned off. Log files in this
+directory should be named <code class="docutils literal notranslate"><span class="pre">STUDY_latest.log</span></code>, where study is
+the datman nickname.</p></li>
+</ul>
+</li>
+<li><p><strong>DATMAN_RUN_LOGS_DONE</strong></p>
+<ul>
+<li><p>Description: The pattern to search for in the log to identify whether
+or not the nightly run has finished.</p></li>
+<li><p>Default value: <code class="docutils literal notranslate"><span class="pre">:</span> <span class="pre">Done.</span></code></p></li>
+</ul>
+</li>
+<li><p><strong>DATMAN_RUN_LOGS_ERROR</strong></p>
+<ul>
+<li><p>Description: The pattern to use to identify log lines that contain errors.
+Used to construct a count of the number of errors in the log, which is
+then displayed in the summary line of the log display.</p></li>
+<li><p>Default value: <code class="docutils literal notranslate"><span class="pre">-</span> <span class="pre">ERROR</span> <span class="pre">-</span></code></p></li>
+</ul>
+</li>
+</ul>
+</section>
+</section>
+<section id="xnat">
+<h2>XNAT<a class="headerlink" href="#xnat" title="Permalink to this heading">¶</a></h2>
+<p>Enable or disable the XNAT integration. Note that if you enable XNAT
+configuration, you must ensure you have added the XNAT server settings to the
+study_sites table of the database.</p>
+<p>A username and password to use when logging in may be set directly in the
+dashboard, or may be configured individually for each study in the study config
+file. For more information see Datman’s configuration guide.</p>
+<section id="id17">
+<h3>Optional<a class="headerlink" href="#id17" title="Permalink to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><strong>DASH_ENABLE_XNAT</strong></p>
+<ul>
+<li><p>Description: Controls whether XNAT features will be used.</p></li>
+<li><p>Accepted values: <code class="docutils literal notranslate"><span class="pre">True</span></code> or <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+<li><p>Default values: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+</ul>
+</li>
+<li><p><strong>XNAT_USER</strong></p>
+<ul>
+<li><p>Description: May be used to provide an XNAT username if one is not set
+in the configuration files. If this is set, XNAT_PASS must be as well.</p></li>
+</ul>
+</li>
+<li><p><strong>XNAT_PASS</strong></p>
+<ul>
+<li><p>Description: May be used to provide an XNAT password if one is not set
+through the configuration files. If this is set, XNAT_USER must be as well.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">QC Dashboard</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Configuration Glossary</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#cluster">Cluster</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#database">Database</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#email">Email</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#logging">Logging</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#menu-configuration">Menu Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#user-authentication">User Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#general-application-configuration">General Application Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#github-issues">Github Issues</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#scheduler">Scheduler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#run-log-reporting">Run Log Reporting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#xnat">XNAT</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="menu_conf.html">Menu Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plugins.html">Plugins</a></li>
+<li class="toctree-l1"><a class="reference internal" href="developer.html">Developer Resources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/modules.html">Dashboard API</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="installation.html" title="previous chapter">Installation</a></li>
+      <li>Next: <a href="menu_conf.html" title="next chapter">Menu Configuration</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, TIGRLab.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.1.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      
+      |
+      <a href="_sources/configuration.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,431 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>Installation &#8212; QC Dashboard 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Configuration Glossary" href="configuration.html" />
+    <link rel="prev" title="Welcome to QC Dashboard’s documentation!" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="installation">
+<h1>Installation<a class="headerlink" href="#installation" title="Permalink to this heading">¶</a></h1>
+<p>You have several options for how to run the QC dashboard and these are
+listed below.</p>
+<ol class="arabic simple">
+<li><dl class="simple">
+<dt><a class="reference internal" href="#run-with-docker-compose">Run with Docker Compose</a></dt><dd><ul class="simple">
+<li><p><a class="reference internal" href="#development">Development</a></p></li>
+<li><p><a class="reference internal" href="#production">Production</a></p></li>
+<li><p><a class="reference internal" href="#connecting-to-the-containers">Connecting to the Containers</a></p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p><a class="reference internal" href="#do-a-full-install">Do a Full Install</a></p></li>
+</ol>
+<section id="run-with-docker-compose">
+<h2>Run with Docker Compose<a class="headerlink" href="#run-with-docker-compose" title="Permalink to this heading">¶</a></h2>
+<ol class="arabic">
+<li><p><a class="reference external" href="https://docs.docker.com/get-docker/">Install Docker</a>, if you don’t
+already have it.</p></li>
+<li><p>Create the datman container config files as described <a class="reference external" href="http://imaging-genetics.camh.ca/datman/installation.html">here</a></p></li>
+<li><p>Clone the <a class="reference external" href="https://github.com/TIGRLab/dashboard.git">QC dashboard.</a></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/TIGRLab/dashboard.git
+</pre></div>
+</div>
+</li>
+<li><p>Create two environment variables, <code class="docutils literal notranslate"><span class="pre">DASH_ARCHIVE</span></code> and <code class="docutils literal notranslate"><span class="pre">DASH_CONFIG</span></code>,
+that hold the full path to your archive (data) folder and config file
+directory, respectively. If they’re left unset, the container will use
+the docker-compose.yml folder for both locations. Note that your Datman
+main config file should be in your this <code class="docutils literal notranslate"><span class="pre">DASH_ARCHIVE</span></code> folder. By default
+the container expects this to be named <code class="docutils literal notranslate"><span class="pre">main_config.yml</span></code> and expects it to
+contain a system config block named ‘docker’. For more information, see
+the datman configuration documentation <a class="reference external" href="http://imaging-genetics.camh.ca/datman/installation.html">here</a></p></li>
+</ol>
+<section id="development">
+<h3>Development<a class="headerlink" href="#development" title="Permalink to this heading">¶</a></h3>
+<p>If you’re running a development instance of the dashboard, after completing the
+above steps you can change to the <code class="docutils literal notranslate"><span class="pre">dashboard/containers/devel</span></code> folder and run
+the dashboard app with docker compose.</p>
+<p>By default the development instance runs with <code class="docutils literal notranslate"><span class="pre">login_disabled=True</span></code> set
+so OAuth doesn’t need to be configured. However, if you need to test login
+related features or features that require a user to be a dashboard admin you
+must set up OAuth and add a user to the database’s ‘users’ table. Set
+<code class="docutils literal notranslate"><span class="pre">dashboard_admin</span></code> and <code class="docutils literal notranslate"><span class="pre">account_active</span></code> to true for this user, in addition
+to setting <code class="docutils literal notranslate"><span class="pre">login_disabled=False</span></code> in the docker-compose file.</p>
+<p>Note that if you need to change or set any app settings, you can modify the
+<code class="docutils literal notranslate"><span class="pre">dashboard.env</span></code> and <code class="docutils literal notranslate"><span class="pre">database.env</span></code> files in <code class="docutils literal notranslate"><span class="pre">dashboard/containers</span></code>.</p>
+<blockquote>
+<div></div></blockquote>
+</section>
+<section id="production">
+<h3>Production<a class="headerlink" href="#production" title="Permalink to this heading">¶</a></h3>
+<p>If you’re running a production instance of the dashboard there are a few extra
+steps to take.</p>
+<ol class="arabic">
+<li><p>Get an OAuth client ID and client secret <a class="reference external" href="https://docs.github.com/en/developers/apps/building-oauth-apps/creating-an-oauth-app">from GitHub.</a>
+In the ‘Authorization callback URL’ field, be sure to add <code class="docutils literal notranslate"><span class="pre">/callback/github</span></code>
+to the end of your homepage URL.</p>
+<p>You’ll need to provide the Client ID and Client Secret to the dashboard
+later so be sure to record them.</p>
+</li>
+<li><p>Fill in your configuration.</p>
+<ul class="simple">
+<li><p>Add your dashboard configuration in <code class="docutils literal notranslate"><span class="pre">dashboard/containers/dashboard.env</span></code>.
+At a minimum you should provide a flask secret key, a database password,
+an OAuth secret key, and an OAuth client ID. For information on
+configuring the dashboard <a class="reference internal" href="configuration.html#glossary"><span class="std std-ref">see here</span></a>.</p></li>
+<li><p>Add your database configuration in <code class="docutils literal notranslate"><span class="pre">dashboard/containers/database.env</span></code>.
+Note that the database password in this file should match the one in
+<code class="docutils literal notranslate"><span class="pre">dashboard.env</span></code></p></li>
+</ul>
+</li>
+<li><p>Switch to the production container folder and run the app</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>dashboard/containers/prod
+docker<span class="w"> </span>compose<span class="w"> </span>up
+</pre></div>
+</div>
+</li>
+<li><p>You will likely also want to configure your own nginx server to
+sit in front of the uwsgi server. See the nginx section at the end of the
+‘Full Install’ instructions for setup info.</p></li>
+</ol>
+</section>
+<section id="connecting-to-the-containers">
+<h3>Connecting to the containers<a class="headerlink" href="#connecting-to-the-containers" title="Permalink to this heading">¶</a></h3>
+<p>If everything started up correctly, you’ll be able to access the dashboard
+in your browser at <code class="docutils literal notranslate"><span class="pre">localhost:5000</span></code>. If you need to connect to the database
+while the app is running, you can do it by connecting to the postgres
+container and then running psql as shown below.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Open an interactive shell inside the running dash_postgres container</span>
+docker<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>dash_postgres<span class="w"> </span>/bin/bash
+<span class="c1"># Connect to the database as user dashboard inside the</span>
+<span class="c1"># dash_postgres container</span>
+psql<span class="w"> </span>-U<span class="w"> </span>dashboard<span class="w"> </span>dashboard
+</pre></div>
+</div>
+<p>You can also connect to the database from your local machine with psql. First,
+make sure you have <code class="docutils literal notranslate"><span class="pre">psql</span></code> installed (you can get it with
+<code class="docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">apt</span> <span class="pre">install</span> <span class="pre">postgresql-client</span></code> on Ubuntu 20.04) and
+run this command from a terminal:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># You can run this directly from your terminal</span>
+psql<span class="w"> </span>-U<span class="w"> </span>dashboard<span class="w"> </span>-p<span class="w"> </span><span class="m">5432</span><span class="w"> </span>-h<span class="w"> </span>localhost<span class="w"> </span>dashboard
+</pre></div>
+</div>
+<p>You will be prompted for the <code class="docutils literal notranslate"><span class="pre">POSTGRES_PASSWORD</span></code> from the
+<code class="docutils literal notranslate"><span class="pre">containers/database.env</span></code> file.</p>
+</section>
+</section>
+<section id="do-a-full-install">
+<h2>Do a Full Install<a class="headerlink" href="#do-a-full-install" title="Permalink to this heading">¶</a></h2>
+<p>A full install gives you the most control over your configuration. If you’re
+considering this you should be prepared for a long installation process. Note
+that all the example paths and installation commands provided below are for
+Ubuntu 20.04 and may differ if you’re using another operating system.</p>
+<ol class="arabic">
+<li><p><a class="reference external" href="http://imaging-genetics.camh.ca/datman/installation.html">Install Datman</a>
+and set up its configuration files.</p></li>
+<li><p>Clone the <a class="reference external" href="https://github.com/TIGRLab/dashboard.git">QC dashboard.</a></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/TIGRLab/dashboard.git
+</pre></div>
+</div>
+</li>
+<li><p>Install the dashboard’s python dependencies. Note that the dashboard is
+meant to run on python 3.5 or higher.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Make a virtual environment</span>
+python3<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span><span class="nv">$YOUR_ENV_PATH</span>/venv
+
+<span class="c1"># Activate your environment</span>
+<span class="nb">source</span><span class="w"> </span><span class="nv">$YOUR_ENV_PATH</span>/venv/bin/activate
+
+<span class="c1"># Install required packages</span>
+pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span><span class="nv">$DASHBOARD_PATH</span>/requirements.txt
+</pre></div>
+</div>
+</li>
+<li><p>Set up <a class="reference external" href="https://www.postgresql.org/download/">PostgreSQL.</a> The
+dashboard was tested against PostgreSQL 12 and all examples below assume
+this is the version in use. Newer versions should work as well, however.</p>
+<ul>
+<li><p>Install PostgreSQL.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>postgresql-12
+</pre></div>
+</div>
+</li>
+<li><p>Make postgres use a more secure password storage method.</p>
+<ul class="simple">
+<li><p>Open the <code class="docutils literal notranslate"><span class="pre">postgresql.conf</span></code> file. e.g. <code class="docutils literal notranslate"><span class="pre">nano</span> <span class="pre">/etc/postgresql/12/main/postgresql.conf</span></code></p></li>
+<li><p>Uncomment the line for the <code class="docutils literal notranslate"><span class="pre">password_encryption</span></code> setting</p></li>
+<li><p>Change it to <code class="docutils literal notranslate"><span class="pre">password_encryption</span> <span class="pre">=</span> <span class="pre">scram-sha-256</span></code></p></li>
+</ul>
+</li>
+<li><p>Allow the dashboard user to connect to the dashboard database with a password.</p>
+<ul>
+<li><p>Open the <code class="docutils literal notranslate"><span class="pre">pg_hba.conf</span></code> file. e.g. <code class="docutils literal notranslate"><span class="pre">nano</span> <span class="pre">/etc/postgresql/12/main/pg_hba.conf</span></code></p></li>
+<li><p>Beneath the comment that says “Put your actual configuration here”, add
+an entry like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#     database name  database user     connection method</span>
+<span class="n">local</span> <span class="n">dashboard</span>      <span class="n">dashboard</span>         <span class="n">scram</span><span class="o">-</span><span class="n">sha</span><span class="o">-</span><span class="mi">256</span>
+</pre></div>
+</div>
+</li>
+<li><p>Reload the configuration files to make the changes take effect.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>systemctl<span class="w"> </span>reload<span class="w"> </span>postgresql
+</pre></div>
+</div>
+</li>
+<li><p>Add the dashboard user to the database.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Save the password you use. You&#39;ll use it every</span>
+<span class="c1"># time you connect to the database.</span>
+sudo<span class="w"> </span>-u<span class="w"> </span>postgres<span class="w"> </span>createuser<span class="w"> </span>-P<span class="w"> </span>dashboard
+</pre></div>
+</div>
+</li>
+</ul>
+</li>
+<li><p>Initialize the database.</p>
+<ul>
+<li><p>Create an empty database that’s owned by the dashboard user.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>-u<span class="w"> </span>postgres<span class="w"> </span>createdb<span class="w"> </span>-O<span class="w"> </span>dashboard<span class="w"> </span>dashboard
+</pre></div>
+</div>
+</li>
+<li><p>Activate your virtual environment, if you havent yet.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span><span class="w"> </span><span class="nv">$YOUR_ENV_PATH</span>/venv/bin/activate
+</pre></div>
+</div>
+</li>
+<li><p>Set the environment variables needed for flask migrate to run.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Replace &quot;/full/path/to/datman&quot; with the full</span>
+<span class="c1"># path to your datman folder.</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">PATH</span><span class="o">=</span>/full/path/to/datman:<span class="si">${</span><span class="nv">PATH</span><span class="si">}</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">PYTHONPATH</span><span class="o">=</span>/full/path/to/datman:<span class="si">${</span><span class="nv">PYTHONPATH</span><span class="si">}</span>
+
+<span class="c1"># This secret key is needed but is temporary</span>
+<span class="c1"># so can be anything for now</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">FLASK_SECRET_KEY</span><span class="o">=</span>mytemporarysecretkey
+
+<span class="nb">export</span><span class="w"> </span><span class="nv">POSTGRES_USER</span><span class="o">=</span>dashboard
+<span class="nb">export</span><span class="w"> </span><span class="nv">POSTGRES_PASS</span><span class="o">=</span>YOUR_DATABASE_PASSWORD_HERE
+</pre></div>
+</div>
+</li>
+<li><p>Switch to your dashboard directory and run the command below to create
+the database tables.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>flask<span class="w"> </span>db<span class="w"> </span>upgrade
+</pre></div>
+</div>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>Get an OAuth client ID and client secret <a class="reference external" href="https://docs.github.com/en/developers/apps/building-oauth-apps/creating-an-oauth-app">from GitHub.</a>
+In the ‘Authorization callback URL’ field be sure to add <code class="docutils literal notranslate"><span class="pre">/callback/github</span></code>
+to the end of your homepage URL.</p>
+<p>You’ll need to provide the Client ID and Client Secret to the dashboard
+later so be sure to record them.</p>
+</li>
+<li><p>Configure the uWSGI server.</p>
+<ul>
+<li><p>Install uWSGI.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>uwsgi
+
+<span class="c1"># On some platforms (such as Ubuntu 20.04) you also</span>
+<span class="c1"># need the python3 plugin. After installation you</span>
+<span class="c1"># may need to restart your computer</span>
+sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>uwsgi-plugin-python3
+</pre></div>
+</div>
+</li>
+<li><p>Create a <code class="docutils literal notranslate"><span class="pre">dashboard.ini</span></code> config file in uWSGI’s apps-enabled folder.
+(e.g. <code class="docutils literal notranslate"><span class="pre">/etc/uwsgi/apps-enabled/dashboard.ini</span></code>)</p></li>
+<li><p>Add your configuration. At a minimum you should add the settings
+described below. For more information and a list of all dashboard settings
+see <a class="reference internal" href="configuration.html#glossary"><span class="std std-ref">here.</span></a> Any Datman settings you need should also be
+added here. For a list of uWSGI options see their documentation
+<a class="reference external" href="https://uwsgi-docs.readthedocs.io/en/latest/Options.html">here</a></p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[uwsgi]</span>
+
+<span class="na">module</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">wsgi:app</span>
+<span class="na">chown-socket</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">www-data</span>
+<span class="na">plugins</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">python3,logfile</span>
+
+<span class="c1"># Needed to prevent the scheduler from locking up</span>
+<span class="na">lazy-apps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">True</span>
+
+<span class="c1"># This should be the path to your dashboard folder</span>
+<span class="na">chdir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">PATH_TO_YOUR_DASHBOARD_HERE</span>
+<span class="c1"># This is the virtualenv uwsgi will use when</span>
+<span class="c1"># running the dashboard</span>
+<span class="na">virtualenv</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">PATH_TO_YOUR_VIRTUALENV_HERE</span>
+
+<span class="c1"># This controls the user and group the app will run under.</span>
+<span class="c1"># Replace it with a real username/group.</span>
+<span class="na">uid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">YOURUSER</span>
+<span class="na">gid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">YOURGROUP</span>
+
+<span class="c1"># Dashboard + Datman env variables can be set here</span>
+<span class="c1"># Below shows only the minimum required variables that</span>
+<span class="c1"># must be set to run the app.</span>
+
+<span class="c1"># Set this to something unguessable and keep it private</span>
+<span class="c1"># or user sessions will be compromised</span>
+<span class="na">env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">FLASK_SECRET_KEY=YOUR_VERY_SECURE_KEY_HERE</span>
+
+<span class="na">env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">POSTGRES_USER=dashboard</span>
+<span class="na">env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">POSTGRES_PASS=YOUR_DATABASE_PASSWORD</span>
+
+<span class="na">env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">OAUTH_CLIENT_GITHUB=YOUR_GITHUB_CLIENT_ID</span>
+<span class="na">env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">OAUTH_SECRET_GITHUB=YOUR_GITHUB_SECRET</span>
+
+<span class="c1"># Configure datman here too</span>
+<span class="na">env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">PYTHONPATH=PATH_TO_YOUR_DATMAN_FOLDER_HERE</span>
+<span class="na">env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">DM_SYSTEM=YOUR_SYSTEM_NAME</span>
+<span class="na">env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">DM_CONFIG=PATH_TO_YOUR_MAIN_CONFIG_HERE</span>
+</pre></div>
+</div>
+</li>
+<li><p>Restart uWSGI to force it to re-read the configuration.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>systemctl<span class="w"> </span>restart<span class="w"> </span>uwsgi
+</pre></div>
+</div>
+</li>
+</ul>
+</li>
+<li><p>Configure nginx to serve the uWSGI dashboard app.</p>
+<ul>
+<li><p>Install nginx</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>nginx
+</pre></div>
+</div>
+</li>
+<li><p>Add a <code class="docutils literal notranslate"><span class="pre">dashboard.conf</span></code> file to nginx’s sites-enabled folder.
+(e.g. <code class="docutils literal notranslate"><span class="pre">/etc/nginx/sites-enabled/dashboard.conf</span></code>)</p>
+<p>At a minimum you should add a server entry, like the one shown below,
+with your server’s name filled in. Note that this example configuration
+is for HTTP only and should not be used outside of a private network.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>server<span class="w"> </span><span class="o">{</span>
+<span class="w">  </span>listen<span class="w"> </span><span class="m">80</span><span class="p">;</span>
+<span class="w">  </span>server_name<span class="w"> </span>localhost<span class="w"> </span>YOURSERVERNAMEHERE<span class="p">;</span>
+
+<span class="w">  </span>location<span class="w"> </span>/<span class="w"> </span><span class="o">{</span>
+<span class="w">    </span>include<span class="w"> </span>uwsgi_params<span class="p">;</span>
+<span class="w">    </span>uwsgi_pass<span class="w"> </span>unix://var/run/uwsgi/app/dashboard/socket<span class="p">;</span>
+<span class="w">  </span><span class="o">}</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</li>
+</ol>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">QC Dashboard</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#run-with-docker-compose">Run with Docker Compose</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#do-a-full-install">Do a Full Install</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="menu_conf.html">Menu Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plugins.html">Plugins</a></li>
+<li class="toctree-l1"><a class="reference internal" href="developer.html">Developer Resources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/modules.html">Dashboard API</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Welcome to QC Dashboard’s documentation!</a></li>
+      <li>Next: <a href="configuration.html" title="next chapter">Configuration Glossary</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, TIGRLab.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.1.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      
+      |
+      <a href="_sources/installation.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

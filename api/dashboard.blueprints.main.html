@@ -1,0 +1,217 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>dashboard.blueprints.main package &#8212; QC Dashboard 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="dashboard.blueprints.redcap package" href="dashboard.blueprints.redcap.html" />
+    <link rel="prev" title="dashboard.blueprints.handlers package" href="dashboard.blueprints.handlers.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="dashboard-blueprints-main-package">
+<h1>dashboard.blueprints.main package<a class="headerlink" href="#dashboard-blueprints-main-package" title="Permalink to this heading">¶</a></h1>
+<section id="module-dashboard.blueprints.main">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-dashboard.blueprints.main" title="Permalink to this heading">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="dashboard.blueprints.main.register_bp">
+<span class="sig-prename descclassname"><span class="pre">dashboard.blueprints.main.</span></span><span class="sig-name descname"><span class="pre">register_bp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">app</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dashboard.blueprints.main.register_bp" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading">¶</a></h2>
+<section id="module-dashboard.blueprints.main.views">
+<span id="dashboard-blueprints-main-views-module"></span><h3>dashboard.blueprints.main.views module<a class="headerlink" href="#module-dashboard.blueprints.main.views" title="Permalink to this heading">¶</a></h3>
+<dl class="py function">
+<dt class="sig sig-object py" id="dashboard.blueprints.main.views.analysis">
+<span class="sig-prename descclassname"><span class="pre">dashboard.blueprints.main.views.</span></span><span class="sig-name descname"><span class="pre">analysis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">analysis_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dashboard.blueprints.main.views.analysis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Default view for analysis</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dashboard.blueprints.main.views.downloadCSV">
+<span class="sig-prename descclassname"><span class="pre">dashboard.blueprints.main.views.</span></span><span class="sig-name descname"><span class="pre">downloadCSV</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dashboard.blueprints.main.views.downloadCSV" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dashboard.blueprints.main.views.index">
+<span class="sig-prename descclassname"><span class="pre">dashboard.blueprints.main.views.</span></span><span class="sig-name descname"><span class="pre">index</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dashboard.blueprints.main.views.index" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main landing page</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dashboard.blueprints.main.views.metricData">
+<span class="sig-prename descclassname"><span class="pre">dashboard.blueprints.main.views.</span></span><span class="sig-name descname"><span class="pre">metricData</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dashboard.blueprints.main.views.metricData" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a generic view for querying the database and allows selection of
+any combination of metrics and returns the data.</p>
+<p>The form is submitted on any change, this allows dynamic updating of the
+selection boxes displayed in the html (i.e. if SPINS study is selected
+the sites selector is filtered to only show sites relevent to SPINS).</p>
+<p>We only actually query and return the data if the query_complete is defined
+as true - this is done by client-side javascript.</p>
+<p>A lot of this could have been done client side but I think we all prefer
+writing python to javascript.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dashboard.blueprints.main.views.metricDataAsJson">
+<span class="sig-prename descclassname"><span class="pre">dashboard.blueprints.main.views.</span></span><span class="sig-name descname"><span class="pre">metricDataAsJson</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'http'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dashboard.blueprints.main.views.metricDataAsJson" title="Permalink to this definition">¶</a></dt>
+<dd><p>Query the database for metrics. Handles both GET (generated by client side
+javascript for creating graphs) and POST (generated by the metricData
+form view) requests</p>
+<dl class="simple">
+<dt>Can be accessed at:</dt><dd><p><a class="reference external" href="http://srv-dashboard.camhres.ca/metricDataAsJson">http://srv-dashboard.camhres.ca/metricDataAsJson</a></p>
+</dd>
+</dl>
+<p>This will return all data in the database (probs not what you want).</p>
+<p>Filters can be defined in the http request object
+(<a class="reference external" href="http://flask.pocoo.org/docs/0.12/api/#incoming-request-data">http://flask.pocoo.org/docs/0.12/api/#incoming-request-data</a>)
+this is a global flask object that is automatically created whenever a URL
+is requested. e.g.:</p>
+<p>&lt;url&gt;/metricDataAsJson?studies=15&amp;sessions=1739,1744&amp;metrictypes=84
+creates a request object</p>
+<blockquote>
+<div><dl class="simple">
+<dt>request.args = {studies: 15,</dt><dd><p>sessions: [1739, 1744],
+metrictypes: 84}</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>If byname is defined (and evaluates True) in the request.args then filters
+can be defined by name instead of by database id e.g.
+&lt;url&gt;/metricDataAsJson?byname=True&amp;studies=ANDT&amp;sessions=ANDT_CMH_101_01</p>
+<p>Function works slightly differently if the request method is POST
+(such as that generated by metricData()). In that case the field names are
+expected to be the primary keys from the database as these are used to
+create the form.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dashboard.blueprints.main.views.search_data">
+<span class="sig-prename descclassname"><span class="pre">dashboard.blueprints.main.views.</span></span><span class="sig-name descname"><span class="pre">search_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">search_string</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dashboard.blueprints.main.views.search_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Implements the site’s search bar.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dashboard.blueprints.main.views.study">
+<span class="sig-prename descclassname"><span class="pre">dashboard.blueprints.main.views.</span></span><span class="sig-name descname"><span class="pre">study</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">study_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">active_tab</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dashboard.blueprints.main.views.study" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is the main view for a single study.
+The page is a tabulated view, I would have done this differently given
+another chance.</p>
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">QC Dashboard</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../configuration.html">Configuration Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../menu_conf.html">Menu Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../plugins.html">Plugins</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../developer.html">Developer Resources</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Dashboard API</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="dashboard.html">Module contents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dashboard.html#submodules">Submodules</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="dashboard.html#subpackages">Subpackages</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="modules.html">Dashboard API</a><ul>
+  <li><a href="dashboard.html">Module contents</a><ul>
+  <li><a href="dashboard.blueprints.html">Blueprints</a><ul>
+      <li>Previous: <a href="dashboard.blueprints.handlers.html" title="previous chapter">dashboard.blueprints.handlers package</a></li>
+      <li>Next: <a href="dashboard.blueprints.redcap.html" title="next chapter">dashboard.blueprints.redcap package</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, TIGRLab.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.1.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      
+      |
+      <a href="../_sources/api/dashboard.blueprints.main.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

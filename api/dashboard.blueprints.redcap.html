@@ -1,0 +1,281 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>dashboard.blueprints.redcap package &#8212; QC Dashboard 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="dashboard.blueprints.scans package" href="dashboard.blueprints.scans.html" />
+    <link rel="prev" title="dashboard.blueprints.main package" href="dashboard.blueprints.main.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="dashboard-blueprints-redcap-package">
+<h1>dashboard.blueprints.redcap package<a class="headerlink" href="#dashboard-blueprints-redcap-package" title="Permalink to this heading">¶</a></h1>
+<section id="module-dashboard.blueprints.redcap">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-dashboard.blueprints.redcap" title="Permalink to this heading">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="dashboard.blueprints.redcap.register_bp">
+<span class="sig-prename descclassname"><span class="pre">dashboard.blueprints.redcap.</span></span><span class="sig-name descname"><span class="pre">register_bp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">app</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dashboard.blueprints.redcap.register_bp" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading">¶</a></h2>
+<section id="module-dashboard.blueprints.redcap.emails">
+<span id="dashboard-blueprints-redcap-emails-module"></span><h3>dashboard.blueprints.redcap.emails module<a class="headerlink" href="#module-dashboard.blueprints.redcap.emails" title="Permalink to this heading">¶</a></h3>
+<p>Email functions used by the redcap blueprint.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="dashboard.blueprints.redcap.emails.missing_session_data">
+<span class="sig-prename descclassname"><span class="pre">dashboard.blueprints.redcap.emails.</span></span><span class="sig-name descname"><span class="pre">missing_session_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">study</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dest_emails</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dashboard.blueprints.redcap.emails.missing_session_data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="module-dashboard.blueprints.redcap.monitors">
+<span id="dashboard-blueprints-redcap-monitors-module"></span><h3>dashboard.blueprints.redcap.monitors module<a class="headerlink" href="#module-dashboard.blueprints.redcap.monitors" title="Permalink to this heading">¶</a></h3>
+<p>Monitors used by the redcap blueprint.</p>
+<p>Any scheduler jobs that the redcap blueprint needs will require a monitor
+function and a check function here. See dashboard.monitors for more information
+on monitors and check functions.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="dashboard.blueprints.redcap.monitors.check_scans">
+<span class="sig-prename descclassname"><span class="pre">dashboard.blueprints.redcap.monitors.</span></span><span class="sig-name descname"><span class="pre">check_scans</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">recipients</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dashboard.blueprints.redcap.monitors.check_scans" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sends an email if the given session does not have data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">str</span></code>) – The session name</p></li>
+<li><p><strong>num</strong> (<em>int</em>) – The repeat number</p></li>
+<li><p><strong>recipients</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">list</span></code> of <code class="xref py py-obj docutils literal notranslate"><span class="pre">str</span></code>, optional) – A list of email
+addresses to contact if no data exists. If not set, dashboard
+admins will receive the notification.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="dashboard.html#dashboard.exceptions.MonitorException" title="dashboard.exceptions.MonitorException"><strong>dashboard.exceptions.MonitorException</strong></a> – If a matching session
+    can’t be found.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dashboard.blueprints.redcap.monitors.download_session">
+<span class="sig-prename descclassname"><span class="pre">dashboard.blueprints.redcap.monitors.</span></span><span class="sig-name descname"><span class="pre">download_session</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_time</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dashboard.blueprints.redcap.monitors.download_session" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dashboard.blueprints.redcap.monitors.monitor_scan_download">
+<span class="sig-prename descclassname"><span class="pre">dashboard.blueprints.redcap.monitors.</span></span><span class="sig-name descname"><span class="pre">monitor_scan_download</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dashboard.blueprints.redcap.monitors.monitor_scan_download" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a job to download a session.</p>
+<p>Note: This one directly downloads a subject while monitor_scan_import
+just notifies users if download doesnt occur within a time window.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>session</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">dashboard.models.Session</span></code>) – The session to download.</p></li>
+<li><p><strong>end_time</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">datetime.datetime</span></code>) – The date and time for when
+to stop download attempts. If not set, attempts will stop two days
+from the first time the function is called. Defaults to None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference internal" href="dashboard.html#dashboard.exceptions.MonitorException" title="dashboard.exceptions.MonitorException"><strong>dashboard.exceptions.MonitorException</strong></a> – if a
+    <code class="xref py py-obj docutils literal notranslate"><span class="pre">dashboard.models.Session</span></code> object is not given for session or
+    a <code class="xref py py-obj docutils literal notranslate"><span class="pre">datetime.datetime</span></code> object is not given for end_time, if
+    end_time is provided.</p></li>
+<li><p><a class="reference internal" href="dashboard.html#dashboard.exceptions.SchedulerException" title="dashboard.exceptions.SchedulerException"><strong>dashboard.exceptions.SchedulerException</strong></a> – if a job to retry
+    download can’t be added to the scheduler server.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dashboard.blueprints.redcap.monitors.monitor_scan_import">
+<span class="sig-prename descclassname"><span class="pre">dashboard.blueprints.redcap.monitors.</span></span><span class="sig-name descname"><span class="pre">monitor_scan_import</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">users</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dashboard.blueprints.redcap.monitors.monitor_scan_import" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a scheduler job to track whether a session’s data is imported.</p>
+<p>This creates a scheduler job that will run <a class="reference internal" href="#dashboard.blueprints.redcap.monitors.check_scans" title="dashboard.blueprints.redcap.monitors.check_scans"><code class="xref py py-obj docutils literal notranslate"><span class="pre">check_scans</span></code></a> two days
+after job submission.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>session</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">dashboard.models.Session</span></code>) – The session to track</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>:param users (<code class="xref py py-obj docutils literal notranslate"><span class="pre">list</span></code> of <code class="xref py py-obj docutils literal notranslate"><span class="pre">dashboard.models.User</span></code> or: <code class="xref py py-obj docutils literal notranslate"><span class="pre">dashboard.models.User</span></code>, optional): The user(s) to email. If</dt><dd><p>none are provided, dashboard admins will be emailed.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="dashboard.html#dashboard.exceptions.MonitorException" title="dashboard.exceptions.MonitorException"><strong>dashboard.exceptions.MonitorException</strong></a> – if a
+    <code class="xref py py-obj docutils literal notranslate"><span class="pre">dashboard.models.Session</span></code> object is not given, or users
+    can’t be found to send the notification to, or none of the found
+    users have an email defined.</p></li>
+<li><p><a class="reference internal" href="dashboard.html#dashboard.exceptions.SchedulerException" title="dashboard.exceptions.SchedulerException"><strong>dashboard.exceptions.SchedulerException</strong></a> – if the job can’t be
+    added to the server.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-dashboard.blueprints.redcap.utils">
+<span id="dashboard-blueprints-redcap-utils-module"></span><h3>dashboard.blueprints.redcap.utils module<a class="headerlink" href="#module-dashboard.blueprints.redcap.utils" title="Permalink to this heading">¶</a></h3>
+<dl class="py function">
+<dt class="sig sig-object py" id="dashboard.blueprints.redcap.utils.create_from_request">
+<span class="sig-prename descclassname"><span class="pre">dashboard.blueprints.redcap.utils.</span></span><span class="sig-name descname"><span class="pre">create_from_request</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dashboard.blueprints.redcap.utils.create_from_request" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dashboard.blueprints.redcap.utils.find_study">
+<span class="sig-prename descclassname"><span class="pre">dashboard.blueprints.redcap.utils.</span></span><span class="sig-name descname"><span class="pre">find_study</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ident</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dashboard.blueprints.redcap.utils.find_study" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dashboard.blueprints.redcap.utils.get_redcap_record">
+<span class="sig-prename descclassname"><span class="pre">dashboard.blueprints.redcap.utils.</span></span><span class="sig-name descname"><span class="pre">get_redcap_record</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">record_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fail_url</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dashboard.blueprints.redcap.utils.get_redcap_record" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dashboard.blueprints.redcap.utils.get_timepoint">
+<span class="sig-prename descclassname"><span class="pre">dashboard.blueprints.redcap.utils.</span></span><span class="sig-name descname"><span class="pre">get_timepoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ident</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dashboard.blueprints.redcap.utils.get_timepoint" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dashboard.blueprints.redcap.utils.set_session">
+<span class="sig-prename descclassname"><span class="pre">dashboard.blueprints.redcap.utils.</span></span><span class="sig-name descname"><span class="pre">set_session</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dashboard.blueprints.redcap.utils.set_session" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="module-dashboard.blueprints.redcap.views">
+<span id="dashboard-blueprints-redcap-views-module"></span><h3>dashboard.blueprints.redcap.views module<a class="headerlink" href="#module-dashboard.blueprints.redcap.views" title="Permalink to this heading">¶</a></h3>
+<dl class="py function">
+<dt class="sig sig-object py" id="dashboard.blueprints.redcap.views.redcap">
+<span class="sig-prename descclassname"><span class="pre">dashboard.blueprints.redcap.views.</span></span><span class="sig-name descname"><span class="pre">redcap</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dashboard.blueprints.redcap.views.redcap" title="Permalink to this definition">¶</a></dt>
+<dd><p>URL endpoint to receive redcap data entry triggers.</p>
+<p>A redcap server can send a notification to this URL when a survey is saved
+and the record will be retrieved and saved to the database.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dashboard.blueprints.redcap.views.redcap_redirect">
+<span class="sig-prename descclassname"><span class="pre">dashboard.blueprints.redcap.views.</span></span><span class="sig-name descname"><span class="pre">redcap_redirect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">record_id</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dashboard.blueprints.redcap.views.redcap_redirect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Used to provide a link from the session page to a redcap session complete
+record on the redcap server itself.</p>
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">QC Dashboard</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../configuration.html">Configuration Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../menu_conf.html">Menu Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../plugins.html">Plugins</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../developer.html">Developer Resources</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Dashboard API</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="dashboard.html">Module contents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dashboard.html#submodules">Submodules</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="dashboard.html#subpackages">Subpackages</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="modules.html">Dashboard API</a><ul>
+  <li><a href="dashboard.html">Module contents</a><ul>
+  <li><a href="dashboard.blueprints.html">Blueprints</a><ul>
+      <li>Previous: <a href="dashboard.blueprints.main.html" title="previous chapter">dashboard.blueprints.main package</a></li>
+      <li>Next: <a href="dashboard.blueprints.scans.html" title="next chapter">dashboard.blueprints.scans package</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, TIGRLab.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.1.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      
+      |
+      <a href="../_sources/api/dashboard.blueprints.redcap.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
