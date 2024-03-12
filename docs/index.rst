@@ -6,8 +6,8 @@ Welcome to QC Dashboard's documentation!
 
    installation
    configuration
-   plugins
    menu_conf
+   plugins
    developer
    api/modules
 
