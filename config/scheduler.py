@@ -22,6 +22,10 @@ SCHEDULER_EXECUTORS = {
     'default': ContextThreadExecutor(2)
 }
 
+# tzlocal>=3 returns zoneinfo timezones. APScheduler 3.6 only accepts pytz.
+# A zone name is resolved with pytz, so redcap monitor jobs can be submitted.
+SCHEDULER_TIMEZONE = "America/Toronto"
+
 # Indicates whether to start the scheduler server. Should only be set if
 # the dashboard is being run through a webserver (i.e. not just imported)
 SCHEDULER_ENABLED = read_boolean("DASHBOARD_SCHEDULER")
