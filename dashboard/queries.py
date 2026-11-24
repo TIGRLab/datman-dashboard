@@ -295,7 +295,8 @@ def get_redcap_config(project, instrument, url, create=False):
 
 def get_scan_qc(approved=True, blacklisted=True, flagged=True,
                 study=None, site=None, tag=None, include_phantoms=False,
-                include_new=False, comment=None, user_id=None, sort=False):
+                include_new=False, comment=None, user_id=None, sort=False,
+                as_dict=True):
     """Get a set of QC records matching the given search terms.
 
     Args:
@@ -325,6 +326,9 @@ def get_scan_qc(approved=True, blacklisted=True, flagged=True,
             restrictive.
         sort (bool, optional): Whether to sort the results. Sorting is done
             by scan name. Defaults to False.
+        as_dict (bool, optional): Whether to return the query results in
+            a dictionary format (True) or a tuple format (False). Defaults
+            to False.
 
     Returns:
         list(tuple): A list of tuples of the format
@@ -424,8 +428,12 @@ def get_scan_qc(approved=True, blacklisted=True, flagged=True,
     # Restrict output values to only needed columns
     query = query.with_entities(Scan.name, ScanChecklist.approved,
                                 ScanChecklist.comment)
+    records = query.all()
 
-    return query.all()
+    if as_dict:
+        return [row._asdict() for row in records]
+
+    return records
 
 
 def query_metric_values_byid(**kwargs):
