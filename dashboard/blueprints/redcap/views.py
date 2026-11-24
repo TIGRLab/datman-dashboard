@@ -22,7 +22,11 @@ def redcap():
     try:
         utils.create_from_request(request)
     except Exception as e:
-        logger.error('Failed creating redcap object. Reason: {}'.format(e))
+        logger.error('Failed creating redcap object. Reason: {}, Type: {}'.format(e, type(e)))
+        try:
+            logger.error('DET form that failed: {}'.format(request.form))
+        except:
+            pass
         raise InvalidUsage(str(e), status_code=400)
 
     return 'Record successfully added', 200
